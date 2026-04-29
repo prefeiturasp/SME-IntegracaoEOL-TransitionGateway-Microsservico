@@ -1,0 +1,29 @@
+services:
+  gateway:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+      PYTHONPATH: /app
+
+      DJANGO_SETTINGS_MODULE: config.settings
+      DJANGO_SECRET_KEY: django-inseguro-apenas-desenvolvimento
+      DJANGO_DEBUG: "1"
+      DJANGO_ALLOWED_HOSTS: "*"
+
+      API_KEY: trocar_esta_chave_em_ambiente_real
+      API_KEY_HEADER: X-API-Key
+
+      SIDECAR_PEDAGOGICO_URL: http://sidecar-pedagogico:9004
+
+      GATEWAY_TIMEOUT_SECONDS: "10"
+
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
