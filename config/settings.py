@@ -90,7 +90,9 @@ GATEWAY_TIMEOUT_SECONDS = int(os.getenv("GATEWAY_TIMEOUT_SECONDS", "10"))
 
 
 ELASTIC_APM = {
-    "SERVICE_NAME": os.getenv("ELASTIC_APM_SERVICE_NAME", "transition-gateway"),
+    "SERVICE_NAME": os.getenv(
+        "ELASTIC_APM_SERVICE_NAME", "transition-gateway"
+    ),
     "SERVER_URL": os.getenv("ELASTIC_APM_SERVER_URL", "http://localhost:8200"),
     "SECRET_TOKEN": os.getenv("ELASTIC_APM_SECRET_TOKEN", ""),
     "ENVIRONMENT": os.getenv("ELASTIC_APM_ENVIRONMENT", "local"),

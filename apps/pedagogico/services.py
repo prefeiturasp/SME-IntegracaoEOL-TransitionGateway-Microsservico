@@ -27,9 +27,7 @@ def get_componentes_funcionario(
         params["planejamento"] = planejamento
         params["checaMotivoDisponibilizacao"] = checa_motivo_disponibilizacao
         params["consideraTurmaInfantil"] = considera_turma_infantil
-    return _client.get(
-        f"{_BASE}/funcionarios/{login}", params=params
-    ).json()
+    return _client.get(f"{_BASE}/funcionarios/{login}", params=params).json()
 
 
 # EP-2
@@ -40,7 +38,9 @@ def get_componentes_regencia(ano_turma):
 # EP-3
 def validar_pap(codigo_turma, login, id_perfil):
     params = {"login": login, "idPerfil": id_perfil}
-    return _client.get(f"{_BASE}/turmas/{codigo_turma}/pap", params=params).json()
+    return _client.get(
+        f"{_BASE}/turmas/{codigo_turma}/pap", params=params
+    ).json()
 
 
 # EP-4
@@ -86,7 +86,9 @@ def get_catalogo_componentes():
 
 
 # EP-10
-def get_vigencia_componentes(ue_codigo, ano_letivo, componentes, semestre=None):
+def get_vigencia_componentes(
+    ue_codigo, ano_letivo, componentes, semestre=None
+):
     params = {
         "ueCodigo": ue_codigo,
         "anoLetivo": ano_letivo,

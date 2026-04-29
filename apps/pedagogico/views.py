@@ -1,16 +1,16 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.pedagogico import services
 from apps.pedagogico.serializers import (
+    AgrupamentoTerritorioSerializer,
+    ComponenteBaseSerializer,
     ComponenteCurricularSerializer,
     ComponenteRegenciaSerializer,
-    ComponenteBaseSerializer,
     ComponenteVigenciaSerializer,
     GradeCurricularSerializer,
-    AgrupamentoTerritorioSerializer,
 )
 
 _TAG = ["Componentes Curriculares"]
@@ -403,9 +403,7 @@ class ComponentesSemAtribuicaoView(APIView):
 class AgrupamentosCorrelacionadosView(APIView):
     @extend_schema(
         tags=_TAG,
-        summary=(
-            "[L13] Agrupamentos correlacionados de Território do Saber"
-        ),
+        summary=("[L13] Agrupamentos correlacionados de Território do Saber"),
         description=(
             "Retorna agrupamentos de Território do Saber correlacionados "
             "ao componente: aqueles cujos componentes são subconjunto "

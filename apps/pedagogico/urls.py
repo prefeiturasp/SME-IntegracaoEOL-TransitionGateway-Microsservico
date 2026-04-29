@@ -1,22 +1,23 @@
 from django.urls import path
+
 from apps.pedagogico.views import (
+    AgrupamentosCorrelacionadosLoteView,
+    AgrupamentosCorrelacionadosView,
+    AgrupamentosTerritorioView,
+    AnoTurmaAnoLetivoView,
+    CatalogoComponentesView,
     ComponentesFuncionarioComTurmaView,
     ComponentesFuncionarioView,
     ComponentesPlanejamentoFuncionarioView,
+    ComponentesPlanejamentoView,
+    ComponentesPorTurmasUeView,
     ComponentesRegenciaView,
-    ValidarPapView,
+    ComponentesRegularesView,
+    ComponentesSemAtribuicaoView,
     ComponentesUeAnosEscolaresView,
     ComponentesUeModalidadeView,
-    ComponentesPorTurmasUeView,
-    ComponentesPlanejamentoView,
-    ComponentesRegularesView,
-    CatalogoComponentesView,
     DadosAulaTurmaView,
-    AnoTurmaAnoLetivoView,
-    ComponentesSemAtribuicaoView,
-    AgrupamentosCorrelacionadosView,
-    AgrupamentosCorrelacionadosLoteView,
-    AgrupamentosTerritorioView,
+    ValidarPapView,
 )
 
 urlpatterns = [

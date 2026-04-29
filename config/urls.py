@@ -1,6 +1,6 @@
-from django.urls import path, include
-from rest_framework.permissions import AllowAny
+from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from rest_framework.permissions import AllowAny
 
 from config import settings
 
@@ -34,20 +34,3 @@ urlpatterns = [
         include("apps.pedagogico.urls"),
     ),
 ]
-
-
-# urlpatterns += [
-#     path(
-#         f"{API_PREFIX}{dominio}/health/",
-#         DomainHealthView.as_view(dominio=dominio, sidecar_url=url),
-#     )
-#     for dominio, url in DOMAINS.items()
-# ]
-
-# urlpatterns += [
-#     path(
-#         f"{API_PREFIX}eol/{dominio}/<path:path>",
-#         DomainProxyView.as_view(dominio=dominio, sidecar_url=url),
-#     )
-#     for dominio, url in DOMAINS.items()
-# ]
