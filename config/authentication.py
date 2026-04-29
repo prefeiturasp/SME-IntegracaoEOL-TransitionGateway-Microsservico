@@ -11,6 +11,8 @@ class _ApiKeyUser:
 
 
 class ApiKeyAuthentication(BaseAuthentication):
+    """Autentica requisições via API Key no header configurado."""
+
     def authenticate(self, request: Request) -> tuple | None:
         header = settings.API_KEY_HEADER.replace("-", "_").upper()
         key = request.META.get(f"HTTP_{header}") or request.headers.get(

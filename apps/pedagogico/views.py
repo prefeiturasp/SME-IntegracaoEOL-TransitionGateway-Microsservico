@@ -1,5 +1,10 @@
+"""Views do domínio pedagógico — tradução dos contratos legados L1–L17."""
+
+from typing import cast
+
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -24,6 +29,8 @@ _ARRAY_IDS = {
 
 
 class ComponentesFuncionarioComTurmaView(APIView):
+    """Legado L1."""
+
     @extend_schema(
         tags=_TAG,
         summary="[L1] Componentes do funcionário por turma com agrupamento",
@@ -37,7 +44,9 @@ class ComponentesFuncionarioComTurmaView(APIView):
         ),
         responses={200: ComponenteCurricularSerializer(many=True)},
     )
-    def get(self, _request, cod, login, idPerfil, flag):
+    def get(
+        self, _request: Request, cod: str, login: str, idPerfil: str, flag: str
+    ) -> Response:
         data = services.get_componentes_funcionario(
             login=login,
             id_perfil=idPerfil,
@@ -48,6 +57,8 @@ class ComponentesFuncionarioComTurmaView(APIView):
 
 
 class ComponentesFuncionarioView(APIView):
+    """Legado L2."""
+
     @extend_schema(
         tags=_TAG,
         summary="[L2] Componentes do funcionário sem filtro de turma",
@@ -59,7 +70,7 @@ class ComponentesFuncionarioView(APIView):
         ),
         responses={200: ComponenteCurricularSerializer(many=True)},
     )
-    def get(self, _request, login, idPerfil):
+    def get(self, _request: Request, login: str, idPerfil: str) -> Response:
         data = services.get_componentes_funcionario(
             login=login,
             id_perfil=idPerfil,
@@ -68,6 +79,8 @@ class ComponentesFuncionarioView(APIView):
 
 
 class ComponentesPlanejamentoFuncionarioView(APIView):
+    """Legado L3."""
+
     @extend_schema(
         tags=_TAG,
         summary="[L3] Componentes do funcionário com planejamento de regência",
@@ -79,7 +92,9 @@ class ComponentesPlanejamentoFuncionarioView(APIView):
         ),
         responses={200: ComponenteCurricularSerializer(many=True)},
     )
-    def get(self, request, cod, login, idPerfil):
+    def get(
+        self, request: Request, cod: str, login: str, idPerfil: str
+    ) -> Response:
         data = services.get_componentes_funcionario(
             login=login,
             id_perfil=idPerfil,
@@ -90,13 +105,16 @@ class ComponentesPlanejamentoFuncionarioView(APIView):
 
 
 class ComponentesRegenciaView(APIView):
+    """Legado L4."""
+
     @extend_schema(
         tags=_TAG,
         summary="[L4] Componentes de regência por ano de turma",
         description=(
             "Retorna os componentes curriculares de regência para o "
             "ano de turma informado. "
-            "Quando `anoTurma <= 0`, retorna componentes com `ano IS NULL`.\n\n"
+            "Quando `anoTurma <= 0`, retorna componentes"
+            " com `ano IS NULL`.\n\n"
             "Somente `codigo` e `descricao` são preenchidos; "
             "os demais campos refletem os valores padrão do legado.\n\n"
             "Internamente mapeia para "
@@ -104,12 +122,14 @@ class ComponentesRegenciaView(APIView):
         ),
         responses={200: ComponenteRegenciaSerializer(many=True)},
     )
-    def get(self, request, anoTurma):
+    def get(self, request: Request, anoTurma: int) -> Response:
         data = services.get_componentes_regencia(anoTurma)
         return Response(ComponenteRegenciaSerializer(data, many=True).data)
 
 
 class ValidarPapView(APIView):
+    """Legado L5."""
+
     @extend_schema(
         tags=_TAG,
         summary="[L5] Verificar componente PAP em turma",
@@ -121,7 +141,9 @@ class ValidarPapView(APIView):
         ),
         responses={200: OpenApiTypes.BOOL},
     )
-    def get(self, request, cod, login, idPerfil):
+    def get(
+        self, request: Request, cod: str, login: str, idPerfil: str
+    ) -> Response:
         data = services.validar_pap(
             codigo_turma=cod,
             login=login,
@@ -131,6 +153,8 @@ class ValidarPapView(APIView):
 
 
 class ComponentesUeAnosEscolaresView(APIView):
+    """Legado L6."""
+
     @extend_schema(
         tags=_TAG,
         summary="[L6] Componentes por UE, modalidade, ano e anos escolares",
@@ -153,7 +177,7 @@ class ComponentesUeAnosEscolaresView(APIView):
         ],
         responses={200: ComponenteCurricularSerializer(many=True)},
     )
-    def get(self, request, id, mod, ano):
+    def get(self, request: Request, id: str, mod: int, ano: int) -> Response:
         data = services.get_componentes_ue_anos(
             ue_id=id,
             modalidade=mod,
@@ -164,6 +188,8 @@ class ComponentesUeAnosEscolaresView(APIView):
 
 
 class ComponentesUeModalidadeView(APIView):
+    """Legado L7."""
+
     @extend_schema(
         tags=_TAG,
         summary="[L7] Componentes de turmas programa por UE e modalidade",
@@ -177,7 +203,7 @@ class ComponentesUeModalidadeView(APIView):
         ),
         responses={200: ComponenteCurricularSerializer(many=True)},
     )
-    def get(self, request, id, mod, ano):
+    def get(self, request: Request, id: str, mod: int, ano: int) -> Response:
         data = services.get_componentes_turmas_programa(
             ue_id=id,
             modalidade=mod,
@@ -187,6 +213,8 @@ class ComponentesUeModalidadeView(APIView):
 
 
 class ComponentesPorTurmasUeView(APIView):
+    """Legado L8."""
+
     @extend_schema(
         tags=_TAG,
         summary="[L8] Componentes por lista de turmas e UE",
@@ -210,7 +238,7 @@ class ComponentesPorTurmasUeView(APIView):
         ],
         responses={200: ComponenteBaseSerializer(many=True)},
     )
-    def get(self, request, id):
+    def get(self, request: Request, id: str) -> Response:
         data = services.get_componentes_por_turmas_ue(
             ue_id=id,
             turmas=request.query_params.getlist("turmas"),
@@ -219,6 +247,8 @@ class ComponentesPorTurmasUeView(APIView):
 
 
 class ComponentesPlanejamentoView(APIView):
+    """Legado L9."""
+
     @extend_schema(
         tags=_TAG,
         summary="[L9] Componentes para planejamento por lista de turmas",
@@ -250,7 +280,7 @@ class ComponentesPlanejamentoView(APIView):
         ],
         responses={200: ComponenteCurricularSerializer(many=True)},
     )
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         data = services.get_componentes_planejamento(
             codigo_turmas=request.query_params.getlist("codigoTurmas"),
         )
@@ -258,6 +288,8 @@ class ComponentesPlanejamentoView(APIView):
 
 
 class ComponentesRegularesView(APIView):
+    """Legado L10."""
+
     @extend_schema(
         tags=_TAG,
         summary="[L10] Componentes de turmas sem pós-processamento",
@@ -280,7 +312,7 @@ class ComponentesRegularesView(APIView):
         ],
         responses={200: ComponenteCurricularSerializer(many=True)},
     )
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         data = services.get_componentes_brutos(
             codigo_turmas=request.query_params.getlist("codigoTurmas"),
         )
@@ -288,6 +320,8 @@ class ComponentesRegularesView(APIView):
 
 
 class CatalogoComponentesView(APIView):
+    """Legado L11."""
+
     @extend_schema(
         tags=_TAG,
         summary="[L11] Catálogo de componentes curriculares",
@@ -298,12 +332,14 @@ class CatalogoComponentesView(APIView):
         ),
         responses={200: ComponenteBaseSerializer(many=True)},
     )
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         data = services.get_catalogo_componentes()
         return Response(ComponenteBaseSerializer(data, many=True).data)
 
 
 class DadosAulaTurmaView(APIView):
+    """Legado L12."""
+
     @extend_schema(
         tags=_TAG,
         summary="[L12] Dados de aula por turma (vigência de componentes)",
@@ -349,7 +385,7 @@ class DadosAulaTurmaView(APIView):
         ],
         responses={200: ComponenteVigenciaSerializer(many=True)},
     )
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         p = request.query_params
         data = services.get_vigencia_componentes(
             ue_codigo=p.get("ueCodigo"),
@@ -361,6 +397,8 @@ class DadosAulaTurmaView(APIView):
 
 
 class AnoTurmaAnoLetivoView(APIView):
+    """Legado L16."""
+
     @extend_schema(
         tags=_TAG,
         summary="[L16] Grade curricular por ano letivo",
@@ -374,12 +412,14 @@ class AnoTurmaAnoLetivoView(APIView):
         ),
         responses={200: GradeCurricularSerializer(many=True)},
     )
-    def get(self, request, anoLetivo):
+    def get(self, request: Request, anoLetivo: int) -> Response:
         data = services.get_grade_curricular(anoLetivo)
         return Response(GradeCurricularSerializer(data, many=True).data)
 
 
 class ComponentesSemAtribuicaoView(APIView):
+    """Legado L17."""
+
     @extend_schema(
         tags=_TAG,
         summary="[L17] Componentes sem atribuição em uma turma",
@@ -392,7 +432,7 @@ class ComponentesSemAtribuicaoView(APIView):
         ),
         responses={200: OpenApiTypes.STR},
     )
-    def get(self, request, cod, dataBaseTick):
+    def get(self, request: Request, cod: str, dataBaseTick: str) -> Response:
         data = services.get_sem_atribuicao(
             codigo_turma=cod,
             data_base_tick=dataBaseTick,
@@ -401,6 +441,8 @@ class ComponentesSemAtribuicaoView(APIView):
 
 
 class AgrupamentosCorrelacionadosView(APIView):
+    """Legado L13."""
+
     @extend_schema(
         tags=_TAG,
         summary=("[L13] Agrupamentos correlacionados de Território do Saber"),
@@ -427,7 +469,7 @@ class AgrupamentosCorrelacionadosView(APIView):
         ],
         responses={200: AgrupamentoTerritorioSerializer(many=True)},
     )
-    def get(self, request, codigoComponente):
+    def get(self, request: Request, codigoComponente: int) -> Response:
         data = services.get_agrupamentos_correlacionados(
             codigo=codigoComponente,
             data_base=request.query_params.get("dataBase"),
@@ -436,6 +478,8 @@ class AgrupamentosCorrelacionadosView(APIView):
 
 
 class AgrupamentosCorrelacionadosLoteView(APIView):
+    """Legado L14."""
+
     @extend_schema(
         tags=_TAG,
         summary=(
@@ -465,15 +509,17 @@ class AgrupamentosCorrelacionadosLoteView(APIView):
         request=_ARRAY_IDS,
         responses={200: AgrupamentoTerritorioSerializer(many=True)},
     )
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         data = services.get_agrupamentos_correlacionados_lote(
-            ids=request.data,
+            ids=cast(list[int], request.data),
             data_base=request.query_params.get("dataBase"),
         )
         return Response(AgrupamentoTerritorioSerializer(data, many=True).data)
 
 
 class AgrupamentosTerritorioView(APIView):
+    """Legado L15."""
+
     @extend_schema(
         tags=_TAG,
         summary="[L15] Agrupamentos de Território do Saber por IDs",
@@ -486,6 +532,6 @@ class AgrupamentosTerritorioView(APIView):
         request=_ARRAY_IDS,
         responses={200: AgrupamentoTerritorioSerializer(many=True)},
     )
-    def post(self, request):
-        data = services.get_agrupamentos(request.data)
+    def post(self, request: Request) -> Response:
+        data = services.get_agrupamentos(cast(list[int], request.data))
         return Response(AgrupamentoTerritorioSerializer(data, many=True).data)

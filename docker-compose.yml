@@ -1,0 +1,24 @@
+services:
+  gateway:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      PYTHONPATH: /app
+
+      DJANGO_SETTINGS_MODULE: config.settings
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DJANGO_DEBUG: "0"
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
+
+      API_KEY: ${API_KEY}
+      API_KEY_HEADER: ${API_KEY_HEADER:-X-API-Key}
+
+      SIDECAR_PEDAGOGICO_URL: ${SIDECAR_PEDAGOGICO_URL}
+
+      GATEWAY_TIMEOUT_SECONDS: ${GATEWAY_TIMEOUT_SECONDS:-10}
+
+    ports:
+      - "8000:8000"
+    restart: unless-stopped

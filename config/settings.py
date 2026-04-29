@@ -1,3 +1,5 @@
+"""Configuração Django do TransitionGateway."""
+
 import os
 from pathlib import Path
 
@@ -66,7 +68,7 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "Gateway EOL",
+    "TITLE": "SME - API/EOL",
     "DESCRIPTION": "Porta de entrada única para os domínios internos.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,

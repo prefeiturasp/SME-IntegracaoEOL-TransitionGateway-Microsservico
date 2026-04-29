@@ -1,3 +1,5 @@
+"""Mapeamento das rotas legadas L1–L17 para as views do domínio pedagógico."""
+
 from django.urls import path
 
 from apps.pedagogico.views import (
@@ -85,16 +87,6 @@ urlpatterns = [
         "dados-aula-turma/",
         DadosAulaTurmaView.as_view(),
     ),
-    # legado 16
-    path(
-        "ano-turma/ano-letivo/<int:anoLetivo>/",
-        AnoTurmaAnoLetivoView.as_view(),
-    ),
-    # legado 17
-    path(
-        "turmas/<str:cod>/sem-atribuicao/<str:dataBaseTick>/",
-        ComponentesSemAtribuicaoView.as_view(),
-    ),
     # legado 13
     path(
         "<int:codigoComponente>"
@@ -110,5 +102,15 @@ urlpatterns = [
     path(
         "territorio-saber/agrupamentos/",
         AgrupamentosTerritorioView.as_view(),
+    ),
+    # legado 16
+    path(
+        "ano-turma/ano-letivo/<int:anoLetivo>/",
+        AnoTurmaAnoLetivoView.as_view(),
+    ),
+    # legado 17
+    path(
+        "turmas/<str:cod>/sem-atribuicao/<str:dataBaseTick>/",
+        ComponentesSemAtribuicaoView.as_view(),
     ),
 ]

@@ -1,12 +1,18 @@
+"""Serializers de saída para o domínio pedagógico."""
+
 from rest_framework import serializers
 
 
 class ComponenteBaseSerializer(serializers.Serializer):
+    """DTO mínimo com código e descrição."""
+
     codigo = serializers.IntegerField()
     descricao = serializers.CharField()
 
 
 class ComponenteCurricularSerializer(serializers.Serializer):
+    """DTO completo de componente curricular."""
+
     codigo = serializers.IntegerField()
     codigoComponenteTerritorioSaber = serializers.IntegerField(allow_null=True)
     codigoComponenteCurricularPai = serializers.IntegerField(allow_null=True)
@@ -24,6 +30,8 @@ class ComponenteCurricularSerializer(serializers.Serializer):
 
 
 class ComponenteRegenciaSerializer(serializers.Serializer):
+    """DTO de componente de regência com dados de turma e atribuição."""
+
     anoTurma = serializers.IntegerField(allow_null=True)
     anoLetivo = serializers.IntegerField()
     codigo = serializers.IntegerField()
@@ -40,10 +48,14 @@ class ComponenteRegenciaSerializer(serializers.Serializer):
 
 
 class BooleanSerializer(serializers.Serializer):
+    """Wrapper de valor booleano."""
+
     value = serializers.BooleanField()
 
 
 class ComponenteVigenciaSerializer(serializers.Serializer):
+    """DTO de vigência de componente em turma."""
+
     componenteCurricularCodigo = serializers.CharField()
     componenteCurricularDescricao = serializers.CharField()
     turmaCodigo = serializers.CharField()
@@ -51,6 +63,8 @@ class ComponenteVigenciaSerializer(serializers.Serializer):
 
 
 class GradeCurricularSerializer(serializers.Serializer):
+    """DTO de grade curricular por série e modalidade."""
+
     codigoComponenteCurricular = serializers.IntegerField()
     descricaoComponenteCurricular = serializers.CharField()
     codigoAnoTurma = serializers.CharField()
@@ -60,10 +74,14 @@ class GradeCurricularSerializer(serializers.Serializer):
 
 
 class ComponentesSemAtribuicaoSerializer(serializers.Serializer):
+    """DTO de componente sem atribuição docente."""
+
     descricao = serializers.CharField()
 
 
 class AgrupamentoTerritorioSerializer(serializers.Serializer):
+    """DTO de agrupamento de Território do Saber."""
+
     codigo = serializers.IntegerField()
     codigoComponenteTerritorioSaber = serializers.IntegerField()
     codigoComponenteCurricularPai = serializers.IntegerField(allow_null=True)

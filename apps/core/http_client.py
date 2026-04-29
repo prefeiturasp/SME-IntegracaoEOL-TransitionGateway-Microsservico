@@ -1,3 +1,5 @@
+"""Comunicação HTTP do gateway com os sidecars."""
+
 from __future__ import annotations
 
 import httpx
