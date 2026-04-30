@@ -39,7 +39,7 @@ services:
       RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-}
 
-    command: python manage.py runserver 0.0.0.0:8000
+    command: python manage.py runserver 0.0.0.0:${PORT_WEB:-8002}
     ports:
-      - "8000:8000"
+      - "${PORT_WEB:-8002}:${PORT_WEB:-8002}"
     restart: unless-stopped

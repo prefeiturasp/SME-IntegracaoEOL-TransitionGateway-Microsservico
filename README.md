@@ -92,6 +92,7 @@ cp .env.example .env
 | `API_KEY` | — | Chave usada para autenticar requisições de entrada |
 | `API_KEY_HEADER` | `X-API-Key` | Nome do header de autenticação de entrada |
 | `GATEWAY_TIMEOUT_SECONDS` | `10` | Timeout das chamadas do gateway aos sidecars |
+| `PORT_WEB` | `8002` (dev) / `8000` (prod) | Porta exposta pelo container |
 
 **Sidecars**
 
