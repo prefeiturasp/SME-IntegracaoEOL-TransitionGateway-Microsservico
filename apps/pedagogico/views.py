@@ -45,11 +45,16 @@ class ComponentesFuncionarioComTurmaView(APIView):
         responses={200: ComponenteCurricularSerializer(many=True)},
     )
     def get(
-        self, _request: Request, cod: str, login: str, idPerfil: str, flag: str
+        self,
+        _request: Request,
+        cod: str,
+        login: str,
+        id_perfil: str,
+        flag: str,
     ) -> Response:
         data = services.get_componentes_funcionario(
             login=login,
-            id_perfil=idPerfil,
+            id_perfil=id_perfil,
             codigo_turma=cod,
             agrupa=(flag.lower() == "true") if flag else False,
         )
@@ -70,10 +75,10 @@ class ComponentesFuncionarioView(APIView):
         ),
         responses={200: ComponenteCurricularSerializer(many=True)},
     )
-    def get(self, _request: Request, login: str, idPerfil: str) -> Response:
+    def get(self, _request: Request, login: str, id_perfil: str) -> Response:
         data = services.get_componentes_funcionario(
             login=login,
-            id_perfil=idPerfil,
+            id_perfil=id_perfil,
         )
         return Response(ComponenteCurricularSerializer(data, many=True).data)
 
@@ -93,11 +98,11 @@ class ComponentesPlanejamentoFuncionarioView(APIView):
         responses={200: ComponenteCurricularSerializer(many=True)},
     )
     def get(
-        self, request: Request, cod: str, login: str, idPerfil: str
+        self, request: Request, cod: str, login: str, id_perfil: str
     ) -> Response:
         data = services.get_componentes_funcionario(
             login=login,
-            id_perfil=idPerfil,
+            id_perfil=id_perfil,
             codigo_turma=cod,
             planejamento=True,
         )
@@ -122,8 +127,8 @@ class ComponentesRegenciaView(APIView):
         ),
         responses={200: ComponenteRegenciaSerializer(many=True)},
     )
-    def get(self, request: Request, anoTurma: int) -> Response:
-        data = services.get_componentes_regencia(anoTurma)
+    def get(self, request: Request, ano_turma: int) -> Response:
+        data = services.get_componentes_regencia(ano_turma)
         return Response(ComponenteRegenciaSerializer(data, many=True).data)
 
 
@@ -142,12 +147,12 @@ class ValidarPapView(APIView):
         responses={200: OpenApiTypes.BOOL},
     )
     def get(
-        self, request: Request, cod: str, login: str, idPerfil: str
+        self, request: Request, cod: str, login: str, id_perfil: str
     ) -> Response:
         data = services.validar_pap(
             codigo_turma=cod,
             login=login,
-            id_perfil=idPerfil,
+            id_perfil=id_perfil,
         )
         return Response(data)
 
@@ -412,8 +417,8 @@ class AnoTurmaAnoLetivoView(APIView):
         ),
         responses={200: GradeCurricularSerializer(many=True)},
     )
-    def get(self, request: Request, anoLetivo: int) -> Response:
-        data = services.get_grade_curricular(anoLetivo)
+    def get(self, request: Request, ano_letivo: int) -> Response:
+        data = services.get_grade_curricular(ano_letivo)
         return Response(GradeCurricularSerializer(data, many=True).data)
 
 
@@ -432,10 +437,10 @@ class ComponentesSemAtribuicaoView(APIView):
         ),
         responses={200: OpenApiTypes.STR},
     )
-    def get(self, request: Request, cod: str, dataBaseTick: str) -> Response:
+    def get(self, request: Request, cod: str, data_base_tick: str) -> Response:
         data = services.get_sem_atribuicao(
             codigo_turma=cod,
-            data_base_tick=dataBaseTick,
+            data_base_tick=data_base_tick,
         )
         return Response(data)
 
@@ -469,9 +474,9 @@ class AgrupamentosCorrelacionadosView(APIView):
         ],
         responses={200: AgrupamentoTerritorioSerializer(many=True)},
     )
-    def get(self, request: Request, codigoComponente: int) -> Response:
+    def get(self, request: Request, codigo_componente: int) -> Response:
         data = services.get_agrupamentos_correlacionados(
-            codigo=codigoComponente,
+            codigo=codigo_componente,
             data_base=request.query_params.get("dataBase"),
         )
         return Response(AgrupamentoTerritorioSerializer(data, many=True).data)
