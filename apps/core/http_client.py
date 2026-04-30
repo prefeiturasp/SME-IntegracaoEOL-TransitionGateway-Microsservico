@@ -15,15 +15,25 @@ class ServiceClient:
     O gateway interpreta 502/503 do sidecar para degradação parcial.
     """
 
-    def __init__(self, base_url: str, dominio: str) -> None:
+    def __init__(
+        self,
+        base_url: str,
+        dominio: str,
+        api_key: str = "",
+        api_key_header: str = "X-API-Key",
+    ) -> None:
         self.base_url = base_url.rstrip("/")
         self.dominio = dominio
+        self._api_key = api_key
+        self._api_key_header = api_key_header
 
     def _headers(self) -> dict[str, str]:
         headers = {"Accept": "application/json"}
         request_id = get_request_id()
         if request_id:
             headers["X-Request-ID"] = request_id
+        if self._api_key:
+            headers[self._api_key_header] = self._api_key
         return headers
 
     def get(self, path: str, params: dict | None = None) -> httpx.Response:

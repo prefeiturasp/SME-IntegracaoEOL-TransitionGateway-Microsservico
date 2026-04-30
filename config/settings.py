@@ -17,11 +17,13 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "drf_spectacular",
+    "elasticapm.contrib.django",
     "apps.core",
     "apps.pedagogico",
 ]
 
 MIDDLEWARE = [
+    "elasticapm.contrib.django.middleware.TracingMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "apps.core.middleware.RequestIDMiddleware",
     "apps.core.middleware.LoggingContextMiddleware",
@@ -87,9 +89,80 @@ SPECTACULAR_SETTINGS = {
 SIDECAR_PEDAGOGICO_URL = os.getenv(
     "SIDECAR_PEDAGOGICO_URL", "http://localhost:9004"
 )
+SIDECAR_PEDAGOGICO_API_KEY = os.getenv("SIDECAR_PEDAGOGICO_API_KEY", "")
+SIDECAR_PEDAGOGICO_API_KEY_HEADER = os.getenv(
+    "SIDECAR_PEDAGOGICO_API_KEY_HEADER", "X-API-Key"
+)
 
 GATEWAY_TIMEOUT_SECONDS = int(os.getenv("GATEWAY_TIMEOUT_SECONDS", "10"))
 
+ENABLE_RABBITMQ_LOGGING = os.getenv("ENABLE_RABBITMQ_LOGGING", "0") == "1"
+
+_logging_handlers: dict = {
+    "console": {
+        "class": "logging.StreamHandler",
+        "formatter": "json",
+        "filters": ["context"],
+    },
+}
+
+if ENABLE_RABBITMQ_LOGGING:
+    _logging_handlers["rabbitmq"] = {
+        "level": os.getenv("RABBITMQ_LOG_LEVEL", "INFO"),
+        "class": "apps.core.libs.rabbitmq_handler.RabbitMQHandler",
+        "host": os.getenv("RABBITMQ_HOST", ""),
+        "virtual_host": os.getenv("RABBITMQ_VIRTUAL_HOST", "/"),
+        "queue": os.getenv("RABBITMQ_LOG_QUEUE", ""),
+        "username": os.getenv("RABBITMQ_USERNAME", ""),
+        "password": os.getenv("RABBITMQ_PASSWORD", ""),
+        "filters": ["context"],
+    }
+
+_active_handlers = ["console"] + (
+    ["rabbitmq"] if ENABLE_RABBITMQ_LOGGING else []
+)
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "context": {"()": "apps.core.logging_context.ContextFilter"},
+    },
+    "formatters": {
+        "json": {
+            "()": "pythonjsonlogger.jsonlogger.JsonFormatter",
+            "fmt": (
+                "%(asctime)s %(levelname)s %(name)s %(message)s"
+                " %(request_id)s %(service)s"
+                " %(transaction_id)s %(trace_id)s"
+            ),
+            "rename_fields": {
+                "asctime": "timestamp",
+                "levelname": "level",
+                "name": "logger",
+            },
+        },
+    },
+    "handlers": _logging_handlers,
+    "root": {"handlers": _active_handlers, "level": "INFO"},
+    "loggers": {
+        "django": {
+            "handlers": _active_handlers,
+            "level": "WARNING",
+            "propagate": False,
+        },
+        "elasticapm": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+        "pika": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+    },
+}
 
 ELASTIC_APM = {
     "SERVICE_NAME": os.getenv(

@@ -82,13 +82,88 @@ O gateway mapeia 17 rotas legadas para 15 endpoints canônicos do MS Pedagógico
 cp .env.example .env
 ```
 
+**Geral**
+
 | Variável | Padrão | Descrição |
 |---|---|---|
 | `DJANGO_SECRET_KEY` | — | Chave secreta do Django |
+| `DJANGO_DEBUG` | `1` | Ativa o modo debug (`0` em produção) |
+| `DJANGO_ALLOWED_HOSTS` | `*` | Hosts permitidos, separados por vírgula |
 | `API_KEY` | — | Chave usada para autenticar requisições de entrada |
-| `API_KEY_HEADER` | `X-API-Key` | Nome do header de autenticação |
-| `SIDECAR_PEDAGOGICO_URL` | `http://localhost:9004` | URL do sidecar pedagógico |
+| `API_KEY_HEADER` | `X-API-Key` | Nome do header de autenticação de entrada |
 | `GATEWAY_TIMEOUT_SECONDS` | `10` | Timeout das chamadas do gateway aos sidecars |
+
+**Sidecars**
+
+| Variável | Padrão | Descrição |
+|---|---|---|
+| `SIDECAR_PEDAGOGICO_URL` | `http://localhost:9004` | URL do sidecar pedagógico |
+| `SIDECAR_PEDAGOGICO_API_KEY` | — | API Key enviada ao sidecar pedagógico |
+| `SIDECAR_PEDAGOGICO_API_KEY_HEADER` | `X-API-Key` | Nome do header de autenticação para o sidecar pedagógico |
+
+**Elastic APM**
+
+| Variável | Padrão | Descrição |
+|---|---|---|
+| `ELASTIC_APM_SERVICE_NAME` | `transition-gateway` | Nome do serviço no APM |
+| `ELASTIC_APM_SERVER_URL` | `http://localhost:8200` | URL do servidor APM |
+| `ELASTIC_APM_SECRET_TOKEN` | — | Token de autenticação do APM |
+| `ELASTIC_APM_ENVIRONMENT` | `local` | Ambiente (`local`, `staging`, `production`) |
+| `ELASTIC_APM_ENABLED` | `1` | Ativa (`1`) ou desativa (`0`) o agente APM |
+
+**RabbitMQ (logging)**
+
+| Variável | Padrão | Descrição |
+|---|---|---|
+| `ENABLE_RABBITMQ_LOGGING` | `0` | Ativa (`1`) o envio de logs ao RabbitMQ |
+| `RABBITMQ_HOST` | — | Host do RabbitMQ |
+| `RABBITMQ_VIRTUAL_HOST` | `/` | Virtual host do RabbitMQ |
+| `RABBITMQ_LOG_QUEUE` | — | Nome da fila de destino dos logs |
+| `RABBITMQ_LOG_LEVEL` | `INFO` | Nível mínimo de log enviado ao RabbitMQ |
+| `RABBITMQ_USERNAME` | — | Usuário do RabbitMQ |
+| `RABBITMQ_PASSWORD` | — | Senha do RabbitMQ |
+
+## Observabilidade
+
+### Formato dos logs
+
+Todos os logs são emitidos em JSON estruturado. Cada registro inclui os seguintes campos:
+
+| Campo | Descrição |
+|---|---|
+| `timestamp` | Data e hora do evento |
+| `level` | Nível do log (`INFO`, `WARNING`, `ERROR`) |
+| `logger` | Nome do módulo que gerou o log |
+| `message` | Mensagem descritiva (ex.: `GET /api/v1/... 200 43ms`) |
+| `request_id` | UUID da requisição, propagado via header `X-Request-ID` |
+| `service` | Nome do serviço (`transitiongateway`) |
+| `transaction_id` | ID da transação APM (correlação com traces) |
+| `trace_id` | ID do trace APM (correlação fim a fim) |
+
+O middleware `LoggingContextMiddleware` emite um registro por requisição HTTP com método, path, status code e duração em milissegundos.
+
+### Pipeline de logs
+
+```
+Aplicação
+   │
+   ├── stdout (sempre)
+   │     JSON estruturado lido pelo runtime do container
+   │
+   └── RabbitMQ (quando ENABLE_RABBITMQ_LOGGING=1)
+         │
+         └── Consumer (Logstash)
+               │
+               └── Elasticsearch → Kibana (Logs)
+```
+
+Para ver logs no Kibana, `ENABLE_RABBITMQ_LOGGING` deve estar ativo e o consumer Logstash precisa estar configurado para ler da fila `RABBITMQ_LOG_QUEUE` e indexar no Elasticsearch.
+
+### Rastreamento APM (Elastic APM)
+
+O agente APM (`elasticapm.contrib.django`) instrumenta automaticamente cada requisição Django, criando transações e spans visíveis em **Kibana → Observability → APM**.
+
+Os campos `transaction_id` e `trace_id` presentes em cada log permitem correlacionar um registro de log com a transação APM correspondente diretamente na interface do Kibana.
 
 ## Execução local
 

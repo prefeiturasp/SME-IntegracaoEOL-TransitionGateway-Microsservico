@@ -11,6 +11,8 @@ _BASE = "/api/v1/componentes-curriculares"
 _client = ServiceClient(
     base_url=settings.SIDECAR_PEDAGOGICO_URL,
     dominio="pedagogico",
+    api_key=settings.SIDECAR_PEDAGOGICO_API_KEY,
+    api_key_header=settings.SIDECAR_PEDAGOGICO_API_KEY_HEADER,
 )
 
 
