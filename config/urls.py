@@ -10,6 +10,7 @@ API_PREFIX = "api/v1/"
 
 DOMAINS = {
     "pedagogico": settings.SIDECAR_PEDAGOGICO_URL,
+    "professores": settings.SIDECAR_PROFESSORES_URL,
 }
 
 
@@ -35,4 +36,5 @@ urlpatterns = [
         f"{API_PREFIX}componentes-curriculares/",
         include("apps.pedagogico.urls"),
     ),
+    path("api/", include("apps.professores.urls")),
 ]

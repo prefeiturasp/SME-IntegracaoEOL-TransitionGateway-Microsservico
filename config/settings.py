@@ -5,7 +5,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-dev-key")
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "")
 DEBUG = os.getenv("DJANGO_DEBUG", "1") == "1"
 ALLOWED_HOSTS = [
     host.strip() for host in os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",")
@@ -20,6 +20,7 @@ INSTALLED_APPS = [
     "elasticapm.contrib.django",
     "apps.core",
     "apps.pedagogico",
+    "apps.professores",
 ]
 
 MIDDLEWARE = [
@@ -92,6 +93,14 @@ SIDECAR_PEDAGOGICO_URL = os.getenv(
 SIDECAR_PEDAGOGICO_API_KEY = os.getenv("SIDECAR_PEDAGOGICO_API_KEY", "")
 SIDECAR_PEDAGOGICO_API_KEY_HEADER = os.getenv(
     "SIDECAR_PEDAGOGICO_API_KEY_HEADER", "X-API-Key"
+)
+
+SIDECAR_PROFESSORES_URL = os.getenv(
+    "SIDECAR_PROFESSORES_URL", "http://localhost:9005"
+)
+SIDECAR_PROFESSORES_API_KEY = os.getenv("SIDECAR_PROFESSORES_API_KEY", "")
+SIDECAR_PROFESSORES_API_KEY_HEADER = os.getenv(
+    "SIDECAR_PROFESSORES_API_KEY_HEADER", "X-API-Key"
 )
 
 GATEWAY_TIMEOUT_SECONDS = int(os.getenv("GATEWAY_TIMEOUT_SECONDS", "10"))
