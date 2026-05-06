@@ -9,7 +9,7 @@ from apps.core.http_client import ServiceClient
 
 def _make_client() -> ServiceClient:
     return ServiceClient(
-        base_url="http://fake-sidecar",
+        base_url="https://fake-sidecar",
         dominio="test",
     )
 
