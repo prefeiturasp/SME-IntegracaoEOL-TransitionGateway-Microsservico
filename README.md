@@ -32,6 +32,7 @@ ao microserviço correspondente. Os sidecars residem em repositórios próprios.
 ├── apps/
 │   ├── core/           # cliente HTTP, resiliência (lib dos sidecars), middleware
 │   └── pedagogico/     # domínio pedagógico: views, services, serializers
+│   └── professores/     # domínio professores: views, services, serializers
 ├── config/             # settings, urls, wsgi e autenticação do gateway
 ├── requirements/
 │   ├── base.txt        # dependências de produção
@@ -71,6 +72,18 @@ O gateway mapeia 17 rotas legadas para 15 endpoints canônicos do MS Pedagógico
 | L16 Grade curricular por ano letivo | EP-11 `GET /grade-curricular/{anoLetivo}` |
 | L17 Componentes sem atribuição em uma turma | EP-12 `GET /turmas/{cod}/sem-atribuicao` |
 
+
+## Domínio professores
+
+O gateway mapeia 4 rotas legadas cobertas pelo MS-Professores:
+
+| Legado | Endpoint canônico |
+|---|---|
+| L1 Retorna booleano indicando se o funcionário está ativo | EP-1 `GET /acessos/funcionario-ativo/{registro_funcional}/` |
+| L2 Retorna nome e CPF do servidor | EP-2 `GET /funcionarios/nome-servidor/{registro_funcional}/` |
+| L3 Retorna booleano indicando se o professor é válido | EP-3 `GET /professores/{codigo_rf}/validade/` |
+| L4 Retorna o nome do professor correspondente ao RF informado | EP-4 `GET /professores/{rf_professor}/` |
+
 ## Requisitos
 
 - Python 3.12+
@@ -81,6 +94,17 @@ O gateway mapeia 17 rotas legadas para 15 endpoints canônicos do MS Pedagógico
 ```bash
 cp .env.example .env
 ```
+---
+
+## Executar Testes com Docker
+
+Para rodar a suíte completa de testes e gerar o relatório de cobertura:
+
+```bash
+./scripts/executar_testes_docker.sh
+```
+
+---
 
 **Geral**
 
@@ -101,6 +125,9 @@ cp .env.example .env
 | `SIDECAR_PEDAGOGICO_URL` | `http://localhost:9004` | URL do sidecar pedagógico |
 | `SIDECAR_PEDAGOGICO_API_KEY` | — | API Key enviada ao sidecar pedagógico |
 | `SIDECAR_PEDAGOGICO_API_KEY_HEADER` | `X-API-Key` | Nome do header de autenticação para o sidecar pedagógico |
+| `SIDECAR_PROFESSORES_URL` | `http://localhost:9005` | URL do sidecar professores |
+| `SIDECAR_PROFESSORES_API_KEY` | — | API Key enviada ao sidecar professores |
+| `SIDECAR_PROFESSORES_API_KEY_HEADER` | `X-API-Key` | Nome do header de autenticação para o sidecar professores |
 
 **Elastic APM**
 

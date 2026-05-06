@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import httpx
 from django.conf import settings
 
@@ -42,6 +44,7 @@ class ServiceClient:
                 f"{self.base_url}{path}",
                 headers=self._headers(),
                 params=params,
+                follow_redirects=True,
             )
 
     def post(
@@ -56,7 +59,17 @@ class ServiceClient:
                 headers=self._headers(),
                 json=payload,
                 params=params,
+                follow_redirects=True,
             )
+
+    def json_or_none(self, resp: httpx.Response) -> Any:
+        """Retorna JSON ou None para respostas sem conteúdo."""
+        if resp.status_code == 204 or not resp.content:
+            return None
+        try:
+            return resp.json()
+        except ValueError:
+            return resp.text.strip() or None
 
     def is_healthy(self) -> bool:
         try:
