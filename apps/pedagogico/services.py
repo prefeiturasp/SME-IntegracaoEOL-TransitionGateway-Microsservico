@@ -54,9 +54,14 @@ def get_componentes_ue_anos(
 ) -> Any:
     """Retorna componentes filtrados por anos escolares."""
     params: dict[str, Any] = {"anosEscolares": anos_escolares}
-
+    path = (
+        f"{_BASE}/ues/"
+        f"{ue_id}/modalidades/"
+        f"{modalidade}/anos/"
+        f"{ano_letivo}"
+    )
     return _client.get(
-        f"{_BASE}/ues/{ue_id}/modalidades/" f"{modalidade}/anos/{ano_letivo}",
+        path,
         params=params,
     ).json()
 

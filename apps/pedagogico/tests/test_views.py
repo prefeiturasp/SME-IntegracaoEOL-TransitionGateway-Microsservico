@@ -45,7 +45,7 @@ def _cliente_autenticado() -> APIClient:
 
 
 class ComponentesTurmaViewSetTest(SimpleTestCase):
-    @patch("apps.pedagogico.views.services" ".get_componentes_por_turmas_ue")
+    @patch("apps.pedagogico.views.services.get_componentes_por_turmas_ue")
     def test_200_repassa_turmas(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_BASE_CC]
         client = _cliente_autenticado()
@@ -106,7 +106,7 @@ class ComponentesTurmaAnoViewSetTest(SimpleTestCase):
 
 
 class ComponentesTurmaProgramaViewSetTest(SimpleTestCase):
-    @patch("apps.pedagogico.views.services" ".get_componentes_turmas_programa")
+    @patch("apps.pedagogico.views.services.get_componentes_turmas_programa")
     def test_200_retorna_lista(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_CC]
         client = _cliente_autenticado()
