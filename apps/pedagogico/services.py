@@ -53,7 +53,7 @@ def get_componentes_ue_anos(
     anos_escolares: list[str],
 ) -> Any:
     """Retorna componentes filtrados por anos escolares."""
-    params: dict[str, Any] = {"anosEscolares": anos_escolares}
+    params: dict[str, Any] = {"anos_escolares": anos_escolares}
     path = (
         f"{_BASE}/ues/"
         f"{ue_id}/modalidades/"
