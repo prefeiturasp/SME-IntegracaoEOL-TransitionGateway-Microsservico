@@ -25,7 +25,7 @@ class GetComponentesUeAnosTest(SimpleTestCase):
 
         mock_client.get.assert_called_once_with(
             f"{_BASE}/ues/UE001/modalidades/5/anos/2024",
-            params={"anosEscolares": ["1", "2"]},
+            params={"anos_escolares": ["1", "2"]},
         )
 
         self.assertEqual(result, [])

@@ -11,26 +11,26 @@ _PREFIX = "/api/v1/componentes-curriculares"
 
 _CC: dict[str, Any] = {
     "codigo": 1,
-    "codigoComponenteTerritorioSaber": None,
-    "codigoComponenteCurricularPai": None,
+    "codigo_componente_territorio_saber": None,
+    "codigo_componente_curricular_pai": None,
     "descricao": "Matematica",
     "regencia": False,
-    "planejamentoRegencia": False,
-    "territorioSaber": False,
-    "turmaCodigo": None,
-    "exibirComponenteEOL": True,
+    "planejamento_regencia": False,
+    "territorio_saber": False,
+    "turma_codigo": None,
+    "exibir_componente_eol": True,
     "professor": None,
-    "codigosTerritoriosAgrupamento": [],
+    "codigos_territorios_agrupamento": [],
 }
 
 _BASE_CC = {"codigo": 1, "descricao": "Matematica"}
 
 _GRADE = {
-    "codigoComponenteCurricular": 1,
-    "descricaoComponenteCurricular": "Matematica",
-    "codigoAnoTurma": "1",
-    "descricaoSerieEnsino": "1o Ano",
-    "codigoSerieEnsino": 1,
+    "codigo_componente_curricular": 1,
+    "descricao_componente_curricular": "Matematica",
+    "codigo_ano_turma": "1",
+    "descricao_serie_ensino": "1o Ano",
+    "codigo_serie_ensino": 1,
     "modalidade": 5,
 }
 
@@ -81,6 +81,11 @@ class GradeComponentesCurricularesViewSetTest(SimpleTestCase):
         resp = client.get(f"{_PREFIX}/ano-turma/ano-letivo/2024/")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.data[0]["codigoComponenteCurricular"],
+            1,
+        )
+        self.assertEqual(resp.data[0]["codigoAnoTurma"], "1")
         mock_svc.assert_called_once_with(2024)
 
 
@@ -96,6 +101,11 @@ class ComponentesTurmaAnoViewSetTest(SimpleTestCase):
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.data[0]["codigoComponenteTerritorioSaber"],
+            None,
+        )
+        self.assertEqual(resp.data[0]["planejamentoRegencia"], False)
 
         mock_svc.assert_called_once_with(
             ue_id="UE001",
@@ -114,6 +124,8 @@ class ComponentesTurmaProgramaViewSetTest(SimpleTestCase):
         resp = client.get(f"{_PREFIX}/ues/UE001/modalidades/5/anos/2024/")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data[0]["turmaCodigo"], None)
+        self.assertEqual(resp.data[0]["exibirComponenteEOL"], True)
 
         mock_svc.assert_called_once_with(
             ue_id="UE001",
