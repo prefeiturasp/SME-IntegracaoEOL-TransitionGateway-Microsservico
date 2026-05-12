@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.pedagogico",
     "apps.professores",
+    "apps.programasedu",
 ]
 
 MIDDLEWARE = [
@@ -85,6 +86,9 @@ SPECTACULAR_SETTINGS = {
         }
     },
     "SECURITY": [{"ApiKeyAuth": []}],
+    "SWAGGER_UI_SETTINGS": {
+        "syntaxHighlight": False,
+    },
 }
 
 SIDECAR_PEDAGOGICO_URL = os.getenv(
@@ -101,6 +105,14 @@ SIDECAR_PROFESSORES_URL = os.getenv(
 SIDECAR_PROFESSORES_API_KEY = os.getenv("SIDECAR_PROFESSORES_API_KEY", "")
 SIDECAR_PROFESSORES_API_KEY_HEADER = os.getenv(
     "SIDECAR_PROFESSORES_API_KEY_HEADER", "X-API-Key"
+)
+
+SIDECAR_PROGRAMASEDU_URL = os.getenv(
+    "SIDECAR_PROGRAMASEDU_URL", "http://localhost:9006"
+)
+SIDECAR_PROGRAMASEDU_API_KEY = os.getenv("SIDECAR_PROGRAMASEDU_API_KEY", "")
+SIDECAR_PROGRAMASEDU_API_KEY_HEADER = os.getenv(
+    "SIDECAR_PROGRAMASEDU_API_KEY_HEADER", "X-API-Key"
 )
 
 GATEWAY_TIMEOUT_SECONDS = int(os.getenv("GATEWAY_TIMEOUT_SECONDS", "10"))

@@ -33,6 +33,7 @@ ao microserviço correspondente. Os sidecars residem em repositórios próprios.
 │   ├── core/           # cliente HTTP, resiliência (lib dos sidecars), middleware
 │   └── pedagogico/     # domínio pedagógico: views, services, serializers
 │   └── professores/     # domínio professores: views, services, serializers
+│   └── programasedu/   # domínio programas educacionais: views, services, serializers
 ├── config/             # settings, urls, wsgi e autenticação do gateway
 ├── requirements/
 │   ├── base.txt        # dependências de produção
@@ -84,6 +85,17 @@ O gateway mapeia 4 rotas legadas cobertas pelo MS-Professores:
 | L3 Retorna booleano indicando se o professor é válido | EP-3 `GET /professores/{codigo_rf}/validade/` |
 | L4 Retorna o nome do professor correspondente ao RF informado | EP-4 `GET /professores/{rf_professor}/` |
 
+## Domínio programas educacionais
+
+O gateway mapeia 4 rotas legadas para os endpoints canônicos EP-02 a EP-05 do MS-ProgramasEdu. Os paths legados replicam o contrato do `AlunoController` do `SME-Pedagogico-API`, sob o prefixo `/api/alunos/`.
+
+| Legado | Endpoint canônico |
+|---|---|
+| L1 Turmas PAP por ano letivo e UE | EP-02 `GET /alunos/turmas-pap/{anoLetivo}/ues/{codigoEscola}` |
+| L2 Verificar quais alunos pertencem a turmas PAP | EP-03 `GET /alunos/alunos-pap/{anoLetivo}` |
+| L3 Alunos PAP do ano corrente | EP-04 `GET /alunos/pap/ano-corrente` |
+| L4 Alunos PAP por ano letivo | EP-05 `GET /alunos/pap/ano-letivo/{anoLetivo}` |
+
 ## Requisitos
 
 - Python 3.12+
@@ -128,6 +140,9 @@ Para rodar a suíte completa de testes e gerar o relatório de cobertura:
 | `SIDECAR_PROFESSORES_URL` | `http://localhost:9005` | URL do sidecar professores |
 | `SIDECAR_PROFESSORES_API_KEY` | — | API Key enviada ao sidecar professores |
 | `SIDECAR_PROFESSORES_API_KEY_HEADER` | `X-API-Key` | Nome do header de autenticação para o sidecar professores |
+| `SIDECAR_PROGRAMASEDU_URL` | `http://localhost:9006` | URL do sidecar de programas educacionais |
+| `SIDECAR_PROGRAMASEDU_API_KEY` | — | API Key enviada ao sidecar de programas educacionais |
+| `SIDECAR_PROGRAMASEDU_API_KEY_HEADER` | `X-API-Key` | Nome do header de autenticação para o sidecar de programas educacionais |
 
 **Elastic APM**
 

@@ -1,3 +1,5 @@
+"""Configuração do app de professores."""
+
 from django.apps import AppConfig
 
 

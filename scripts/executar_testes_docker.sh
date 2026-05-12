@@ -3,10 +3,10 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-docker compose -f docker-compose-dev.yml build gateway
+docker compose -f ../docker-compose-dev.yml build gateway
 
-docker compose -f docker-compose-dev.yml run --rm gateway \
+docker compose -f ../docker-compose-dev.yml run --rm gateway \
   python -m coverage run --source=apps manage.py test --no-input
 
-docker compose -f docker-compose-dev.yml run --rm gateway \
+docker compose -f ../docker-compose-dev.yml run --rm gateway \
   python -m coverage report --show-missing --fail-under=80

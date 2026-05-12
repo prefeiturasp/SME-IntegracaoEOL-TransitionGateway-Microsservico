@@ -83,13 +83,8 @@ def _cliente_autenticado() -> APIClient:
 class ComponentesFuncionarioComTurmaViewTest(SimpleTestCase):
     """Testes de GET L1 — componentes por turma com agrupamento."""
 
-    @patch(
-        "apps.pedagogico.views.services"
-        ".get_componentes_funcionario"
-    )
-    def test_200_repassa_flag_como_bool(
-        self, mock_svc: MagicMock
-    ) -> None:
+    @patch("apps.pedagogico.views.services" ".get_componentes_funcionario")
+    def test_200_repassa_flag_como_bool(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_CC]
         client = _cliente_autenticado()
 
@@ -110,34 +105,22 @@ class ComponentesFuncionarioComTurmaViewTest(SimpleTestCase):
 class ComponentesFuncionarioViewTest(SimpleTestCase):
     """Testes de GET L2 — componentes sem filtro de turma."""
 
-    @patch(
-        "apps.pedagogico.views.services"
-        ".get_componentes_funcionario"
-    )
+    @patch("apps.pedagogico.views.services" ".get_componentes_funcionario")
     def test_200_retorna_lista(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_CC]
         client = _cliente_autenticado()
 
-        resp = client.get(
-            f"{_PREFIX}/funcionarios/login1/perfis/P001/"
-        )
+        resp = client.get(f"{_PREFIX}/funcionarios/login1/perfis/P001/")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        mock_svc.assert_called_once_with(
-            login="login1", id_perfil="P001"
-        )
+        mock_svc.assert_called_once_with(login="login1", id_perfil="P001")
 
 
 class ComponentesPlanejamentoFuncionarioViewTest(SimpleTestCase):
     """Testes de GET L3 — componentes com planejamento de regência."""
 
-    @patch(
-        "apps.pedagogico.views.services"
-        ".get_componentes_funcionario"
-    )
-    def test_200_passa_planejamento_true(
-        self, mock_svc: MagicMock
-    ) -> None:
+    @patch("apps.pedagogico.views.services" ".get_componentes_funcionario")
+    def test_200_passa_planejamento_true(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_CC]
         client = _cliente_autenticado()
 
@@ -158,9 +141,7 @@ class ComponentesPlanejamentoFuncionarioViewTest(SimpleTestCase):
 class ComponentesRegenciaViewTest(SimpleTestCase):
     """Testes de GET L4 — componentes de regência por ano de turma."""
 
-    @patch(
-        "apps.pedagogico.views.services.get_componentes_regencia"
-    )
+    @patch("apps.pedagogico.views.services.get_componentes_regencia")
     def test_200_retorna_lista(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_REGENCIA]
         client = _cliente_autenticado()
@@ -191,14 +172,11 @@ class ValidarPapViewTest(SimpleTestCase):
 
 
 class ComponentesUeAnosEscolaresViewTest(SimpleTestCase):
-    """Testes de GET L6 — componentes por UE, modalidade, ano e anos escolares."""
+    """Testes de GET L6 — componentes por UE, modalidade,
+    ano e anos escolares."""
 
-    @patch(
-        "apps.pedagogico.views.services.get_componentes_ue_anos"
-    )
-    def test_200_repassa_anos_escolares(
-        self, mock_svc: MagicMock
-    ) -> None:
+    @patch("apps.pedagogico.views.services.get_componentes_ue_anos")
+    def test_200_repassa_anos_escolares(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_CC]
         client = _cliente_autenticado()
 
@@ -219,17 +197,12 @@ class ComponentesUeAnosEscolaresViewTest(SimpleTestCase):
 class ComponentesUeModalidadeViewTest(SimpleTestCase):
     """Testes de GET L7 — componentes de turmas programa."""
 
-    @patch(
-        "apps.pedagogico.views.services"
-        ".get_componentes_turmas_programa"
-    )
+    @patch("apps.pedagogico.views.services" ".get_componentes_turmas_programa")
     def test_200_retorna_lista(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_CC]
         client = _cliente_autenticado()
 
-        resp = client.get(
-            f"{_PREFIX}/ues/UE001/modalidades/5/anos/2024/"
-        )
+        resp = client.get(f"{_PREFIX}/ues/UE001/modalidades/5/anos/2024/")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         mock_svc.assert_called_once_with(
@@ -240,10 +213,7 @@ class ComponentesUeModalidadeViewTest(SimpleTestCase):
 class ComponentesPorTurmasUeViewTest(SimpleTestCase):
     """Testes de GET L8 — componentes por lista de turmas e UE."""
 
-    @patch(
-        "apps.pedagogico.views.services"
-        ".get_componentes_por_turmas_ue"
-    )
+    @patch("apps.pedagogico.views.services" ".get_componentes_por_turmas_ue")
     def test_200_repassa_turmas(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_BASE_CC]
         client = _cliente_autenticado()
@@ -261,13 +231,8 @@ class ComponentesPorTurmasUeViewTest(SimpleTestCase):
 class ComponentesPlanejamentoViewTest(SimpleTestCase):
     """Testes de GET L9 — componentes para planejamento."""
 
-    @patch(
-        "apps.pedagogico.views.services"
-        ".get_componentes_planejamento"
-    )
-    def test_200_repassa_codigos_turmas(
-        self, mock_svc: MagicMock
-    ) -> None:
+    @patch("apps.pedagogico.views.services" ".get_componentes_planejamento")
+    def test_200_repassa_codigos_turmas(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_CC]
         client = _cliente_autenticado()
 
@@ -276,26 +241,18 @@ class ComponentesPlanejamentoViewTest(SimpleTestCase):
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        mock_svc.assert_called_once_with(
-            codigo_turmas=["T001", "T002"]
-        )
+        mock_svc.assert_called_once_with(codigo_turmas=["T001", "T002"])
 
 
 class ComponentesRegularesViewTest(SimpleTestCase):
     """Testes de GET L10 — componentes sem pós-processamento."""
 
-    @patch(
-        "apps.pedagogico.views.services.get_componentes_brutos"
-    )
-    def test_200_repassa_codigos_turmas(
-        self, mock_svc: MagicMock
-    ) -> None:
+    @patch("apps.pedagogico.views.services.get_componentes_brutos")
+    def test_200_repassa_codigos_turmas(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_CC]
         client = _cliente_autenticado()
 
-        resp = client.get(
-            f"{_PREFIX}/turmas/regulares/?codigoTurmas=T001"
-        )
+        resp = client.get(f"{_PREFIX}/turmas/regulares/?codigoTurmas=T001")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         mock_svc.assert_called_once_with(codigo_turmas=["T001"])
@@ -304,9 +261,7 @@ class ComponentesRegularesViewTest(SimpleTestCase):
 class CatalogoComponentesViewTest(SimpleTestCase):
     """Testes de GET L11 — catálogo de componentes curriculares."""
 
-    @patch(
-        "apps.pedagogico.views.services.get_catalogo_componentes"
-    )
+    @patch("apps.pedagogico.views.services.get_catalogo_componentes")
     def test_200_retorna_lista(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_BASE_CC]
         client = _cliente_autenticado()
@@ -320,9 +275,7 @@ class CatalogoComponentesViewTest(SimpleTestCase):
 class DadosAulaTurmaViewTest(SimpleTestCase):
     """Testes de GET L12 — vigência de componentes por turma."""
 
-    @patch(
-        "apps.pedagogico.views.services.get_vigencia_componentes"
-    )
+    @patch("apps.pedagogico.views.services.get_vigencia_componentes")
     def test_200_repassa_query_params(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_VIGENCIA]
         client = _cliente_autenticado()
@@ -345,16 +298,12 @@ class DadosAulaTurmaViewTest(SimpleTestCase):
 class AnoTurmaAnoLetivoViewTest(SimpleTestCase):
     """Testes de GET L16 — grade curricular por ano letivo."""
 
-    @patch(
-        "apps.pedagogico.views.services.get_grade_curricular"
-    )
+    @patch("apps.pedagogico.views.services.get_grade_curricular")
     def test_200_retorna_grade(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_GRADE]
         client = _cliente_autenticado()
 
-        resp = client.get(
-            f"{_PREFIX}/ano-turma/ano-letivo/2024/"
-        )
+        resp = client.get(f"{_PREFIX}/ano-turma/ano-letivo/2024/")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         mock_svc.assert_called_once_with(2024)
@@ -383,8 +332,7 @@ class AgrupamentosCorrelacionadosViewTest(SimpleTestCase):
     """Testes de GET L13 — agrupamentos correlacionados."""
 
     @patch(
-        "apps.pedagogico.views.services"
-        ".get_agrupamentos_correlacionados"
+        "apps.pedagogico.views.services" ".get_agrupamentos_correlacionados"
     )
     def test_200_sem_data_base(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_AGRUPAMENTO]
@@ -398,8 +346,7 @@ class AgrupamentosCorrelacionadosViewTest(SimpleTestCase):
         mock_svc.assert_called_once_with(codigo=1, data_base=None)
 
     @patch(
-        "apps.pedagogico.views.services"
-        ".get_agrupamentos_correlacionados"
+        "apps.pedagogico.views.services" ".get_agrupamentos_correlacionados"
     )
     def test_200_com_data_base(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_AGRUPAMENTO]
@@ -423,9 +370,7 @@ class AgrupamentosCorrelacionadosLoteViewTest(SimpleTestCase):
         "apps.pedagogico.views.services"
         ".get_agrupamentos_correlacionados_lote"
     )
-    def test_200_repassa_ids_e_data_base(
-        self, mock_svc: MagicMock
-    ) -> None:
+    def test_200_repassa_ids_e_data_base(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_AGRUPAMENTO]
         client = _cliente_autenticado()
 

@@ -87,9 +87,7 @@ class GetComponentesUeAnosTest(SimpleTestCase):
     def test_chama_path_correto(self, mock_client: MagicMock) -> None:
         mock_client.get.return_value.json.return_value = []
 
-        result = services.get_componentes_ue_anos(
-            "UE001", 5, 2024, ["1", "2"]
-        )
+        result = services.get_componentes_ue_anos("UE001", 5, 2024, ["1", "2"])
 
         mock_client.get.assert_called_once_with(
             f"{_BASE}/ues/UE001/modalidades/5/anos/2024",
@@ -197,9 +195,7 @@ class GetVigenciaComponentesTest(SimpleTestCase):
     def test_com_semestre_inclui_param(self, mock_client: MagicMock) -> None:
         mock_client.get.return_value.json.return_value = []
 
-        services.get_vigencia_componentes(
-            "UE001", "2024", ["1"], semestre="1"
-        )
+        services.get_vigencia_componentes("UE001", "2024", ["1"], semestre="1")
 
         _, kwargs = mock_client.get.call_args
         self.assertEqual(kwargs["params"]["semestre"], "1")
