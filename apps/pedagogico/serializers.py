@@ -14,83 +14,50 @@ class ComponenteCurricularSerializer(serializers.Serializer):
     """DTO completo de componente curricular."""
 
     codigo = serializers.IntegerField()
-    codigoComponenteTerritorioSaber = serializers.IntegerField(allow_null=True)
-    codigoComponenteCurricularPai = serializers.IntegerField(allow_null=True)
+    codigoComponenteTerritorioSaber = serializers.IntegerField(
+        source="codigo_componente_territorio_saber", allow_null=True
+    )  # NOSONAR
+    codigoComponenteCurricularPai = serializers.IntegerField(
+        source="codigo_componente_curricular_pai", allow_null=True
+    )  # NOSONAR
     descricao = serializers.CharField()
     regencia = serializers.BooleanField()
-    planejamentoRegencia = serializers.BooleanField()
-    territorioSaber = serializers.BooleanField()
-    turmaCodigo = serializers.CharField(allow_null=True)
-    exibirComponenteEOL = serializers.BooleanField()
+    planejamentoRegencia = serializers.BooleanField(
+        source="planejamento_regencia"
+    )  # NOSONAR
+    territorioSaber = serializers.BooleanField(
+        source="territorio_saber"
+    )  # NOSONAR
+    turmaCodigo = serializers.CharField(
+        source="turma_codigo", allow_null=True
+    )  # NOSONAR
+    exibirComponenteEOL = serializers.BooleanField(
+        source="exibir_componente_eol"
+    )  # NOSONAR
     professor = serializers.CharField(allow_null=True)
     codigosTerritoriosAgrupamento = serializers.ListField(
+        source="codigos_territorios_agrupamento",
         child=serializers.IntegerField(),
         allow_empty=True,
-    )
-
-
-class ComponenteRegenciaSerializer(serializers.Serializer):
-    """DTO de componente de regência com dados de turma e atribuição."""
-
-    anoTurma = serializers.IntegerField(allow_null=True)
-    anoLetivo = serializers.IntegerField()
-    codigo = serializers.IntegerField()
-    codigoComponenteTerritorioSaber = serializers.IntegerField(allow_null=True)
-    descricao = serializers.CharField()
-    territorioSaber = serializers.BooleanField()
-    tipoEscola = serializers.IntegerField(allow_null=True)
-    turnoTurma = serializers.IntegerField()
-    componentePlanejamentoRegencia = serializers.BooleanField()
-    turmaCodigo = serializers.CharField(allow_null=True)
-    professor = serializers.CharField(allow_null=True)
-    inicioAtribuicao = serializers.DateTimeField(allow_null=True)
-    fimAtribuicao = serializers.DateTimeField(allow_null=True)
-
-
-class BooleanSerializer(serializers.Serializer):
-    """Wrapper de valor booleano."""
-
-    value = serializers.BooleanField()
-
-
-class ComponenteVigenciaSerializer(serializers.Serializer):
-    """DTO de vigência de componente em turma."""
-
-    componenteCurricularCodigo = serializers.CharField()
-    componenteCurricularDescricao = serializers.CharField()
-    turmaCodigo = serializers.CharField()
-    dataInicioTurma = serializers.DateTimeField(allow_null=True)
+    )  # NOSONAR
 
 
 class GradeCurricularSerializer(serializers.Serializer):
-    """DTO de grade curricular por série e modalidade."""
+    """DTO de grade curricular por ano letivo."""
 
-    codigoComponenteCurricular = serializers.IntegerField()
-    descricaoComponenteCurricular = serializers.CharField()
-    codigoAnoTurma = serializers.CharField()
-    descricaoSerieEnsino = serializers.CharField()
-    codigoSerieEnsino = serializers.IntegerField()
+    codigoComponenteCurricular = serializers.IntegerField(
+        source="codigo_componente_curricular"
+    )  # NOSONAR
+    descricaoComponenteCurricular = serializers.CharField(
+        source="descricao_componente_curricular"
+    )  # NOSONAR
+    codigoAnoTurma = serializers.CharField(
+        source="codigo_ano_turma", allow_null=True
+    )  # NOSONAR
+    descricaoSerieEnsino = serializers.CharField(
+        source="descricao_serie_ensino", allow_null=True
+    )  # NOSONAR
+    codigoSerieEnsino = serializers.IntegerField(
+        source="codigo_serie_ensino", allow_null=True
+    )  # NOSONAR
     modalidade = serializers.IntegerField()
-
-
-class ComponentesSemAtribuicaoSerializer(serializers.Serializer):
-    """DTO de componente sem atribuição docente."""
-
-    descricao = serializers.CharField()
-
-
-class AgrupamentoTerritorioSerializer(serializers.Serializer):
-    """DTO de agrupamento de Território do Saber."""
-
-    codigo = serializers.IntegerField()
-    codigoComponenteTerritorioSaber = serializers.IntegerField()
-    codigoComponenteCurricularPai = serializers.IntegerField(allow_null=True)
-    descricao = serializers.CharField()
-    regencia = serializers.BooleanField()
-    planejamentoRegencia = serializers.BooleanField()
-    territorioSaber = serializers.BooleanField()
-    turmaCodigo = serializers.CharField()
-    professor = serializers.CharField(allow_null=True)
-    codigosTerritoriosAgrupamento = serializers.ListField(
-        child=serializers.IntegerField()
-    )
