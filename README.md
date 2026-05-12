@@ -93,18 +93,9 @@ O gateway mapeia 4 rotas legadas cobertas pelo MS-Professores:
 
 ```bash
 cp .env.example .env
+make build
+make run
 ```
----
-
-## Executar Testes com Docker
-
-Para rodar a suíte completa de testes e gerar o relatório de cobertura:
-
-```bash
-./scripts/executar_testes_docker.sh
-```
-
----
 
 **Geral**
 
@@ -193,28 +184,35 @@ O agente APM (`elasticapm.contrib.django`) instrumenta automaticamente cada requ
 
 Os campos `transaction_id` e `trace_id` presentes em cada log permitem correlacionar um registro de log com a transação APM correspondente diretamente na interface do Kibana.
 
-## Execução local
+## Atalhos Make
 
-```bash
-docker compose -f docker-compose-dev.yml up --build
-```
+Use `make help` para listar todos os comandos disponíveis. Os principais:
 
-Sobe o `gateway` na porta `8000`. O sidecar de cada domínio deve ser iniciado
-a partir do seu próprio repositório e conectado via rede Docker compartilhada.
+**Ambiente**
 
-## Testes
+| Comando | Descrição |
+|---|---|
+| `make run` | Sobe o gateway em modo dev (porta 8002) |
+| `make build` | Rebuild da imagem dev |
+| `make stop` | Para e remove containers |
 
-```bash
-docker compose -f docker-compose-dev.yml run --rm gateway \
-  python -m coverage run manage.py test --no-input --settings=config.settings
-```
+**Testes**
 
-Para ver o relatório de cobertura após a execução:
+| Comando | Descrição |
+|---|---|
+| `make test` | Suite completa com cobertura ≥ 80% |
+| `make test-core` | Apenas `apps.core` |
+| `make test-pedagogico` | Apenas `apps.pedagogico` |
+| `make test-professores` | Apenas `apps.professores` |
+| `make test-institucional` | Apenas `apps.institucional` |
 
-```bash
-docker compose -f docker-compose-dev.yml run --rm gateway \
-  python -m coverage report
-```
+**Qualidade**
+
+| Comando | Descrição |
+|---|---|
+| `make lint` | ruff + black + isort + mypy |
+| `make coverage` | Relatório HTML em `docs/_cov/` |
+| `make schema` | Gera schema OpenAPI em `schema.yml` |
 
 ## Endpoints
 
