@@ -89,9 +89,9 @@ class DREDetalheView(APIView):
         ],
         responses={200: DRESerializer, 404: None},
     )
-    def get(self, _request: Request, codigoEolDRE: str) -> Response:
+    def get(self, _request: Request, codigo_eol_dre: str) -> Response:
         try:
-            data = services.get_dre(codigoEolDRE)
+            data = services.get_dre(codigo_eol_dre)
         except httpx.HTTPStatusError as exc:
             if exc.response.status_code == 404:
                 return Response(status=status.HTTP_404_NOT_FOUND)
@@ -124,9 +124,9 @@ class EscolasPorDREView(APIView):
         ],
         responses={200: EscolaResumoSerializer(many=True), 404: None},
     )
-    def get(self, _request: Request, codigoEolDRE: str) -> Response:
+    def get(self, _request: Request, codigo_eol_dre: str) -> Response:
         try:
-            data = services.get_escolas_por_dre(codigoEolDRE)
+            data = services.get_escolas_por_dre(codigo_eol_dre)
         except httpx.HTTPStatusError as exc:
             if exc.response.status_code == 404:
                 return Response(status=status.HTTP_404_NOT_FOUND)
@@ -163,9 +163,13 @@ class EscolasPorDREeTipoView(APIView):
         ],
         responses={200: EscolaResumoSerializer(many=True), 404: None},
     )
-    def get(self, _request: Request, codigoEolDRE: str, tipoEscola: str) -> Response:
+    def get(
+        self, _request: Request, codigo_eol_dre: str, tipo_escola: str
+    ) -> Response:
         try:
-            data = services.get_escolas_por_dre_e_tipo(codigoEolDRE, tipoEscola)
+            data = services.get_escolas_por_dre_e_tipo(
+                codigo_eol_dre, tipo_escola
+            )
         except httpx.HTTPStatusError as exc:
             if exc.response.status_code == 404:
                 return Response(status=status.HTTP_404_NOT_FOUND)
@@ -195,9 +199,9 @@ class EscolaDetalheView(APIView):
         ],
         responses={200: EscolaSerializer, 404: None},
     )
-    def get(self, _request: Request, codigoEscolaEol: str) -> Response:
+    def get(self, _request: Request, codigo_escola_eol: str) -> Response:
         try:
-            data = services.get_escola(codigoEscolaEol)
+            data = services.get_escola(codigo_escola_eol)
         except httpx.HTTPStatusError as exc:
             if exc.response.status_code == 404:
                 return Response(status=status.HTTP_404_NOT_FOUND)

@@ -19,17 +19,17 @@ urlpatterns = [
         name="dre-list",
     ),
     path(
-        "DREs/<str:codigoEolDRE>/",
+        "DREs/<str:codigo_eol_dre>/",
         DREDetalheView.as_view(),
         name="dre-detalhe",
     ),
     path(
-        "DREs/<str:codigoEolDRE>/escola/",
+        "DREs/<str:codigo_eol_dre>/escola/",
         EscolasPorDREView.as_view(),
         name="escolas-por-dre",
     ),
     path(
-        "DREs/<str:codigoEolDRE>/escolas/<str:tipoEscola>/",
+        "DREs/<str:codigo_eol_dre>/escolas/<str:tipo_escola>/",
         EscolasPorDREeTipoView.as_view(),
         name="escolas-por-dre-tipo",
     ),
@@ -40,7 +40,7 @@ urlpatterns = [
         name="escola-equipamentos",
     ),
     path(
-        "escolas/<str:codigoEscolaEol>/",
+        "escolas/<str:codigo_escola_eol>/",
         EscolaDetalheView.as_view(),
         name="escola-detalhe",
     ),
