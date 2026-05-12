@@ -80,7 +80,7 @@ class DREDetalheView(APIView):
         ),
         parameters=[
             OpenApiParameter(
-                name="codigoEolDRE",
+                name="codigo_eol_dre",
                 location=OpenApiParameter.PATH,
                 description="Código EOL da DRE",
                 required=True,
@@ -115,7 +115,7 @@ class EscolasPorDREView(APIView):
         ),
         parameters=[
             OpenApiParameter(
-                name="codigoEolDRE",
+                name="codigo_eol_dre",
                 location=OpenApiParameter.PATH,
                 description="Código EOL da DRE",
                 required=True,
@@ -147,14 +147,14 @@ class EscolasPorDREeTipoView(APIView):
         ),
         parameters=[
             OpenApiParameter(
-                name="codigoEolDRE",
+                name="codigo_eol_dre",
                 location=OpenApiParameter.PATH,
                 description="Código EOL da DRE",
                 required=True,
                 type=str,
             ),
             OpenApiParameter(
-                name="tipoEscola",
+                name="tipo_escola",
                 location=OpenApiParameter.PATH,
                 description="Código do tipo de escola",
                 required=True,
@@ -190,7 +190,7 @@ class EscolaDetalheView(APIView):
         ),
         parameters=[
             OpenApiParameter(
-                name="codigoEscolaEol",
+                name="codigo_escola_eol",
                 location=OpenApiParameter.PATH,
                 description="Código EOL da escola",
                 required=True,
