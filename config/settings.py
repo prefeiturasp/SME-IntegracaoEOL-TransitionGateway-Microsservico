@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     "apps.pedagogico",
     "apps.professores",
     "apps.programasedu",
+    "apps.institucional",
 ]
 
 MIDDLEWARE = [
@@ -105,6 +106,14 @@ SIDECAR_PROFESSORES_URL = os.getenv(
 SIDECAR_PROFESSORES_API_KEY = os.getenv("SIDECAR_PROFESSORES_API_KEY", "")
 SIDECAR_PROFESSORES_API_KEY_HEADER = os.getenv(
     "SIDECAR_PROFESSORES_API_KEY_HEADER", "X-API-Key"
+)
+
+SIDECAR_INSTITUCIONAL_URL = os.getenv(
+    "SIDECAR_INSTITUCIONAL_URL", "http://localhost:9006"
+)
+SIDECAR_INSTITUCIONAL_API_KEY = os.getenv("SIDECAR_INSTITUCIONAL_API_KEY", "")
+SIDECAR_INSTITUCIONAL_API_KEY_HEADER = os.getenv(
+    "SIDECAR_INSTITUCIONAL_API_KEY_HEADER", "X-API-Key"
 )
 
 SIDECAR_PROGRAMASEDU_URL = os.getenv(
