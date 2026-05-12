@@ -9,14 +9,16 @@ from apps.core.responses import Response, detail_response
 from apps.professores import services
 from apps.professores.serializers import NomeServidorSerializer
 
-_TAG = ["Professores"]
+_TAG_ACESSOS = ["Acessos"]
+_TAG_FUNCIONARIO = ["Funcionario"]
+_TAG_PROFESSOR = ["Professor"]
 
 
 class ProfessorView(APIView):
     """Nome do professor pelo RF."""
 
     @extend_schema(
-        tags=_TAG,
+        tags=_TAG_PROFESSOR,
         description=(
             "Retorna o nome do professor correspondente ao RF informado."
         ),
@@ -35,7 +37,7 @@ class ValidadeProfessorView(APIView):
     """Retorna booleano indicando se o professor é válido."""
 
     @extend_schema(
-        tags=_TAG,
+        tags=_TAG_PROFESSOR,
         description=("Retorna booleano indicando se o professor é válido."),
         responses={200: OpenApiTypes.BOOL},
     )
@@ -50,7 +52,7 @@ class FuncionarioAtivoView(APIView):
     """Retorna booleano indicando se o funcionário está ativo."""
 
     @extend_schema(
-        tags=_TAG,
+        tags=_TAG_ACESSOS,
         description=(
             "Retorna booleano indicando se o funcionário está ativo."
         ),
@@ -69,7 +71,7 @@ class NomeServidorView(APIView):
     """Retorna nome e CPF do servidor."""
 
     @extend_schema(
-        tags=_TAG,
+        tags=_TAG_FUNCIONARIO,
         description=("Retorna nome e CPF do servidor."),
         responses={200: NomeServidorSerializer, 204: None},
     )
