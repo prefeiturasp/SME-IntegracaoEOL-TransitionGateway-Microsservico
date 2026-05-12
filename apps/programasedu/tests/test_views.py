@@ -24,12 +24,12 @@ class ProgramasEduUrlsTest(SimpleTestCase):
     def test_preserva_kwargs_turmas_pap(self) -> None:
         match = resolve("/api/alunos/turmas-pap/2026/ues/123/")
         self.assertEqual(
-            match.kwargs, {"anoLetivo": 2026, "codigoEscola": "123"}
+            match.kwargs, {"ano_letivo": 2026, "codigo_escola": "123"}
         )
 
     def test_preserva_kwargs_alunos_pap(self) -> None:
         match = resolve("/api/alunos/alunos-pap/2026/")
-        self.assertEqual(match.kwargs, {"anoLetivo": 2026})
+        self.assertEqual(match.kwargs, {"ano_letivo": 2026})
 
     def test_preserva_kwargs_pap_ano_corrente(self) -> None:
         match = resolve("/api/alunos/pap/ano-corrente/")
@@ -37,7 +37,7 @@ class ProgramasEduUrlsTest(SimpleTestCase):
 
     def test_preserva_kwargs_pap_ano_letivo(self) -> None:
         match = resolve("/api/alunos/pap/ano-letivo/2026/")
-        self.assertEqual(match.kwargs, {"anoLetivo": 2026})
+        self.assertEqual(match.kwargs, {"ano_letivo": 2026})
 
 
 class ObterTurmasPapViewTest(SimpleTestCase):
@@ -71,7 +71,7 @@ class ObterTurmasPapViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": "E necessario informar o codigoEscola."},
+            {"detail": "E necessario informar o codigo_escola."},
         )
         mock_service.assert_not_called()
 
@@ -95,7 +95,7 @@ class VerificarAlunosPapViewTest(SimpleTestCase):
 
         resp = client.get(
             "/api/alunos/alunos-pap/2026/",
-            {"codigosAlunos": ["1", "2"]},
+            {"codigos_alunos": ["1", "2"]},
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -113,7 +113,7 @@ class VerificarAlunosPapViewTest(SimpleTestCase):
             resp.json(),
             {
                 "detail": (
-                    "E necessario informar ao menos um codigosAlunos."
+                    "E necessario informar ao menos um codigos_alunos."
                 )
             },
         )
