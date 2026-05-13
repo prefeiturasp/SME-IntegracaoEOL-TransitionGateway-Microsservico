@@ -26,7 +26,28 @@ _ESCOLA_RESUMO = {
 
 _ESCOLA = {**_ESCOLA_RESUMO}
 
-_EQUIPAMENTO = {"codigoEol": "019308", "nomeEscola": "EMEF TESTE", "tipo": "Computador", "quantidade": 10}
+_EQUIPAMENTO = {
+    "cd_equipamento": "108100",
+    "nm_exibicao_equipamento": "DRE - BT",
+    "nm_equipamento": "DIRETORIA REGIONAL DE EDUCACAO BUTANTA",
+    "cd_tp_equipamento": 3,
+    "dc_tp_equipamento": "UNIDADE ADMINISTRATIVA",
+    "cd_tp_escola": 0,
+    "dc_tipo_escola": "",
+    "sg_tp_escola": "",
+    "cd_diretoria_referencia": "108100",
+    "nm_diretoria_referencia": "DIRETORIA REGIONAL DE EDUCACAO BUTANTA",
+    "nm_exibicao_diretoria_referencia": "DRE - BT",
+    "cd_diretoria_portal": "108100",
+    "nm_diretoria_portal": "DIRETORIA REGIONAL DE EDUCACAO BUTANTA",
+    "nm_exibicao_diretoria_portal": "DRE - BT",
+    "cd_logradouro": 127140,
+    "logradouro": "RUA PADRE EUGÊNIO LOPES Nº 361",
+    "bairro": "VILA PROGREDIOR",
+    "codigoSubprefeitura": "50",
+    "nomeSubprefeitura": "BUTANTA",
+    "ehCeu": False,
+}
 
 
 class _UsuarioAutenticado:
