@@ -13,8 +13,8 @@ from apps.institucional.serializers import (
     EquipamentoSerializer,
 )
 
-_TAG_DRE = ["DREs"]
-_TAG_ESCOLA = ["Escolas"]
+_TAG_DRE = ["DiretoriaRegionalEducacao"]
+_TAG_ESCOLA = ["Escola"]
 
 # Sidecar retorna campos extras; filtramos para o contrato D05/D06.
 _ESCOLA_RESUMO_CAMPOS = {
@@ -248,4 +248,5 @@ class EquipamentosView(APIView):
             nome_escola=qp.get("nomeEscola"),
             codigo_eol=qp.get("codigoEol"),
         )
-        return Response(data)
+        serializer = EquipamentoSerializer(data, many=True)
+        return Response(serializer.data)
