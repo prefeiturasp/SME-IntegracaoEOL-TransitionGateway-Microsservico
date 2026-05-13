@@ -13,7 +13,7 @@ from apps.programasedu.serializers import (
     TurmaPapResumoSerializer,
 )
 
-_TAG = ["Programas Educacionais"]
+_TAG = ["Aluno"]
 
 
 class ObterTurmasPapView(APIView):

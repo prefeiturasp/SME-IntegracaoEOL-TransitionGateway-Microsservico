@@ -13,7 +13,7 @@ from apps.pedagogico.serializers import (
     GradeCurricularSerializer,
 )
 
-_TAG = ["Componentes Curriculares"]
+_TAG = ["ComponenteCurricular"]
 
 
 class ComponentesCurricularesViewSet(APIView):
