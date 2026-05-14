@@ -50,6 +50,12 @@ convention = "pep257"
 [tool.ruff.lint.pycodestyle]
 max-doc-length = 120
 
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
 [tool.mypy]
 python_version = "3.12"
 exclude = ".*/migrations/.*"
