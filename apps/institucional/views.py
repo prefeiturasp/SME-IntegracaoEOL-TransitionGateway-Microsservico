@@ -87,7 +87,7 @@ class DREDetalheView(APIView):
                 type=str,
             )
         ],
-        responses={200: DRESerializer, 404: None},
+        responses={200: DRESerializer(many=True), 404: None},
     )
     def get(self, _request: Request, codigo_eol_dre: str) -> Response:
         try:
@@ -96,10 +96,9 @@ class DREDetalheView(APIView):
             if exc.response.status_code == 404:
                 return Response(status=status.HTTP_404_NOT_FOUND)
             raise
-        item = data[0] if isinstance(data, list) and data else data
-        if not item:
+        if not data:
             return Response(status=status.HTTP_404_NOT_FOUND)
-        return Response(item)
+        return Response(data if isinstance(data, list) else [data])
 
 
 class EscolasPorDREView(APIView):
