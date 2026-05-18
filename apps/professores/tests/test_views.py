@@ -2,7 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
-from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth.models import User
 from django.test import SimpleTestCase
 from django.urls import resolve
 from rest_framework import status
@@ -11,7 +11,7 @@ from rest_framework.test import APIClient
 
 def _cliente_autenticado() -> APIClient:
     client = APIClient()
-    client.force_authenticate(user=AnonymousUser())
+    client.force_authenticate(user=User(username="test-user"))
     return client
 
 
