@@ -1,3 +1,5 @@
+"""Views do domínio institucional."""
+
 import httpx
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
@@ -8,9 +10,9 @@ from rest_framework.views import APIView
 from apps.institucional import services
 from apps.institucional.serializers import (
     DRESerializer,
+    EquipamentoSerializer,
     EscolaResumoSerializer,
     EscolaSerializer,
-    EquipamentoSerializer,
 )
 
 _TAG_DRE = ["DiretoriaRegionalEducacao"]
@@ -51,7 +53,7 @@ def _filtrar_escola_detalhe(item: dict) -> dict:
 
 
 class DREListView(APIView):
-    """D01 — Lista todas as DREs cadastradas no ETL institucional."""
+    """Lista Diretorias Regionais de Educação."""
 
     @extend_schema(
         tags=_TAG_DRE,
@@ -68,7 +70,7 @@ class DREListView(APIView):
 
 
 class DREDetalheView(APIView):
-    """D04 — Retorna dados de uma DRE específica pelo codigoEolDRE."""
+    """Retorna dados de uma Diretoria Regional de Educação."""
 
     @extend_schema(
         tags=_TAG_DRE,
@@ -102,7 +104,7 @@ class DREDetalheView(APIView):
 
 
 class EscolasPorDREView(APIView):
-    """D06 — Lista escolas vinculadas a uma DRE específica."""
+    """Lista escolas vinculadas a uma DRE."""
 
     @extend_schema(
         tags=_TAG_DRE,
@@ -134,7 +136,7 @@ class EscolasPorDREView(APIView):
 
 
 class EscolasPorDREeTipoView(APIView):
-    """D05 — Lista escolas de uma DRE filtradas por tipo de escola."""
+    """Lista escolas de uma DRE por tipo."""
 
     @extend_schema(
         tags=_TAG_DRE,
@@ -142,7 +144,8 @@ class EscolasPorDREeTipoView(APIView):
         description=(
             "Retorna lista de unidades educacionais vinculadas à DRE "
             "filtradas pelo tipo de escola informado.\n\n"
-            "Contrato D05: `GET /api/DREs/{codigoEolDRE}/escolas/{tipoEscola}`."
+            "Contrato D05: "
+            "`GET /api/DREs/{codigoEolDRE}/escolas/{tipoEscola}`."
         ),
         parameters=[
             OpenApiParameter(
@@ -177,7 +180,7 @@ class EscolasPorDREeTipoView(APIView):
 
 
 class EscolaDetalheView(APIView):
-    """E02 — Retorna dados de uma escola pelo codigoEscolaEol."""
+    """Retorna dados de uma escola."""
 
     @extend_schema(
         tags=_TAG_ESCOLA,
@@ -205,7 +208,7 @@ class EscolaDetalheView(APIView):
             if exc.response.status_code == 404:
                 return Response(status=status.HTTP_404_NOT_FOUND)
             raise
-        # Sidecar retorna array — extrai o primeiro item e filtra para o contrato E02.
+        # Sidecar retorna array; extrai o primeiro item para o contrato E02.
         item = data[0] if isinstance(data, list) and data else data
         if not item:
             return Response(status=status.HTTP_404_NOT_FOUND)
@@ -213,17 +216,45 @@ class EscolaDetalheView(APIView):
 
 
 _EQUIPAMENTOS_PARAMS = [
-    OpenApiParameter("codigosSubprefeitura", int, many=True, required=False, description="Lista de códigos de subprefeituras"),
-    OpenApiParameter("codigosDre", int, many=True, required=False, description="Lista de códigos de DREs"),
-    OpenApiParameter("tiposUnidade", int, many=True, required=False, description="Lista de códigos de tipo unidade educação"),
-    OpenApiParameter("tiposEscola", int, many=True, required=False, description="Lista de códigos de tipo escola"),
-    OpenApiParameter("nomeEscola", str, required=False, description="Nome da UE"),
-    OpenApiParameter("codigoEol", str, required=False, description="Código EOL da UE"),
+    OpenApiParameter(
+        "codigosSubprefeitura",
+        int,
+        many=True,
+        required=False,
+        description="Lista de códigos de subprefeituras",
+    ),
+    OpenApiParameter(
+        "codigosDre",
+        int,
+        many=True,
+        required=False,
+        description="Lista de códigos de DREs",
+    ),
+    OpenApiParameter(
+        "tiposUnidade",
+        int,
+        many=True,
+        required=False,
+        description="Lista de códigos de tipo unidade educação",
+    ),
+    OpenApiParameter(
+        "tiposEscola",
+        int,
+        many=True,
+        required=False,
+        description="Lista de códigos de tipo escola",
+    ),
+    OpenApiParameter(
+        "nomeEscola", str, required=False, description="Nome da UE"
+    ),
+    OpenApiParameter(
+        "codigoEol", str, required=False, description="Código EOL da UE"
+    ),
 ]
 
 
 class EquipamentosView(APIView):
-    """E25 — Lista equipamentos das unidades educacionais com filtros opcionais."""
+    """Lista equipamentos das unidades educacionais."""
 
     @extend_schema(
         tags=_TAG_ESCOLA,

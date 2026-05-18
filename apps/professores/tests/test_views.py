@@ -1,25 +1,22 @@
-"""Testes das views do domínio professores."""
+"""Valida as views do domínio de professores."""
 
 from unittest.mock import MagicMock, patch
 
+from django.contrib.auth.models import AnonymousUser
 from django.test import SimpleTestCase
 from django.urls import resolve
 from rest_framework import status
 from rest_framework.test import APIClient
 
 
-class _UsuarioAutenticado:
-    is_authenticated = True
-
-
 def _cliente_autenticado() -> APIClient:
     client = APIClient()
-    client.force_authenticate(user=_UsuarioAutenticado())
+    client.force_authenticate(user=AnonymousUser())
     return client
 
 
 class ProfessoresUrlsTest(SimpleTestCase):
-    """Testes dos nomes dos parametros nas rotas."""
+    """Valida os nomes dos parâmetros nas rotas."""
 
     def test_preserva_rf_professor(self) -> None:
         match = resolve("/api/professores/123456/")
@@ -43,7 +40,7 @@ class ProfessoresUrlsTest(SimpleTestCase):
 
 
 class ProfessorViewTest(SimpleTestCase):
-    """Testes de GET /api/professores/{rf_professor}/."""
+    """Valida a resposta da view de professor."""
 
     @patch("apps.professores.views.services.get_professor")
     def test_200_retorna_nome(self, mock_service: MagicMock) -> None:
@@ -77,7 +74,7 @@ class ProfessorViewTest(SimpleTestCase):
 
 
 class ValidadeProfessorViewTest(SimpleTestCase):
-    """Testes de GET /api/professores/{codigo_rf}/validade/."""
+    """Valida a resposta da view de validade do professor."""
 
     @patch("apps.professores.views.services.get_validade_professor")
     def test_200_retorna_booleano(self, mock_service: MagicMock) -> None:
@@ -103,7 +100,7 @@ class ValidadeProfessorViewTest(SimpleTestCase):
 
 
 class FuncionarioAtivoViewTest(SimpleTestCase):
-    """Testes de GET /api/acessos/funcionario-ativo/{registro_funcional}/."""
+    """Valida a resposta da view de funcionário ativo."""
 
     @patch("apps.professores.views.services.get_funcionario_ativo")
     def test_200_retorna_booleano(self, mock_service: MagicMock) -> None:
@@ -129,7 +126,7 @@ class FuncionarioAtivoViewTest(SimpleTestCase):
 
 
 class NomeServidorViewTest(SimpleTestCase):
-    """Testes de GET /api/funcionarios/nome-servidor/{registro_funcional}/."""
+    """Valida a resposta da view de nome do servidor."""
 
     @patch("apps.professores.views.services.get_nome_servidor")
     def test_200_retorna_nome_e_cpf(self, mock_service: MagicMock) -> None:

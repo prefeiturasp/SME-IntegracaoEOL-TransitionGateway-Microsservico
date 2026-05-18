@@ -1,4 +1,4 @@
-"""Testes das funções de service do domínio pedagógico."""
+"""Valida os serviços do domínio pedagógico."""
 
 from unittest.mock import MagicMock, patch
 
@@ -10,7 +10,7 @@ _BASE = "/api/v1/pedagogico/componentes-curriculares"
 
 
 class GetComponentesUeAnosTest(SimpleTestCase):
-    """Testes de services.get_componentes_ue_anos."""
+    """Valida a consulta de componentes por anos escolares."""
 
     @patch("apps.pedagogico.services._client")
     def test_chama_path_correto(self, mock_client: MagicMock) -> None:
@@ -32,7 +32,7 @@ class GetComponentesUeAnosTest(SimpleTestCase):
 
 
 class GetComponentesTurmasProgramaTest(SimpleTestCase):
-    """Testes de services.get_componentes_turmas_programa."""
+    """Valida a consulta de componentes de turmas programa."""
 
     @patch("apps.pedagogico.services._client")
     def test_chama_path_correto(self, mock_client: MagicMock) -> None:
@@ -52,7 +52,7 @@ class GetComponentesTurmasProgramaTest(SimpleTestCase):
 
 
 class GetComponentesPorTurmasUeTest(SimpleTestCase):
-    """Testes de services.get_componentes_por_turmas_ue."""
+    """Valida a consulta de componentes por turmas de uma UE."""
 
     @patch("apps.pedagogico.services._client")
     def test_chama_path_com_query_params(self, mock_client: MagicMock) -> None:
@@ -72,7 +72,7 @@ class GetComponentesPorTurmasUeTest(SimpleTestCase):
 
 
 class GetCatalogoComponentesTest(SimpleTestCase):
-    """Testes de services.get_componentes_curriculares."""
+    """Valida a consulta do catálogo de componentes curriculares."""
 
     @patch("apps.pedagogico.services._client")
     def test_chama_base_sem_params(
@@ -89,7 +89,7 @@ class GetCatalogoComponentesTest(SimpleTestCase):
 
 
 class GetGradeCurricularTest(SimpleTestCase):
-    """Testes de services.get_grade_curricular."""
+    """Valida a consulta da grade curricular."""
 
     @patch("apps.pedagogico.services._client")
     def test_chama_path_correto(

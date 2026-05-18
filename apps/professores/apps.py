@@ -4,7 +4,7 @@ from django.apps import AppConfig
 
 
 class ProfessoresConfig(AppConfig):
-    """App de tradução dos contratos legados de professores."""
+    """Configura o app de professores."""
 
     default_auto_field = "django.db.models.BigAutoField"
     name = "apps.professores"

@@ -1,4 +1,4 @@
-"""Rotas legado do pedagógico."""
+"""Rotas do domínio pedagógico."""
 
 from django.urls import path
 

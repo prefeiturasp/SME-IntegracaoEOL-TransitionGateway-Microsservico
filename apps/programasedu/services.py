@@ -1,4 +1,4 @@
-"""Chamadas ao sidecar de programas educacionais."""
+"""Serviços do domínio de programas educacionais."""
 
 from typing import Any
 
@@ -16,32 +16,49 @@ _client = ServiceClient(
 )
 
 
-# EP-02
 def listar_turmas_pap(ano_letivo: int, codigo_escola: str) -> Any:
-    """EP-02. Turmas PAP da UE no ano letivo."""
+    """Lista turmas PAP da UE no ano letivo.
+
+    Args:
+        ano_letivo: Ano letivo usado na consulta.
+        codigo_escola: Código da unidade educacional.
+
+    Returns:
+        Turmas PAP encontradas para a unidade educacional.
+    """
     return _client.get(
         f"{_BASE}/turmas-pap/{ano_letivo}/ues/{codigo_escola}"
     ).json()
 
 
-# EP-03
-def verificar_alunos_pap(
-    ano_letivo: int, codigos_alunos: list[str]
-) -> Any:
-    """EP-03. Filtra os alunos informados que estao em turmas PAP no ano."""
+def verificar_alunos_pap(ano_letivo: int, codigos_alunos: list[str]) -> Any:
+    """Verifica alunos vinculados a turmas PAP no ano letivo.
+
+    Args:
+        ano_letivo: Ano letivo usado na consulta.
+        codigos_alunos: Códigos dos alunos verificados.
+
+    Returns:
+        Alunos encontrados em turmas PAP.
+    """
     params: dict[str, Any] = {"codigos_alunos": codigos_alunos}
     return _client.get(
         f"{_BASE}/alunos-pap/{ano_letivo}", params=params
     ).json()
 
 
-# EP-04
 def listar_alunos_pap_ano_corrente() -> Any:
-    """EP-04. Todos os alunos PAP do ano corrente."""
+    """Lista alunos PAP do ano corrente."""
     return _client.get(f"{_BASE}/pap/ano-corrente").json()
 
 
-# EP-05
 def listar_alunos_pap_por_ano(ano_letivo: int) -> Any:
-    """EP-05. Todos os alunos PAP do ano letivo informado."""
+    """Lista alunos PAP do ano letivo informado.
+
+    Args:
+        ano_letivo: Ano letivo usado na consulta.
+
+    Returns:
+        Alunos PAP do ano letivo informado.
+    """
     return _client.get(f"{_BASE}/pap/ano-letivo/{ano_letivo}").json()
