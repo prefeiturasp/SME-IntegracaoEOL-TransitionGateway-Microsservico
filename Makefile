@@ -5,7 +5,7 @@ PYTEST_ARGS ?= --cov=apps --cov-report=term-missing --cov-fail-under=80
 
 .PHONY: run build stop \
         test test-core test-pedagogico test-professores test-institucional \
-        lint coverage schema help
+        lint coverage schema docs docs-clean help
 
 help:
 	@echo "Targets disponíveis:"
@@ -28,6 +28,7 @@ help:
 	@echo "    make lint             — ruff + black + isort + mypy"
 	@echo "    make coverage         — relatório HTML em docs/_cov/"
 	@echo "    make schema           — gera schema OpenAPI em schema.yml"
+	@echo "    make docs             — gera documentação Sphinx em docs/_build/html/"
 
 # ---------------------------------------------------------------------------
 # Ambiente
@@ -88,3 +89,10 @@ coverage:
 schema:
 	$(EXEC) python manage.py spectacular --file schema.yml
 	@echo "Schema gerado em schema.yml"
+
+docs:
+	$(RUN) sphinx-build -b html docs docs/_build/html
+	@echo "Documentação gerada em docs/_build/html/index.html"
+
+docs-clean:
+	rm -rf docs/_build

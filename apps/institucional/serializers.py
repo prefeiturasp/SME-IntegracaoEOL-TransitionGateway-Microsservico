@@ -1,14 +1,10 @@
-# Serializers de saída do domínio institucional no TransitionGateway.
-# Contratos extraídos diretamente dos contracts.py e views.py do sidecar
-# SME-IntegracaoEOL-Institucional-Microsservico — todos em camelCase,
-# espelhando exatamente o payload retornado pelo sidecar.
-# Campos snake_case anteriores foram removidos: o sidecar nunca os retornou.
+"""Serializers de saída do domínio institucional."""
 
 from rest_framework import serializers
 
 
 class DRESerializer(serializers.Serializer):
-    """DTO de DRE — contrato D01/D02/D04 do sidecar institucional."""
+    """Serializa dados de Diretoria Regional de Educação."""
 
     codigoDRE = serializers.CharField()
     nomeDRE = serializers.CharField()
@@ -16,7 +12,7 @@ class DRESerializer(serializers.Serializer):
 
 
 class EscolaResumoSerializer(serializers.Serializer):
-    """DTO de escola por DRE — contrato D05/D06 da API EOL."""
+    """Serializa o resumo de escola por DRE."""
 
     codigoEscola = serializers.CharField()
     nomeEscola = serializers.CharField()
@@ -30,7 +26,7 @@ class EscolaResumoSerializer(serializers.Serializer):
 
 
 class EscolaSerializer(serializers.Serializer):
-    """DTO de escola — contrato E02 da API EOL."""
+    """Serializa dados de escola."""
 
     codigoEscola = serializers.CharField()
     nomeEscola = serializers.CharField()
@@ -39,11 +35,13 @@ class EscolaSerializer(serializers.Serializer):
     codigoDRE = serializers.CharField()
     tipoEscola = serializers.CharField()
     siglaTipoEscola = serializers.CharField()
-    codigoTipoEscola = serializers.IntegerField(allow_null=True, required=False)
+    codigoTipoEscola = serializers.IntegerField(
+        allow_null=True, required=False
+    )
 
 
 class EquipamentoSerializer(serializers.Serializer):
-    """DTO de equipamento — contrato E25 da API EOL."""
+    """Serializa dados de equipamento escolar."""
 
     cd_equipamento = serializers.CharField()
     nm_exibicao_equipamento = serializers.CharField(allow_null=True)

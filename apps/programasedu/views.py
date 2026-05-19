@@ -1,4 +1,4 @@
-"""Views do dominio programas educacionais - contratos legados L1-L4."""
+"""Views do domínio de programas educacionais."""
 
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -94,9 +94,7 @@ class VerificarSeAlunosSaoTurmaProgramaPapView(APIView):
         data = services.verificar_alunos_pap(
             ano_letivo=ano_letivo, codigos_alunos=codigos_alunos
         )
-        return Response(
-            AlunoTurmaProgramaPapSerializer(data, many=True).data
-        )
+        return Response(AlunoTurmaProgramaPapSerializer(data, many=True).data)
 
 
 class ObterAlunosPapAnoCorrenteView(APIView):

@@ -1,4 +1,4 @@
-"""Views do domínio pedagógico - contratos legados."""
+"""Views do domínio pedagógico."""
 
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -17,7 +17,7 @@ _TAG = ["ComponenteCurricular"]
 
 
 class ComponentesCurricularesViewSet(APIView):
-    """Catálogo completo de componentes curriculares ativos."""
+    """Lista componentes curriculares ativos."""
 
     @extend_schema(
         tags=_TAG,
@@ -33,7 +33,7 @@ class ComponentesCurricularesViewSet(APIView):
 
 
 class ComponentesTurmaViewSet(APIView):
-    """Componentes das turmas de uma UE."""
+    """Lista componentes das turmas de uma UE."""
 
     @extend_schema(
         tags=_TAG,
@@ -64,7 +64,7 @@ class ComponentesTurmaViewSet(APIView):
 
 
 class ComponentesTurmaProgramaViewSet(APIView):
-    """Componentes de turmas programa por UE, modalidade e ano letivo."""
+    """Lista componentes de turmas programa."""
 
     @extend_schema(
         tags=_TAG,
@@ -98,7 +98,7 @@ class ComponentesTurmaProgramaViewSet(APIView):
 
 
 class ComponentesTurmaAnoViewSet(APIView):
-    """Componentes por UE, modalidade, ano letivo e anos escolares."""
+    """Lista componentes por anos escolares."""
 
     @extend_schema(
         tags=_TAG,
@@ -141,7 +141,7 @@ class ComponentesTurmaAnoViewSet(APIView):
 
 
 class GradeComponentesCurricularesViewSet(APIView):
-    """Grade componente curricular completa por ano letivo."""
+    """Retorna a grade curricular por ano letivo."""
 
     @extend_schema(
         tags=_TAG,

@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 
 class NomeServidorSerializer(serializers.Serializer):
-    """Serializer responsável pelo retorno do nome e CPF do servidor."""
+    """Serializa dados de identificação do servidor."""
 
     nome = serializers.CharField()
     cpf = serializers.CharField()

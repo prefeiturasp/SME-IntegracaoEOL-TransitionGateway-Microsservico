@@ -1,4 +1,4 @@
-"""Testes de responses do core."""
+"""Valida as factories de resposta do core."""
 
 from django.test import SimpleTestCase
 from rest_framework import status
@@ -8,7 +8,7 @@ from apps.core.responses import Response, detail_response
 
 
 class DetailResponseTest(SimpleTestCase):
-    """Testes de `detail_response`."""
+    """Valida respostas padronizadas com campo detail."""
 
     def test_exporta_response_do_drf(self) -> None:
         self.assertIs(Response, DrfResponse)

@@ -1,4 +1,4 @@
-"""Testes das funções de service do domínio professores."""
+"""Valida os serviços do domínio de professores."""
 
 from unittest.mock import MagicMock, patch
 
@@ -8,7 +8,7 @@ from apps.professores import services
 
 
 class GetProfessorTest(SimpleTestCase):
-    """Testes de services.get_professor."""
+    """Valida a extração do nome do professor."""
 
     @patch.object(services._client, "get")
     def test_chama_path_correto(self, mock_get: MagicMock) -> None:
@@ -68,7 +68,7 @@ class GetProfessorTest(SimpleTestCase):
 
 
 class GetValidadeProfessorTest(SimpleTestCase):
-    """Testes de services.get_validade_professor."""
+    """Valida a consulta de validade do professor."""
 
     @patch("apps.professores.services._client")
     def test_chama_path_correto(self, mock_client: MagicMock) -> None:
@@ -85,7 +85,7 @@ class GetValidadeProfessorTest(SimpleTestCase):
 
 
 class GetFuncionarioAtivoTest(SimpleTestCase):
-    """Testes de services.get_funcionario_ativo."""
+    """Valida a consulta de funcionário ativo."""
 
     @patch("apps.professores.services._client")
     def test_chama_path_correto(self, mock_client: MagicMock) -> None:
@@ -102,7 +102,7 @@ class GetFuncionarioAtivoTest(SimpleTestCase):
 
 
 class GetNomeServidorTest(SimpleTestCase):
-    """Testes de services.get_nome_servidor."""
+    """Valida a consulta de nome do servidor."""
 
     @patch.object(services._client, "get")
     def test_chama_path_correto(self, mock_get: MagicMock) -> None:

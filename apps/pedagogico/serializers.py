@@ -4,14 +4,14 @@ from rest_framework import serializers
 
 
 class ComponenteBaseSerializer(serializers.Serializer):
-    """DTO mínimo com código e descrição."""
+    """Serializa o resumo de componente curricular."""
 
     codigo = serializers.IntegerField()
     descricao = serializers.CharField()
 
 
 class ComponenteCurricularSerializer(serializers.Serializer):
-    """DTO completo de componente curricular."""
+    """Serializa dados completos de componente curricular."""
 
     codigo = serializers.IntegerField()
     codigoComponenteTerritorioSaber = serializers.IntegerField(
@@ -43,7 +43,7 @@ class ComponenteCurricularSerializer(serializers.Serializer):
 
 
 class GradeCurricularSerializer(serializers.Serializer):
-    """DTO de grade curricular por ano letivo."""
+    """Serializa dados da grade curricular por ano letivo."""
 
     codigoComponenteCurricular = serializers.IntegerField(
         source="codigo_componente_curricular"

@@ -1,4 +1,4 @@
-"""Comunicação HTTP do gateway com os sidecars."""
+"""Comunicação HTTP com serviços externos."""
 
 from __future__ import annotations
 
@@ -11,10 +11,13 @@ from apps.core.logging_context import get_request_id
 
 
 class ServiceClient:
-    """Cliente HTTP do gateway — timeout simples, sem retry nem breaker.
+    """Executa chamadas HTTP para serviços externos.
 
-    Resiliência é responsabilidade do sidecar de cada domínio.
-    O gateway interpreta 502/503 do sidecar para degradação parcial.
+    Args:
+        base_url: URL base do serviço externo.
+        dominio: Nome do domínio associado ao cliente.
+        api_key: Chave de autenticação enviada ao serviço externo.
+        api_key_header: Nome do header usado para enviar a chave.
     """
 
     def __init__(
@@ -39,6 +42,15 @@ class ServiceClient:
         return headers
 
     def get(self, path: str, params: dict | None = None) -> httpx.Response:
+        """Executa uma requisição GET.
+
+        Args:
+            path: Caminho relativo da requisição.
+            params: Parâmetros de query enviados na requisição.
+
+        Returns:
+            Resposta HTTP recebida do serviço externo.
+        """
         with httpx.Client(timeout=settings.GATEWAY_TIMEOUT_SECONDS) as client:
             return client.get(
                 f"{self.base_url}{path}",
@@ -53,6 +65,16 @@ class ServiceClient:
         payload: dict | list | None = None,
         params: dict | None = None,
     ) -> httpx.Response:
+        """Executa uma requisição POST.
+
+        Args:
+            path: Caminho relativo da requisição.
+            payload: Corpo JSON enviado na requisição.
+            params: Parâmetros de query enviados na requisição.
+
+        Returns:
+            Resposta HTTP recebida do serviço externo.
+        """
         with httpx.Client(timeout=settings.GATEWAY_TIMEOUT_SECONDS) as client:
             return client.post(
                 f"{self.base_url}{path}",
@@ -63,7 +85,14 @@ class ServiceClient:
             )
 
     def json_or_none(self, resp: httpx.Response) -> Any:
-        """Retorna JSON ou None para respostas sem conteúdo."""
+        """Retorna JSON ou None para respostas sem conteúdo.
+
+        Args:
+            resp: Resposta HTTP que será convertida.
+
+        Returns:
+            Corpo da resposta como JSON, texto ou `None`.
+        """
         if resp.status_code == 204 or not resp.content:
             return None
         try:
@@ -72,6 +101,11 @@ class ServiceClient:
             return resp.text.strip() or None
 
     def is_healthy(self) -> bool:
+        """Verifica se o serviço externo responde ao health check.
+
+        Returns:
+            `True` quando o serviço responde sem erro de servidor.
+        """
         try:
             timeout = settings.GATEWAY_TIMEOUT_SECONDS
             with httpx.Client(timeout=timeout) as client:
