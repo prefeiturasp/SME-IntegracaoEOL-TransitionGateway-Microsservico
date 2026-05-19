@@ -1,4 +1,4 @@
-"""Mapeamento das rotas legadas do domínio professores."""
+"""Rotas do domínio de professores."""
 
 from django.urls import path
 

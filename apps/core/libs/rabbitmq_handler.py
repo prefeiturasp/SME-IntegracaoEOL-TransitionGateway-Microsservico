@@ -12,12 +12,7 @@ import pika.exceptions
 
 
 class RabbitMQHandler(logging.Handler):
-    """Envia cada log record como mensagem JSON para uma fila RabbitMQ.
-
-    Reconecta automaticamente quando a conexão é perdida.
-    Falhas de publicação são silenciadas para não interromper a aplicação.
-    Guard de re-entrância por thread evita recursão quando o pika loga.
-    """
+    """Publica registros de log em uma fila RabbitMQ."""
 
     def __init__(
         self,

@@ -1,4 +1,4 @@
-"""Testes unitários de ServiceClient.json_or_none."""
+"""Valida a conversão de respostas HTTP em dados Python."""
 
 from unittest.mock import MagicMock
 
@@ -15,7 +15,7 @@ def _make_client() -> ServiceClient:
 
 
 class JsonOrNoneTest(SimpleTestCase):
-    """Testes do método ServiceClient.json_or_none."""
+    """Valida respostas com JSON, texto e corpo vazio."""
 
     def setUp(self) -> None:
         self.svc = _make_client()

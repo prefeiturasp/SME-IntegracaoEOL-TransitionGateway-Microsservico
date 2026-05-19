@@ -1,4 +1,4 @@
-"""Views do domínio professores - contratos legados."""
+"""Views do domínio de professores."""
 
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
@@ -15,7 +15,7 @@ _TAG_PROFESSOR = ["Professor"]
 
 
 class ProfessorView(APIView):
-    """Nome do professor pelo RF."""
+    """Retorna o nome do professor pelo RF."""
 
     @extend_schema(
         tags=_TAG_PROFESSOR,

@@ -1,4 +1,4 @@
-"""Factories de respostas HTTP reutilizaveis."""
+"""Fábricas de respostas HTTP reutilizáveis."""
 
 from rest_framework.response import Response
 

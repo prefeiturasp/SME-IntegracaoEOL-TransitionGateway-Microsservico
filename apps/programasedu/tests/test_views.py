@@ -1,25 +1,22 @@
-"""Testes das views do dominio programasedu."""
+"""Valida as views do domínio de programas educacionais."""
 
 from unittest.mock import MagicMock, patch
 
+from django.contrib.auth.models import User
 from django.test import SimpleTestCase
 from django.urls import resolve
 from rest_framework import status
 from rest_framework.test import APIClient
 
 
-class _UsuarioAutenticado:
-    is_authenticated = True
-
-
 def _cliente_autenticado() -> APIClient:
     client = APIClient()
-    client.force_authenticate(user=_UsuarioAutenticado())
+    client.force_authenticate(user=User(username="test-user"))
     return client
 
 
 class ProgramasEduUrlsTest(SimpleTestCase):
-    """Testes dos nomes dos parametros nas rotas."""
+    """Valida os nomes dos parâmetros nas rotas."""
 
     def test_preserva_kwargs_turmas_pap(self) -> None:
         match = resolve("/api/alunos/turmas-pap/2026/ues/123/")
@@ -41,13 +38,11 @@ class ProgramasEduUrlsTest(SimpleTestCase):
 
 
 class ObterTurmasPapViewTest(SimpleTestCase):
-    """Testes de GET /api/alunos/turmas-pap/{ano_letivo}/ues/{codigo_escola}/."""
+    """Valida a resposta da view de turmas PAP."""
 
     @patch("apps.programasedu.views.services.listar_turmas_pap")
     def test_200(self, mock_service: MagicMock) -> None:
-        mock_service.return_value = [
-            {"codigo_turma": "X", "turma_nome": "1A"}
-        ]
+        mock_service.return_value = [{"codigo_turma": "X", "turma_nome": "1A"}]
         client = _cliente_autenticado()
 
         resp = client.get("/api/alunos/turmas-pap/2026/ues/123/")
@@ -77,7 +72,7 @@ class ObterTurmasPapViewTest(SimpleTestCase):
 
 
 class VerificarAlunosPapViewTest(SimpleTestCase):
-    """Testes de GET /api/alunos/alunos-pap/{ano_letivo}/."""
+    """Valida a resposta da view de verificação de alunos PAP."""
 
     @patch("apps.programasedu.views.services.verificar_alunos_pap")
     def test_200_com_codigos_alunos_repetidos(
@@ -111,20 +106,14 @@ class VerificarAlunosPapViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {
-                "detail": (
-                    "E necessario informar ao menos um codigos_alunos."
-                )
-            },
+            {"detail": ("E necessario informar ao menos um codigos_alunos.")},
         )
 
 
 class ObterAlunosPapAnoCorrenteViewTest(SimpleTestCase):
-    """Testes de GET /api/alunos/pap/ano-corrente/."""
+    """Valida a resposta da view de alunos PAP do ano corrente."""
 
-    @patch(
-        "apps.programasedu.views.services.listar_alunos_pap_ano_corrente"
-    )
+    @patch("apps.programasedu.views.services.listar_alunos_pap_ano_corrente")
     def test_200(self, mock_service: MagicMock) -> None:
         mock_service.return_value = []
         client = _cliente_autenticado()
@@ -136,7 +125,7 @@ class ObterAlunosPapAnoCorrenteViewTest(SimpleTestCase):
 
 
 class ObterAlunosPapPorAnoLetivoViewTest(SimpleTestCase):
-    """Testes de GET /api/alunos/pap/ano-letivo/{ano_letivo}/."""
+    """Valida a resposta da view de alunos PAP por ano letivo."""
 
     @patch("apps.programasedu.views.services.listar_alunos_pap_por_ano")
     def test_200(self, mock_service: MagicMock) -> None:

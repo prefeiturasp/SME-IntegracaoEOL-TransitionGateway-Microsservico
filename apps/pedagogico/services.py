@@ -1,4 +1,4 @@
-"""Chamadas ao sidecar pedagógico."""
+"""Serviços do domínio pedagógico."""
 
 from typing import Any
 
@@ -25,7 +25,15 @@ def get_componentes_por_turmas_ue(
     ue_id: str,
     turmas: list[str],
 ) -> Any:
-    """Retorna componentes curriculares das turmas de uma UE."""
+    """Retorna componentes curriculares das turmas de uma UE.
+
+    Args:
+        ue_id: Código da unidade educacional.
+        turmas: Códigos das turmas usadas no filtro.
+
+    Returns:
+        Componentes curriculares das turmas informadas.
+    """
     params: dict[str, Any] = {"turmas": turmas}
 
     return _client.get(
@@ -39,7 +47,16 @@ def get_componentes_turmas_programa(
     modalidade: int,
     ano_letivo: int,
 ) -> Any:
-    """Retorna componentes de turmas programa por UE e modalidade."""
+    """Retorna componentes de turmas programa.
+
+    Args:
+        ue_id: Código da unidade educacional.
+        modalidade: Modalidade de ensino usada no filtro.
+        ano_letivo: Ano letivo usado no filtro.
+
+    Returns:
+        Componentes das turmas programa encontradas.
+    """
     return _client.get(
         f"{_BASE}/ues/{ue_id}/modalidades/"
         f"{modalidade}/anos/{ano_letivo}/turmas-programa"
@@ -52,7 +69,17 @@ def get_componentes_ue_anos(
     ano_letivo: int,
     anos_escolares: list[str],
 ) -> Any:
-    """Retorna componentes filtrados por anos escolares."""
+    """Retorna componentes filtrados por anos escolares.
+
+    Args:
+        ue_id: Código da unidade educacional.
+        modalidade: Modalidade de ensino usada no filtro.
+        ano_letivo: Ano letivo usado no filtro.
+        anos_escolares: Anos escolares usados no filtro.
+
+    Returns:
+        Componentes curriculares encontrados para os filtros informados.
+    """
     params: dict[str, Any] = {"anos_escolares": anos_escolares}
     path = (
         f"{_BASE}/ues/"
@@ -67,5 +94,12 @@ def get_componentes_ue_anos(
 
 
 def get_grade_curricular(ano_letivo: int) -> Any:
-    """Retorna a grade curricular completa do ano letivo."""
+    """Retorna a grade curricular completa do ano letivo.
+
+    Args:
+        ano_letivo: Ano letivo usado na consulta.
+
+    Returns:
+        Grade curricular do ano letivo informado.
+    """
     return _client.get(f"{_BASE}/grade-curricular/{ano_letivo}").json()
