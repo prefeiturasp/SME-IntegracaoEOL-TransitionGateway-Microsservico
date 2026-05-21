@@ -3,7 +3,7 @@
 from unittest.mock import MagicMock, patch
 
 import httpx
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AnonymousUser
 from django.test import SimpleTestCase
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -58,7 +58,7 @@ _EQUIPAMENTO = {
 def _cliente_autenticado() -> APIClient:
     """Cria um APIClient autenticado para os testes."""
     client = APIClient()
-    client.force_authenticate(user=User(username="test-user"))
+    client.force_authenticate(user=AnonymousUser())
     return client
 
 
