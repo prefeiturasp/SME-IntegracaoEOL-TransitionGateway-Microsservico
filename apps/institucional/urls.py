@@ -5,10 +5,10 @@ from django.urls import path
 from apps.institucional.views import (
     DREDetalheView,
     DREListView,
+    EquipamentosView,
     EscolaDetalheView,
     EscolasPorDREeTipoView,
     EscolasPorDREView,
-    EquipamentosView,
 )
 
 urlpatterns = [

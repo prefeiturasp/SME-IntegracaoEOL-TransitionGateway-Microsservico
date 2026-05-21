@@ -36,6 +36,18 @@ class ProgramasEduUrlsTest(SimpleTestCase):
         match = resolve("/api/alunos/pap/ano-letivo/2026/")
         self.assertEqual(match.kwargs, {"ano_letivo": 2026})
 
+    def test_preserva_kwargs_componentes_turmas_programa(self) -> None:
+        match = resolve(
+            "/api/alunos/123/turmas-programa/2026/componentes-curriculares/"
+        )
+        self.assertEqual(
+            match.kwargs, {"codigo_aluno": "123", "ano_letivo": 2026}
+        )
+
+    def test_preserva_kwargs_srm_paee_aluno(self) -> None:
+        match = resolve("/api/alunos/srm-paee/aluno/123/")
+        self.assertEqual(match.kwargs, {"codigo_aluno": "123"})
+
 
 class ObterTurmasPapViewTest(SimpleTestCase):
     """Valida a resposta da view de turmas PAP."""
@@ -145,3 +157,82 @@ class ObterAlunosPapPorAnoLetivoViewTest(SimpleTestCase):
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         mock_service.assert_called_once_with(ano_letivo=2026)
+
+
+class ObterComponentesCurricularesTurmasProgramaAlunoViewTest(SimpleTestCase):
+    """Valida a resposta da view de componentes do aluno."""
+
+    @patch(
+        "apps.programasedu.views.services."
+        "listar_componentes_turmas_programa_aluno"
+    )
+    def test_200(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [
+            {
+                "codigo_aluno": "1",
+                "codigo_turma": 100,
+                "codigo_componente_curricular": 50,
+                "nome_componente_curricular": "MATEMATICA",
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/alunos/123/turmas-programa/2026/componentes-curriculares/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.json(),
+            [
+                {
+                    "codigoAluno": "1",
+                    "codigoTurma": 100,
+                    "codigoComponenteCurricular": 50,
+                    "nomeComponenteCurricular": "MATEMATICA",
+                }
+            ],
+        )
+        mock_service.assert_called_once_with(
+            codigo_aluno="123", ano_letivo=2026
+        )
+
+
+class ObterDadosSrmPaeeAlunoViewTest(SimpleTestCase):
+    """Valida a resposta da view de SRM/PAEE colaborativo do aluno."""
+
+    @patch("apps.programasedu.views.services.obter_dados_srm_paee_aluno")
+    def test_200(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [
+            {
+                "codigo_turma": 100,
+                "codigo_escola": "U1",
+                "turno": "MANHA",
+                "componente": "SRM",
+                "codigo_componente": 999,
+                "codigo_aluno": 1,
+                "situacao_matricula": "ATIVA",
+                "data_matricula": "2026-02-01T11:51:46.820000",
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/alunos/srm-paee/aluno/123/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.json(),
+            [
+                {
+                    "codigoTurma": 100,
+                    "codigoEscola": "U1",
+                    "turno": "MANHA",
+                    "componente": "SRM",
+                    "codigoComponente": 999,
+                    "codigoAluno": 1,
+                    "situacaoMatricula": "ATIVA",
+                    "dataMatricula": "2026-02-01T11:51:46.82",
+                }
+            ],
+        )
+        mock_service.assert_called_once_with(codigo_aluno="123")

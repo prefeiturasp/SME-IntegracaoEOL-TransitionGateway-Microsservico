@@ -62,3 +62,35 @@ def listar_alunos_pap_por_ano(ano_letivo: int) -> Any:
         Alunos PAP do ano letivo informado.
     """
     return _client.get(f"{_BASE}/pap/ano-letivo/{ano_letivo}").json()
+
+
+def listar_componentes_turmas_programa_aluno(
+    codigo_aluno: str, ano_letivo: int
+) -> Any:
+    """Lista componentes curriculares das turmas de programa do aluno.
+
+    Args:
+        codigo_aluno: Código do aluno consultado.
+        ano_letivo: Ano letivo usado na consulta.
+
+    Returns:
+        Componentes curriculares das turmas de programa do aluno.
+    """
+    resp = _client.get(
+        f"{_BASE}/{codigo_aluno}/turmas-programa/{ano_letivo}"
+        "/componentes-curriculares"
+    )
+    return _client.json_or_none(resp) or []
+
+
+def obter_dados_srm_paee_aluno(codigo_aluno: str) -> Any:
+    """Retorna dados de SRM/PAEE colaborativo do aluno.
+
+    Args:
+        codigo_aluno: Código do aluno consultado.
+
+    Returns:
+        Dados de SRM/PAEE colaborativo do aluno.
+    """
+    resp = _client.get(f"{_BASE}/srm-paee/aluno/{codigo_aluno}")
+    return _client.json_or_none(resp) or []

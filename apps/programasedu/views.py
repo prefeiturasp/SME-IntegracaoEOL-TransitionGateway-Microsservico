@@ -10,6 +10,8 @@ from apps.programasedu import services
 from apps.programasedu.serializers import (
     AlunoTurmaPapSerializer,
     AlunoTurmaProgramaPapSerializer,
+    ComponenteTurmaProgramaAlunoSerializer,
+    DadosSrmPaeeColaborativoSerializer,
     TurmaPapResumoSerializer,
 )
 
@@ -138,3 +140,73 @@ class ObterAlunosPapPorAnoLetivoView(APIView):
     def get(self, _request: Request, ano_letivo: int) -> Response:
         data = services.listar_alunos_pap_por_ano(ano_letivo=ano_letivo)
         return Response(AlunoTurmaPapSerializer(data, many=True).data)
+
+
+class ObterComponentesCurricularesTurmasProgramaAlunoView(APIView):
+    """Lista componentes curriculares das turmas de programa do aluno."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Componentes das turmas de programa do aluno",
+        description=(
+            "Retorna os componentes curriculares das turmas de programa "
+            "em que o aluno está matriculado no ano letivo informado."
+        ),
+        parameters=[
+            OpenApiParameter(
+                "codigo_aluno",
+                OpenApiTypes.STR,
+                OpenApiParameter.PATH,
+                required=True,
+                description="Código EOL do aluno.",
+            ),
+            OpenApiParameter(
+                "ano_letivo",
+                OpenApiTypes.INT,
+                OpenApiParameter.PATH,
+                required=True,
+                description="Ano letivo de referência.",
+            ),
+        ],
+        responses={200: ComponenteTurmaProgramaAlunoSerializer(many=True)},
+    )
+    def get(
+        self, _request: Request, codigo_aluno: str, ano_letivo: int
+    ) -> Response:
+        if not codigo_aluno.strip():
+            return detail_response("E necessario informar o codigo_aluno.")
+        data = services.listar_componentes_turmas_programa_aluno(
+            codigo_aluno=codigo_aluno, ano_letivo=ano_letivo
+        )
+        return Response(
+            ComponenteTurmaProgramaAlunoSerializer(data, many=True).data
+        )
+
+
+class ObterDadosSrmPaeeAlunoView(APIView):
+    """Retorna dados de SRM/PAEE colaborativo do aluno."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Dados de SRM/PAEE colaborativo do aluno",
+        description=(
+            "Retorna os dados de SRM/PAEE colaborativo do aluno informado."
+        ),
+        parameters=[
+            OpenApiParameter(
+                "codigo_aluno",
+                OpenApiTypes.STR,
+                OpenApiParameter.PATH,
+                required=True,
+                description="Código EOL do aluno.",
+            ),
+        ],
+        responses={200: DadosSrmPaeeColaborativoSerializer(many=True)},
+    )
+    def get(self, _request: Request, codigo_aluno: str) -> Response:
+        if not codigo_aluno.strip():
+            return detail_response("E necessario informar o codigo_aluno.")
+        data = services.obter_dados_srm_paee_aluno(codigo_aluno=codigo_aluno)
+        return Response(
+            DadosSrmPaeeColaborativoSerializer(data, many=True).data
+        )

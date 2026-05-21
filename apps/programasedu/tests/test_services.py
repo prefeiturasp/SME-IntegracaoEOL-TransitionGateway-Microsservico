@@ -75,3 +75,70 @@ class ListarAlunosPapPorAnoTest(SimpleTestCase):
         mock_get.assert_called_once_with(
             "/api/v1/programasedu/alunos/pap/ano-letivo/2026"
         )
+
+
+class ListarComponentesTurmasProgramaAlunoTest(SimpleTestCase):
+    """Valida a consulta de componentes das turmas de programa do aluno."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_correto(self, mock_get: MagicMock) -> None:
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[]"
+        mock_resp.json.return_value = []
+        mock_get.return_value = mock_resp
+
+        services.listar_componentes_turmas_programa_aluno(
+            codigo_aluno="123", ano_letivo=2026
+        )
+
+        mock_get.assert_called_once_with(
+            "/api/v1/programasedu/alunos/123/turmas-programa/2026"
+            "/componentes-curriculares"
+        )
+
+    @patch.object(services._client, "get")
+    def test_retorna_lista_vazia_quando_corpo_vazio(
+        self, mock_get: MagicMock
+    ) -> None:
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b""
+        mock_get.return_value = mock_resp
+
+        result = services.listar_componentes_turmas_programa_aluno(
+            codigo_aluno="7410182", ano_letivo=2026
+        )
+
+        self.assertEqual(result, [])
+
+
+class ObterDadosSrmPaeeAlunoTest(SimpleTestCase):
+    """Valida a consulta de dados de SRM/PAEE colaborativo do aluno."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_correto(self, mock_get: MagicMock) -> None:
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[]"
+        mock_resp.json.return_value = []
+        mock_get.return_value = mock_resp
+
+        services.obter_dados_srm_paee_aluno(codigo_aluno="123")
+
+        mock_get.assert_called_once_with(
+            "/api/v1/programasedu/alunos/srm-paee/aluno/123"
+        )
+
+    @patch.object(services._client, "get")
+    def test_retorna_lista_vazia_quando_corpo_vazio(
+        self, mock_get: MagicMock
+    ) -> None:
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b""
+        mock_get.return_value = mock_resp
+
+        result = services.obter_dados_srm_paee_aluno(codigo_aluno="7410182")
+
+        self.assertEqual(result, [])

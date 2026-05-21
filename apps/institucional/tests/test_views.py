@@ -63,7 +63,9 @@ def _cliente_autenticado() -> APIClient:
 def _httpx_404() -> httpx.HTTPStatusError:
     mock_response = MagicMock()
     mock_response.status_code = 404
-    return httpx.HTTPStatusError("404", request=MagicMock(), response=mock_response)
+    return httpx.HTTPStatusError(
+        "404", request=MagicMock(), response=mock_response
+    )
 
 
 class DREListViewTest(SimpleTestCase):
@@ -151,7 +153,9 @@ class EquipamentosViewTest(SimpleTestCase):
     @patch("apps.institucional.views.services.get_equipamentos")
     def test_200_com_filtro_codigo_eol(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_EQUIPAMENTO]
-        resp = _cliente_autenticado().get("/api/escolas/equipamentos/?codigoEol=019716")
+        resp = _cliente_autenticado().get(
+            "/api/escolas/equipamentos/?codigoEol=019716"
+        )
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         mock_svc.assert_called_once_with(
             codigos_subprefeitura=None,
