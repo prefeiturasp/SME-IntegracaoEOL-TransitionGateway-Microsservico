@@ -17,11 +17,7 @@ _client = ServiceClient(
 
 
 def get_componentes_curriculares() -> Any:
-    """Retorna o catálogo completo de componentes curriculares.
-
-    Returns:
-        Catálogo completo de componentes curriculares.
-    """
+    """Retorna o catálogo completo de componentes curriculares."""
     return _client.get(_BASE).json()
 
 

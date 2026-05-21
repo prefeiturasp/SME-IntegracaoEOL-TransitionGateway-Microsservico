@@ -48,11 +48,7 @@ def verificar_alunos_pap(ano_letivo: int, codigos_alunos: list[str]) -> Any:
 
 
 def listar_alunos_pap_ano_corrente() -> Any:
-    """Lista alunos PAP do ano corrente.
-
-    Returns:
-        Alunos PAP vinculados a turmas no ano corrente.
-    """
+    """Lista alunos PAP do ano corrente."""
     return _client.get(f"{_BASE}/pap/ano-corrente").json()
 
 

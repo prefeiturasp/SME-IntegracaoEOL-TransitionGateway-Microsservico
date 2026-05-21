@@ -12,11 +12,7 @@ service_ctx: ContextVar[str] = ContextVar("service", default="unknown")
 
 
 def get_request_id() -> str:
-    """Retorna o request ID atual ou '-' se não definido.
-
-    Returns:
-        Request ID corrente ou `-` quando não há valor definido.
-    """
+    """Retorna o request ID atual ou '-' se não definido."""
     return request_id_ctx.get() or "-"
 
 

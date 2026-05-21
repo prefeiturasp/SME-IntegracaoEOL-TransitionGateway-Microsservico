@@ -19,9 +19,6 @@ _client = ServiceClient(
 def get_dres() -> Any:
     """Lista Diretorias Regionais de Educação.
 
-    Returns:
-        Diretorias Regionais de Educação cadastradas.
-
     Raises:
         httpx.HTTPStatusError: Quando o serviço externo retorna status
             HTTP de erro.
