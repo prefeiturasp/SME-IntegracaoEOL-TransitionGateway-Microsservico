@@ -1,12 +1,16 @@
+"""Valida as views do domínio institucional."""
+
 from unittest.mock import MagicMock, patch
 
 import httpx
+from django.contrib.auth.models import User
 from django.test import SimpleTestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
 _DRE = {"codigoDRE": "BT", "nomeDRE": "DRE BUTANTA", "siglaDRE": "DRE-BT"}
 
+# Escola retornada pelo sidecar, com campos extras a serem filtrados.
 _ESCOLA_RESUMO = {
     "codigoEscola": "019308",
     "nomeEscola": "EMEF TESTE",
@@ -24,6 +28,7 @@ _ESCOLA_RESUMO = {
     "codigoIntegracao": None,
 }
 
+# Detalhe de escola (reaproveita os dados do resumo).
 _ESCOLA = {**_ESCOLA_RESUMO}
 
 _EQUIPAMENTO = {
@@ -50,23 +55,25 @@ _EQUIPAMENTO = {
 }
 
 
-class _UsuarioAutenticado:
-    is_authenticated = True
-
-
 def _cliente_autenticado() -> APIClient:
+    """Cria um APIClient autenticado para os testes."""
     client = APIClient()
-    client.force_authenticate(user=_UsuarioAutenticado())
+    client.force_authenticate(user=User(username="test-user"))
     return client
 
 
 def _httpx_404() -> httpx.HTTPStatusError:
+    """Cria um HTTPStatusError simulando resposta 404 do sidecar."""
     mock_response = MagicMock()
     mock_response.status_code = 404
-    return httpx.HTTPStatusError("404", request=MagicMock(), response=mock_response)
+    return httpx.HTTPStatusError(
+        "404", request=MagicMock(), response=mock_response
+    )
 
 
 class DREListViewTest(SimpleTestCase):
+    """Valida a view de listagem de DREs."""
+
     @patch("apps.institucional.views.services.get_dres")
     def test_200_retorna_lista(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_DRE]
@@ -83,6 +90,8 @@ class DREListViewTest(SimpleTestCase):
 
 
 class DREDetalheViewTest(SimpleTestCase):
+    """Valida a view de detalhe de DRE."""
+
     @patch("apps.institucional.views.services.get_dre")
     def test_200_repassa_codigo_dre(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_DRE]
@@ -104,6 +113,8 @@ class DREDetalheViewTest(SimpleTestCase):
 
 
 class EscolasPorDREViewTest(SimpleTestCase):
+    """Valida a view de escolas por DRE."""
+
     @patch("apps.institucional.views.services.get_escolas_por_dre")
     def test_200_repassa_codigo_dre(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_ESCOLA_RESUMO]
@@ -119,6 +130,8 @@ class EscolasPorDREViewTest(SimpleTestCase):
 
 
 class EscolaDetalheViewTest(SimpleTestCase):
+    """Valida a view de detalhe de escola."""
+
     @patch("apps.institucional.views.services.get_escola")
     def test_200_repassa_codigo_escola(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = _ESCOLA
@@ -134,6 +147,8 @@ class EscolaDetalheViewTest(SimpleTestCase):
 
 
 class EquipamentosViewTest(SimpleTestCase):
+    """Valida a view de equipamentos."""
+
     @patch("apps.institucional.views.services.get_equipamentos")
     def test_200_sem_filtros(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_EQUIPAMENTO]
@@ -151,7 +166,9 @@ class EquipamentosViewTest(SimpleTestCase):
     @patch("apps.institucional.views.services.get_equipamentos")
     def test_200_com_filtro_codigo_eol(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_EQUIPAMENTO]
-        resp = _cliente_autenticado().get("/api/escolas/equipamentos/?codigoEol=019716")
+        resp = _cliente_autenticado().get(
+            "/api/escolas/equipamentos/?codigoEol=019716"
+        )
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         mock_svc.assert_called_once_with(
             codigos_subprefeitura=None,

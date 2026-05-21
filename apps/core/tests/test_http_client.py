@@ -8,6 +8,7 @@ from apps.core.http_client import ServiceClient
 
 
 def _make_client() -> ServiceClient:
+    """Cria um ServiceClient apontando para um sidecar fictício."""
     return ServiceClient(
         base_url="https://fake-sidecar",
         dominio="test",

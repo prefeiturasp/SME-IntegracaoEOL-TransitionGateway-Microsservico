@@ -15,7 +15,11 @@ logger = logging.getLogger(__name__)
 
 
 class RequestIDMiddleware:
-    """Lê X-Request-ID do header (ou gera um UUID) e propaga na resposta."""
+    """Lê X-Request-ID do header (ou gera um UUID) e propaga na resposta.
+
+    Args:
+        get_response: Próximo callable da cadeia de middlewares.
+    """
 
     def __init__(
         self, get_response: Callable[[HttpRequest], HttpResponse]
@@ -23,6 +27,14 @@ class RequestIDMiddleware:
         self.get_response = get_response
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
+        """Propaga o X-Request-ID na requisição e na resposta.
+
+        Args:
+            request: Requisição HTTP recebida.
+
+        Returns:
+            Resposta HTTP com o header `X-Request-ID` preenchido.
+        """
         request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
         request.request_id = request_id  # type: ignore[attr-defined]
         token = request_id_ctx.set(request_id)
@@ -35,7 +47,11 @@ class RequestIDMiddleware:
 
 
 class LoggingContextMiddleware:
-    """Seta contexto de logging e registra cada requisição HTTP."""
+    """Seta contexto de logging e registra cada requisição HTTP.
+
+    Args:
+        get_response: Próximo callable da cadeia de middlewares.
+    """
 
     SERVICE_NAME = "transitiongateway"
 
@@ -45,6 +61,14 @@ class LoggingContextMiddleware:
         self.get_response = get_response
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
+        """Define o contexto de serviço e registra a requisição.
+
+        Args:
+            request: Requisição HTTP recebida.
+
+        Returns:
+            Resposta HTTP produzida pela cadeia de middlewares.
+        """
         service_token = service_ctx.set(self.SERVICE_NAME)
         start = time.monotonic()
         response: HttpResponse | None = None

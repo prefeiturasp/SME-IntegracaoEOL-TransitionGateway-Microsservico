@@ -10,6 +10,7 @@ from rest_framework.test import APIClient
 
 
 def _cliente_autenticado() -> APIClient:
+    """Cria um APIClient autenticado para os testes."""
     client = APIClient()
     client.force_authenticate(user=User(username="test-user"))
     return client
@@ -42,6 +43,7 @@ class ObterTurmasPapViewTest(SimpleTestCase):
 
     @patch("apps.programasedu.views.services.listar_turmas_pap")
     def test_200(self, mock_service: MagicMock) -> None:
+        """Serializa as turmas PAP e repassa os parâmetros."""
         mock_service.return_value = [{"codigo_turma": "X", "turma_nome": "1A"}]
         client = _cliente_autenticado()
 

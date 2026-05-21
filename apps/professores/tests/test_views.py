@@ -10,6 +10,7 @@ from rest_framework.test import APIClient
 
 
 def _cliente_autenticado() -> APIClient:
+    """Cria um APIClient autenticado para os testes."""
     client = APIClient()
     client.force_authenticate(user=User(username="test-user"))
     return client

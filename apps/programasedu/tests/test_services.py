@@ -12,6 +12,7 @@ class ListarTurmasPapTest(SimpleTestCase):
 
     @patch.object(services._client, "get")
     def test_chama_path_correto(self, mock_get: MagicMock) -> None:
+        """Monta o path de turmas PAP por ano letivo e UE."""
         mock_resp = MagicMock()
         mock_resp.json.return_value = [{"codigoTurma": "X", "turmaNome": "1A"}]
         mock_get.return_value = mock_resp
@@ -50,6 +51,7 @@ class ListarAlunosPapAnoCorrenteTest(SimpleTestCase):
 
     @patch.object(services._client, "get")
     def test_chama_path_correto(self, mock_get: MagicMock) -> None:
+        """Monta o path de alunos PAP do ano corrente."""
         mock_resp = MagicMock()
         mock_resp.json.return_value = []
         mock_get.return_value = mock_resp
@@ -66,6 +68,7 @@ class ListarAlunosPapPorAnoTest(SimpleTestCase):
 
     @patch.object(services._client, "get")
     def test_chama_path_correto(self, mock_get: MagicMock) -> None:
+        """Monta o path de alunos PAP por ano letivo."""
         mock_resp = MagicMock()
         mock_resp.json.return_value = []
         mock_get.return_value = mock_resp
