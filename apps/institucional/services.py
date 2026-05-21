@@ -28,6 +28,20 @@ def get_dres() -> Any:
     return resp.json()
 
 
+def get_dres_por_codigos(codigos: list[str]) -> Any:
+    """Filtra Diretorias Regionais de Educação por lista de códigos.
+
+    Args:
+        codigos: Lista de códigos EOL de DREs.
+
+    Returns:
+        DREs correspondentes aos códigos informados.
+    """
+    resp = _client.post(f"{_BASE}/dres/", payload=codigos)
+    resp.raise_for_status()
+    return _client.json_or_none(resp)
+
+
 def get_dre(codigo_dre: str) -> Any:
     """Retorna dados de uma Diretoria Regional de Educação.
 
@@ -42,6 +56,20 @@ def get_dre(codigo_dre: str) -> Any:
             HTTP de erro.
     """
     resp = _client.get(f"{_BASE}/dres/{codigo_dre}/")
+    resp.raise_for_status()
+    return resp.json()
+
+
+def get_subprefeituras_por_dre(codigo_dre: str) -> Any:
+    """Lista subprefeituras vinculadas a uma Diretoria Regional de Educação.
+
+    Args:
+        codigo_dre: Código da Diretoria Regional de Educação.
+
+    Returns:
+        Subprefeituras vinculadas à DRE informada.
+    """
+    resp = _client.get(f"{_BASE}/dres/{codigo_dre}/subprefeituras/")
     resp.raise_for_status()
     return resp.json()
 
@@ -84,6 +112,34 @@ def get_escolas_por_dre_e_tipo(codigo_dre: str, tipo_escola: str) -> Any:
     return resp.json()
 
 
+def get_ues_por_dre(codigo_dre: str) -> Any:
+    """Lista códigos de UEs vinculadas a uma Diretoria Regional de Educação.
+
+    Args:
+        codigo_dre: Código da Diretoria Regional de Educação.
+
+    Returns:
+        Lista de códigos de UEs da DRE informada.
+    """
+    resp = _client.get(f"{_BASE}/dres/{codigo_dre}/ues/")
+    resp.raise_for_status()
+    return resp.json()
+
+
+def get_unidades_por_dre(codigo_dre: str) -> Any:
+    """Lista unidades administrativas vinculadas a uma DRE.
+
+    Args:
+        codigo_dre: Código da Diretoria Regional de Educação.
+
+    Returns:
+        Unidades administrativas da DRE informada.
+    """
+    resp = _client.get(f"{_BASE}/dres/{codigo_dre}/unidades/")
+    resp.raise_for_status()
+    return resp.json()
+
+
 def get_escola(codigo_escola: str) -> Any:
     """Retorna dados de uma escola.
 
@@ -98,6 +154,27 @@ def get_escola(codigo_escola: str) -> Any:
             HTTP de erro.
     """
     resp = _client.get(f"{_BASE}/escolas/{codigo_escola}/")
+    resp.raise_for_status()
+    return resp.json()
+
+
+def get_dados_escola(codigo_escola: str) -> Any:
+    """Retorna dados completos de uma escola.
+
+    Args:
+        codigo_escola: Código EOL da escola.
+
+    Returns:
+        Dados completos da escola encontrada.
+    """
+    resp = _client.get(f"{_BASE}/escolas/dados/{codigo_escola}/")
+    resp.raise_for_status()
+    return _client.json_or_none(resp)
+
+
+def get_tipos_escolas() -> Any:
+    """Lista tipos de escola cadastrados."""
+    resp = _client.get(f"{_BASE}/escolas/tiposEscolas/")
     resp.raise_for_status()
     return resp.json()
 

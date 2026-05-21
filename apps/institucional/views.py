@@ -10,15 +10,18 @@ from rest_framework.views import APIView
 from apps.institucional import services
 from apps.institucional.serializers import (
     DRESerializer,
+    DadosEscolaSerializer,
     EquipamentoSerializer,
+    EscolaPorDreETipoSerializer,
     EscolaResumoSerializer,
     EscolaSerializer,
+    SubprefeiturasSerializer,
+    TipoEscolaSerializer,
 )
 
 _TAG_DRE = ["DiretoriaRegionalEducacao"]
 _TAG_ESCOLA = ["Escola"]
 
-# Sidecar retorna campos extras; filtramos para o contrato D05/D06.
 _ESCOLA_RESUMO_CAMPOS = {
     "codigoEscola",
     "nomeEscola",
@@ -31,7 +34,6 @@ _ESCOLA_RESUMO_CAMPOS = {
     "nomeSubprefeitura",
 }
 
-# Campos do contrato E02 da API EOL.
 _ESCOLA_DETALHE_CAMPOS = {
     "codigoEscola",
     "nomeEscola",
@@ -43,6 +45,35 @@ _ESCOLA_DETALHE_CAMPOS = {
     "codigoTipoEscola",
 }
 
+_ESCOLA_POR_DRE_TIPO_CAMPOS = {
+    "codigoEscola",
+    "nomeEscola",
+    "codigoDRE",
+}
+
+_DADOS_ESCOLA_CAMPOS = {
+    "nomeDRE",
+    "siglaDRE",
+    "codigoDRE",
+    "codigoINEP",
+    "siglaTipoEscola",
+    "nome",
+    "nomeExibicao",
+    "codigo",
+    "tipoUnidade",
+    "email",
+    "telefone",
+    "tipoLogradouro",
+    "logradouro",
+    "numero",
+    "bairro",
+    "cep",
+    "municipio",
+    "uf",
+    "tipoUnidadeAdm",
+    "descTipoUnidadeAdm",
+}
+
 
 def _filtrar_escola_resumo(item: dict) -> dict:
     return {k: v for k, v in item.items() if k in _ESCOLA_RESUMO_CAMPOS}
@@ -50,6 +81,14 @@ def _filtrar_escola_resumo(item: dict) -> dict:
 
 def _filtrar_escola_detalhe(item: dict) -> dict:
     return {k: v for k, v in item.items() if k in _ESCOLA_DETALHE_CAMPOS}
+
+
+def _filtrar_escola_por_dre_tipo(item: dict) -> dict:
+    return {k: v for k, v in item.items() if k in _ESCOLA_POR_DRE_TIPO_CAMPOS}
+
+
+def _filtrar_dados_escola(item: dict) -> dict:
+    return {k: v for k, v in item.items() if k in _DADOS_ESCOLA_CAMPOS}
 
 
 class DREListView(APIView):
@@ -67,6 +106,24 @@ class DREListView(APIView):
     )
     def get(self, _request: Request) -> Response:
         return Response(services.get_dres())
+
+    @extend_schema(
+        tags=_TAG_DRE,
+        summary="Filtra DREs por lista de códigos",
+        description=(
+            "Retorna Diretorias Regionais de Educação correspondentes "
+            "à lista de códigos EOL informada no corpo da requisição.\n\n"
+            "Contrato D02: `POST /api/DREs`."
+        ),
+        request=DRESerializer(many=True),
+        responses={200: DRESerializer(many=True), 204: None},
+    )
+    def post(self, request: Request) -> Response:
+        codigos = request.data
+        data = services.get_dres_por_codigos(codigos)
+        if not data:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(data)
 
 
 class DREDetalheView(APIView):
@@ -135,6 +192,38 @@ class EscolasPorDREView(APIView):
         return Response([_filtrar_escola_resumo(e) for e in data])
 
 
+class SubprefeiturasPorDREView(APIView):
+    """Lista subprefeituras vinculadas à DRE."""
+
+    @extend_schema(
+        tags=_TAG_DRE,
+        summary="Subprefeituras de uma DRE",
+        description=(
+            "Retorna lista de subprefeituras vinculadas à Diretoria "
+            "Regional de Educação informada.\n\n"
+            "Contrato D07: `GET /api/DREs/{dreCodigo}/subprefeituras`."
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="dre_codigo",
+                location=OpenApiParameter.PATH,
+                description="Código da DRE",
+                required=True,
+                type=str,
+            )
+        ],
+        responses={200: SubprefeiturasSerializer(many=True), 404: None},
+    )
+    def get(self, _request: Request, dre_codigo: str) -> Response:
+        try:
+            data = services.get_subprefeituras_por_dre(dre_codigo)
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+            raise
+        return Response(data)
+
+
 class EscolasPorDREeTipoView(APIView):
     """Lista escolas de uma DRE por tipo."""
 
@@ -163,7 +252,7 @@ class EscolasPorDREeTipoView(APIView):
                 type=str,
             ),
         ],
-        responses={200: EscolaResumoSerializer(many=True), 404: None},
+        responses={200: EscolaPorDreETipoSerializer(many=True), 404: None},
     )
     def get(
         self, _request: Request, codigo_eol_dre: str, tipo_escola: str
@@ -176,7 +265,124 @@ class EscolasPorDREeTipoView(APIView):
             if exc.response.status_code == 404:
                 return Response(status=status.HTTP_404_NOT_FOUND)
             raise
-        return Response([_filtrar_escola_resumo(e) for e in data])
+        return Response([_filtrar_escola_por_dre_tipo(e) for e in data])
+
+
+class UesPorDREView(APIView):
+    """Lista códigos de UEs vinculadas à DRE."""
+
+    @extend_schema(
+        tags=_TAG_DRE,
+        summary="Códigos de UEs de uma DRE",
+        description=(
+            "Retorna lista de códigos de unidades educacionais vinculadas "
+            "à Diretoria Regional de Educação informada.\n\n"
+            "Contrato D08: `GET /api/DREs/{dreCodigo}/ues`."
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="dre_codigo",
+                location=OpenApiParameter.PATH,
+                description="Código da DRE",
+                required=True,
+                type=str,
+            )
+        ],
+        responses={200: None, 404: None},
+    )
+    def get(self, _request: Request, dre_codigo: str) -> Response:
+        try:
+            data = services.get_ues_por_dre(dre_codigo)
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+            raise
+        return Response(data)
+
+
+class UnidadesPorDREView(APIView):
+    """Lista unidades administrativas vinculadas à DRE."""
+
+    @extend_schema(
+        tags=_TAG_DRE,
+        summary="Unidades de uma DRE",
+        description=(
+            "Retorna lista completa de unidades administrativas vinculadas "
+            "à Diretoria Regional de Educação informada.\n\n"
+            "Contrato D10: `GET /api/DREs/{dreCodigo}/unidades`."
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="dre_codigo",
+                location=OpenApiParameter.PATH,
+                description="Código da DRE",
+                required=True,
+                type=str,
+            )
+        ],
+        responses={200: None, 404: None},
+    )
+    def get(self, _request: Request, dre_codigo: str) -> Response:
+        try:
+            data = services.get_unidades_por_dre(dre_codigo)
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+            raise
+        return Response(data)
+
+
+class DadosEscolaView(APIView):
+    """Retorna dados completos de uma escola."""
+
+    @extend_schema(
+        tags=_TAG_ESCOLA,
+        summary="Dados completos de uma escola",
+        description=(
+            "Retorna dados completos da unidade educacional identificada "
+            "pelo `codigoEscolaEol`.\n\n"
+            "Contrato E04: `GET /api/escolas/dados/{codigoEscolaEol}`."
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="codigo_escola_eol",
+                location=OpenApiParameter.PATH,
+                description="Código EOL da escola",
+                required=True,
+                type=str,
+            )
+        ],
+        responses={200: DadosEscolaSerializer, 404: None},
+    )
+    def get(self, _request: Request, codigo_escola_eol: str) -> Response:
+        try:
+            data = services.get_dados_escola(codigo_escola_eol)
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+            raise
+        if not data:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        item = data[0] if isinstance(data, list) and data else data
+        if isinstance(item, dict):
+            return Response(_filtrar_dados_escola(item))
+        return Response(item)
+
+
+class TiposEscolasView(APIView):
+    """Lista tipos de escola cadastrados."""
+
+    @extend_schema(
+        tags=_TAG_ESCOLA,
+        summary="Tipos de escola",
+        description=(
+            "Retorna lista de tipos de escola cadastrados.\n\n"
+            "Contrato E11: `GET /api/escolas/tiposEscolas`."
+        ),
+        responses={200: TipoEscolaSerializer(many=True)},
+    )
+    def get(self, _request: Request) -> Response:
+        return Response(services.get_tipos_escolas())
 
 
 class EscolaDetalheView(APIView):

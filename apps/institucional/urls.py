@@ -5,10 +5,15 @@ from django.urls import path
 from apps.institucional.views import (
     DREDetalheView,
     DREListView,
-    EquipamentosView,
+    DadosEscolaView,
     EscolaDetalheView,
-    EscolasPorDREeTipoView,
     EscolasPorDREView,
+    EscolasPorDREeTipoView,
+    EquipamentosView,
+    SubprefeiturasPorDREView,
+    TiposEscolasView,
+    UesPorDREView,
+    UnidadesPorDREView,
 )
 
 urlpatterns = [
@@ -18,10 +23,21 @@ urlpatterns = [
         DREListView.as_view(),
         name="dre-list",
     ),
+    # Sub-rotas específicas antes da rota genérica de detalhe
     path(
-        "DREs/<str:codigo_eol_dre>/",
-        DREDetalheView.as_view(),
-        name="dre-detalhe",
+        "DREs/<str:dre_codigo>/subprefeituras/",
+        SubprefeiturasPorDREView.as_view(),
+        name="dre-subprefeituras",
+    ),
+    path(
+        "DREs/<str:dre_codigo>/ues/",
+        UesPorDREView.as_view(),
+        name="dre-ues",
+    ),
+    path(
+        "DREs/<str:dre_codigo>/unidades/",
+        UnidadesPorDREView.as_view(),
+        name="dre-unidades",
     ),
     path(
         "DREs/<str:codigo_eol_dre>/escola/",
@@ -33,11 +49,26 @@ urlpatterns = [
         EscolasPorDREeTipoView.as_view(),
         name="escolas-por-dre-tipo",
     ),
-    # Escolas — equipamentos declarado antes do detalhe para evitar colisão
+    path(
+        "DREs/<str:codigo_eol_dre>/",
+        DREDetalheView.as_view(),
+        name="dre-detalhe",
+    ),
+    # Escolas — rotas literais antes das com parâmetro para evitar colisão
+    path(
+        "escolas/tiposEscolas/",
+        TiposEscolasView.as_view(),
+        name="escola-tipos-escolas",
+    ),
     path(
         "escolas/equipamentos/",
         EquipamentosView.as_view(),
         name="escola-equipamentos",
+    ),
+    path(
+        "escolas/dados/<str:codigo_escola_eol>/",
+        DadosEscolaView.as_view(),
+        name="escola-dados",
     ),
     path(
         "escolas/<str:codigo_escola_eol>/",
