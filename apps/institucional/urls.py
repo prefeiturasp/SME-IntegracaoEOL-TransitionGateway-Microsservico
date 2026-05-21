@@ -1,14 +1,14 @@
-# Rotas do domínio institucional — prefixo "api/" em config/urls.py.
+"""Rotas do domínio institucional."""
 
 from django.urls import path
 
 from apps.institucional.views import (
     DREDetalheView,
     DREListView,
+    EquipamentosView,
     EscolaDetalheView,
     EscolasPorDREeTipoView,
     EscolasPorDREView,
-    EquipamentosView,
 )
 
 urlpatterns = [

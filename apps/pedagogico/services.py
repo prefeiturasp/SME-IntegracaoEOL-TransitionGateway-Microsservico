@@ -17,7 +17,15 @@ _client = ServiceClient(
 
 
 def get_componentes_curriculares() -> Any:
-    """Retorna o catálogo completo de componentes curriculares."""
+    """Retorna o catálogo completo de componentes curriculares.
+
+    Returns:
+        Catálogo de componentes curriculares ativos.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        ValueError: Se a resposta não puder ser convertida para JSON.
+    """
     return _client.get(_BASE).json()
 
 
@@ -33,6 +41,10 @@ def get_componentes_por_turmas_ue(
 
     Returns:
         Componentes curriculares das turmas informadas.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        ValueError: Se a resposta não puder ser convertida para JSON.
     """
     params: dict[str, Any] = {"turmas": turmas}
 
@@ -56,10 +68,75 @@ def get_componentes_turmas_programa(
 
     Returns:
         Componentes das turmas programa encontradas.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        ValueError: Se a resposta não puder ser convertida para JSON.
     """
     return _client.get(
         f"{_BASE}/ues/{ue_id}/modalidades/"
         f"{modalidade}/anos/{ano_letivo}/turmas-programa"
+    ).json()
+
+
+def get_componentes_regencia(ano_turma: int) -> Any:
+    """Retorna componentes de regência por ano de turma.
+
+    Args:
+        ano_turma: Ano da turma usado na consulta.
+
+    Returns:
+        Componentes de regência do ano informado.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        ValueError: Se a resposta não puder ser convertida para JSON.
+    """
+    return _client.get(f"{_BASE}/anos/{ano_turma}/regencia").json()
+
+
+def validar_componente_pap(
+    codigo_turma: str,
+    login: str,
+    id_perfil: str,
+) -> Any:
+    """Verifica se a turma possui componente PAP para o funcionário.
+
+    Args:
+        codigo_turma: Código da turma usada na validação.
+        login: Login/RF do funcionário.
+        id_perfil: Identificador do perfil do funcionário.
+
+    Returns:
+        Resultado da validação de componente PAP.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        ValueError: Se a resposta não puder ser convertida para JSON.
+    """
+    return _client.get(
+        f"{_BASE}/turmas/{codigo_turma}/pap",
+        params={"login": login, "idPerfil": id_perfil},
+    ).json()
+
+
+def get_componentes_funcionario(login: str, id_perfil: str) -> Any:
+    """Retorna componentes curriculares do funcionário.
+
+    Args:
+        login: Login/RF do funcionário.
+        id_perfil: Identificador do perfil do funcionário.
+
+    Returns:
+        Componentes curriculares associados ao funcionário.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        ValueError: Se a resposta não puder ser convertida para JSON.
+    """
+    return _client.get(
+        f"{_BASE}/funcionarios/{login}",
+        params={"idPerfil": id_perfil},
     ).json()
 
 
@@ -79,6 +156,10 @@ def get_componentes_ue_anos(
 
     Returns:
         Componentes curriculares encontrados para os filtros informados.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        ValueError: Se a resposta não puder ser convertida para JSON.
     """
     params: dict[str, Any] = {"anos_escolares": anos_escolares}
     path = (
@@ -101,5 +182,9 @@ def get_grade_curricular(ano_letivo: int) -> Any:
 
     Returns:
         Grade curricular do ano letivo informado.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        ValueError: Se a resposta não puder ser convertida para JSON.
     """
     return _client.get(f"{_BASE}/grade-curricular/{ano_letivo}").json()

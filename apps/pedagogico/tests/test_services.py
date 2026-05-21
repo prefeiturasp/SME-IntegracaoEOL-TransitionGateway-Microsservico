@@ -54,6 +54,54 @@ class GetComponentesTurmasProgramaTest(SimpleTestCase):
         self.assertEqual(result, [])
 
 
+class GetComponentesRegenciaTest(SimpleTestCase):
+    """Valida a consulta de componentes de regência."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_chama_path_correto(self, mock_client: MagicMock) -> None:
+        mock_client.get.return_value.json.return_value = []
+
+        result = services.get_componentes_regencia(2024)
+
+        mock_client.get.assert_called_once_with(f"{_BASE}/anos/2024/regencia")
+
+        self.assertEqual(result, [])
+
+
+class ValidarComponentePapTest(SimpleTestCase):
+    """Valida a consulta de componente PAP por turma e funcionário."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_chama_path_com_query_params(self, mock_client: MagicMock) -> None:
+        mock_client.get.return_value.json.return_value = True
+
+        result = services.validar_componente_pap("T001", "RF001", "P1")
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/turmas/T001/pap",
+            params={"login": "RF001", "idPerfil": "P1"},
+        )
+
+        self.assertTrue(result)
+
+
+class GetComponentesFuncionarioTest(SimpleTestCase):
+    """Valida a consulta de componentes por funcionário."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_chama_path_com_query_params(self, mock_client: MagicMock) -> None:
+        mock_client.get.return_value.json.return_value = []
+
+        result = services.get_componentes_funcionario("RF001", "P1")
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/funcionarios/RF001",
+            params={"idPerfil": "P1"},
+        )
+
+        self.assertEqual(result, [])
+
+
 class GetComponentesPorTurmasUeTest(SimpleTestCase):
     """Valida a consulta de componentes por turmas de uma UE."""
 
