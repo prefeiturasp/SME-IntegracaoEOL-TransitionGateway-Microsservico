@@ -17,7 +17,15 @@ _client = ServiceClient(
 
 
 def get_dres() -> Any:
-    """Lista Diretorias Regionais de Educação."""
+    """Lista Diretorias Regionais de Educação.
+
+    Returns:
+        Diretorias Regionais de Educação cadastradas.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status
+            HTTP de erro.
+    """
     resp = _client.get(f"{_BASE}/dres/")
     resp.raise_for_status()
     return resp.json()
@@ -31,6 +39,10 @@ def get_dre(codigo_dre: str) -> Any:
 
     Returns:
         Dados da Diretoria Regional de Educação encontrada.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status
+            HTTP de erro.
     """
     resp = _client.get(f"{_BASE}/dres/{codigo_dre}/")
     resp.raise_for_status()
@@ -45,6 +57,10 @@ def get_escolas_por_dre(codigo_dre: str) -> Any:
 
     Returns:
         Escolas vinculadas à Diretoria Regional de Educação informada.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status
+            HTTP de erro.
     """
     resp = _client.get(f"{_BASE}/dres/{codigo_dre}/escola/")
     resp.raise_for_status()
@@ -61,6 +77,10 @@ def get_escolas_por_dre_e_tipo(codigo_dre: str, tipo_escola: str) -> Any:
     Returns:
         Escolas vinculadas à Diretoria Regional de Educação e ao tipo
         informado.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status
+            HTTP de erro.
     """
     resp = _client.get(f"{_BASE}/dres/{codigo_dre}/escolas/{tipo_escola}/")
     resp.raise_for_status()
@@ -75,6 +95,10 @@ def get_escola(codigo_escola: str) -> Any:
 
     Returns:
         Dados da escola encontrada.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status
+            HTTP de erro.
     """
     resp = _client.get(f"{_BASE}/escolas/{codigo_escola}/")
     resp.raise_for_status()
@@ -102,6 +126,10 @@ def get_equipamentos(
 
     Returns:
         Equipamentos das unidades educacionais encontrados.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status
+            HTTP de erro.
     """
     params: dict[str, Any] = {}
     if codigos_subprefeitura:

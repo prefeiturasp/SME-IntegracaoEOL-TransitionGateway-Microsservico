@@ -33,6 +33,11 @@ class ServiceClient:
         self._api_key_header = api_key_header
 
     def _headers(self) -> dict[str, str]:
+        """Monta os headers padrão da requisição.
+
+        Returns:
+            Headers com Accept, X-Request-ID e API Key quando disponíveis.
+        """
         headers = {"Accept": "application/json"}
         request_id = get_request_id()
         if request_id:
@@ -50,6 +55,9 @@ class ServiceClient:
 
         Returns:
             Resposta HTTP recebida do serviço externo.
+
+        Raises:
+            httpx.HTTPError: Em caso de falha de transporte ou timeout.
         """
         with httpx.Client(timeout=settings.GATEWAY_TIMEOUT_SECONDS) as client:
             return client.get(
@@ -74,6 +82,9 @@ class ServiceClient:
 
         Returns:
             Resposta HTTP recebida do serviço externo.
+
+        Raises:
+            httpx.HTTPError: Em caso de falha de transporte ou timeout.
         """
         with httpx.Client(timeout=settings.GATEWAY_TIMEOUT_SECONDS) as client:
             return client.post(
