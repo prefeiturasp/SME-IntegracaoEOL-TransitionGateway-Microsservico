@@ -53,8 +53,8 @@ class NomeServidorSerializer(serializers.Serializer):
 class ProfessorBuscarPorRfSerializer(serializers.Serializer):
     """Serializa dados resumidos de professor."""
 
-    codigoRF = serializers.CharField(source="codigo_rf")
     nome = serializers.CharField()
+    codigoRF = serializers.CharField(source="codigo_rf")
 
 
 class FuncionarioEscolaSerializer(serializers.Serializer):
