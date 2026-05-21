@@ -36,13 +36,27 @@ def get_professor(rf_professor: str) -> Any:
 
 
 def get_validade_professor(codigo_rf: str) -> Any:
-    """Verifica se o professor está válido para uso."""
+    """Verifica se o professor está válido para uso.
+
+    Args:
+        codigo_rf: RF usado na consulta de validade.
+
+    Returns:
+        Indicador de validade retornado pelo sidecar.
+    """
     resp = _client.get(f"{_BASE}/{codigo_rf}/validade")
     return resp.json()
 
 
 def get_funcionario_ativo(registro_funcional: str) -> Any:
-    """Verifica se o funcionário está ativo."""
+    """Verifica se o funcionário está ativo.
+
+    Args:
+        registro_funcional: Registro funcional usado na consulta.
+
+    Returns:
+        Indicador de situação ativa retornado pelo sidecar.
+    """
     resp = _client.get(
         f"{_BASE_ACESSOS}/funcionario-ativo/{registro_funcional}"
     )
@@ -50,7 +64,14 @@ def get_funcionario_ativo(registro_funcional: str) -> Any:
 
 
 def get_nome_servidor(registro_funcional: str) -> Any:
-    """Retorna dados de identificação do servidor."""
+    """Retorna dados de identificação do servidor.
+
+    Args:
+        registro_funcional: Registro funcional usado na consulta.
+
+    Returns:
+        Dados de identificação do servidor ou ausência de conteúdo.
+    """
     resp = _client.get(
         f"{_BASE_FUNCIONARIOS}/nome-servidor/{registro_funcional}"
     )
@@ -58,7 +79,14 @@ def get_nome_servidor(registro_funcional: str) -> Any:
 
 
 def get_nome_usuario_eol(registro_funcional: str) -> Any:
-    """Retorna nome de usuário EOL do funcionário."""
+    """Retorna nome de usuário EOL do funcionário.
+
+    Args:
+        registro_funcional: Registro funcional usado na consulta.
+
+    Returns:
+        Nome de usuário EOL ou ausência de conteúdo.
+    """
     resp = _client.get(
         f"{_BASE_FUNCIONARIOS}/nome-usuario-eol/{registro_funcional}"
     )
@@ -108,7 +136,14 @@ def get_professores_por_lista_rf(codigos_rf: list[str]) -> Any:
 
 
 def get_funcionarios_escola(codigo_ue: str) -> Any:
-    """Retorna funcionários vinculados à escola."""
+    """Retorna funcionários vinculados à escola.
+
+    Args:
+        codigo_ue: Código da unidade escolar usada na consulta.
+
+    Returns:
+        Lista de funcionários da escola ou ausência de conteúdo.
+    """
     resp = _client.get(f"{_BASE_ESCOLAS}/{codigo_ue}/funcionarios")
     return _client.json_or_none(resp)
 
@@ -117,7 +152,15 @@ def get_funcionarios_escola_por_cargo(
     codigo_ue: str,
     codigo_cargo: str,
 ) -> Any:
-    """Retorna funcionários da escola filtrados por cargo."""
+    """Retorna funcionários da escola filtrados por cargo.
+
+    Args:
+        codigo_ue: Código da unidade escolar usada na consulta.
+        codigo_cargo: Código do cargo usado como filtro.
+
+    Returns:
+        Lista de funcionários filtrados por cargo ou ausência de conteúdo.
+    """
     resp = _client.get(
         f"{_BASE_ESCOLAS}/{codigo_ue}/funcionarios/cargos/{codigo_cargo}"
     )
