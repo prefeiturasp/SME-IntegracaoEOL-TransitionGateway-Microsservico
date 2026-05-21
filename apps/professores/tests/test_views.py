@@ -70,7 +70,7 @@ class ProfessoresUrlsTest(SimpleTestCase):
         )
 
     def test_preserva_professor_disciplina_turmas(self) -> None:
-        match = resolve("/api/professores/000001/disciplina/5/turmas")
+        match = resolve("/api/professores/000001/disciplina/5/turmas/")
 
         self.assertEqual(
             match.kwargs,
@@ -508,7 +508,7 @@ class ProfessorDisciplinaTurmasViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/professores/000001/disciplina/5/turmas",
+            "/api/professores/000001/disciplina/5/turmas/",
             ["3030050"],
             format="json",
         )
@@ -523,7 +523,7 @@ class ProfessorDisciplinaTurmasViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/professores/000001/disciplina/5/turmas",
+            "/api/professores/000001/disciplina/5/turmas/",
             ["3030050"],
             format="json",
         )
@@ -534,7 +534,7 @@ class ProfessorDisciplinaTurmasViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/professores/000001/disciplina/5/turmas",
+            "/api/professores/000001/disciplina/5/turmas/",
             [],
             format="json",
         )
@@ -545,7 +545,7 @@ class ProfessorDisciplinaTurmasViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/professores/%20/disciplina/5/turmas",
+            "/api/professores/%20/disciplina/5/turmas/",
             ["3030050"],
             format="json",
         )
@@ -560,7 +560,7 @@ class ProfessorDisciplinaTurmasViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/professores/000001/disciplina/%20/turmas",
+            "/api/professores/000001/disciplina/%20/turmas/",
             ["3030050"],
             format="json",
         )
