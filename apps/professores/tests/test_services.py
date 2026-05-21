@@ -12,6 +12,7 @@ class GetProfessorTest(SimpleTestCase):
 
     @patch.object(services._client, "get")
     def test_chama_path_correto(self, mock_get: MagicMock) -> None:
+        """Monta o path e extrai o nome do payload JSON."""
         mock_resp = MagicMock()
         mock_resp.status_code = 200
         mock_resp.content = b'{"codigoRf":"123456","nome":"Fulano de Tal"}'
@@ -72,6 +73,7 @@ class GetValidadeProfessorTest(SimpleTestCase):
 
     @patch("apps.professores.services._client")
     def test_chama_path_correto(self, mock_client: MagicMock) -> None:
+        """Monta o path de validade do professor."""
         mock_resp = MagicMock()
         mock_resp.json.return_value = True
         mock_client.get.return_value = mock_resp
@@ -89,6 +91,7 @@ class GetFuncionarioAtivoTest(SimpleTestCase):
 
     @patch("apps.professores.services._client")
     def test_chama_path_correto(self, mock_client: MagicMock) -> None:
+        """Monta o path de funcionário ativo."""
         mock_resp = MagicMock()
         mock_resp.json.return_value = True
         mock_client.get.return_value = mock_resp
@@ -106,6 +109,7 @@ class GetNomeServidorTest(SimpleTestCase):
 
     @patch.object(services._client, "get")
     def test_chama_path_correto(self, mock_get: MagicMock) -> None:
+        """Monta o path e retorna o payload do servidor."""
         payload = {"nome": "Maria", "cpf": "000.000.000-00"}
         mock_resp = MagicMock()
         mock_resp.status_code = 200

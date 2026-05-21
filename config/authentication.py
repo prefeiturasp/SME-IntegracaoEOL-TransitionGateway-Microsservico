@@ -14,6 +14,18 @@ class ApiKeyAuthentication(BaseAuthentication):
     """Autentica requisições via API Key no header configurado."""
 
     def authenticate(self, request: Request) -> tuple | None:
+        """Autentica a requisição a partir da API Key no header.
+
+        Args:
+            request: Requisição HTTP recebida.
+
+        Returns:
+            Tupla `(usuário, None)` quando a chave é válida ou `None`
+            quando o header de API Key não está presente.
+
+        Raises:
+            AuthenticationFailed: Quando a API Key informada é inválida.
+        """
         header = settings.API_KEY_HEADER.replace("-", "_").upper()
         key = request.META.get(f"HTTP_{header}") or request.headers.get(
             settings.API_KEY_HEADER

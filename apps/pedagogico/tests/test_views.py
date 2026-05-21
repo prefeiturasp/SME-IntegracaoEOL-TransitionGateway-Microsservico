@@ -1,3 +1,5 @@
+"""Valida as views do domínio pedagógico."""
+
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -9,6 +11,7 @@ from rest_framework.test import APIClient
 _PREFIX = "/api/v1/componentes-curriculares"
 
 
+# Componente curricular completo retornado pelo sidecar.
 _CC: dict[str, Any] = {
     "codigo": 1,
     "codigo_componente_territorio_saber": None,
@@ -23,8 +26,10 @@ _CC: dict[str, Any] = {
     "codigos_territorios_agrupamento": [],
 }
 
+# Resumo de componente (apenas código e descrição).
 _BASE_CC = {"codigo": 1, "descricao": "Matematica"}
 
+# Item de grade curricular retornado pelo sidecar.
 _GRADE = {
     "codigo_componente_curricular": 1,
     "descricao_componente_curricular": "Matematica",
@@ -36,6 +41,7 @@ _GRADE = {
 
 
 def _cliente_autenticado() -> APIClient:
+    """Cria um APIClient autenticado para os testes."""
     client = APIClient()
 
     user = User(username="teste")
@@ -45,6 +51,8 @@ def _cliente_autenticado() -> APIClient:
 
 
 class ComponentesTurmaViewSetTest(SimpleTestCase):
+    """Valida a view de componentes por turmas de uma UE."""
+
     @patch("apps.pedagogico.views.services.get_componentes_por_turmas_ue")
     def test_200_repassa_turmas(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_BASE_CC]
@@ -61,6 +69,8 @@ class ComponentesTurmaViewSetTest(SimpleTestCase):
 
 
 class ComponentesCurricularesViewSetTest(SimpleTestCase):
+    """Valida a view de catálogo de componentes curriculares."""
+
     @patch("apps.pedagogico.views.services.get_componentes_curriculares")
     def test_200_retorna_lista(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_BASE_CC]
@@ -73,6 +83,8 @@ class ComponentesCurricularesViewSetTest(SimpleTestCase):
 
 
 class GradeComponentesCurricularesViewSetTest(SimpleTestCase):
+    """Valida a view de grade curricular por ano letivo."""
+
     @patch("apps.pedagogico.views.services.get_grade_curricular")
     def test_200_retorna_grade(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_GRADE]
@@ -90,6 +102,8 @@ class GradeComponentesCurricularesViewSetTest(SimpleTestCase):
 
 
 class ComponentesTurmaAnoViewSetTest(SimpleTestCase):
+    """Valida a view de componentes por anos escolares."""
+
     @patch("apps.pedagogico.views.services.get_componentes_ue_anos")
     def test_200_repassa_anos_escolares(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_CC]
@@ -116,6 +130,8 @@ class ComponentesTurmaAnoViewSetTest(SimpleTestCase):
 
 
 class ComponentesTurmaProgramaViewSetTest(SimpleTestCase):
+    """Valida a view de componentes de turmas programa."""
+
     @patch("apps.pedagogico.views.services.get_componentes_turmas_programa")
     def test_200_retorna_lista(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_CC]
