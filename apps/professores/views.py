@@ -21,6 +21,12 @@ _TAG_ESCOLA = ["Escola"]
 _TAG_FUNCIONARIO = ["Funcionario"]
 _TAG_PROFESSOR = ["Professor"]
 
+_MSG_CODIGO_RF_OBRIGATORIO = "E necessario informar o codigoRF."
+_MSG_CODIGO_UE_OBRIGATORIO = "E necessario informar o codigoUE."
+_MSG_REGISTRO_FUNCIONAL_OBRIGATORIO = (
+    "E necessario informar o registro funcional."
+)
+
 
 def _parse_bool_param(value: str | None) -> bool | None:
     """Normaliza query param booleano opcional."""
@@ -63,7 +69,7 @@ class ValidadeProfessorView(APIView):
     )
     def get(self, _request: Request, codigo_rf: str) -> Response:
         if not codigo_rf.strip():
-            return detail_response("E necessario informar o codigoRF.")
+            return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
         data = services.get_validade_professor(codigo_rf)
         return Response(data)
 
@@ -80,9 +86,7 @@ class FuncionarioAtivoView(APIView):
     )
     def get(self, _request: Request, registro_funcional: str) -> Response:
         if not registro_funcional.strip():
-            return detail_response(
-                "E necessario informar o registro funcional."
-            )
+            return detail_response(_MSG_REGISTRO_FUNCIONAL_OBRIGATORIO)
         data = services.get_funcionario_ativo(registro_funcional)
         return Response(data)
 
@@ -112,9 +116,7 @@ class NomeUsuarioEolView(APIView):
     )
     def get(self, _request: Request, registro_funcional: str) -> Response:
         if not registro_funcional.strip():
-            return detail_response(
-                "E necessario informar o registro funcional."
-            )
+            return detail_response(_MSG_REGISTRO_FUNCIONAL_OBRIGATORIO)
         data = services.get_nome_usuario_eol(registro_funcional)
         if data is None:
             return Response(status=204)
@@ -144,7 +146,7 @@ class ProfessorBuscarPorRfView(APIView):
         ano_letivo: int,
     ) -> Response:
         if not codigo_rf.strip():
-            return detail_response("E necessario informar o codigoRF.")
+            return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
         buscar_outros_cargos_param = request.query_params.get(
             "buscar_outros_cargos"
         )
@@ -197,7 +199,7 @@ class EscolaFuncionariosCargoView(APIView):
         codigo_cargo: str,
     ) -> Response:
         if not codigo_ue.strip():
-            return detail_response("E necessario informar o codigoUE.")
+            return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
         if not codigo_cargo.strip():
             return detail_response("E necessario informar o codigoCargo.")
         data = services.get_funcionarios_escola_por_cargo(
@@ -219,7 +221,7 @@ class EscolaFuncionariosView(APIView):
     )
     def get(self, _request: Request, codigo_ue: str) -> Response:
         if not codigo_ue.strip():
-            return detail_response("E necessario informar o codigoUE.")
+            return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
         data = services.get_funcionarios_escola(codigo_ue)
         if data is None:
             return Response(status=204)
@@ -251,7 +253,7 @@ class ProfessorDisciplinaTurmasView(APIView):
         disciplina_id: str,
     ) -> Response:
         if not codigo_rf.strip():
-            return detail_response("E necessario informar o codigoRF.")
+            return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
         if not disciplina_id.strip():
             return detail_response("E necessario informar a disciplina.")
         serializer = TurmasIdsSerializer(data=request.data)
