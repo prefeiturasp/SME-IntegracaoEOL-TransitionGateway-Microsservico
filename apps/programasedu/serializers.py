@@ -9,6 +9,7 @@ class DataMatriculaField(serializers.DateTimeField):
     """Serializa data_matricula em formato ISO compatível com o consumidor legado."""
 
     def to_representation(self, value: object) -> str | None:
+        """ Serializa a data de matrícula em formato ISO, removendo zeros à direita."""
         if value in (None, ""):
             return None
         if isinstance(value, str):

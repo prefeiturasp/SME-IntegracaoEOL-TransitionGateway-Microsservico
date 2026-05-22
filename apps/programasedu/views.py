@@ -49,8 +49,9 @@ class ObterTurmasPapView(APIView):
     def get(
         self, _request: Request, ano_letivo: int, codigo_escola: str
     ) -> Response:
+        """ Verifica a resposta de turmas PAP por ano letivo e UE."""
         if not codigo_escola.strip():
-            return detail_response("E necessario informar o codigo_escola.")
+            return detail_response("É necessário informar o codigo_escola.")
         data = services.listar_turmas_pap(
             ano_letivo=ano_letivo, codigo_escola=codigo_escola
         )
@@ -87,10 +88,11 @@ class VerificarSeAlunosSaoTurmaProgramaPapView(APIView):
         responses={200: AlunoTurmaProgramaPapSerializer(many=True)},
     )
     def get(self, request: Request, ano_letivo: int) -> Response:
+        """ Verifica a resposta de verificação de alunos em turmas PAP."""
         codigos_alunos = request.query_params.getlist("codigos_alunos")
         if not codigos_alunos:
             return detail_response(
-                "E necessario informar ao menos um codigos_alunos."
+                "É necessário informar ao menos um codigos_alunos."
             )
 
         data = services.verificar_alunos_pap(
@@ -112,6 +114,7 @@ class ObterAlunosPapAnoCorrenteView(APIView):
         responses={200: AlunoTurmaPapSerializer(many=True)},
     )
     def get(self, _request: Request) -> Response:
+        """ Verifica a resposta de alunos PAP do ano corrente."""
         data = services.listar_alunos_pap_ano_corrente()
         return Response(AlunoTurmaPapSerializer(data, many=True).data)
 
@@ -138,6 +141,7 @@ class ObterAlunosPapPorAnoLetivoView(APIView):
         responses={200: AlunoTurmaPapSerializer(many=True)},
     )
     def get(self, _request: Request, ano_letivo: int) -> Response:
+        """ Verifica a resposta de alunos PAP por ano letivo."""
         data = services.listar_alunos_pap_por_ano(ano_letivo=ano_letivo)
         return Response(AlunoTurmaPapSerializer(data, many=True).data)
 
@@ -173,8 +177,9 @@ class ObterComponentesCurricularesTurmasProgramaAlunoView(APIView):
     def get(
         self, _request: Request, codigo_aluno: str, ano_letivo: int
     ) -> Response:
+        """ Verifica a resposta de componentes curriculares das turmas de programa do aluno."""
         if not codigo_aluno.strip():
-            return detail_response("E necessario informar o codigo_aluno.")
+            return detail_response("É necessário informar o codigo_aluno.")
         data = services.listar_componentes_turmas_programa_aluno(
             codigo_aluno=codigo_aluno, ano_letivo=ano_letivo
         )
@@ -204,6 +209,7 @@ class ObterDadosSrmPaeeAlunoView(APIView):
         responses={200: DadosSrmPaeeColaborativoSerializer(many=True)},
     )
     def get(self, _request: Request, codigo_aluno: str) -> Response:
+        """ Verifica a resposta de dados de SRM/PAEE colaborativo do aluno."""
         if not codigo_aluno.strip():
             return detail_response("E necessario informar o codigo_aluno.")
         data = services.obter_dados_srm_paee_aluno(codigo_aluno=codigo_aluno)

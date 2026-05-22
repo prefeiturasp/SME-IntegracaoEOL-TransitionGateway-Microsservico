@@ -2,19 +2,15 @@ from django.test import SimpleTestCase
 
 from apps.institucional.serializers import (
     DRESerializer,
-    EquipamentoSerializer,
     EscolaResumoSerializer,
     EscolaSerializer,
+    EquipamentoSerializer,
 )
 
 
 class DRESerializerTest(SimpleTestCase):
     def test_payload_valido(self) -> None:
-        data = {
-            "codigoDRE": "BT",
-            "nomeDRE": "DRE BUTANTA",
-            "siglaDRE": "DRE-BT",
-        }
+        data = {"codigoDRE": "BT", "nomeDRE": "DRE BUTANTA", "siglaDRE": "DRE-BT"}
         s = DRESerializer(data=data)
         self.assertTrue(s.is_valid(), s.errors)
 
@@ -48,13 +44,8 @@ class EscolaResumoSerializerTest(SimpleTestCase):
         self.assertTrue(s.is_valid(), s.errors)
 
     def test_campos_nullable_aceitos(self) -> None:
-        payload = {
-            **self._PAYLOAD,
-            "tipoEscolaId": None,
-            "tipoUnidadeId": None,
-            "subprefeituraId": None,
-            "codigoIntegracao": None,
-        }
+        payload = {**self._PAYLOAD, "tipoEscolaId": None,
+                   "tipoUnidadeId": None, "subprefeituraId": None, "codigoIntegracao": None}
         s = EscolaResumoSerializer(data=payload)
         self.assertTrue(s.is_valid(), s.errors)
 
@@ -82,11 +73,7 @@ class EscolaSerializerTest(SimpleTestCase):
         self.assertTrue(s.is_valid(), s.errors)
 
     def test_campos_nullable_aceitos(self) -> None:
-        payload = {
-            **self._PAYLOAD,
-            "tipoEscolaId": None,
-            "codigoIntegracao": None,
-        }
+        payload = {**self._PAYLOAD, "tipoEscolaId": None, "codigoIntegracao": None}
         s = EscolaSerializer(data=payload)
         self.assertTrue(s.is_valid(), s.errors)
 
@@ -145,9 +132,7 @@ class EquipamentoSerializerTest(SimpleTestCase):
         self.assertTrue(s.is_valid(), s.errors)
 
     def test_cd_equipamento_obrigatorio(self) -> None:
-        payload = {
-            k: v for k, v in self._PAYLOAD.items() if k != "cd_equipamento"
-        }
+        payload = {k: v for k, v in self._PAYLOAD.items() if k != "cd_equipamento"}
         s = EquipamentoSerializer(data=payload)
         self.assertFalse(s.is_valid())
         self.assertIn("cd_equipamento", s.errors)
