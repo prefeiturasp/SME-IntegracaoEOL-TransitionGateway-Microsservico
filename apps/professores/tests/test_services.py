@@ -234,7 +234,7 @@ class GetFuncionariosEscolaTest(SimpleTestCase):
                 "data_inicio": "03/19/2024 00:00:00",
                 "data_fim": None,
                 "cargo": None,
-                "cd_tipo_funcao_atividade": 14,
+                "codigo_tipo_funcao_atividade": 14,
                 "esta_afastado": False,
                 "funcao_externo": 0,
                 "tipo_funcao_externo": 0,
@@ -249,7 +249,7 @@ class GetFuncionariosEscolaTest(SimpleTestCase):
         result = services.get_funcionarios_escola("000123")
 
         mock_get.assert_called_once_with(
-            "/api/v1/professores/escolas/000123/funcionarios"
+            "/api/v1/professores/escolas/000123/funcionarios/"
         )
         self.assertEqual(result, payload)
 
@@ -266,7 +266,7 @@ class GetFuncionariosEscolaPorCargoTest(SimpleTestCase):
                 "data_inicio": "03/19/2024 00:00:00",
                 "data_fim": None,
                 "cargo": None,
-                "cd_tipo_funcao_atividade": 14,
+                "codigo_tipo_funcao_atividade": 14,
                 "esta_afastado": False,
                 "funcao_externo": 0,
                 "tipo_funcao_externo": 0,
@@ -281,7 +281,7 @@ class GetFuncionariosEscolaPorCargoTest(SimpleTestCase):
         result = services.get_funcionarios_escola_por_cargo("000123", "14")
 
         mock_get.assert_called_once_with(
-            "/api/v1/professores/escolas/000123/funcionarios/cargos/14"
+            "/api/v1/professores/escolas/000123/funcionarios/?cargos=14"
         )
         self.assertEqual(result, payload)
 

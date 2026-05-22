@@ -398,7 +398,7 @@ class EscolaFuncionariosViewTest(SimpleTestCase):
                 "data_inicio": "03/19/2024 00:00:00",
                 "data_fim": None,
                 "cargo": None,
-                "cd_tipo_funcao_atividade": 14,
+                "codigo_tipo_funcao_atividade": 14,
                 "esta_afastado": False,
                 "funcao_externo": 0,
                 "tipo_funcao_externo": 0,
@@ -447,7 +447,7 @@ class EscolaFuncionariosCargoViewTest(SimpleTestCase):
                 "data_inicio": "03/19/2024 00:00:00",
                 "data_fim": None,
                 "cargo": None,
-                "cd_tipo_funcao_atividade": 14,
+                "codigo_tipo_funcao_atividade": 14,
                 "esta_afastado": False,
                 "funcao_externo": 0,
                 "tipo_funcao_externo": 0,
@@ -515,6 +515,26 @@ class ProfessorDisciplinaTurmasViewTest(SimpleTestCase):
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json()[0]["codigoTurma"], "3030050")
+        mock_service.assert_called_once_with("000001", "5", ["3030050"])
+
+    @patch("apps.professores.views.services.get_turmas_professor_disciplina")
+    def test_502_quando_sidecar_retorna_lista_simples(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = ["3030050"]
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/professores/000001/disciplina/5/turmas/",
+            ["3030050"],
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "Resposta invalida do sidecar de professores."},
+        )
         mock_service.assert_called_once_with("000001", "5", ["3030050"])
 
     @patch("apps.professores.views.services.get_turmas_professor_disciplina")

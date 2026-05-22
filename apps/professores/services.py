@@ -26,7 +26,7 @@ def get_professor(rf_professor: str) -> Any:
         rf_professor: Registro funcional usado na consulta.
 
     Returns:
-        Nome extraído do payload, texto bruto ou ausência de conteúdo.
+        Nome obtido na consulta, texto bruto ou ausência de conteúdo.
     """
     resp = _client.get(f"{_BASE}/{rf_professor}")
     data = _client.json_or_none(resp)
@@ -42,7 +42,7 @@ def get_validade_professor(codigo_rf: str) -> Any:
         codigo_rf: RF usado na consulta de validade.
 
     Returns:
-        Indicador de validade retornado pelo sidecar.
+        Indicador de validade obtido na consulta.
     """
     resp = _client.get(f"{_BASE}/{codigo_rf}/validade")
     return resp.json()
@@ -55,7 +55,7 @@ def get_funcionario_ativo(registro_funcional: str) -> Any:
         registro_funcional: Registro funcional usado na consulta.
 
     Returns:
-        Indicador de situação ativa retornado pelo sidecar.
+        Indicador de situação ativa obtido na consulta.
     """
     resp = _client.get(
         f"{_BASE_ACESSOS}/funcionario-ativo/{registro_funcional}"
@@ -123,7 +123,7 @@ def get_professores_por_lista_rf(codigos_rf: list[str]) -> Any:
     """Retorna professores pelos RFs informados.
 
     Args:
-        codigos_rf: RFs enviados ao sidecar.
+        codigos_rf: RFs usados na consulta.
 
     Returns:
         Lista de professores ou ausência de conteúdo.
@@ -144,7 +144,7 @@ def get_funcionarios_escola(codigo_ue: str) -> Any:
     Returns:
         Lista de funcionários da escola ou ausência de conteúdo.
     """
-    resp = _client.get(f"{_BASE_ESCOLAS}/{codigo_ue}/funcionarios")
+    resp = _client.get(f"{_BASE_ESCOLAS}/{codigo_ue}/funcionarios/")
     return _client.json_or_none(resp)
 
 
@@ -162,7 +162,7 @@ def get_funcionarios_escola_por_cargo(
         Lista de funcionários filtrados por cargo ou ausência de conteúdo.
     """
     resp = _client.get(
-        f"{_BASE_ESCOLAS}/{codigo_ue}/funcionarios/cargos/{codigo_cargo}"
+        f"{_BASE_ESCOLAS}/{codigo_ue}/funcionarios/?cargos={codigo_cargo}"
     )
     return _client.json_or_none(resp)
 

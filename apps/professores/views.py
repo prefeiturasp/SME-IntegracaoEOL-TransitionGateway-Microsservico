@@ -26,10 +26,14 @@ _MSG_CODIGO_UE_OBRIGATORIO = "E necessario informar o codigoUE."
 _MSG_REGISTRO_FUNCIONAL_OBRIGATORIO = (
     "E necessario informar o registro funcional."
 )
+_CAMPOS_TURMA = {
+    "codigo_turma",
+    "data_disponibilizacao_aulas",
+    "data_atribuicao_aula",
+}
 
 
 def _parse_bool_param(value: str | None) -> bool | None:
-    """Normaliza query param booleano opcional."""
     if value is None:
         return None
     normalized = value.lower()
@@ -38,6 +42,13 @@ def _parse_bool_param(value: str | None) -> bool | None:
     if normalized == "false":
         return False
     return None
+
+
+def _is_lista_turmas(data: object) -> bool:
+    return isinstance(data, list) and all(
+        isinstance(item, dict) and item.keys() >= _CAMPOS_TURMA
+        for item in data
+    )
 
 
 class ProfessorView(APIView):
@@ -265,4 +276,9 @@ class ProfessorDisciplinaTurmasView(APIView):
         )
         if data is None:
             return Response(status=204)
+        if not _is_lista_turmas(data):
+            return detail_response(
+                "Resposta invalida do sidecar de professores.",
+                502,
+            )
         return Response(ProfessorTurmaSerializer(data, many=True).data)

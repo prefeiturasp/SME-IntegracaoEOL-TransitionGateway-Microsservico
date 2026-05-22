@@ -10,6 +10,14 @@ class TextoEstritoField(serializers.CharField):
     """Valida texto sem conversão implícita de tipo."""
 
     def to_internal_value(self, data: Any) -> str:
+        """Valida e normaliza texto informado.
+
+        Args:
+            data: Valor recebido para validação.
+
+        Returns:
+            Texto validado pelo campo.
+        """
         if not isinstance(data, str):
             self.fail("invalid")
         value = super().to_internal_value(data)
@@ -66,7 +74,7 @@ class FuncionarioEscolaSerializer(serializers.Serializer):
     dataFim = serializers.CharField(source="data_fim", allow_null=True)
     cargo = serializers.CharField(allow_null=True)
     cdTipoFuncaoAtividade = serializers.IntegerField(
-        source="cd_tipo_funcao_atividade"
+        source="codigo_tipo_funcao_atividade"
     )
     estaAfastado = serializers.BooleanField(source="esta_afastado")
     funcaoExterno = serializers.IntegerField(source="funcao_externo")
