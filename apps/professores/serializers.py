@@ -51,7 +51,7 @@ class TurmasIdsSerializer(serializers.ListSerializer):
         super().__init__(*args, **kwargs)
 
 
-class NomeCPFServidorSerializer(serializers.Serializer):
+class NomeServidorSerializer(serializers.Serializer):
     """Serializa dados de identificação do servidor."""
 
     nome = serializers.CharField()
