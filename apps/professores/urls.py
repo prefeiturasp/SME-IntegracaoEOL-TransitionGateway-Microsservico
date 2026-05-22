@@ -15,15 +15,6 @@ from apps.professores.views import (
     ValidadeProfessorView,
 )
 
-_PROFESSOR_DISCIPLINA_TURMAS_PATH = "/".join(
-    [
-        "professores/<str:codigo_rf>",
-        "disciplina",
-        "<str:disciplina_id>",
-        "turmas",
-        "",
-    ]
-)
 
 urlpatterns = [
     path(
@@ -31,7 +22,7 @@ urlpatterns = [
         ProfessorBuscarPorRfView.as_view(),
     ),
     path(
-        _PROFESSOR_DISCIPLINA_TURMAS_PATH,
+        f"professores/<str:codigo_rf>/disciplina/<str:disciplina_id>/turmas/",
         ProfessorDisciplinaTurmasView.as_view(),
     ),
     path(
