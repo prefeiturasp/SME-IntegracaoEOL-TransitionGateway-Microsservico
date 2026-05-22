@@ -19,24 +19,29 @@ class ProgramasEduUrlsTest(SimpleTestCase):
     """Valida os nomes dos parâmetros nas rotas."""
 
     def test_preserva_kwargs_turmas_pap(self) -> None:
+        """Verifica os kwargs extraidos da rota de turmas PAP."""
         match = resolve("/api/alunos/turmas-pap/2026/ues/123/")
         self.assertEqual(
             match.kwargs, {"ano_letivo": 2026, "codigo_escola": "123"}
         )
 
     def test_preserva_kwargs_alunos_pap(self) -> None:
+        """Verifica os kwargs extraidos da rota de alunos PAP."""
         match = resolve("/api/alunos/alunos-pap/2026/")
         self.assertEqual(match.kwargs, {"ano_letivo": 2026})
 
     def test_preserva_kwargs_pap_ano_corrente(self) -> None:
+        """Verifica que a rota de PAP do ano corrente nao expoe kwargs."""
         match = resolve("/api/alunos/pap/ano-corrente/")
         self.assertEqual(match.kwargs, {})
 
     def test_preserva_kwargs_pap_ano_letivo(self) -> None:
+        """Verifica os kwargs extraidos da rota de PAP por ano letivo."""
         match = resolve("/api/alunos/pap/ano-letivo/2026/")
         self.assertEqual(match.kwargs, {"ano_letivo": 2026})
 
     def test_preserva_kwargs_componentes_turmas_programa(self) -> None:
+        """Verifica os kwargs extraidos da rota de componentes do aluno."""
         match = resolve(
             "/api/alunos/123/turmas-programa/2026/componentes-curriculares/"
         )
@@ -45,6 +50,7 @@ class ProgramasEduUrlsTest(SimpleTestCase):
         )
 
     def test_preserva_kwargs_srm_paee_aluno(self) -> None:
+        """Verifica os kwargs extraidos da rota de SRM/PAEE do aluno."""
         match = resolve("/api/alunos/srm-paee/aluno/123/")
         self.assertEqual(match.kwargs, {"codigo_aluno": "123"})
 
@@ -54,6 +60,7 @@ class ObterTurmasPapViewTest(SimpleTestCase):
 
     @patch("apps.programasedu.views.services.listar_turmas_pap")
     def test_200(self, mock_service: MagicMock) -> None:
+        """Verifica a traducao da resposta de turmas PAP."""
         mock_service.return_value = [{"codigo_turma": "X", "turma_nome": "1A"}]
         client = _cliente_autenticado()
 
@@ -71,6 +78,7 @@ class ObterTurmasPapViewTest(SimpleTestCase):
     def test_400_quando_codigo_escola_em_branco(
         self, mock_service: MagicMock
     ) -> None:
+        """Verifica a rejeicao quando o codigo da escola vem em branco."""
         client = _cliente_autenticado()
 
         resp = client.get("/api/alunos/turmas-pap/2026/ues/%20%20/")
@@ -90,6 +98,7 @@ class VerificarAlunosPapViewTest(SimpleTestCase):
     def test_200_com_codigos_alunos_repetidos(
         self, mock_service: MagicMock
     ) -> None:
+        """Verifica a verificacao de alunos PAP com codigos repetidos."""
         mock_service.return_value = [
             {
                 "codigo_aluno": 1,
@@ -111,6 +120,7 @@ class VerificarAlunosPapViewTest(SimpleTestCase):
         )
 
     def test_400_quando_codigos_alunos_ausente(self) -> None:
+        """Verifica a rejeicao quando os codigos dos alunos nao sao informados."""
         client = _cliente_autenticado()
 
         resp = client.get("/api/alunos/alunos-pap/2026/")
@@ -127,6 +137,7 @@ class ObterAlunosPapAnoCorrenteViewTest(SimpleTestCase):
 
     @patch("apps.programasedu.views.services.listar_alunos_pap_ano_corrente")
     def test_200(self, mock_service: MagicMock) -> None:
+        """Verifica a resposta de alunos PAP do ano corrente."""
         mock_service.return_value = []
         client = _cliente_autenticado()
 
@@ -141,6 +152,7 @@ class ObterAlunosPapPorAnoLetivoViewTest(SimpleTestCase):
 
     @patch("apps.programasedu.views.services.listar_alunos_pap_por_ano")
     def test_200(self, mock_service: MagicMock) -> None:
+        """Verifica a resposta de alunos PAP por ano letivo."""
         mock_service.return_value = [
             {
                 "ano_letivo": 2026,
@@ -167,6 +179,7 @@ class ObterComponentesCurricularesTurmasProgramaAlunoViewTest(SimpleTestCase):
         "listar_componentes_turmas_programa_aluno"
     )
     def test_200(self, mock_service: MagicMock) -> None:
+        """Verifica a traducao da resposta de componentes do aluno."""
         mock_service.return_value = [
             {
                 "codigo_aluno": "1",
@@ -203,6 +216,7 @@ class ObterDadosSrmPaeeAlunoViewTest(SimpleTestCase):
 
     @patch("apps.programasedu.views.services.obter_dados_srm_paee_aluno")
     def test_200(self, mock_service: MagicMock) -> None:
+        """Verifica a traducao da resposta de SRM/PAEE do aluno."""
         mock_service.return_value = [
             {
                 "codigo_turma": 100,

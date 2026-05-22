@@ -12,6 +12,7 @@ class ListarTurmasPapTest(SimpleTestCase):
 
     @patch.object(services._client, "get")
     def test_chama_path_correto(self, mock_get: MagicMock) -> None:
+        """Verifica o path usado na consulta de turmas PAP."""
         mock_resp = MagicMock()
         mock_resp.json.return_value = [{"codigoTurma": "X", "turmaNome": "1A"}]
         mock_get.return_value = mock_resp
@@ -31,6 +32,7 @@ class VerificarAlunosPapTest(SimpleTestCase):
 
     @patch.object(services._client, "get")
     def test_propaga_codigos_alunos(self, mock_get: MagicMock) -> None:
+        """Verifica que os codigos dos alunos sao enviados como parametro."""
         mock_resp = MagicMock()
         mock_resp.json.return_value = []
         mock_get.return_value = mock_resp
@@ -50,6 +52,7 @@ class ListarAlunosPapAnoCorrenteTest(SimpleTestCase):
 
     @patch.object(services._client, "get")
     def test_chama_path_correto(self, mock_get: MagicMock) -> None:
+        """Verifica o path usado na consulta de alunos PAP do ano corrente."""
         mock_resp = MagicMock()
         mock_resp.json.return_value = []
         mock_get.return_value = mock_resp
@@ -66,6 +69,7 @@ class ListarAlunosPapPorAnoTest(SimpleTestCase):
 
     @patch.object(services._client, "get")
     def test_chama_path_correto(self, mock_get: MagicMock) -> None:
+        """Verifica o path usado na consulta de alunos PAP por ano letivo."""
         mock_resp = MagicMock()
         mock_resp.json.return_value = []
         mock_get.return_value = mock_resp
@@ -82,6 +86,7 @@ class ListarComponentesTurmasProgramaAlunoTest(SimpleTestCase):
 
     @patch.object(services._client, "get")
     def test_chama_path_correto(self, mock_get: MagicMock) -> None:
+        """Verifica o path usado na consulta de componentes do aluno."""
         mock_resp = MagicMock()
         mock_resp.status_code = 200
         mock_resp.content = b"[]"
@@ -101,6 +106,7 @@ class ListarComponentesTurmasProgramaAlunoTest(SimpleTestCase):
     def test_retorna_lista_vazia_quando_corpo_vazio(
         self, mock_get: MagicMock
     ) -> None:
+        """Verifica que corpo vazio resulta em lista vazia."""
         mock_resp = MagicMock()
         mock_resp.status_code = 200
         mock_resp.content = b""
@@ -118,6 +124,7 @@ class ObterDadosSrmPaeeAlunoTest(SimpleTestCase):
 
     @patch.object(services._client, "get")
     def test_chama_path_correto(self, mock_get: MagicMock) -> None:
+        """Verifica o path usado na consulta de SRM/PAEE do aluno."""
         mock_resp = MagicMock()
         mock_resp.status_code = 200
         mock_resp.content = b"[]"
@@ -134,6 +141,7 @@ class ObterDadosSrmPaeeAlunoTest(SimpleTestCase):
     def test_retorna_lista_vazia_quando_corpo_vazio(
         self, mock_get: MagicMock
     ) -> None:
+        """Verifica que corpo vazio resulta em lista vazia."""
         mock_resp = MagicMock()
         mock_resp.status_code = 200
         mock_resp.content = b""
