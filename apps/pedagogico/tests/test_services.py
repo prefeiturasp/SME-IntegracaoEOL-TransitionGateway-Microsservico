@@ -6,6 +6,7 @@ from django.test import SimpleTestCase
 
 from apps.pedagogico import services
 
+# Prefixo das rotas de componentes curriculares no sidecar pedagógico.
 _BASE = "/api/v1/pedagogico/componentes-curriculares"
 
 
@@ -14,6 +15,7 @@ class GetComponentesUeAnosTest(SimpleTestCase):
 
     @patch("apps.pedagogico.services._client")
     def test_chama_path_correto(self, mock_client: MagicMock) -> None:
+        """Monta o path e envia os anos escolares como query params."""
         mock_client.get.return_value.json.return_value = []
 
         result = services.get_componentes_ue_anos(
@@ -36,6 +38,7 @@ class GetComponentesTurmasProgramaTest(SimpleTestCase):
 
     @patch("apps.pedagogico.services._client")
     def test_chama_path_correto(self, mock_client: MagicMock) -> None:
+        """Monta o path de turmas programa por UE e modalidade."""
         mock_client.get.return_value.json.return_value = []
 
         result = services.get_componentes_turmas_programa(
@@ -51,11 +54,60 @@ class GetComponentesTurmasProgramaTest(SimpleTestCase):
         self.assertEqual(result, [])
 
 
+class GetComponentesRegenciaTest(SimpleTestCase):
+    """Valida a consulta de componentes de regência."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_chama_path_correto(self, mock_client: MagicMock) -> None:
+        mock_client.get.return_value.json.return_value = []
+
+        result = services.get_componentes_regencia(2024)
+
+        mock_client.get.assert_called_once_with(f"{_BASE}/anos/2024/regencia")
+
+        self.assertEqual(result, [])
+
+
+class ValidarComponentePapTest(SimpleTestCase):
+    """Valida a consulta de componente PAP por turma e funcionário."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_chama_path_com_query_params(self, mock_client: MagicMock) -> None:
+        mock_client.get.return_value.json.return_value = True
+
+        result = services.validar_componente_pap("T001", "RF001", "P1")
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/turmas/T001/pap",
+            params={"login": "RF001", "idPerfil": "P1"},
+        )
+
+        self.assertTrue(result)
+
+
+class GetComponentesFuncionarioTest(SimpleTestCase):
+    """Valida a consulta de componentes por funcionário."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_chama_path_com_query_params(self, mock_client: MagicMock) -> None:
+        mock_client.get.return_value.json.return_value = []
+
+        result = services.get_componentes_funcionario("RF001", "P1")
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/funcionarios/RF001",
+            params={"idPerfil": "P1"},
+        )
+
+        self.assertEqual(result, [])
+
+
 class GetComponentesPorTurmasUeTest(SimpleTestCase):
     """Valida a consulta de componentes por turmas de uma UE."""
 
     @patch("apps.pedagogico.services._client")
     def test_chama_path_com_query_params(self, mock_client: MagicMock) -> None:
+        """Monta o path e repassa as turmas como query param."""
         mock_client.get.return_value.json.return_value = []
 
         result = services.get_componentes_por_turmas_ue(
@@ -79,6 +131,7 @@ class GetCatalogoComponentesTest(SimpleTestCase):
         self,
         mock_client: MagicMock,
     ) -> None:
+        """Consulta o catálogo na rota base, sem query params."""
         mock_client.get.return_value.json.return_value = []
 
         result = services.get_componentes_curriculares()
@@ -96,6 +149,7 @@ class GetGradeCurricularTest(SimpleTestCase):
         self,
         mock_client: MagicMock,
     ) -> None:
+        """Monta o path da grade curricular pelo ano letivo."""
         mock_client.get.return_value.json.return_value = []
 
         result = services.get_grade_curricular(2024)

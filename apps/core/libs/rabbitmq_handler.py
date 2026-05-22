@@ -12,7 +12,16 @@ import pika.exceptions
 
 
 class RabbitMQHandler(logging.Handler):
-    """Publica registros de log em uma fila RabbitMQ."""
+    """Publica registros de log em uma fila RabbitMQ.
+
+    Args:
+        host: Host do broker RabbitMQ.
+        queue: Nome da fila onde os logs são publicados.
+        username: Usuário de autenticação no broker.
+        password: Senha de autenticação no broker.
+        virtual_host: Virtual host utilizado na conexão.
+        level: Nível mínimo de log tratado pelo handler.
+    """
 
     def __init__(
         self,
@@ -35,6 +44,12 @@ class RabbitMQHandler(logging.Handler):
         self._local = threading.local()
 
     def _connect(self) -> None:
+        """Abre a conexão com o RabbitMQ e declara a fila durável.
+
+        Raises:
+            pika.exceptions.AMQPConnectionError: Quando não é possível
+                estabelecer conexão com o broker.
+        """
         params = pika.ConnectionParameters(
             host=self._host,
             virtual_host=self._virtual_host,
@@ -48,6 +63,12 @@ class RabbitMQHandler(logging.Handler):
         self._channel.queue_declare(queue=self._queue, durable=True)
 
     def _ensure_connected(self) -> bool:
+        """Garante uma conexão ativa, reconectando se necessário.
+
+        Returns:
+            `True` quando há conexão disponível ou `False` em caso de
+            falha ao conectar.
+        """
         try:
             if self._connection is None or self._connection.is_closed:
                 self._connect()
@@ -58,6 +79,14 @@ class RabbitMQHandler(logging.Handler):
             return False
 
     def emit(self, record: logging.LogRecord) -> None:
+        """Serializa o registro em JSON e o publica na fila.
+
+        Falhas de publicação são silenciadas para não interromper o fluxo
+        da aplicação; a conexão é descartada para reconexão futura.
+
+        Args:
+            record: Registro de log a ser publicado.
+        """
         if getattr(self._local, "in_emit", False):
             return
         self._local.in_emit = True

@@ -10,6 +10,7 @@ from apps.pedagogico import services
 from apps.pedagogico.serializers import (
     ComponenteBaseSerializer,
     ComponenteCurricularSerializer,
+    ComponenteRegenciaSerializer,
     GradeCurricularSerializer,
 )
 
@@ -28,6 +29,18 @@ class ComponentesCurricularesViewSet(APIView):
         responses={200: ComponenteBaseSerializer(many=True)},
     )
     def get(self, _request: Request) -> Response:
+        """Retorna o catálogo de componentes curriculares.
+
+        Args:
+            _request: Requisição HTTP recebida.
+
+        Returns:
+            Resposta HTTP com os componentes curriculares ativos.
+
+        Raises:
+            httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+            ValueError: Se a resposta do serviço não for JSON válido.
+        """
         data = services.get_componentes_curriculares()
         return Response(ComponenteBaseSerializer(data, many=True).data)
 
@@ -56,6 +69,19 @@ class ComponentesTurmaViewSet(APIView):
         responses={200: ComponenteBaseSerializer(many=True)},
     )
     def get(self, request: Request, ue_id: str) -> Response:
+        """Retorna componentes das turmas de uma UE.
+
+        Args:
+            request: Requisição HTTP com os códigos das turmas.
+            ue_id: Código da unidade educacional.
+
+        Returns:
+            Resposta HTTP com os componentes encontrados.
+
+        Raises:
+            httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+            ValueError: Se a resposta do serviço não for JSON válido.
+        """
         data = services.get_componentes_por_turmas_ue(
             ue_id=ue_id,
             turmas=request.query_params.getlist("turmas"),
@@ -89,11 +115,135 @@ class ComponentesTurmaProgramaViewSet(APIView):
     def get(
         self, _request: Request, ue_id: str, modalidade: int, ano_letivo: int
     ) -> Response:
+        """Retorna componentes de turmas programa.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            ue_id: Código da unidade educacional.
+            modalidade: Modalidade de ensino.
+            ano_letivo: Ano letivo.
+
+        Returns:
+            Resposta HTTP com os componentes de turmas programa.
+
+        Raises:
+            httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+            ValueError: Se a resposta do serviço não for JSON válido.
+        """
         data = services.get_componentes_turmas_programa(
             ue_id=ue_id,
             modalidade=modalidade,
             ano_letivo=ano_letivo,
         )
+        return Response(ComponenteCurricularSerializer(data, many=True).data)
+
+
+class ComponentesRegenciaViewSet(APIView):
+    """Lista componentes de regência por ano de turma."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Componentes de regência por ano de turma",
+        description="Retorna componentes curriculares de regência.",
+        responses={200: ComponenteRegenciaSerializer(many=True)},
+    )
+    def get(self, _request: Request, ano_turma: int) -> Response:
+        """Retorna componentes de regência por ano de turma.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            ano_turma: Ano da turma.
+
+        Returns:
+            Resposta HTTP com os componentes de regência ou status 204.
+
+        Raises:
+            httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+            ValueError: Se a resposta do serviço não for JSON válido.
+        """
+        data = services.get_componentes_regencia(ano_turma)
+        if data == []:
+            return Response(status=204)
+        return Response(ComponenteRegenciaSerializer(data, many=True).data)
+
+
+class ValidarComponentePapViewSet(APIView):
+    """Verifica se a turma possui componente curricular PAP."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Valida componente PAP por turma e funcionário",
+        description="Verifica se a turma possui componente curricular PAP.",
+        responses={200: OpenApiTypes.BOOL},
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_turma: str,
+        login: str,
+        id_perfil: str,
+    ) -> Response:
+        """Valida se a turma possui componente PAP para o funcionário.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            codigo_turma: Código da turma.
+            login: Login/RF do funcionário.
+            id_perfil: Identificador do perfil.
+
+        Returns:
+            Resposta HTTP com o resultado booleano da validação.
+
+        Raises:
+            httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+            ValueError: Se a resposta do serviço não for JSON válido.
+        """
+        data = services.validar_componente_pap(
+            codigo_turma=codigo_turma,
+            login=login,
+            id_perfil=id_perfil,
+        )
+        return Response(data)
+
+
+class ComponentesFuncionarioViewSet(APIView):
+    """Lista componentes curriculares do funcionário."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Componentes curriculares por funcionário e perfil",
+        description="Retorna componentes curriculares do funcionário.",
+        responses={
+            200: ComponenteCurricularSerializer(many=True),
+            204: None,
+        },
+    )
+    def get(
+        self,
+        _request: Request,
+        login: str,
+        id_perfil: str,
+    ) -> Response:
+        """Retorna componentes curriculares do funcionário.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            login: Login/RF do funcionário.
+            id_perfil: Identificador do perfil.
+
+        Returns:
+            Resposta HTTP com os componentes ou status 204.
+
+        Raises:
+            httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+            ValueError: Se a resposta do serviço não for JSON válido.
+        """
+        data = services.get_componentes_funcionario(
+            login=login,
+            id_perfil=id_perfil,
+        )
+        if data == []:
+            return Response(status=204)
         return Response(ComponenteCurricularSerializer(data, many=True).data)
 
 
@@ -131,6 +281,21 @@ class ComponentesTurmaAnoViewSet(APIView):
     def get(
         self, request: Request, ue_id: str, modalidade: int, ano_letivo: int
     ) -> Response:
+        """Retorna componentes por UE, modalidade, ano e anos escolares.
+
+        Args:
+            request: Requisição HTTP com os anos escolares.
+            ue_id: Código da unidade educacional.
+            modalidade: Modalidade de ensino.
+            ano_letivo: Ano letivo.
+
+        Returns:
+            Resposta HTTP com os componentes encontrados.
+
+        Raises:
+            httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+            ValueError: Se a resposta do serviço não for JSON válido.
+        """
         data = services.get_componentes_ue_anos(
             ue_id=ue_id,
             modalidade=modalidade,
@@ -155,5 +320,18 @@ class GradeComponentesCurricularesViewSet(APIView):
         responses={200: GradeCurricularSerializer(many=True)},
     )
     def get(self, _request: Request, ano_letivo: int) -> Response:
+        """Retorna a grade curricular por ano letivo.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            ano_letivo: Ano letivo.
+
+        Returns:
+            Resposta HTTP com a grade curricular.
+
+        Raises:
+            httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+            ValueError: Se a resposta do serviço não for JSON válido.
+        """
         data = services.get_grade_curricular(ano_letivo)
         return Response(GradeCurricularSerializer(data, many=True).data)
