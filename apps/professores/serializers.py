@@ -51,7 +51,7 @@ class TurmasIdsSerializer(serializers.ListSerializer):
         super().__init__(*args, **kwargs)
 
 
-class NomeServidorSerializer(serializers.Serializer):
+class NomeCPFServidorSerializer(serializers.Serializer):
     """Serializa dados de identificação do servidor."""
 
     nome = serializers.CharField()
@@ -61,8 +61,8 @@ class NomeServidorSerializer(serializers.Serializer):
 class ProfessorBuscarPorRfSerializer(serializers.Serializer):
     """Serializa dados resumidos de professor."""
 
-    nome = serializers.CharField()
     codigoRF = serializers.CharField(source="codigo_rf")
+    nome = serializers.CharField()
 
 
 class FuncionarioEscolaSerializer(serializers.Serializer):
