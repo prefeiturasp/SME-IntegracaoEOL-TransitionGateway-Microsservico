@@ -1,6 +1,6 @@
 """Valida a conversão de respostas HTTP em dados Python."""
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from django.test import SimpleTestCase
 
