@@ -4,6 +4,7 @@ Gateway de transição entre os contratos legados do EOL e os novos microserviç
 
 ## Arquitetura
 
+
 ```
 Cliente externo
       │
