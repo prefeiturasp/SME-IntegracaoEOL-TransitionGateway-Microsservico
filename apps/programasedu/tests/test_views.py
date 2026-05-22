@@ -87,7 +87,7 @@ class ObterTurmasPapViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": "E necessario informar o codigo_escola."},
+            {"detail": "É necessário informar o codigo_escola."},
         )
         mock_service.assert_not_called()
 
@@ -129,7 +129,7 @@ class VerificarAlunosPapViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": ("E necessario informar ao menos um codigos_alunos.")},
+            {"detail": ("É necessário informar ao menos um codigos_alunos.")},
         )
 
 
