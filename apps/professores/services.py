@@ -183,7 +183,7 @@ def get_turmas_professor_disciplina(
         Lista de turmas atribuídas ou ausência de conteúdo.
     """
     resp = _client.post(
-        f"{_BASE}/{codigo_rf}/disciplina/{disciplina_id}/turmas",
+        f"{_BASE}/{codigo_rf}/disciplina/{disciplina_id}/turmas/",
         payload=codigos_turma,
     )
     return _client.json_or_none(resp)
