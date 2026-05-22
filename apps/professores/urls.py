@@ -22,7 +22,7 @@ urlpatterns = [
         ProfessorBuscarPorRfView.as_view(),
     ),
     path(
-        f"professores/<str:codigo_rf>/disciplina/<str:disciplina_id>/turmas/",
+        "professores/<str:codigo_rf>/disciplina/<str:disciplina_id>/turmas/",
         ProfessorDisciplinaTurmasView.as_view(),
     ),
     path(
