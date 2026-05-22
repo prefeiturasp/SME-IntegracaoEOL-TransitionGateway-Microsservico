@@ -315,7 +315,7 @@ class GetTurmasProfessorDisciplinaTest(SimpleTestCase):
         )
 
         mock_post.assert_called_once_with(
-            "/api/v1/professores/000001/disciplina/5/turmas",
+            "/api/v1/professores/000001/disciplina/5/turmas/",
             payload=["3030050"],
         )
         self.assertEqual(result, payload)
