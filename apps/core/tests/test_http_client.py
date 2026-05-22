@@ -16,6 +16,12 @@ def _make_client() -> ServiceClient:
     )
 
 
+def _mock_httpx_client(mock_client_cls: MagicMock) -> MagicMock:
+    mock_client = mock_client_cls.return_value
+    mock_client.__enter__.return_value = mock_client
+    return mock_client
+
+
 class ServiceClientTest(SimpleTestCase):
     """Valida chamadas HTTP e health check."""
 
@@ -30,7 +36,7 @@ class ServiceClientTest(SimpleTestCase):
             api_key="secret",
             api_key_header="X-Test-Key",
         )
-        mock_client = mock_client_cls.return_value.__enter__.return_value
+        mock_client = _mock_httpx_client(mock_client_cls)
         mock_response = MagicMock()
         mock_client.get.return_value = mock_response
 
@@ -54,7 +60,7 @@ class ServiceClientTest(SimpleTestCase):
         self, mock_client_cls: MagicMock
     ) -> None:
         svc = _make_client()
-        mock_client = mock_client_cls.return_value.__enter__.return_value
+        mock_client = _mock_httpx_client(mock_client_cls)
         mock_response = MagicMock()
         mock_client.post.return_value = mock_response
 
@@ -74,7 +80,7 @@ class ServiceClientTest(SimpleTestCase):
         self, mock_client_cls: MagicMock
     ) -> None:
         svc = _make_client()
-        mock_client = mock_client_cls.return_value.__enter__.return_value
+        mock_client = _mock_httpx_client(mock_client_cls)
         mock_client.get.return_value = MagicMock(status_code=204)
 
         self.assertTrue(svc.is_healthy())
@@ -89,7 +95,7 @@ class ServiceClientTest(SimpleTestCase):
         self, mock_client_cls: MagicMock
     ) -> None:
         svc = _make_client()
-        mock_client = mock_client_cls.return_value.__enter__.return_value
+        mock_client = _mock_httpx_client(mock_client_cls)
         mock_client.get.return_value = MagicMock(status_code=500)
 
         self.assertFalse(svc.is_healthy())
