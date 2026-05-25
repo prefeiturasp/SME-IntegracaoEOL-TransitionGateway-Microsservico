@@ -42,6 +42,42 @@ class ComponenteCurricularSerializer(serializers.Serializer):
     )  # NOSONAR
 
 
+class ComponenteRegenciaSerializer(serializers.Serializer):
+    """Serializa dados de componente curricular de regência."""
+
+    anoTurma = serializers.CharField(
+        source="ano_turma", allow_null=True
+    )  # NOSONAR
+    anoLetivo = serializers.IntegerField(source="ano_letivo")  # NOSONAR
+    codigo = serializers.IntegerField()
+    codigoComponenteTerritorioSaber = serializers.IntegerField(
+        source="codigo_componente_territorio_saber", allow_null=True
+    )  # NOSONAR
+    descricao = serializers.CharField()
+    territorioSaber = serializers.BooleanField(
+        source="territorio_saber"
+    )  # NOSONAR
+    tipoEscola = serializers.CharField(
+        source="tipo_escola", allow_null=True
+    )  # NOSONAR
+    turnoTurma = serializers.IntegerField(
+        source="turno_turma", allow_null=True
+    )  # NOSONAR
+    componentePlanejamentoRegencia = serializers.BooleanField(
+        source="componente_planejamento_regencia"
+    )  # NOSONAR
+    turmaCodigo = serializers.CharField(
+        source="turma_codigo", allow_null=True
+    )  # NOSONAR
+    professor = serializers.CharField(allow_null=True)
+    inicioAtribuicao = serializers.DateTimeField(
+        source="inicio_atribuicao", allow_null=True
+    )  # NOSONAR
+    fimAtribuicao = serializers.DateTimeField(
+        source="fim_atribuicao", allow_null=True
+    )  # NOSONAR
+
+
 class GradeCurricularSerializer(serializers.Serializer):
     """Serializa dados da grade curricular por ano letivo."""
 

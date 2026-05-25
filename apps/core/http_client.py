@@ -31,6 +31,20 @@ class ServiceClient:
         self.dominio = dominio
         self._api_key = api_key
         self._api_key_header = api_key_header
+        self._client: httpx.Client | None = None
+
+    def _http_client(self) -> httpx.Client:
+        """Retorna o cliente HTTP persistente.
+
+        Returns:
+            Cliente HTTP configurado com timeout e keep-alive.
+        """
+        if self._client is None:
+            self._client = httpx.Client(
+                timeout=settings.GATEWAY_TIMEOUT_SECONDS,
+                follow_redirects=True,
+            )
+        return self._client
 
     def _headers(self) -> dict[str, str]:
         """Monta os headers padrão da requisição.
@@ -59,13 +73,11 @@ class ServiceClient:
         Raises:
             httpx.HTTPError: Em caso de falha de transporte ou timeout.
         """
-        with httpx.Client(timeout=settings.GATEWAY_TIMEOUT_SECONDS) as client:
-            return client.get(
-                f"{self.base_url}{path}",
-                headers=self._headers(),
-                params=params,
-                follow_redirects=True,
-            )
+        return self._http_client().get(
+            f"{self.base_url}{path}",
+            headers=self._headers(),
+            params=params,
+        )
 
     def post(
         self,
@@ -86,14 +98,12 @@ class ServiceClient:
         Raises:
             httpx.HTTPError: Em caso de falha de transporte ou timeout.
         """
-        with httpx.Client(timeout=settings.GATEWAY_TIMEOUT_SECONDS) as client:
-            return client.post(
-                f"{self.base_url}{path}",
-                headers=self._headers(),
-                json=payload,
-                params=params,
-                follow_redirects=True,
-            )
+        return self._http_client().post(
+            f"{self.base_url}{path}",
+            headers=self._headers(),
+            json=payload,
+            params=params,
+        )
 
     def json_or_none(self, resp: httpx.Response) -> Any:
         """Retorna JSON ou None para respostas sem conteúdo.
@@ -118,12 +128,16 @@ class ServiceClient:
             `True` quando o serviço responde sem erro de servidor.
         """
         try:
-            timeout = settings.GATEWAY_TIMEOUT_SECONDS
-            with httpx.Client(timeout=timeout) as client:
-                response = client.get(
-                    f"{self.base_url}/health/",
-                    headers=self._headers(),
-                )
-                return response.status_code < 500
+            response = self._http_client().get(
+                f"{self.base_url}/health/",
+                headers=self._headers(),
+            )
+            return response.status_code < 500
         except Exception:
             return False
+
+    def close(self) -> None:
+        """Fecha conexões HTTP mantidas pelo cliente."""
+        if self._client is not None:
+            self._client.close()
+            self._client = None

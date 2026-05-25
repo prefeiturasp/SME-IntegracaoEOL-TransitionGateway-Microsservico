@@ -1,6 +1,6 @@
 """Valida a conversão de respostas HTTP em dados Python."""
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from django.test import SimpleTestCase
 
@@ -66,3 +66,29 @@ class JsonOrNoneTest(SimpleTestCase):
         result = self.svc.json_or_none(resp)
 
         self.assertIsNone(result)
+
+
+class ServiceClientRequestTest(SimpleTestCase):
+    """Valida chamadas HTTP executadas pelo ServiceClient."""
+
+    @patch("apps.core.http_client.httpx.Client")
+    def test_reaproveita_cliente_http_em_gets(
+        self, mock_client: MagicMock
+    ) -> None:
+        svc = _make_client()
+
+        svc.get("/a")
+        svc.get("/b")
+
+        mock_client.assert_called_once()
+        instance = mock_client.return_value
+        self.assertEqual(instance.get.call_count, 2)
+
+    @patch("apps.core.http_client.httpx.Client")
+    def test_close_fecha_cliente_http(self, mock_client: MagicMock) -> None:
+        svc = _make_client()
+        svc.get("/a")
+
+        svc.close()
+
+        mock_client.return_value.close.assert_called_once_with()

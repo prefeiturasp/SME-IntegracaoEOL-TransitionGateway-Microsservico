@@ -39,6 +39,22 @@ _GRADE = {
     "modalidade": 5,
 }
 
+_REGENCIA = {
+    "ano_turma": "1",
+    "ano_letivo": 2024,
+    "codigo": 1,
+    "codigo_componente_territorio_saber": 0,
+    "descricao": "Regencia",
+    "territorio_saber": False,
+    "tipo_escola": None,
+    "turno_turma": 0,
+    "componente_planejamento_regencia": False,
+    "turma_codigo": None,
+    "professor": None,
+    "inicio_atribuicao": None,
+    "fim_atribuicao": None,
+}
+
 
 def _cliente_autenticado() -> APIClient:
     """Cria um APIClient autenticado para os testes."""
@@ -99,6 +115,88 @@ class GradeComponentesCurricularesViewSetTest(SimpleTestCase):
         )
         self.assertEqual(resp.data[0]["codigoAnoTurma"], "1")
         mock_svc.assert_called_once_with(2024)
+
+
+class ComponentesRegenciaViewSetTest(SimpleTestCase):
+    @patch("apps.pedagogico.views.services.get_componentes_regencia")
+    def test_200_retorna_regencia(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = [_REGENCIA]
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PREFIX}/anos/2024/regencia/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data[0]["anoTurma"], "1")
+        self.assertEqual(resp.data[0]["anoLetivo"], 2024)
+        self.assertEqual(
+            resp.data[0]["codigoComponenteTerritorioSaber"],
+            0,
+        )
+        self.assertEqual(
+            resp.data[0]["componentePlanejamentoRegencia"],
+            False,
+        )
+        mock_svc.assert_called_once_with(2024)
+
+    @patch("apps.pedagogico.views.services.get_componentes_regencia")
+    def test_204_quando_regencia_vazia(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PREFIX}/anos/9/regencia/")
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        mock_svc.assert_called_once_with(9)
+
+
+class ValidarComponentePapViewSetTest(SimpleTestCase):
+    @patch("apps.pedagogico.views.services.validar_componente_pap")
+    def test_200_repassa_parametros_do_path(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = True
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX}/turmas/T001/funcionarios/RF001/"
+            "perfis/P1/validar/pap/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertTrue(resp.data)
+        mock_svc.assert_called_once_with(
+            codigo_turma="T001",
+            login="RF001",
+            id_perfil="P1",
+        )
+
+
+class ComponentesFuncionarioViewSetTest(SimpleTestCase):
+    @patch("apps.pedagogico.views.services.get_componentes_funcionario")
+    def test_200_retorna_componentes(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = [_CC]
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PREFIX}/funcionarios/RF001/perfis/P1/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data[0]["planejamentoRegencia"], False)
+        self.assertEqual(resp.data[0]["turmaCodigo"], None)
+        mock_svc.assert_called_once_with(
+            login="RF001",
+            id_perfil="P1",
+        )
+
+    @patch("apps.pedagogico.views.services.get_componentes_funcionario")
+    def test_204_quando_lista_vazia(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PREFIX}/funcionarios/RF001/perfis/P1/")
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        mock_svc.assert_called_once_with(
+            login="RF001",
+            id_perfil="P1",
+        )
 
 
 class ComponentesTurmaAnoViewSetTest(SimpleTestCase):
