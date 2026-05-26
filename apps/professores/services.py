@@ -29,12 +29,18 @@ def _primeiro_param(
     return value
 
 
-def _adicionar_cargo_id(data: Any, cargo_id: str | None) -> Any:
-    if not cargo_id or not isinstance(data, list):
+def _adicionar_id_filtro(
+    data: Any,
+    params: dict[str, str | list[str]],
+    nome_param: str,
+    nome_campo: str,
+) -> Any:
+    value = _primeiro_param(params, nome_param)
+    if not value or not isinstance(data, list):
         return data
     return [
-        {**item, "cargo_id": int(cargo_id)}
-        if isinstance(item, dict)
+        {**item, nome_campo: int(value)}
+        if isinstance(item, dict) and nome_campo not in item
         else item
         for item in data
     ]
@@ -207,7 +213,7 @@ def get_funcionarios_escola_cargos(
     path = f"{_BASE_ESCOLAS}/{codigo_ue}/funcionarios/"
     resp = _client.get(path, params=params) if params else _client.get(path)
     data = _client.json_or_none(resp)
-    return _adicionar_cargo_id(data, _primeiro_param(params, "cargos"))
+    return _adicionar_id_filtro(data, params, "cargos", "cargo_id")
 
 
 def get_funcionarios_escola_funcoes_atividades(
@@ -225,7 +231,13 @@ def get_funcionarios_escola_funcoes_atividades(
     """
     path = f"{_BASE_ESCOLAS}/{codigo_ue}/funcionarios/"
     resp = _client.get(path, params=params) if params else _client.get(path)
-    return _client.json_or_none(resp)
+    data = _client.json_or_none(resp)
+    return _adicionar_id_filtro(
+        data,
+        params,
+        "funcoes_atividades",
+        "codigo_funcao_atividade",
+    )
 
 
 def get_funcionarios_escola_funcoes_externas(
@@ -243,7 +255,13 @@ def get_funcionarios_escola_funcoes_externas(
     """
     path = f"{_BASE_ESCOLAS}/{codigo_ue}/funcionarios/"
     resp = _client.get(path, params=params) if params else _client.get(path)
-    return _client.json_or_none(resp)
+    data = _client.json_or_none(resp)
+    return _adicionar_id_filtro(
+        data,
+        params,
+        "funcoes_externas",
+        "funcao_externa",
+    )
 
 
 def get_turmas_professor_disciplina(

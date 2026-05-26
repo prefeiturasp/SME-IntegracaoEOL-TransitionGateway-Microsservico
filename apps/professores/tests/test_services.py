@@ -377,6 +377,38 @@ class GetFuncionariosEscolaFuncoesAtividadesTest(SimpleTestCase):
         )
         self.assertEqual(result, payload)
 
+    @patch.object(services._client, "get")
+    def test_adiciona_primeira_funcao_atividade_quando_payload_nao_tem_id(
+        self, mock_get: MagicMock
+    ) -> None:
+        payload = [
+            {
+                "codigo_rf": "7795246",
+                "nome": None,
+            },
+        ]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[{}]"
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_funcionarios_escola_funcoes_atividades(
+            "019465",
+            {"funcoes_atividades": ["30", "31"], "dre_codigo": "1"},
+        )
+
+        self.assertEqual(
+            result,
+            [
+                {
+                    "codigo_rf": "7795246",
+                    "nome": None,
+                    "codigo_funcao_atividade": 30,
+                },
+            ],
+        )
+
 
 class GetFuncionariosEscolaFuncoesExternasTest(SimpleTestCase):
     """Valida busca de funcionários por funções externas."""
@@ -407,6 +439,36 @@ class GetFuncionariosEscolaFuncoesExternasTest(SimpleTestCase):
             params={"funcoes_externas": ["5", "6"], "dre_codigo": "1"},
         )
         self.assertEqual(result, payload)
+
+    @patch.object(services._client, "get")
+    def test_adiciona_primeira_funcao_externa_quando_payload_nao_tem_id(
+        self, mock_get: MagicMock
+    ) -> None:
+        payload = [
+            {
+                "cpf": "11610699840",
+            },
+        ]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[{}]"
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_funcionarios_escola_funcoes_externas(
+            "400870",
+            {"funcoes_externas": ["5", "6"], "dre_codigo": "1"},
+        )
+
+        self.assertEqual(
+            result,
+            [
+                {
+                    "cpf": "11610699840",
+                    "funcao_externa": 5,
+                },
+            ],
+        )
 
 
 class GetTurmasProfessorDisciplinaTest(SimpleTestCase):
