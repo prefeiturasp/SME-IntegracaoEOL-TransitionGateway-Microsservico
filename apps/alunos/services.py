@@ -17,13 +17,11 @@ _client = ServiceClient(
 
 
 def get_informacoes_aluno(codigo_aluno: str) -> Any:
-    """Retorna informações do aluno.
+    """Retorna informações do aluno, ou ``None`` se não encontrado.
 
-    Args:
-        codigo_aluno: Código do aluno.
-
-    Returns:
-        Dados do aluno, ou None se não encontrado.
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
     """
     resp = _client.get(f"{_BASE}/{codigo_aluno}/informacoes")
     resp.raise_for_status()
@@ -31,13 +29,11 @@ def get_informacoes_aluno(codigo_aluno: str) -> Any:
 
 
 def get_necessidades_especiais_aluno(codigo_aluno: str) -> Any:
-    """Retorna necessidades especiais do aluno.
+    """Retorna a necessidade especial principal do aluno.
 
-    Args:
-        codigo_aluno: Código do aluno.
-
-    Returns:
-        Lista de necessidades especiais do aluno.
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
     """
     resp = _client.get(f"{_BASE}/{codigo_aluno}/necessidades-especiais")
     resp.raise_for_status()
@@ -60,8 +56,9 @@ def get_turmas_aluno(
         filtrar_situacao: Flag de situação do filtro legado.
         tipo_turma: Flag de tipo de turma do filtro legado.
 
-    Returns:
-        Lista de turmas do aluno.
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
     """
     path = f"{_BASE}/{codigo_aluno}/turmas/"
     if all(
@@ -78,13 +75,14 @@ def get_turmas_aluno(
 
 
 def listar_alunos(codigos_aluno: list[str]) -> Any:
-    """Retorna lista de alunos.
+    """Retorna lista de alunos pelos códigos informados.
 
     Args:
         codigos_aluno: Códigos dos alunos usados no filtro.
 
-    Returns:
-        Lista de alunos.
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
     """
     params: dict[str, Any] = {"codigos_aluno": codigos_aluno}
     resp = _client.get(f"{_BASE}/alunos", params=params)

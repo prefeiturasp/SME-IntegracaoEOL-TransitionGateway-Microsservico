@@ -39,7 +39,7 @@ def _turma_payload(codigo_aluno: int = 123456) -> dict:
 
 
 def _http_status_error(status_code: int, body: dict) -> httpx.HTTPStatusError:
-    request = httpx.Request("GET", "http://sidecar.local/test")
+    request = httpx.Request("GET", "https://sidecar.local/test")
     response = httpx.Response(status_code, json=body, request=request)
     return httpx.HTTPStatusError(
         "Erro no sidecar",
@@ -49,7 +49,7 @@ def _http_status_error(status_code: int, body: dict) -> httpx.HTTPStatusError:
 
 
 def _request_error() -> httpx.RequestError:
-    request = httpx.Request("GET", "http://sidecar.local/test")
+    request = httpx.Request("GET", "https://sidecar.local/test")
     return httpx.ConnectError("Sidecar indisponivel", request=request)
 
 
