@@ -49,6 +49,12 @@ _ESCOLA_POR_DRE_TIPO_CAMPOS = {
     "codigoEscola",
     "nomeEscola",
     "codigoDRE",
+    "tipoEscola",
+    "siglaTipoEscola",
+    "nomeDRE",
+    "siglaDRE",
+    "codigoSubprefeitura",
+    "nomeSubprefeitura",
 }
 
 _DADOS_ESCOLA_CAMPOS = {

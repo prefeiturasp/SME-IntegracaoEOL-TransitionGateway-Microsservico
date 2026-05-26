@@ -35,8 +35,12 @@ _ESCOLA_POR_TIPO = {
     "codigoEscola": "019308",
     "nomeEscola": "EMEF TESTE",
     "codigoDRE": "BT",
-    "tipoEscola": "EMEF",
+    "tipoEscola": "ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL",
     "siglaTipoEscola": "EMEF",
+    "nomeDRE": "DIRETORIA REGIONAL DE EDUCACAO BUTANTA",
+    "siglaDRE": "DRE - BT",
+    "codigoSubprefeitura": "50",
+    "nomeSubprefeitura": "BUTANTA",
 }
 
 _DADOS_ESCOLA = {
@@ -160,6 +164,16 @@ class DREDetalheViewTest(SimpleTestCase):
         resp = _cliente_autenticado().get("/api/DREs/108100/")
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
 
+    @patch("apps.institucional.views.services.get_dre")
+    def test_propaga_erro_http_nao_404(self, mock_svc: MagicMock) -> None:
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "500", request=MagicMock(), response=mock_response
+        )
+        with self.assertRaises(httpx.HTTPStatusError):
+            _cliente_autenticado().get("/api/DREs/108100/")
+
 
 class SubprefeiturasPorDREViewTest(SimpleTestCase):
     @patch("apps.institucional.views.services.get_subprefeituras_por_dre")
@@ -179,6 +193,16 @@ class SubprefeiturasPorDREViewTest(SimpleTestCase):
         )
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
 
+    @patch("apps.institucional.views.services.get_subprefeituras_por_dre")
+    def test_propaga_erro_http_nao_404(self, mock_svc: MagicMock) -> None:
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "500", request=MagicMock(), response=mock_response
+        )
+        with self.assertRaises(httpx.HTTPStatusError):
+            _cliente_autenticado().get("/api/DREs/108100/subprefeituras/")
+
 
 class EscolasPorDREViewTest(SimpleTestCase):
     """Valida a view de escolas por DRE."""
@@ -196,6 +220,16 @@ class EscolasPorDREViewTest(SimpleTestCase):
         resp = _cliente_autenticado().get("/api/DREs/INEXISTENTE/escola/")
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
 
+    @patch("apps.institucional.views.services.get_escolas_por_dre")
+    def test_propaga_erro_http_nao_404(self, mock_svc: MagicMock) -> None:
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "500", request=MagicMock(), response=mock_response
+        )
+        with self.assertRaises(httpx.HTTPStatusError):
+            _cliente_autenticado().get("/api/DREs/108100/escola/")
+
 
 class EscolasPorDREeTipoViewTest(SimpleTestCase):
     @patch("apps.institucional.views.services.get_escolas_por_dre_e_tipo")
@@ -212,7 +246,12 @@ class EscolasPorDREeTipoViewTest(SimpleTestCase):
         self.assertIn("codigoEscola", payload)
         self.assertIn("nomeEscola", payload)
         self.assertIn("codigoDRE", payload)
-        self.assertNotIn("tipoEscola", payload)
+        self.assertIn("tipoEscola", payload)
+        self.assertIn("siglaTipoEscola", payload)
+        self.assertIn("nomeDRE", payload)
+        self.assertIn("siglaDRE", payload)
+        self.assertIn("codigoSubprefeitura", payload)
+        self.assertIn("nomeSubprefeitura", payload)
 
     @patch("apps.institucional.views.services.get_escolas_por_dre_e_tipo")
     def test_404_quando_dre_inexistente(self, mock_svc: MagicMock) -> None:
@@ -221,6 +260,16 @@ class EscolasPorDREeTipoViewTest(SimpleTestCase):
             "/api/DREs/INEXISTENTE/escolas/EMEF/"
         )
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch("apps.institucional.views.services.get_escolas_por_dre_e_tipo")
+    def test_propaga_erro_http_nao_404(self, mock_svc: MagicMock) -> None:
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "500", request=MagicMock(), response=mock_response
+        )
+        with self.assertRaises(httpx.HTTPStatusError):
+            _cliente_autenticado().get("/api/DREs/108100/escolas/EMEF/")
 
 
 class UesPorDREViewTest(SimpleTestCase):
@@ -236,6 +285,16 @@ class UesPorDREViewTest(SimpleTestCase):
         mock_svc.side_effect = _httpx_404()
         resp = _cliente_autenticado().get("/api/DREs/INEXISTENTE/ues/")
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch("apps.institucional.views.services.get_ues_por_dre")
+    def test_propaga_erro_http_nao_404(self, mock_svc: MagicMock) -> None:
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "500", request=MagicMock(), response=mock_response
+        )
+        with self.assertRaises(httpx.HTTPStatusError):
+            _cliente_autenticado().get("/api/DREs/108100/ues/")
 
 
 class UnidadesPorDREViewTest(SimpleTestCase):
@@ -254,6 +313,16 @@ class UnidadesPorDREViewTest(SimpleTestCase):
         )
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
 
+    @patch("apps.institucional.views.services.get_unidades_por_dre")
+    def test_propaga_erro_http_nao_404(self, mock_svc: MagicMock) -> None:
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "500", request=MagicMock(), response=mock_response
+        )
+        with self.assertRaises(httpx.HTTPStatusError):
+            _cliente_autenticado().get("/api/DREs/108100/unidades/")
+
 
 class DadosEscolaViewTest(SimpleTestCase):
     @patch("apps.institucional.views.services.get_dados_escola")
@@ -262,6 +331,21 @@ class DadosEscolaViewTest(SimpleTestCase):
         resp = _cliente_autenticado().get("/api/escolas/dados/019308/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         mock_svc.assert_called_once_with("019308")
+
+    @patch("apps.institucional.views.services.get_dados_escola")
+    def test_200_quando_retorna_lista_com_dict(
+        self, mock_svc: MagicMock
+    ) -> None:
+        mock_svc.return_value = [_DADOS_ESCOLA]
+        resp = _cliente_autenticado().get("/api/escolas/dados/019308/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertIn("nomeDRE", resp.json())
+
+    @patch("apps.institucional.views.services.get_dados_escola")
+    def test_200_quando_item_nao_e_dict(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = ["valor_escalar"]
+        resp = _cliente_autenticado().get("/api/escolas/dados/019308/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
     @patch("apps.institucional.views.services.get_dados_escola")
     def test_404_quando_sidecar_retorna_404(
@@ -276,6 +360,16 @@ class DadosEscolaViewTest(SimpleTestCase):
         mock_svc.return_value = None
         resp = _cliente_autenticado().get("/api/escolas/dados/999999/")
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch("apps.institucional.views.services.get_dados_escola")
+    def test_propaga_erro_http_nao_404(self, mock_svc: MagicMock) -> None:
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "500", request=MagicMock(), response=mock_response
+        )
+        with self.assertRaises(httpx.HTTPStatusError):
+            _cliente_autenticado().get("/api/escolas/dados/019308/")
 
 
 class TiposEscolasViewTest(SimpleTestCase):
@@ -305,12 +399,34 @@ class EscolaDetalheViewTest(SimpleTestCase):
         mock_svc.assert_called_once_with("019308")
 
     @patch("apps.institucional.views.services.get_escola")
+    def test_200_quando_retorna_lista(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = [_ESCOLA]
+        resp = _cliente_autenticado().get("/api/escolas/019308/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    @patch("apps.institucional.views.services.get_escola")
     def test_404_quando_escola_inexistente(
         self, mock_svc: MagicMock
     ) -> None:
         mock_svc.side_effect = _httpx_404()
         resp = _cliente_autenticado().get("/api/escolas/999999/")
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch("apps.institucional.views.services.get_escola")
+    def test_404_quando_item_vazio(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = []
+        resp = _cliente_autenticado().get("/api/escolas/999999/")
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch("apps.institucional.views.services.get_escola")
+    def test_propaga_erro_http_nao_404(self, mock_svc: MagicMock) -> None:
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "500", request=MagicMock(), response=mock_response
+        )
+        with self.assertRaises(httpx.HTTPStatusError):
+            _cliente_autenticado().get("/api/escolas/019308/")
 
 
 class EquipamentosViewTest(SimpleTestCase):
