@@ -4,7 +4,7 @@ RUN          = $(COMPOSE) run --rm gateway
 PYTEST_ARGS ?= --cov=apps --cov-report=term-missing --cov-fail-under=80
 
 .PHONY: run build stop \
-        test test-core test-pedagogico test-professores test-institucional \
+        test test-core test-pedagogico test-professores test-institucional test-alunos \
         lint coverage schema docs docs-clean help
 
 help:
@@ -23,6 +23,7 @@ help:
 	@echo "    make test-pedagogico  — apenas apps.pedagogico"
 	@echo "    make test-professores — apenas apps.professores"
 	@echo "    make test-institucional — apenas apps.institucional"
+	@echo "    make test-alunos      — apenas apps.alunos"
 	@echo ""
 	@echo "  Qualidade:"
 	@echo "    make lint             — ruff + black + isort + mypy"
@@ -69,6 +70,10 @@ test-professores:
 test-institucional:
 	$(RUN) python -m pytest apps/institucional/tests/ \
 		--cov=apps.institucional --cov-report=term-missing -v
+
+test-alunos:
+	$(RUN) python -m pytest apps/alunos/tests/ \
+		--cov=apps.alunos --cov-report=term-missing -v
 
 # ---------------------------------------------------------------------------
 # Qualidade

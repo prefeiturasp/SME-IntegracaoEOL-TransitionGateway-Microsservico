@@ -1,0 +1,92 @@
+"""Serviços do domínio de alunos."""
+
+from typing import Any
+
+from django.conf import settings
+
+from apps.core.http_client import ServiceClient
+
+_BASE = "/api/v1/alunos"
+
+_client = ServiceClient(
+    base_url=settings.SIDECAR_ALUNOS_URL,
+    dominio="alunos",
+    api_key=settings.SIDECAR_ALUNOS_API_KEY,
+    api_key_header=settings.SIDECAR_ALUNOS_API_KEY_HEADER,
+)
+
+
+def get_informacoes_aluno(codigo_aluno: str) -> Any:
+    """Retorna informações do aluno.
+
+    Args:
+        codigo_aluno: Código do aluno.
+
+    Returns:
+        Dados do aluno, ou None se não encontrado.
+    """
+    resp = _client.get(f"{_BASE}/{codigo_aluno}/informacoes")
+    resp.raise_for_status()
+    return _client.json_or_none(resp)
+
+
+def get_necessidades_especiais_aluno(codigo_aluno: str) -> Any:
+    """Retorna necessidades especiais do aluno.
+
+    Args:
+        codigo_aluno: Código do aluno.
+
+    Returns:
+        Lista de necessidades especiais do aluno.
+    """
+    resp = _client.get(f"{_BASE}/{codigo_aluno}/necessidades-especiais")
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
+def get_turmas_aluno(
+    codigo_aluno: str,
+    ano_letivo: str | None = None,
+    historico: str | None = None,
+    filtrar_situacao: str | None = None,
+    tipo_turma: str | None = None,
+) -> Any:
+    """Retorna turmas do aluno.
+
+    Args:
+        codigo_aluno: Código do aluno.
+        ano_letivo: Ano letivo do filtro legado.
+        historico: Flag de histórico do filtro legado.
+        filtrar_situacao: Flag de situação do filtro legado.
+        tipo_turma: Flag de tipo de turma do filtro legado.
+
+    Returns:
+        Lista de turmas do aluno.
+    """
+    path = f"{_BASE}/{codigo_aluno}/turmas/"
+    if all(
+        value is not None
+        for value in (ano_letivo, historico, filtrar_situacao, tipo_turma)
+    ):
+        path = (
+            f"{path}anos_letivos/{ano_letivo}/historico/{historico}/"
+            f"filtrar-situacao/{filtrar_situacao}/tipo-turma/{tipo_turma}"
+        )
+    resp = _client.get(path)
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
+def listar_alunos(codigos_aluno: list[str]) -> Any:
+    """Retorna lista de alunos.
+
+    Args:
+        codigos_aluno: Códigos dos alunos usados no filtro.
+
+    Returns:
+        Lista de alunos.
+    """
+    params: dict[str, Any] = {"codigos_aluno": codigos_aluno}
+    resp = _client.get(f"{_BASE}/alunos", params=params)
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
