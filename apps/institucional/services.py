@@ -173,7 +173,11 @@ def get_dados_escola(codigo_escola: str) -> Any:
 
 
 def get_tipos_escolas() -> Any:
-    """Lista tipos de escola cadastrados."""
+    """Lista tipos de escola cadastrados.
+
+    Returns:
+        Tipos de escola cadastrados no sidecar institucional.
+    """
     resp = _client.get(f"{_BASE}/escolas/tiposEscolas/")
     resp.raise_for_status()
     return resp.json()

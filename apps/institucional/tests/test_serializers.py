@@ -18,6 +18,7 @@ class DRESerializerTest(SimpleTestCase):
     """Valida o serializer de DRE."""
 
     def test_payload_valido(self) -> None:
+        """Aceita payload com todos os campos obrigatórios preenchidos."""
         data = {
             "codigoDRE": "BT",
             "nomeDRE": "DRE BUTANTA",
@@ -35,7 +36,10 @@ class DRESerializerTest(SimpleTestCase):
 
 
 class SubprefeiturasSerializerTest(SimpleTestCase):
+    """Valida o serializer de subprefeitura."""
+
     def test_payload_valido(self) -> None:
+        """Aceita payload com todos os campos obrigatórios preenchidos."""
         data = {
             "codigoSubprefeitura": "00",
             "nomeSubprefeitura": "SUBPREFEITURA TESTE",
@@ -44,6 +48,7 @@ class SubprefeiturasSerializerTest(SimpleTestCase):
         self.assertTrue(s.is_valid(), s.errors)
 
     def test_campo_ausente_invalido(self) -> None:
+        """Rejeita o payload quando falta o campo nomeSubprefeitura."""
         data = {"codigoSubprefeitura": "00"}
         s = SubprefeiturasSerializer(data=data)
         self.assertFalse(s.is_valid())
@@ -51,7 +56,10 @@ class SubprefeiturasSerializerTest(SimpleTestCase):
 
 
 class EscolaPorDreETipoSerializerTest(SimpleTestCase):
+    """Valida o serializer de escola por DRE e tipo."""
+
     def test_payload_valido(self) -> None:
+        """Aceita payload com todos os campos obrigatórios preenchidos."""
         data = {
             "codigoEscola": "019308",
             "nomeEscola": "EMEF TESTE",
@@ -61,6 +69,7 @@ class EscolaPorDreETipoSerializerTest(SimpleTestCase):
         self.assertTrue(s.is_valid(), s.errors)
 
     def test_campo_ausente_invalido(self) -> None:
+        """Rejeita o payload quando falta o campo codigoDRE."""
         data = {"codigoEscola": "019308", "nomeEscola": "EMEF TESTE"}
         s = EscolaPorDreETipoSerializer(data=data)
         self.assertFalse(s.is_valid())
@@ -89,10 +98,12 @@ class EscolaResumoSerializerTest(SimpleTestCase):
     }
 
     def test_payload_completo_valido(self) -> None:
+        """Aceita payload com todos os campos preenchidos, incluindo nullable."""
         s = EscolaResumoSerializer(data=self._PAYLOAD)
         self.assertTrue(s.is_valid(), s.errors)
 
     def test_campos_nullable_aceitos(self) -> None:
+        """Aceita payload com campos nullable enviados como None."""
         payload = {
             **self._PAYLOAD,
             "tipoEscolaId": None,
@@ -126,10 +137,12 @@ class EscolaSerializerTest(SimpleTestCase):
     }
 
     def test_payload_valido(self) -> None:
+        """Aceita payload com todos os campos preenchidos."""
         s = EscolaSerializer(data=self._PAYLOAD)
         self.assertTrue(s.is_valid(), s.errors)
 
     def test_campos_nullable_aceitos(self) -> None:
+        """Aceita payload com campos nullable enviados como None."""
         payload = {
             **self._PAYLOAD,
             "tipoEscolaId": None,
@@ -140,6 +153,8 @@ class EscolaSerializerTest(SimpleTestCase):
 
 
 class DadosEscolaSerializerTest(SimpleTestCase):
+    """Valida o serializer de dados completos de escola."""
+
     _PAYLOAD = {
         "nomeDRE": "DIRETORIA REGIONAL TESTE",
         "siglaDRE": "DRE-T",
@@ -152,10 +167,12 @@ class DadosEscolaSerializerTest(SimpleTestCase):
     }
 
     def test_payload_valido(self) -> None:
+        """Aceita payload com todos os campos preenchidos."""
         s = DadosEscolaSerializer(data=self._PAYLOAD)
         self.assertTrue(s.is_valid(), s.errors)
 
     def test_campos_opcionais_aceitos(self) -> None:
+        """Aceita payload sem os campos opcionais codigoINEP e nomeExibicao."""
         payload = {
             k: v
             for k, v in self._PAYLOAD.items()
@@ -165,6 +182,7 @@ class DadosEscolaSerializerTest(SimpleTestCase):
         self.assertTrue(s.is_valid(), s.errors)
 
     def test_campo_obrigatorio_ausente_invalido(self) -> None:
+        """Rejeita o payload quando falta o campo obrigatório codigo."""
         payload = {k: v for k, v in self._PAYLOAD.items() if k != "codigo"}
         s = DadosEscolaSerializer(data=payload)
         self.assertFalse(s.is_valid())
@@ -172,7 +190,10 @@ class DadosEscolaSerializerTest(SimpleTestCase):
 
 
 class TipoEscolaSerializerTest(SimpleTestCase):
+    """Valida o serializer de tipo de escola."""
+
     def test_payload_valido(self) -> None:
+        """Aceita payload com todos os campos preenchidos."""
         data = {
             "codigo": 1,
             "descricaoSigla": "EMEF",
@@ -182,11 +203,13 @@ class TipoEscolaSerializerTest(SimpleTestCase):
         self.assertTrue(s.is_valid(), s.errors)
 
     def test_dt_atualizacao_opcional(self) -> None:
+        """Aceita payload sem o campo opcional dtAtualizacao."""
         data = {"codigo": 1, "descricaoSigla": "EMEF"}
         s = TipoEscolaSerializer(data=data)
         self.assertTrue(s.is_valid(), s.errors)
 
     def test_campo_obrigatorio_ausente_invalido(self) -> None:
+        """Rejeita o payload quando falta o campo obrigatório codigo."""
         data = {"descricaoSigla": "EMEF"}
         s = TipoEscolaSerializer(data=data)
         self.assertFalse(s.is_valid())
@@ -221,10 +244,12 @@ class EquipamentoSerializerTest(SimpleTestCase):
     }
 
     def test_payload_valido(self) -> None:
+        """Aceita payload com todos os campos preenchidos."""
         s = EquipamentoSerializer(data=self._PAYLOAD)
         self.assertTrue(s.is_valid(), s.errors)
 
     def test_campos_nullable_aceitos(self) -> None:
+        """Aceita payload com todos os campos nullable enviados como None."""
         payload = {
             **self._PAYLOAD,
             "nm_exibicao_equipamento": None,
@@ -250,6 +275,7 @@ class EquipamentoSerializerTest(SimpleTestCase):
         self.assertTrue(s.is_valid(), s.errors)
 
     def test_cd_equipamento_obrigatorio(self) -> None:
+        """Rejeita o payload quando falta o campo obrigatório cd_equipamento."""
         payload = {
             k: v
             for k, v in self._PAYLOAD.items()
