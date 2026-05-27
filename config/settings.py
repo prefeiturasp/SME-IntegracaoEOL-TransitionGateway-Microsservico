@@ -3,6 +3,8 @@
 import os
 from pathlib import Path
 
+from apps.alunos.utils import aluno_turmas_legacy_operation
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "")
@@ -23,6 +25,7 @@ INSTALLED_APPS = [
     "apps.professores",
     "apps.programasedu",
     "apps.institucional",
+    "apps.alunos",
 ]
 
 MIDDLEWARE = [
@@ -62,6 +65,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 API_KEY = os.getenv("API_KEY", "dev-key-default")
 API_KEY_HEADER = os.getenv("API_KEY_HEADER", "X-API-Key")
 
+
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": [
@@ -85,6 +89,16 @@ SPECTACULAR_SETTINGS = {
                 "name": API_KEY_HEADER,
             }
         }
+    },
+    "APPEND_PATHS": {
+        "/api/v1/alunos/{codigoAluno}/turmas": aluno_turmas_legacy_operation(
+            "v1_alunos_turmas_legacy_short_list"
+        ),
+        (
+            "/api/v1/alunos/{codigoAluno}/turmas/anosLetivos/{anoLetivo}/"
+            "historico/{historico}/filtrar-situacao/{filtrarSituacao}/"
+            "tipo-turma/{tipoTurma}"
+        ): aluno_turmas_legacy_operation("v1_alunos_turmas_legado_list"),
     },
     "SECURITY": [{"ApiKeyAuth": []}],
     "SWAGGER_UI_SETTINGS": {
@@ -122,6 +136,12 @@ SIDECAR_PROGRAMASEDU_URL = os.getenv(
 SIDECAR_PROGRAMASEDU_API_KEY = os.getenv("SIDECAR_PROGRAMASEDU_API_KEY", "")
 SIDECAR_PROGRAMASEDU_API_KEY_HEADER = os.getenv(
     "SIDECAR_PROGRAMASEDU_API_KEY_HEADER", "X-API-Key"
+)
+
+SIDECAR_ALUNOS_URL = os.getenv("SIDECAR_ALUNOS_URL", "http://localhost:9007")
+SIDECAR_ALUNOS_API_KEY = os.getenv("SIDECAR_ALUNOS_API_KEY", "")
+SIDECAR_ALUNOS_API_KEY_HEADER = os.getenv(
+    "SIDECAR_ALUNOS_API_KEY_HEADER", "X-API-Key"
 )
 
 GATEWAY_TIMEOUT_SECONDS = int(os.getenv("GATEWAY_TIMEOUT_SECONDS", "10"))
