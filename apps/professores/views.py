@@ -54,17 +54,6 @@ def _query_params(
     return params
 
 
-def _primeiro_query_param(
-    request: Request,
-    nomes: tuple[str, ...],
-) -> str | None:
-    for nome in nomes:
-        valor = request.query_params.get(nome)
-        if valor is not None:
-            return valor
-    return None
-
-
 def _parse_bool_param(value: str | None) -> bool | None:
     if value is None:
         return None
@@ -310,7 +299,7 @@ class EscolaFuncionariosFuncoesAtividadesView(APIView):
                 many=True,
             ),
             OpenApiParameter(
-                "dre_codigo",
+                "codigo_dre",
                 OpenApiTypes.INT,
                 OpenApiParameter.QUERY,
                 required=True,
@@ -327,7 +316,7 @@ class EscolaFuncionariosFuncoesAtividadesView(APIView):
         params = _query_params(
             request,
             {"funcoes_atividades"},
-            {"dre_codigo"},
+            {"codigo_dre"},
         )
         data = services.get_funcionarios_escola_funcoes_atividades(
             codigo_ue,
@@ -357,10 +346,10 @@ class EscolaFuncionariosFuncoesExternasView(APIView):
                 many=True,
             ),
             OpenApiParameter(
-                "dre_codigo",
+                "codigo_dre",
                 OpenApiTypes.INT,
                 OpenApiParameter.QUERY,
-                required=False,
+                required=True,
             ),
         ],
         responses={
@@ -371,14 +360,9 @@ class EscolaFuncionariosFuncoesExternasView(APIView):
     def get(self, request: Request, codigo_ue: str) -> Response:
         if not codigo_ue.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
-        dre_codigo = _primeiro_query_param(
-            request,
-            ("dreCodigo", "dre_codigo", "codigo_dre"),
-        )
-        if dre_codigo is None:
+        params = _query_params(request, {"funcoes"}, {"codigo_dre"})
+        if "codigo_dre" not in params:
             return Response(status=400)
-        params = _query_params(request, {"funcoes"}, set())
-        params["dre_codigo"] = dre_codigo
         data = services.get_funcionarios_escola_funcoes_externas(
             codigo_ue,
             params,
