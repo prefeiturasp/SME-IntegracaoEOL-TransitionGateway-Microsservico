@@ -424,7 +424,7 @@ class GetFuncionariosEscolaFuncoesAtividadesTest(SimpleTestCase):
 
         result = services.get_funcionarios_escola_funcoes_atividades(
             "019465",
-            {"funcoes_atividades": ["30", "31"], "dre_codigo": "1"},
+            {"funcoes_atividades": ["30", "31"], "codigo_dre": "1"},
         )
 
         mock_get.assert_has_calls(
@@ -433,14 +433,14 @@ class GetFuncionariosEscolaFuncoesAtividadesTest(SimpleTestCase):
                     "/api/v1/professores/escolas/019465/funcionarios/",
                     params={
                         "funcoes_atividades": ["30"],
-                        "dre_codigo": "1",
+                        "codigo_dre": "1",
                     },
                 ),
                 call(
                     "/api/v1/professores/escolas/019465/funcionarios/",
                     params={
                         "funcoes_atividades": ["31"],
-                        "dre_codigo": "1",
+                        "codigo_dre": "1",
                     },
                 ),
             ]
@@ -487,7 +487,7 @@ class GetFuncionariosEscolaFuncoesAtividadesTest(SimpleTestCase):
 
         result = services.get_funcionarios_escola_funcoes_atividades(
             "019465",
-            {"funcoes_atividades": ["30", "31"], "dre_codigo": "1"},
+            {"funcoes_atividades": ["30", "31"], "codigo_dre": "1"},
         )
 
         self.assertEqual(
@@ -507,12 +507,12 @@ class GetFuncionariosEscolaFuncoesAtividadesTest(SimpleTestCase):
         )
 
     @patch.object(services._client, "get")
-    def test_retorna_lista_vazia_com_apenas_dre_codigo(
+    def test_retorna_lista_vazia_com_apenas_codigo_dre(
         self, mock_get: MagicMock
     ) -> None:
         result = services.get_funcionarios_escola_funcoes_atividades(
             "019465",
-            {"dre_codigo": "1"},
+            {"codigo_dre": "1"},
         )
 
         mock_get.assert_not_called()
@@ -548,18 +548,18 @@ class GetFuncionariosEscolaFuncoesExternasTest(SimpleTestCase):
 
         result = services.get_funcionarios_escola_funcoes_externas(
             "400870",
-            {"funcoes": ["5", "6"], "dre_codigo": "1"},
+            {"funcoes": ["5", "6"], "codigo_dre": "1"},
         )
 
         mock_get.assert_has_calls(
             [
                 call(
                     "/api/v1/professores/escolas/400870/funcionarios/",
-                    params={"dre_codigo": "1", "funcoes_externas": ["5"]},
+                    params={"codigo_dre": "1", "funcoes_externas": ["5"]},
                 ),
                 call(
                     "/api/v1/professores/escolas/400870/funcionarios/",
-                    params={"dre_codigo": "1", "funcoes_externas": ["6"]},
+                    params={"codigo_dre": "1", "funcoes_externas": ["6"]},
                 ),
             ]
         )
@@ -601,7 +601,7 @@ class GetFuncionariosEscolaFuncoesExternasTest(SimpleTestCase):
 
         result = services.get_funcionarios_escola_funcoes_externas(
             "400870",
-            {"funcoes": ["5", "6"], "dre_codigo": "1"},
+            {"funcoes": ["5", "6"], "codigo_dre": "1"},
         )
 
         self.assertEqual(
@@ -619,12 +619,12 @@ class GetFuncionariosEscolaFuncoesExternasTest(SimpleTestCase):
         )
 
     @patch.object(services._client, "get")
-    def test_retorna_lista_vazia_com_apenas_dre_codigo(
+    def test_retorna_lista_vazia_com_apenas_codigo_dre(
         self, mock_get: MagicMock
     ) -> None:
         result = services.get_funcionarios_escola_funcoes_externas(
             "400870",
-            {"dre_codigo": "1"},
+            {"codigo_dre": "1"},
         )
 
         mock_get.assert_not_called()

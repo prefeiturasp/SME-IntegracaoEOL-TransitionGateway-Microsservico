@@ -623,7 +623,7 @@ class EscolaFuncionariosFuncoesAtividadesViewTest(SimpleTestCase):
 
         resp = client.get(
             "/api/escolas/019465/funcionarios/funcoes-atividades/"
-            "?funcoes_atividades=30&funcoes_atividades=31&dre_codigo=1"
+            "?funcoes_atividades=30&funcoes_atividades=31&codigo_dre=1"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -639,7 +639,7 @@ class EscolaFuncionariosFuncoesAtividadesViewTest(SimpleTestCase):
         )
         mock_service.assert_called_once_with(
             "019465",
-            {"funcoes_atividades": ["30", "31"], "dre_codigo": "1"},
+            {"funcoes_atividades": ["30", "31"], "codigo_dre": "1"},
         )
 
     @patch(
@@ -662,7 +662,7 @@ class EscolaFuncionariosFuncoesAtividadesViewTest(SimpleTestCase):
         "apps.professores.views.services."
         "get_funcionarios_escola_funcoes_atividades"
     )
-    def test_200_lista_vazia_com_apenas_dre_codigo(
+    def test_200_lista_vazia_com_apenas_codigo_dre(
         self, mock_service: MagicMock
     ) -> None:
         mock_service.return_value = []
@@ -670,14 +670,14 @@ class EscolaFuncionariosFuncoesAtividadesViewTest(SimpleTestCase):
 
         resp = client.get(
             "/api/escolas/019465/funcionarios/funcoes-atividades/"
-            "?dre_codigo=1"
+            "?codigo_dre=1"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
         mock_service.assert_called_once_with(
             "019465",
-            {"dre_codigo": "1"},
+            {"codigo_dre": "1"},
         )
 
     @patch(
@@ -732,7 +732,7 @@ class EscolaFuncionariosFuncoesExternasViewTest(SimpleTestCase):
 
         resp = client.get(
             "/api/escolas/400870/funcionarios/funcoes-externas/"
-            "?funcoes=5&funcoes=6&dreCodigo=1"
+            "?funcoes=5&funcoes=6&codigo_dre=1"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -747,14 +747,14 @@ class EscolaFuncionariosFuncoesExternasViewTest(SimpleTestCase):
         )
         mock_service.assert_called_once_with(
             "400870",
-            {"funcoes": ["5", "6"], "dre_codigo": "1"},
+            {"funcoes": ["5", "6"], "codigo_dre": "1"},
         )
 
     @patch(
         "apps.professores.views.services."
         "get_funcionarios_escola_funcoes_externas"
     )
-    def test_204_quando_sem_conteudo_com_dre_codigo(
+    def test_204_quando_sem_conteudo_com_codigo_dre(
         self, mock_service: MagicMock
     ) -> None:
         mock_service.return_value = None
@@ -762,7 +762,7 @@ class EscolaFuncionariosFuncoesExternasViewTest(SimpleTestCase):
 
         resp = client.get(
             "/api/escolas/400870/funcionarios/funcoes-externas/"
-            "?dreCodigo=1"
+            "?codigo_dre=1"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
@@ -771,7 +771,7 @@ class EscolaFuncionariosFuncoesExternasViewTest(SimpleTestCase):
         "apps.professores.views.services."
         "get_funcionarios_escola_funcoes_externas"
     )
-    def test_200_lista_vazia_com_apenas_dre_codigo(
+    def test_200_lista_vazia_com_apenas_codigo_dre(
         self, mock_service: MagicMock
     ) -> None:
         mock_service.return_value = []
@@ -779,21 +779,21 @@ class EscolaFuncionariosFuncoesExternasViewTest(SimpleTestCase):
 
         resp = client.get(
             "/api/escolas/400870/funcionarios/funcoes-externas/"
-            "?dre_codigo=1"
+            "?codigo_dre=1"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
         mock_service.assert_called_once_with(
             "400870",
-            {"dre_codigo": "1"},
+            {"codigo_dre": "1"},
         )
 
     @patch(
         "apps.professores.views.services."
         "get_funcionarios_escola_funcoes_externas"
     )
-    def test_400_quando_sem_dre_codigo(
+    def test_400_quando_sem_codigo_dre(
         self, mock_service: MagicMock
     ) -> None:
         client = _cliente_autenticado()
@@ -819,7 +819,7 @@ class EscolaFuncionariosFuncoesExternasViewTest(SimpleTestCase):
 
         resp = client.get(
             "/api/escolas/400870/funcionarios/funcoes-externas/"
-            "?dreCodigo=1"
+            "?codigo_dre=1"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
