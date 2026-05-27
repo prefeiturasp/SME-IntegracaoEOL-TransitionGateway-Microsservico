@@ -29,9 +29,7 @@ _MSG_CODIGO_UE_OBRIGATORIO = "E necessario informar o codigoUE."
 _MSG_REGISTRO_FUNCIONAL_OBRIGATORIO = (
     "E necessario informar o registro funcional."
 )
-_MSG_RESPOSTA_INVALIDA_SIDECAR = (
-    "Resposta invalida do sidecar de professores."
-)
+_MSG_RESPOSTA_INVALIDA_SIDECAR = "Resposta invalida do sidecar de professores."
 _CAMPOS_TURMA = {
     "codigo_turma",
     "data_disponibilizacao_aulas",
@@ -54,6 +52,17 @@ def _query_params(
         if valor is not None:
             params[nome] = valor
     return params
+
+
+def _primeiro_query_param(
+    request: Request,
+    nomes: tuple[str, ...],
+) -> str | None:
+    for nome in nomes:
+        valor = request.query_params.get(nome)
+        if valor is not None:
+            return valor
+    return None
 
 
 def _parse_bool_param(value: str | None) -> bool | None:
@@ -266,10 +275,10 @@ class EscolaFuncionariosCargosView(APIView):
                 many=True,
             ),
             OpenApiParameter(
-                "dre_codigo",
+                "dreCodigo",
                 OpenApiTypes.INT,
                 OpenApiParameter.QUERY,
-                required=False,
+                required=True,
             ),
         ],
         responses={200: FuncionarioCargoSerializer(many=True), 204: None},
@@ -291,9 +300,7 @@ class EscolaFuncionariosFuncoesAtividadesView(APIView):
 
     @extend_schema(
         tags=_TAG_ESCOLA,
-        description=(
-            "Retorna funcionários da escola por funções atividades."
-        ),
+        description=("Retorna funcionários da escola por funções atividades."),
         parameters=[
             OpenApiParameter(
                 "funcoes_atividades",
@@ -343,7 +350,7 @@ class EscolaFuncionariosFuncoesExternasView(APIView):
         description=("Retorna funcionários da escola por funções externas."),
         parameters=[
             OpenApiParameter(
-                "funcoes_externas",
+                "funcoes",
                 int,
                 OpenApiParameter.QUERY,
                 required=False,
@@ -364,7 +371,14 @@ class EscolaFuncionariosFuncoesExternasView(APIView):
     def get(self, request: Request, codigo_ue: str) -> Response:
         if not codigo_ue.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
-        params = _query_params(request, {"funcoes_externas"}, {"dre_codigo"})
+        dre_codigo = _primeiro_query_param(
+            request,
+            ("dreCodigo", "dre_codigo", "codigo_dre"),
+        )
+        if dre_codigo is None:
+            return Response(status=400)
+        params = _query_params(request, {"funcoes"}, set())
+        params["dre_codigo"] = dre_codigo
         data = services.get_funcionarios_escola_funcoes_externas(
             codigo_ue,
             params,

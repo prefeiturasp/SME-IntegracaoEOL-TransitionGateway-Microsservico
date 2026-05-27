@@ -560,6 +560,24 @@ class EscolaFuncionariosCargosViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
     @patch("apps.professores.views.services.get_funcionarios_escola_cargos")
+    def test_200_lista_vazia_com_apenas_dre_codigo(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/escolas/019465/funcionarios/cargos/?dre_codigo=1"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+        mock_service.assert_called_once_with(
+            "019465",
+            {"dre_codigo": "1"},
+        )
+
+    @patch("apps.professores.views.services.get_funcionarios_escola_cargos")
     def test_502_quando_sidecar_retorna_texto(
         self, mock_service: MagicMock
     ) -> None:
@@ -644,6 +662,28 @@ class EscolaFuncionariosFuncoesAtividadesViewTest(SimpleTestCase):
         "apps.professores.views.services."
         "get_funcionarios_escola_funcoes_atividades"
     )
+    def test_200_lista_vazia_com_apenas_dre_codigo(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/escolas/019465/funcionarios/funcoes-atividades/"
+            "?dre_codigo=1"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+        mock_service.assert_called_once_with(
+            "019465",
+            {"dre_codigo": "1"},
+        )
+
+    @patch(
+        "apps.professores.views.services."
+        "get_funcionarios_escola_funcoes_atividades"
+    )
     def test_502_quando_sidecar_retorna_texto(
         self, mock_service: MagicMock
     ) -> None:
@@ -685,14 +725,14 @@ class EscolaFuncionariosFuncoesExternasViewTest(SimpleTestCase):
         mock_service.return_value = [
             {
                 "cpf": "11610699840",
-                "funcao_externa": 5,
+                "funcao_externo": 5,
             },
         ]
         client = _cliente_autenticado()
 
         resp = client.get(
             "/api/escolas/400870/funcionarios/funcoes-externas/"
-            "?funcoes_externas=5&funcoes_externas=6&dre_codigo=1"
+            "?funcoes=5&funcoes=6&dreCodigo=1"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -707,14 +747,14 @@ class EscolaFuncionariosFuncoesExternasViewTest(SimpleTestCase):
         )
         mock_service.assert_called_once_with(
             "400870",
-            {"funcoes_externas": ["5", "6"], "dre_codigo": "1"},
+            {"funcoes": ["5", "6"], "dre_codigo": "1"},
         )
 
     @patch(
         "apps.professores.views.services."
         "get_funcionarios_escola_funcoes_externas"
     )
-    def test_204_quando_sem_conteudo(
+    def test_204_quando_sem_conteudo_com_dre_codigo(
         self, mock_service: MagicMock
     ) -> None:
         mock_service.return_value = None
@@ -722,9 +762,50 @@ class EscolaFuncionariosFuncoesExternasViewTest(SimpleTestCase):
 
         resp = client.get(
             "/api/escolas/400870/funcionarios/funcoes-externas/"
+            "?dreCodigo=1"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch(
+        "apps.professores.views.services."
+        "get_funcionarios_escola_funcoes_externas"
+    )
+    def test_200_lista_vazia_com_apenas_dre_codigo(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/escolas/400870/funcionarios/funcoes-externas/"
+            "?dre_codigo=1"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+        mock_service.assert_called_once_with(
+            "400870",
+            {"dre_codigo": "1"},
+        )
+
+    @patch(
+        "apps.professores.views.services."
+        "get_funcionarios_escola_funcoes_externas"
+    )
+    def test_400_quando_sem_dre_codigo(
+        self, mock_service: MagicMock
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/escolas/400870/funcionarios/funcoes-externas/"
+            "?funcoes=5"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(resp.content, b"")
+        mock_service.assert_not_called()
 
     @patch(
         "apps.professores.views.services."
@@ -738,6 +819,7 @@ class EscolaFuncionariosFuncoesExternasViewTest(SimpleTestCase):
 
         resp = client.get(
             "/api/escolas/400870/funcionarios/funcoes-externas/"
+            "?dreCodigo=1"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)

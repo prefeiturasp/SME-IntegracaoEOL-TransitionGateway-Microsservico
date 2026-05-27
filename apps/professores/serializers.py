@@ -107,7 +107,7 @@ class FuncionarioFuncaoExternaSerializer(serializers.Serializer):
     """Serializa vínculo de funcionário com função externa."""
 
     funcionarioCpf = serializers.CharField(source="cpf")
-    funcaoExternaId = serializers.IntegerField(source="funcao_externa")
+    funcaoExternaId = serializers.IntegerField(source="funcao_externo")
 
 
 class ProfessorTurmaSerializer(serializers.Serializer):
