@@ -3,6 +3,8 @@
 import os
 from pathlib import Path
 
+from apps.alunos.utils import aluno_turmas_legacy_operation
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "")
@@ -64,55 +66,6 @@ API_KEY = os.getenv("API_KEY", "dev-key-default")
 API_KEY_HEADER = os.getenv("API_KEY_HEADER", "X-API-Key")
 
 
-def _aluno_turmas_legacy_parameters() -> list[dict]:
-    return [
-        {
-            "in": "path",
-            "name": "codigoAluno",
-            "schema": {"type": "integer", "format": "int32"},
-            "required": True,
-        },
-        {
-            "in": "path",
-            "name": "anoLetivo",
-            "schema": {"type": "integer", "format": "int32"},
-            "required": True,
-        },
-        {
-            "in": "path",
-            "name": "historico",
-            "schema": {"type": "boolean"},
-            "required": True,
-        },
-        {
-            "in": "path",
-            "name": "filtrarSituacao",
-            "schema": {"type": "boolean", "default": True},
-            "required": True,
-        },
-        {
-            "in": "path",
-            "name": "tipoTurma",
-            "schema": {"type": "boolean", "default": True},
-            "required": True,
-        },
-    ]
-
-
-def _aluno_turmas_legacy_operation(operation_id: str) -> dict:
-    return {
-        "get": {
-            "operationId": operation_id,
-            "tags": ["Alunos"],
-            "summary": "Turmas do aluno",
-            "description": "Retorna lista de turmas do aluno.",
-            "parameters": _aluno_turmas_legacy_parameters(),
-            "responses": {"200": {"description": "Success"}},
-            "security": [{"ApiKeyAuth": []}],
-        }
-    }
-
-
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": [
@@ -138,14 +91,14 @@ SPECTACULAR_SETTINGS = {
         }
     },
     "APPEND_PATHS": {
-        "/api/v1/alunos/{codigoAluno}/turmas": _aluno_turmas_legacy_operation(
+        "/api/v1/alunos/{codigoAluno}/turmas": aluno_turmas_legacy_operation(
             "v1_alunos_turmas_legacy_short_list"
         ),
         (
             "/api/v1/alunos/{codigoAluno}/turmas/anosLetivos/{anoLetivo}/"
             "historico/{historico}/filtrar-situacao/{filtrarSituacao}/"
             "tipo-turma/{tipoTurma}"
-        ): _aluno_turmas_legacy_operation("v1_alunos_turmas_legado_list"),
+        ): aluno_turmas_legacy_operation("v1_alunos_turmas_legado_list"),
     },
     "SECURITY": [{"ApiKeyAuth": []}],
     "SWAGGER_UI_SETTINGS": {

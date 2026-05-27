@@ -12,7 +12,16 @@ _TZ_LEGADO = ZoneInfo("America/Sao_Paulo")
 
 
 def _get(instance: Any, *keys: str, default: Any = None) -> Any:
-    """Lê o primeiro campo disponível na instância, por ordem de prioridade."""
+    """Lê o primeiro campo disponível na instância.
+
+    Args:
+        instance: Dicionário ou objeto de origem.
+        *keys: Chaves consultadas em ordem de prioridade.
+        default: Valor retornado quando nenhuma chave existir.
+
+    Returns:
+        Valor encontrado ou ``default``.
+    """
     if isinstance(instance, dict):
         for key in keys:
             if key in instance:
@@ -21,7 +30,14 @@ def _get(instance: Any, *keys: str, default: Any = None) -> Any:
 
 
 def _parse_date(value: Any) -> date | None:
-    """Converte um valor em date, aceitando str, datetime ou date."""
+    """Transforma valor em ``date``.
+
+    Args:
+        value: Valor bruto em ``str``, ``datetime`` ou ``date``.
+
+    Returns:
+        Data normalizada, ou ``None`` quando o valor for inválido.
+    """
     if value in (None, ""):
         return None
     if isinstance(value, datetime):
@@ -41,7 +57,14 @@ def _parse_date(value: Any) -> date | None:
 
 
 def _datetime_legado(value: Any) -> str | None:
-    """Formata um valor de data/hora em ISO sem timezone e sem zeros à direita."""
+    """Formata data/hora no padrão ISO esperado pelo legado.
+
+    Args:
+        value: Valor bruto em ``str``, ``datetime`` ou ``date``.
+
+    Returns:
+        Data/hora sem timezone e sem zeros excedentes na fração.
+    """
     if value in (None, ""):
         return None
     if isinstance(value, datetime):
@@ -57,7 +80,14 @@ def _datetime_legado(value: Any) -> str | None:
 
 
 def _normalizar_datetime(value: str) -> str:
-    """Normaliza string ISO datetime para horário local, sem timezone e sem zeros na fração."""
+    """Normaliza string ISO datetime para o padrão legado.
+
+    Args:
+        value: String ISO de data/hora.
+
+    Returns:
+        String em horário local, sem timezone e sem zeros excedentes.
+    """
     valor_parse = value.replace("Z", "+00:00")
     try:
         parsed = datetime.fromisoformat(valor_parse)
@@ -84,7 +114,14 @@ def _normalizar_datetime(value: str) -> str:
 
 
 def _idade(value: Any) -> int | None:
-    """Calcula a idade em anos completos a partir de uma data de nascimento."""
+    """Calcula idade em anos completos.
+
+    Args:
+        value: Data de nascimento em formato aceito por ``_parse_date``.
+
+    Returns:
+        Idade calculada, ou ``None`` quando não houver data válida.
+    """
     nascimento = _parse_date(value)
     if nascimento is None:
         return None
@@ -96,7 +133,14 @@ def _idade(value: Any) -> int | None:
 
 
 def _celular_responsavel(instance: Any) -> str:
-    """Retorna o celular do responsável, concatenando DDD e número quando necessário."""
+    """Monta o celular do responsável.
+
+    Args:
+        instance: Dicionário ou objeto com campos de contato.
+
+    Returns:
+        Celular já informado ou concatenação de DDD e número.
+    """
     celular = _get(instance, "celular_responsavel", "celularResponsavel")
     if celular is not None:
         return str(celular)
@@ -108,20 +152,41 @@ def _celular_responsavel(instance: Any) -> str:
 
 
 def _string_or_none(value: Any) -> str | None:
-    """Converte o valor para str, retornando None para vazios."""
+    """Transforma valor em string quando houver conteúdo.
+
+    Args:
+        value: Valor bruto.
+
+    Returns:
+        String convertida, ou ``None`` para valores vazios.
+    """
     if value in (None, ""):
         return None
     return str(value)
 
 
 def _numero_chamada(instance: Any) -> str:
-    """Retorna o número de chamada do aluno, usando ``"0"`` como fallback."""
+    """Obtém o número de chamada do aluno.
+
+    Args:
+        instance: Dicionário ou objeto com os dados da matrícula.
+
+    Returns:
+        Número de chamada como string, usando ``"0"`` como fallback.
+    """
     value = _get(instance, "numero_aluno_chamada", "numeroAlunoChamada")
     return "0" if value in (None, "") else str(value)
 
 
 def _endereco_legado(instance: Any) -> dict[str, Any] | None:
-    """Normaliza o bloco de endereço para chaves camelCase esperadas pelo contrato."""
+    """Normaliza o bloco de endereço para o contrato legado.
+
+    Args:
+        instance: Dicionário ou objeto com campo ``endereco``.
+
+    Returns:
+        Endereço com chaves legadas, ou o valor original quando não for dict.
+    """
     endereco = _get(instance, "endereco")
     if not isinstance(endereco, dict):
         return endereco
@@ -150,6 +215,14 @@ class AlunoInformacoesSerializer(serializers.Serializer):
     """Serializa informações cadastrais do aluno."""
 
     def to_representation(self, instance: Any) -> dict[str, Any]:
+        """Transforma dados cadastrais no contrato legado.
+
+        Args:
+            instance: Dicionário ou objeto com os dados do aluno.
+
+        Returns:
+            Dicionário com os campos esperados pelo endpoint legado.
+        """
         return {
             "codigoAluno": _get(instance, "codigo_aluno", "codigoAluno"),
             "nomeAluno": _get(instance, "nome_aluno", "nomeAluno"),
@@ -181,6 +254,14 @@ class NecessidadeEspecialSerializer(serializers.Serializer):
     """Serializa necessidade especial do aluno."""
 
     def to_representation(self, instance: Any) -> dict[str, Any]:
+        """Transforma necessidade especial no contrato legado.
+
+        Args:
+            instance: Dicionário ou objeto com a necessidade especial.
+
+        Returns:
+            Dicionário com necessidade e recurso no formato legado.
+        """
         return {
             "codigoAluno": _get(instance, "codigo_aluno", "codigoAluno"),
             "tipoNecessidadeEspecial": _get(
@@ -208,6 +289,14 @@ class TurmaDoAlunoSerializer(serializers.Serializer):
     """Serializa dados de matrícula e turma do aluno."""
 
     def to_representation(self, instance: Any) -> dict[str, Any]:
+        """Transforma matrícula/turma no contrato legado.
+
+        Args:
+            instance: Dicionário ou objeto com dados de matrícula e turma.
+
+        Returns:
+            Dicionário com os campos de turma esperados pelo legado.
+        """
         data_nascimento = _get(
             instance,
             "data_nascimento",
@@ -288,9 +377,17 @@ class TurmaDoAlunoSerializer(serializers.Serializer):
 
 
 class AlunoPorCodigoSerializer(serializers.Serializer):
-    """Serializa dados de matrícula e turma do aluno com campos do contrato de listagem."""
+    """Serializa dados do aluno com campos do contrato de listagem."""
 
     def to_representation(self, instance: Any) -> dict[str, Any]:
+        """Transforma dados do aluno no contrato de listagem legado.
+
+        Args:
+            instance: Dicionário ou objeto com dados do aluno e matrícula.
+
+        Returns:
+            Dicionário com os campos esperados em ``/alunos/alunos``.
+        """
         return {
             "codigoAluno": _get(instance, "codigo_aluno", "codigoAluno"),
             "tipoTurno": _get(instance, "tipo_turno", "tipoTurno", default=0),

@@ -19,6 +19,12 @@ _client = ServiceClient(
 def get_informacoes_aluno(codigo_aluno: str) -> Any:
     """Retorna informações do aluno, ou ``None`` se não encontrado.
 
+    Args:
+        codigo_aluno: Código EOL do aluno.
+
+    Returns:
+        Payload retornado pelo sidecar, ou ``None`` quando não houver corpo.
+
     Raises:
         httpx.HTTPStatusError: Se o sidecar retornar status de erro.
         httpx.RequestError: Se o sidecar estiver inacessível.
@@ -30,6 +36,12 @@ def get_informacoes_aluno(codigo_aluno: str) -> Any:
 
 def get_necessidades_especiais_aluno(codigo_aluno: str) -> Any:
     """Retorna a necessidade especial principal do aluno.
+
+    Args:
+        codigo_aluno: Código EOL do aluno.
+
+    Returns:
+        Lista de necessidades especiais retornada pelo sidecar.
 
     Raises:
         httpx.HTTPStatusError: Se o sidecar retornar status de erro.
@@ -56,6 +68,9 @@ def get_turmas_aluno(
         filtrar_situacao: Flag de situação do filtro legado.
         tipo_turma: Flag de tipo de turma do filtro legado.
 
+    Returns:
+        Lista de turmas retornada pelo sidecar.
+
     Raises:
         httpx.HTTPStatusError: Se o sidecar retornar status de erro.
         httpx.RequestError: Se o sidecar estiver inacessível.
@@ -79,6 +94,9 @@ def listar_alunos(codigos_aluno: list[str]) -> Any:
 
     Args:
         codigos_aluno: Códigos dos alunos usados no filtro.
+
+    Returns:
+        Lista de alunos retornada pelo sidecar.
 
     Raises:
         httpx.HTTPStatusError: Se o sidecar retornar status de erro.

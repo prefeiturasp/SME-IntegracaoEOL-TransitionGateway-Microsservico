@@ -25,6 +25,14 @@ _MSG_SIDECAR_INDISPONIVEL = "Servico de alunos indisponivel."
 
 
 def _sidecar_error_response(exc: httpx.HTTPStatusError) -> Response:
+    """Monta resposta do gateway para erro HTTP do sidecar.
+
+    Args:
+        exc: Exceção HTTP lançada pelo cliente do sidecar.
+
+    Returns:
+        Resposta com o corpo e status retornados pelo sidecar.
+    """
     try:
         body: Any = exc.response.json()
     except ValueError:
@@ -34,6 +42,14 @@ def _sidecar_error_response(exc: httpx.HTTPStatusError) -> Response:
 
 
 def _sidecar_unavailable_response(_exc: httpx.RequestError) -> Response:
+    """Monta resposta de indisponibilidade do sidecar.
+
+    Args:
+        _exc: Exceção de comunicação com o sidecar.
+
+    Returns:
+        Resposta HTTP 503 no formato padrão do gateway.
+    """
     return Response(
         {"detail": _MSG_SIDECAR_INDISPONIVEL},
         status=503,
@@ -41,10 +57,26 @@ def _sidecar_unavailable_response(_exc: httpx.RequestError) -> Response:
 
 
 def _is_not_found(exc: httpx.HTTPStatusError) -> bool:
+    """Verifica se a exceção representa status HTTP 404.
+
+    Args:
+        exc: Exceção HTTP retornada pelo sidecar.
+
+    Returns:
+        ``True`` quando o status da resposta for 404.
+    """
     return exc.response.status_code == 404
 
 
 def _legacy_status_601_response(message: str) -> HttpResponse:
+    """Monta resposta com status 601 usado pelo legado.
+
+    Args:
+        message: Mensagem serializada no corpo da resposta.
+
+    Returns:
+        Resposta HTTP com status 601 e corpo JSON.
+    """
     response = HttpResponse(
         json.dumps(message, ensure_ascii=False),
         content_type="application/json",
@@ -63,6 +95,15 @@ class AlunoInformacoesView(APIView):
         responses={200: AlunoInformacoesSerializer, 204: None},
     )
     def get(self, _request: Request, codigo_aluno: str) -> Response:
+        """Busca informações cadastrais de um aluno.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            codigo_aluno: Código EOL do aluno.
+
+        Returns:
+            Resposta com dados cadastrais, 204 ou erro do sidecar.
+        """
         if not codigo_aluno.strip():
             return detail_response(_MSG_CODIGO_OBRIGATORIO)
         try:
@@ -88,6 +129,15 @@ class AlunoNecessidadesEspeciaisView(APIView):
         responses={200: NecessidadeEspecialSerializer},
     )
     def get(self, _request: Request, codigo_aluno: str) -> Response:
+        """Busca necessidades especiais do aluno.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            codigo_aluno: Código EOL do aluno.
+
+        Returns:
+            Resposta com a necessidade especial principal, 204 ou erro.
+        """
         if not codigo_aluno.strip():
             return detail_response(_MSG_CODIGO_OBRIGATORIO)
         try:
@@ -112,6 +162,15 @@ class AlunoTurmasView(APIView):
 
     @extend_schema(exclude=True)
     def get(self, _request: Request, codigo_aluno: str) -> Response:
+        """Busca turmas pelo endpoint curto legado.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            codigo_aluno: Código EOL do aluno.
+
+        Returns:
+            Resposta com lista de turmas do aluno.
+        """
         if not codigo_aluno.strip():
             return detail_response(_MSG_CODIGO_OBRIGATORIO)
         try:
@@ -128,6 +187,15 @@ class AlunoTurmasLegadoView(APIView):
 
     @extend_schema(exclude=True)
     def get(self, _request: Request, **kwargs: str) -> Response:
+        """Busca turmas pelo endpoint completo legado.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            **kwargs: Parâmetros de rota do contrato legado.
+
+        Returns:
+            Resposta com lista de turmas filtrada pelo sidecar.
+        """
         codigo_aluno = kwargs.get("codigoAluno")
         if codigo_aluno is None:
             return detail_response(_MSG_CODIGO_OBRIGATORIO)
@@ -167,6 +235,14 @@ class AlunosListView(APIView):
         responses={200: AlunoPorCodigoSerializer(many=True)},
     )
     def get(self, request: Request) -> Response:
+        """Lista alunos pelos códigos informados na query string.
+
+        Args:
+            request: Requisição HTTP recebida.
+
+        Returns:
+            Resposta com lista de alunos ou erro legado 601.
+        """
         codigos_aluno = request.query_params.getlist(
             "codigos_aluno"
         ) or request.query_params.getlist("codigosAluno")
