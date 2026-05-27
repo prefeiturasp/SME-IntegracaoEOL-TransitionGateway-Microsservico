@@ -275,7 +275,7 @@ class EscolaFuncionariosCargosView(APIView):
                 many=True,
             ),
             OpenApiParameter(
-                "dreCodigo",
+                "codigo_dre",
                 OpenApiTypes.INT,
                 OpenApiParameter.QUERY,
                 required=True,
