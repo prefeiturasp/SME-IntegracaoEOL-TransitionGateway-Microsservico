@@ -29,9 +29,7 @@ _MSG_CODIGO_UE_OBRIGATORIO = "E necessario informar o codigoUE."
 _MSG_REGISTRO_FUNCIONAL_OBRIGATORIO = (
     "E necessario informar o registro funcional."
 )
-_MSG_RESPOSTA_INVALIDA_SIDECAR = (
-    "Resposta invalida do sidecar de professores."
-)
+_MSG_RESPOSTA_INVALIDA_SIDECAR = "Resposta invalida do sidecar de professores."
 _CAMPOS_TURMA = {
     "codigo_turma",
     "data_disponibilizacao_aulas",
@@ -302,9 +300,7 @@ class EscolaFuncionariosFuncoesAtividadesView(APIView):
 
     @extend_schema(
         tags=_TAG_ESCOLA,
-        description=(
-            "Retorna funcionários da escola por funções atividades."
-        ),
+        description=("Retorna funcionários da escola por funções atividades."),
         parameters=[
             OpenApiParameter(
                 "funcoes_atividades",

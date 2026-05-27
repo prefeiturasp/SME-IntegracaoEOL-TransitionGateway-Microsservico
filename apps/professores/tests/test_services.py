@@ -360,6 +360,27 @@ class GetFuncionariosEscolaCargosTest(SimpleTestCase):
         self.assertEqual(result, [])
 
     @patch.object(services._client, "get")
+    def test_retorna_lista_vazia_quando_sidecar_nao_retorna_lista(
+        self, mock_get: MagicMock
+    ) -> None:
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"{}"
+        mock_resp.json.return_value = {"codigo_rf": "7730900"}
+        mock_get.return_value = mock_resp
+
+        result = services.get_funcionarios_escola_cargos(
+            "019465",
+            {"cargos": "3239", "dre_codigo": "1"},
+        )
+
+        mock_get.assert_called_once_with(
+            "/api/v1/professores/escolas/019465/funcionarios/",
+            params={"cargos": ["3239"], "dre_codigo": "1"},
+        )
+        self.assertEqual(result, [])
+
+    @patch.object(services._client, "get")
     def test_retorna_lista_vazia_com_apenas_dre_codigo(
         self, mock_get: MagicMock
     ) -> None:

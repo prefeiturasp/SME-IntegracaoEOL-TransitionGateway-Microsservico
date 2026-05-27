@@ -52,9 +52,11 @@ def _adicionar_id_filtro(
     if not value or not isinstance(data, list):
         return data
     return [
-        {**item, nome_campo: int(value)}
-        if isinstance(item, dict) and nome_campo not in item
-        else item
+        (
+            {**item, nome_campo: int(value)}
+            if isinstance(item, dict) and nome_campo not in item
+            else item
+        )
         for item in data
     ]
 
