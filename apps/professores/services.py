@@ -19,23 +19,36 @@ _client = ServiceClient(
 )
 
 
-def _primeiro_param(
+def _valores_param(
     params: dict[str, str | list[str]],
     nome: str,
-) -> str | None:
+) -> list[str]:
     value = params.get(nome)
     if isinstance(value, list):
-        return value[0] if value else None
-    return value
+        return [item for item in value if item]
+    if value:
+        return [value]
+    return []
+
+
+def _params_com_valor(
+    params: dict[str, str | list[str]],
+    nome: str,
+    nome_destino: str,
+    value: str,
+) -> dict[str, str | list[str]]:
+    params_filtrados = params.copy()
+    if nome_destino != nome:
+        params_filtrados.pop(nome, None)
+    params_filtrados[nome_destino] = [value]
+    return params_filtrados
 
 
 def _adicionar_id_filtro(
     data: Any,
-    params: dict[str, str | list[str]],
-    nome_param: str,
+    value: str | None,
     nome_campo: str,
 ) -> Any:
-    value = _primeiro_param(params, nome_param)
     if not value or not isinstance(data, list):
         return data
     return [
@@ -44,6 +57,32 @@ def _adicionar_id_filtro(
         else item
         for item in data
     ]
+
+
+def _get_funcionarios_escola_por_filtro(
+    codigo_ue: str,
+    params: dict[str, str | list[str]],
+    nome_param: str,
+    nome_campo: str,
+    nome_param_sidecar: str | None = None,
+) -> Any:
+    path = f"{_BASE_ESCOLAS}/{codigo_ue}/funcionarios/"
+    valores = _valores_param(params, nome_param)
+    if not valores:
+        return []
+
+    nome_destino = nome_param_sidecar or nome_param
+    resultado: list[Any] = []
+    for value in valores:
+        resp = _client.get(
+            path,
+            params=_params_com_valor(params, nome_param, nome_destino, value),
+        )
+        data = _client.json_or_none(resp)
+        data = _adicionar_id_filtro(data, value, nome_campo)
+        if isinstance(data, list):
+            resultado.extend(data)
+    return resultado
 
 
 def get_professor(rf_professor: str) -> Any:
@@ -210,10 +249,12 @@ def get_funcionarios_escola_cargos(
     Raises:
         ValueError: Quando o primeiro código de cargo não for numérico.
     """
-    path = f"{_BASE_ESCOLAS}/{codigo_ue}/funcionarios/"
-    resp = _client.get(path, params=params) if params else _client.get(path)
-    data = _client.json_or_none(resp)
-    return _adicionar_id_filtro(data, params, "cargos", "cargo_id")
+    return _get_funcionarios_escola_por_filtro(
+        codigo_ue,
+        params,
+        "cargos",
+        "cargo_id",
+    )
 
 
 def get_funcionarios_escola_funcoes_atividades(
@@ -229,11 +270,8 @@ def get_funcionarios_escola_funcoes_atividades(
     Returns:
         Lista de funcionários por funções atividades ou ausência de conteúdo.
     """
-    path = f"{_BASE_ESCOLAS}/{codigo_ue}/funcionarios/"
-    resp = _client.get(path, params=params) if params else _client.get(path)
-    data = _client.json_or_none(resp)
-    return _adicionar_id_filtro(
-        data,
+    return _get_funcionarios_escola_por_filtro(
+        codigo_ue,
         params,
         "funcoes_atividades",
         "codigo_funcao_atividade",
@@ -253,14 +291,12 @@ def get_funcionarios_escola_funcoes_externas(
     Returns:
         Lista de funcionários por funções externas ou ausência de conteúdo.
     """
-    path = f"{_BASE_ESCOLAS}/{codigo_ue}/funcionarios/"
-    resp = _client.get(path, params=params) if params else _client.get(path)
-    data = _client.json_or_none(resp)
-    return _adicionar_id_filtro(
-        data,
+    return _get_funcionarios_escola_por_filtro(
+        codigo_ue,
         params,
+        "funcoes",
+        "funcao_externo",
         "funcoes_externas",
-        "funcao_externa",
     )
 
 

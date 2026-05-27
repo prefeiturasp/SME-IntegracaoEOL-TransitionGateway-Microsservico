@@ -77,7 +77,7 @@ class FuncionarioFuncaoExternaSerializerTest(SimpleTestCase):
     def test_serializa_campos_legados(self) -> None:
         payload = {
             "cpf": "11610699840",
-            "funcao_externa": 5,
+            "funcao_externo": 5,
         }
 
         data = FuncionarioFuncaoExternaSerializer(payload).data

@@ -1,6 +1,6 @@
 """Valida os serviços do domínio de professores."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 from django.test import SimpleTestCase
 
@@ -297,26 +297,42 @@ class GetFuncionariosEscolaCargosTest(SimpleTestCase):
     def test_chama_path_correto_com_params(
         self, mock_get: MagicMock
     ) -> None:
-        payload = [
+        mock_resp_3239 = MagicMock()
+        mock_resp_3239.status_code = 200
+        mock_resp_3239.content = b"[{}]"
+        mock_resp_3239.json.return_value = [
             {
                 "codigo_rf": "7730900",
                 "nome": None,
             },
         ]
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.content = b"[{}]"
-        mock_resp.json.return_value = payload
-        mock_get.return_value = mock_resp
+        mock_resp_3240 = MagicMock()
+        mock_resp_3240.status_code = 200
+        mock_resp_3240.content = b"[{}]"
+        mock_resp_3240.json.return_value = [
+            {
+                "codigo_rf": "7730901",
+                "nome": None,
+            },
+        ]
+        mock_get.side_effect = [mock_resp_3239, mock_resp_3240]
 
         result = services.get_funcionarios_escola_cargos(
             "019465",
             {"cargos": ["3239", "3240"], "dre_codigo": "1"},
         )
 
-        mock_get.assert_called_once_with(
-            "/api/v1/professores/escolas/019465/funcionarios/",
-            params={"cargos": ["3239", "3240"], "dre_codigo": "1"},
+        mock_get.assert_has_calls(
+            [
+                call(
+                    "/api/v1/professores/escolas/019465/funcionarios/",
+                    params={"cargos": ["3239"], "dre_codigo": "1"},
+                ),
+                call(
+                    "/api/v1/professores/escolas/019465/funcionarios/",
+                    params={"cargos": ["3240"], "dre_codigo": "1"},
+                ),
+            ]
         )
         self.assertEqual(
             result,
@@ -326,24 +342,34 @@ class GetFuncionariosEscolaCargosTest(SimpleTestCase):
                     "nome": None,
                     "cargo_id": 3239,
                 },
+                {
+                    "codigo_rf": "7730901",
+                    "nome": None,
+                    "cargo_id": 3240,
+                },
             ],
         )
 
     @patch.object(services._client, "get")
-    def test_chama_path_correto_sem_params(
+    def test_retorna_lista_vazia_sem_cargos(
         self, mock_get: MagicMock
     ) -> None:
-        mock_resp = MagicMock()
-        mock_resp.status_code = 204
-        mock_resp.content = b""
-        mock_get.return_value = mock_resp
-
         result = services.get_funcionarios_escola_cargos("019465", {})
 
-        mock_get.assert_called_once_with(
-            "/api/v1/professores/escolas/019465/funcionarios/"
+        mock_get.assert_not_called()
+        self.assertEqual(result, [])
+
+    @patch.object(services._client, "get")
+    def test_retorna_lista_vazia_com_apenas_dre_codigo(
+        self, mock_get: MagicMock
+    ) -> None:
+        result = services.get_funcionarios_escola_cargos(
+            "019465",
+            {"dre_codigo": "1"},
         )
-        self.assertIsNone(result)
+
+        mock_get.assert_not_called()
+        self.assertEqual(result, [])
 
 
 class GetFuncionariosEscolaFuncoesAtividadesTest(SimpleTestCase):
@@ -353,45 +379,90 @@ class GetFuncionariosEscolaFuncoesAtividadesTest(SimpleTestCase):
     def test_chama_path_correto_com_params(
         self, mock_get: MagicMock
     ) -> None:
-        payload = [
+        mock_resp_30 = MagicMock()
+        mock_resp_30.status_code = 200
+        mock_resp_30.content = b"[{}]"
+        mock_resp_30.json.return_value = [
             {
                 "codigo_rf": "7795246",
                 "nome": None,
                 "codigo_funcao_atividade": 30,
             },
         ]
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.content = b"[{}]"
-        mock_resp.json.return_value = payload
-        mock_get.return_value = mock_resp
+        mock_resp_31 = MagicMock()
+        mock_resp_31.status_code = 200
+        mock_resp_31.content = b"[{}]"
+        mock_resp_31.json.return_value = [
+            {
+                "codigo_rf": "7795247",
+                "nome": None,
+                "codigo_funcao_atividade": 31,
+            },
+        ]
+        mock_get.side_effect = [mock_resp_30, mock_resp_31]
 
         result = services.get_funcionarios_escola_funcoes_atividades(
             "019465",
             {"funcoes_atividades": ["30", "31"], "dre_codigo": "1"},
         )
 
-        mock_get.assert_called_once_with(
-            "/api/v1/professores/escolas/019465/funcionarios/",
-            params={"funcoes_atividades": ["30", "31"], "dre_codigo": "1"},
+        mock_get.assert_has_calls(
+            [
+                call(
+                    "/api/v1/professores/escolas/019465/funcionarios/",
+                    params={
+                        "funcoes_atividades": ["30"],
+                        "dre_codigo": "1",
+                    },
+                ),
+                call(
+                    "/api/v1/professores/escolas/019465/funcionarios/",
+                    params={
+                        "funcoes_atividades": ["31"],
+                        "dre_codigo": "1",
+                    },
+                ),
+            ]
         )
-        self.assertEqual(result, payload)
+        self.assertEqual(
+            result,
+            [
+                {
+                    "codigo_rf": "7795246",
+                    "nome": None,
+                    "codigo_funcao_atividade": 30,
+                },
+                {
+                    "codigo_rf": "7795247",
+                    "nome": None,
+                    "codigo_funcao_atividade": 31,
+                },
+            ],
+        )
 
     @patch.object(services._client, "get")
     def test_adiciona_primeira_funcao_atividade_quando_payload_nao_tem_id(
         self, mock_get: MagicMock
     ) -> None:
-        payload = [
+        mock_resp_30 = MagicMock()
+        mock_resp_30.status_code = 200
+        mock_resp_30.content = b"[{}]"
+        mock_resp_30.json.return_value = [
             {
                 "codigo_rf": "7795246",
                 "nome": None,
             },
         ]
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.content = b"[{}]"
-        mock_resp.json.return_value = payload
-        mock_get.return_value = mock_resp
+        mock_resp_31 = MagicMock()
+        mock_resp_31.status_code = 200
+        mock_resp_31.content = b"[{}]"
+        mock_resp_31.json.return_value = [
+            {
+                "codigo_rf": "7795247",
+                "nome": None,
+            },
+        ]
+        mock_get.side_effect = [mock_resp_30, mock_resp_31]
 
         result = services.get_funcionarios_escola_funcoes_atividades(
             "019465",
@@ -406,8 +477,25 @@ class GetFuncionariosEscolaFuncoesAtividadesTest(SimpleTestCase):
                     "nome": None,
                     "codigo_funcao_atividade": 30,
                 },
+                {
+                    "codigo_rf": "7795247",
+                    "nome": None,
+                    "codigo_funcao_atividade": 31,
+                },
             ],
         )
+
+    @patch.object(services._client, "get")
+    def test_retorna_lista_vazia_com_apenas_dre_codigo(
+        self, mock_get: MagicMock
+    ) -> None:
+        result = services.get_funcionarios_escola_funcoes_atividades(
+            "019465",
+            {"dre_codigo": "1"},
+        )
+
+        mock_get.assert_not_called()
+        self.assertEqual(result, [])
 
 
 class GetFuncionariosEscolaFuncoesExternasTest(SimpleTestCase):
@@ -417,47 +505,82 @@ class GetFuncionariosEscolaFuncoesExternasTest(SimpleTestCase):
     def test_chama_path_correto_com_params(
         self, mock_get: MagicMock
     ) -> None:
-        payload = [
+        mock_resp_5 = MagicMock()
+        mock_resp_5.status_code = 200
+        mock_resp_5.content = b"[{}]"
+        mock_resp_5.json.return_value = [
             {
                 "cpf": "11610699840",
-                "funcao_externa": 5,
+                "funcao_externo": 5,
             },
         ]
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.content = b"[{}]"
-        mock_resp.json.return_value = payload
-        mock_get.return_value = mock_resp
+        mock_resp_6 = MagicMock()
+        mock_resp_6.status_code = 200
+        mock_resp_6.content = b"[{}]"
+        mock_resp_6.json.return_value = [
+            {
+                "cpf": "11610699841",
+                "funcao_externo": 6,
+            },
+        ]
+        mock_get.side_effect = [mock_resp_5, mock_resp_6]
 
         result = services.get_funcionarios_escola_funcoes_externas(
             "400870",
-            {"funcoes_externas": ["5", "6"], "dre_codigo": "1"},
+            {"funcoes": ["5", "6"], "dre_codigo": "1"},
         )
 
-        mock_get.assert_called_once_with(
-            "/api/v1/professores/escolas/400870/funcionarios/",
-            params={"funcoes_externas": ["5", "6"], "dre_codigo": "1"},
+        mock_get.assert_has_calls(
+            [
+                call(
+                    "/api/v1/professores/escolas/400870/funcionarios/",
+                    params={"dre_codigo": "1", "funcoes_externas": ["5"]},
+                ),
+                call(
+                    "/api/v1/professores/escolas/400870/funcionarios/",
+                    params={"dre_codigo": "1", "funcoes_externas": ["6"]},
+                ),
+            ]
         )
-        self.assertEqual(result, payload)
+        self.assertEqual(
+            result,
+            [
+                {
+                    "cpf": "11610699840",
+                    "funcao_externo": 5,
+                },
+                {
+                    "cpf": "11610699841",
+                    "funcao_externo": 6,
+                },
+            ],
+        )
 
     @patch.object(services._client, "get")
     def test_adiciona_primeira_funcao_externa_quando_payload_nao_tem_id(
         self, mock_get: MagicMock
     ) -> None:
-        payload = [
+        mock_resp_5 = MagicMock()
+        mock_resp_5.status_code = 200
+        mock_resp_5.content = b"[{}]"
+        mock_resp_5.json.return_value = [
             {
                 "cpf": "11610699840",
             },
         ]
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.content = b"[{}]"
-        mock_resp.json.return_value = payload
-        mock_get.return_value = mock_resp
+        mock_resp_6 = MagicMock()
+        mock_resp_6.status_code = 200
+        mock_resp_6.content = b"[{}]"
+        mock_resp_6.json.return_value = [
+            {
+                "cpf": "11610699841",
+            },
+        ]
+        mock_get.side_effect = [mock_resp_5, mock_resp_6]
 
         result = services.get_funcionarios_escola_funcoes_externas(
             "400870",
-            {"funcoes_externas": ["5", "6"], "dre_codigo": "1"},
+            {"funcoes": ["5", "6"], "dre_codigo": "1"},
         )
 
         self.assertEqual(
@@ -465,10 +588,26 @@ class GetFuncionariosEscolaFuncoesExternasTest(SimpleTestCase):
             [
                 {
                     "cpf": "11610699840",
-                    "funcao_externa": 5,
+                    "funcao_externo": 5,
+                },
+                {
+                    "cpf": "11610699841",
+                    "funcao_externo": 6,
                 },
             ],
         )
+
+    @patch.object(services._client, "get")
+    def test_retorna_lista_vazia_com_apenas_dre_codigo(
+        self, mock_get: MagicMock
+    ) -> None:
+        result = services.get_funcionarios_escola_funcoes_externas(
+            "400870",
+            {"dre_codigo": "1"},
+        )
+
+        mock_get.assert_not_called()
+        self.assertEqual(result, [])
 
 
 class GetTurmasProfessorDisciplinaTest(SimpleTestCase):
