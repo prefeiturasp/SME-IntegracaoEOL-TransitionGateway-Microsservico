@@ -33,10 +33,10 @@ urlpatterns = [
         name="aluno-turmas-com-barra",
     ),
     re_path(
-        r"^(?P<codigoAluno>[^/]+)/turmas/anosLetivos/"
-        r"(?P<anoLetivo>[^/]+)/historico/(?P<historico>[^/]+)/"
-        r"filtrar-situacao/(?P<filtrarSituacao>[^/]+)/"
-        r"tipo-turma/(?P<tipoTurma>[^/]+)$",
+        r"^(?P<codigo_aluno>[^/]+)/turmas/anosLetivos/"
+        r"(?P<ano_letivo>[^/]+)/historico/(?P<historico>[^/]+)/"
+        r"filtrar-situacao/(?P<filtrar_situacao>[^/]+)/"
+        r"tipo-turma/(?P<tipo_turma>[^/]+)$",
         AlunoTurmasLegadoView.as_view(),
         name="aluno-turmas-com-filtros",
     ),

@@ -10,13 +10,13 @@ def aluno_turmas_legacy_parameters() -> list[dict]:
     return [
         {
             "in": "path",
-            "name": "codigoAluno",
+            "name": "codigo_aluno",
             "schema": {"type": "integer", "format": "int32"},
             "required": True,
         },
         {
             "in": "path",
-            "name": "anoLetivo",
+            "name": "ano_letivo",
             "schema": {"type": "integer", "format": "int32"},
             "required": True,
         },
@@ -28,13 +28,13 @@ def aluno_turmas_legacy_parameters() -> list[dict]:
         },
         {
             "in": "path",
-            "name": "filtrarSituacao",
+            "name": "filtrar_situacao",
             "schema": {"type": "boolean", "default": True},
             "required": True,
         },
         {
             "in": "path",
-            "name": "tipoTurma",
+            "name": "tipo_turma",
             "schema": {"type": "boolean", "default": True},
             "required": True,
         },

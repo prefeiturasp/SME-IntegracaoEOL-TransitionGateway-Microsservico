@@ -85,11 +85,11 @@ class AlunosUrlsTest(SimpleTestCase):
         self.assertEqual(
             match.kwargs,
             {
-                "codigoAluno": "123456",
-                "anoLetivo": "2026",
+                "codigo_aluno": "123456",
+                "ano_letivo": "2026",
                 "historico": "false",
-                "filtrarSituacao": "true",
-                "tipoTurma": "false",
+                "filtrar_situacao": "true",
+                "tipo_turma": "false",
             },
         )
 
@@ -198,6 +198,28 @@ class AlunoInformacoesViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get("/api/v1/alunos/%20/informacoes")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "E necessario informar o codigo do aluno."},
+        )
+
+    def test_601_quando_codigo_aluno_e_zero(self) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/v1/alunos/0/informacoes")
+
+        self.assertEqual(resp.status_code, 601)
+        self.assertEqual(
+            resp.json(),
+            "E necessario informar o codigo do aluno.",
+        )
+
+    def test_400_quando_codigo_aluno_nao_e_inteiro(self) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/v1/alunos/abc/informacoes")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
