@@ -91,13 +91,13 @@ SPECTACULAR_SETTINGS = {
         }
     },
     "APPEND_PATHS": {
-        "/api/v1/alunos/{codigoAluno}/turmas": aluno_turmas_legacy_operation(
+        "/api/v1/alunos/{codigo_aluno}/turmas": aluno_turmas_legacy_operation(
             "v1_alunos_turmas_legacy_short_list"
         ),
         (
-            "/api/v1/alunos/{codigoAluno}/turmas/anosLetivos/{anoLetivo}/"
-            "historico/{historico}/filtrar-situacao/{filtrarSituacao}/"
-            "tipo-turma/{tipoTurma}"
+            "/api/v1/alunos/{codigo_aluno}/turmas/anosLetivos/{ano_letivo}/"
+            "historico/{historico}/filtrar-situacao/{filtrar_situacao}/"
+            "tipo-turma/{tipo_turma}"
         ): aluno_turmas_legacy_operation("v1_alunos_turmas_legado_list"),
     },
     "SECURITY": [{"ApiKeyAuth": []}],

@@ -92,6 +92,13 @@ class AlunoInformacoesView(APIView):
         tags=_TAG,
         summary="Informações do aluno",
         description="Retorna informações completas do aluno pelo código.",
+        parameters=[
+            OpenApiParameter(
+                "codigo_aluno",
+                int,
+                OpenApiParameter.PATH,
+            )
+        ],
         responses={200: AlunoInformacoesSerializer, 204: None},
     )
     def get(self, _request: Request, codigo_aluno: str) -> Response:
@@ -104,8 +111,12 @@ class AlunoInformacoesView(APIView):
         Returns:
             Resposta com dados cadastrais, 204 ou erro do sidecar.
         """
-        if not codigo_aluno.strip():
+        try:
+            codigo_int = int(codigo_aluno)
+        except (ValueError, TypeError):
             return detail_response(_MSG_CODIGO_OBRIGATORIO)
+        if codigo_int <= 0:
+            return _legacy_status_601_response(_MSG_CODIGO_OBRIGATORIO)
         try:
             data = services.get_informacoes_aluno(codigo_aluno)
         except httpx.HTTPStatusError as exc:
@@ -196,7 +207,7 @@ class AlunoTurmasLegadoView(APIView):
         Returns:
             Resposta com lista de turmas filtrada pelo sidecar.
         """
-        codigo_aluno = kwargs.get("codigoAluno")
+        codigo_aluno = kwargs.get("codigo_aluno")
         if codigo_aluno is None:
             return detail_response(_MSG_CODIGO_OBRIGATORIO)
         if not codigo_aluno.strip():
@@ -204,10 +215,10 @@ class AlunoTurmasLegadoView(APIView):
         try:
             data = services.get_turmas_aluno(
                 codigo_aluno,
-                ano_letivo=kwargs.get("anoLetivo"),
+                ano_letivo=kwargs.get("ano_letivo"),
                 historico=kwargs.get("historico"),
-                filtrar_situacao=kwargs.get("filtrarSituacao"),
-                tipo_turma=kwargs.get("tipoTurma"),
+                filtrar_situacao=kwargs.get("filtrar_situacao"),
+                tipo_turma=kwargs.get("tipo_turma"),
             )
         except httpx.HTTPStatusError as exc:
             return _sidecar_error_response(exc)
