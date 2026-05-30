@@ -11,6 +11,21 @@ class DRESerializer(serializers.Serializer):
     siglaDRE = serializers.CharField()
 
 
+class SubprefeiturasSerializer(serializers.Serializer):
+    """Serializa subprefeitura vinculada a uma DRE."""
+
+    codigoSubprefeitura = serializers.CharField()
+    nomeSubprefeitura = serializers.CharField()
+
+
+class EscolaPorDreETipoSerializer(serializers.Serializer):
+    """Serializa escola retornada por DRE e tipo."""
+
+    codigoEscola = serializers.CharField()
+    nomeEscola = serializers.CharField()
+    codigoDRE = serializers.CharField()
+
+
 class EscolaResumoSerializer(serializers.Serializer):
     """Serializa o resumo de escola por DRE."""
 
@@ -38,6 +53,27 @@ class EscolaSerializer(serializers.Serializer):
     codigoTipoEscola = serializers.IntegerField(
         allow_null=True, required=False
     )
+
+
+class DadosEscolaSerializer(serializers.Serializer):
+    """Serializa dados completos de escola."""
+
+    nomeDRE = serializers.CharField()
+    siglaDRE = serializers.CharField()
+    codigoDRE = serializers.CharField()
+    codigoINEP = serializers.CharField(allow_null=True, required=False)
+    siglaTipoEscola = serializers.CharField()
+    nome = serializers.CharField()
+    nomeExibicao = serializers.CharField(allow_null=True, required=False)
+    codigo = serializers.CharField()
+
+
+class TipoEscolaSerializer(serializers.Serializer):
+    """Serializa tipo de escola."""
+
+    codigo = serializers.IntegerField()
+    descricaoSigla = serializers.CharField()
+    dtAtualizacao = serializers.CharField(allow_null=True, required=False)
 
 
 class EquipamentoSerializer(serializers.Serializer):

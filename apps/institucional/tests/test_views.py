@@ -31,6 +31,40 @@ _ESCOLA_RESUMO = {
 # Detalhe de escola (reaproveita os dados do resumo).
 _ESCOLA = {**_ESCOLA_RESUMO}
 
+_ESCOLA_POR_TIPO = {
+    "codigoEscola": "019308",
+    "nomeEscola": "EMEF TESTE",
+    "codigoDRE": "BT",
+    "tipoEscola": "ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL",
+    "siglaTipoEscola": "EMEF",
+    "nomeDRE": "DIRETORIA REGIONAL DE EDUCACAO BUTANTA",
+    "siglaDRE": "DRE - BT",
+    "codigoSubprefeitura": "50",
+    "nomeSubprefeitura": "BUTANTA",
+}
+
+_DADOS_ESCOLA = {
+    "nomeDRE": "DIRETORIA REGIONAL TESTE",
+    "siglaDRE": "DRE-T",
+    "codigoDRE": "000000",
+    "codigoINEP": "00000000",
+    "siglaTipoEscola": "EMEF",
+    "nome": "NOME ESCOLA TESTE",
+    "nomeExibicao": "NOME EXIBICAO TESTE",
+    "codigo": "000000",
+}
+
+_SUBPREFEITURA = {
+    "codigoSubprefeitura": "00",
+    "nomeSubprefeitura": "SUBPREFEITURA TESTE",
+}
+
+_TIPO_ESCOLA = {
+    "codigo": 1,
+    "descricaoSigla": "EMEF",
+    "dtAtualizacao": "2026-04-17T00:00:00",
+}
+
 _EQUIPAMENTO = {
     "cd_equipamento": "108100",
     "nm_exibicao_equipamento": "DRE - BT",
@@ -76,6 +110,7 @@ class DREListViewTest(SimpleTestCase):
 
     @patch("apps.institucional.views.services.get_dres")
     def test_200_retorna_lista(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 com a lista de DREs do sidecar."""
         mock_svc.return_value = [_DRE]
         resp = _cliente_autenticado().get("/api/DREs/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -83,10 +118,30 @@ class DREListViewTest(SimpleTestCase):
 
     @patch("apps.institucional.views.services.get_dres")
     def test_200_lista_vazia(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 com lista vazia quando o sidecar não tem DREs."""
         mock_svc.return_value = []
         resp = _cliente_autenticado().get("/api/DREs/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
+
+    @patch("apps.institucional.views.services.get_dres_por_codigos")
+    def test_post_200_retorna_dres(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 com as DREs filtradas pelos códigos do body."""
+        mock_svc.return_value = [_DRE]
+        resp = _cliente_autenticado().post(
+            "/api/DREs/", ["108100"], format="json"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_svc.assert_called_once_with(["108100"])
+
+    @patch("apps.institucional.views.services.get_dres_por_codigos")
+    def test_post_204_sem_registros(self, mock_svc: MagicMock) -> None:
+        """Retorna 204 quando nenhuma DRE é encontrada para os códigos."""
+        mock_svc.return_value = None
+        resp = _cliente_autenticado().post(
+            "/api/DREs/", ["INEXISTENTE"], format="json"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
 
 class DREDetalheViewTest(SimpleTestCase):
@@ -94,22 +149,72 @@ class DREDetalheViewTest(SimpleTestCase):
 
     @patch("apps.institucional.views.services.get_dre")
     def test_200_repassa_codigo_dre(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 repassando o código da DRE ao service."""
         mock_svc.return_value = [_DRE]
         resp = _cliente_autenticado().get("/api/DREs/108100/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         mock_svc.assert_called_once_with("108100")
 
     @patch("apps.institucional.views.services.get_dre")
-    def test_404_quando_sidecar_retorna_404(self, mock_svc: MagicMock) -> None:
+    def test_404_quando_sidecar_retorna_404(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna 404 quando o sidecar responde com 404."""
         mock_svc.side_effect = _httpx_404()
         resp = _cliente_autenticado().get("/api/DREs/INEXISTENTE/")
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
 
     @patch("apps.institucional.views.services.get_dre")
     def test_404_quando_array_vazio(self, mock_svc: MagicMock) -> None:
+        """Retorna 404 quando o sidecar devolve array vazio."""
         mock_svc.return_value = []
         resp = _cliente_autenticado().get("/api/DREs/108100/")
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch("apps.institucional.views.services.get_dre")
+    def test_propaga_erro_http_nao_404(self, mock_svc: MagicMock) -> None:
+        """Propaga HTTPStatusError quando o status do sidecar não é 404."""
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "500", request=MagicMock(), response=mock_response
+        )
+        with self.assertRaises(httpx.HTTPStatusError):
+            _cliente_autenticado().get("/api/DREs/108100/")
+
+
+class SubprefeiturasPorDREViewTest(SimpleTestCase):
+    """Valida a view de subprefeituras por DRE."""
+
+    @patch("apps.institucional.views.services.get_subprefeituras_por_dre")
+    def test_200_repassa_codigo_dre(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 repassando o código da DRE ao service."""
+        mock_svc.return_value = [_SUBPREFEITURA]
+        resp = _cliente_autenticado().get(
+            "/api/DREs/108100/subprefeituras/"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_svc.assert_called_once_with("108100")
+
+    @patch("apps.institucional.views.services.get_subprefeituras_por_dre")
+    def test_404_quando_dre_inexistente(self, mock_svc: MagicMock) -> None:
+        """Retorna 404 quando o sidecar responde com 404."""
+        mock_svc.side_effect = _httpx_404()
+        resp = _cliente_autenticado().get(
+            "/api/DREs/INEXISTENTE/subprefeituras/"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch("apps.institucional.views.services.get_subprefeituras_por_dre")
+    def test_propaga_erro_http_nao_404(self, mock_svc: MagicMock) -> None:
+        """Propaga HTTPStatusError quando o status do sidecar não é 404."""
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "500", request=MagicMock(), response=mock_response
+        )
+        with self.assertRaises(httpx.HTTPStatusError):
+            _cliente_autenticado().get("/api/DREs/108100/subprefeituras/")
 
 
 class EscolasPorDREViewTest(SimpleTestCase):
@@ -117,6 +222,7 @@ class EscolasPorDREViewTest(SimpleTestCase):
 
     @patch("apps.institucional.views.services.get_escolas_por_dre")
     def test_200_repassa_codigo_dre(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 repassando o código da DRE ao service."""
         mock_svc.return_value = [_ESCOLA_RESUMO]
         resp = _cliente_autenticado().get("/api/DREs/108100/escola/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -124,9 +230,205 @@ class EscolasPorDREViewTest(SimpleTestCase):
 
     @patch("apps.institucional.views.services.get_escolas_por_dre")
     def test_404_quando_dre_inexistente(self, mock_svc: MagicMock) -> None:
+        """Retorna 404 quando o sidecar responde com 404."""
         mock_svc.side_effect = _httpx_404()
         resp = _cliente_autenticado().get("/api/DREs/INEXISTENTE/escola/")
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch("apps.institucional.views.services.get_escolas_por_dre")
+    def test_propaga_erro_http_nao_404(self, mock_svc: MagicMock) -> None:
+        """Propaga HTTPStatusError quando o status do sidecar não é 404."""
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "500", request=MagicMock(), response=mock_response
+        )
+        with self.assertRaises(httpx.HTTPStatusError):
+            _cliente_autenticado().get("/api/DREs/108100/escola/")
+
+
+class EscolasPorDREeTipoViewTest(SimpleTestCase):
+    """Valida a view de escolas por DRE e tipo de escola."""
+
+    @patch("apps.institucional.views.services.get_escolas_por_dre_e_tipo")
+    def test_200_filtra_campos_do_contrato(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna 200 com os campos do contrato de escola por DRE e tipo."""
+        mock_svc.return_value = [_ESCOLA_POR_TIPO]
+        resp = _cliente_autenticado().get(
+            "/api/DREs/108100/escolas/EMEF/"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_svc.assert_called_once_with("108100", "EMEF")
+        payload = resp.json()[0]
+        self.assertIn("codigoEscola", payload)
+        self.assertIn("nomeEscola", payload)
+        self.assertIn("codigoDRE", payload)
+        self.assertIn("tipoEscola", payload)
+        self.assertIn("siglaTipoEscola", payload)
+        self.assertIn("nomeDRE", payload)
+        self.assertIn("siglaDRE", payload)
+        self.assertIn("codigoSubprefeitura", payload)
+        self.assertIn("nomeSubprefeitura", payload)
+
+    @patch("apps.institucional.views.services.get_escolas_por_dre_e_tipo")
+    def test_404_quando_dre_inexistente(self, mock_svc: MagicMock) -> None:
+        """Retorna 404 quando o sidecar responde com 404."""
+        mock_svc.side_effect = _httpx_404()
+        resp = _cliente_autenticado().get(
+            "/api/DREs/INEXISTENTE/escolas/EMEF/"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch("apps.institucional.views.services.get_escolas_por_dre_e_tipo")
+    def test_propaga_erro_http_nao_404(self, mock_svc: MagicMock) -> None:
+        """Propaga HTTPStatusError quando o status do sidecar não é 404."""
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "500", request=MagicMock(), response=mock_response
+        )
+        with self.assertRaises(httpx.HTTPStatusError):
+            _cliente_autenticado().get("/api/DREs/108100/escolas/EMEF/")
+
+
+class UesPorDREViewTest(SimpleTestCase):
+    """Valida a view de códigos de UEs por DRE."""
+
+    @patch("apps.institucional.views.services.get_ues_por_dre")
+    def test_200_retorna_lista_codigos(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 com a lista de códigos de UEs da DRE."""
+        mock_svc.return_value = ["019251", "019252"]
+        resp = _cliente_autenticado().get("/api/DREs/108100/ues/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_svc.assert_called_once_with("108100")
+
+    @patch("apps.institucional.views.services.get_ues_por_dre")
+    def test_404_quando_dre_inexistente(self, mock_svc: MagicMock) -> None:
+        """Retorna 404 quando o sidecar responde com 404."""
+        mock_svc.side_effect = _httpx_404()
+        resp = _cliente_autenticado().get("/api/DREs/INEXISTENTE/ues/")
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch("apps.institucional.views.services.get_ues_por_dre")
+    def test_propaga_erro_http_nao_404(self, mock_svc: MagicMock) -> None:
+        """Propaga HTTPStatusError quando o status do sidecar não é 404."""
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "500", request=MagicMock(), response=mock_response
+        )
+        with self.assertRaises(httpx.HTTPStatusError):
+            _cliente_autenticado().get("/api/DREs/108100/ues/")
+
+
+class UnidadesPorDREViewTest(SimpleTestCase):
+    """Valida a view de unidades administrativas por DRE."""
+
+    @patch("apps.institucional.views.services.get_unidades_por_dre")
+    def test_200_retorna_lista(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 com a lista de unidades administrativas da DRE."""
+        mock_svc.return_value = [{"codigoEol": "019308"}]
+        resp = _cliente_autenticado().get("/api/DREs/108100/unidades/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_svc.assert_called_once_with("108100")
+
+    @patch("apps.institucional.views.services.get_unidades_por_dre")
+    def test_404_quando_dre_inexistente(self, mock_svc: MagicMock) -> None:
+        """Retorna 404 quando o sidecar responde com 404."""
+        mock_svc.side_effect = _httpx_404()
+        resp = _cliente_autenticado().get(
+            "/api/DREs/INEXISTENTE/unidades/"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch("apps.institucional.views.services.get_unidades_por_dre")
+    def test_propaga_erro_http_nao_404(self, mock_svc: MagicMock) -> None:
+        """Propaga HTTPStatusError quando o status do sidecar não é 404."""
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "500", request=MagicMock(), response=mock_response
+        )
+        with self.assertRaises(httpx.HTTPStatusError):
+            _cliente_autenticado().get("/api/DREs/108100/unidades/")
+
+
+class DadosEscolaViewTest(SimpleTestCase):
+    """Valida a view de dados completos de escola."""
+
+    @patch("apps.institucional.views.services.get_dados_escola")
+    def test_200_repassa_codigo_escola(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 repassando o código da escola ao service."""
+        mock_svc.return_value = _DADOS_ESCOLA
+        resp = _cliente_autenticado().get("/api/escolas/dados/019308/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_svc.assert_called_once_with("019308")
+
+    @patch("apps.institucional.views.services.get_dados_escola")
+    def test_200_quando_retorna_lista_com_dict(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna 200 usando o primeiro item quando o service devolve lista."""
+        mock_svc.return_value = [_DADOS_ESCOLA]
+        resp = _cliente_autenticado().get("/api/escolas/dados/019308/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertIn("nomeDRE", resp.json())
+
+    @patch("apps.institucional.views.services.get_dados_escola")
+    def test_200_quando_item_nao_e_dict(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 quando o item da lista não é um dicionário."""
+        mock_svc.return_value = ["valor_escalar"]
+        resp = _cliente_autenticado().get("/api/escolas/dados/019308/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    @patch("apps.institucional.views.services.get_dados_escola")
+    def test_404_quando_sidecar_retorna_404(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna 404 quando o sidecar responde com 404."""
+        mock_svc.side_effect = _httpx_404()
+        resp = _cliente_autenticado().get("/api/escolas/dados/999999/")
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch("apps.institucional.views.services.get_dados_escola")
+    def test_404_quando_retorna_none(self, mock_svc: MagicMock) -> None:
+        """Retorna 404 quando o service devolve None."""
+        mock_svc.return_value = None
+        resp = _cliente_autenticado().get("/api/escolas/dados/999999/")
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch("apps.institucional.views.services.get_dados_escola")
+    def test_propaga_erro_http_nao_404(self, mock_svc: MagicMock) -> None:
+        """Propaga HTTPStatusError quando o status do sidecar não é 404."""
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "500", request=MagicMock(), response=mock_response
+        )
+        with self.assertRaises(httpx.HTTPStatusError):
+            _cliente_autenticado().get("/api/escolas/dados/019308/")
+
+
+class TiposEscolasViewTest(SimpleTestCase):
+    """Valida a view de tipos de escola."""
+
+    @patch("apps.institucional.views.services.get_tipos_escolas")
+    def test_200_retorna_lista(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 com a lista de tipos de escola do sidecar."""
+        mock_svc.return_value = [_TIPO_ESCOLA]
+        resp = _cliente_autenticado().get("/api/escolas/tiposEscolas/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_svc.assert_called_once_with()
+
+    @patch("apps.institucional.views.services.get_tipos_escolas")
+    def test_200_lista_vazia(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 com lista vazia quando não há tipos de escola."""
+        mock_svc.return_value = []
+        resp = _cliente_autenticado().get("/api/escolas/tiposEscolas/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
 
 
 class EscolaDetalheViewTest(SimpleTestCase):
@@ -134,16 +436,45 @@ class EscolaDetalheViewTest(SimpleTestCase):
 
     @patch("apps.institucional.views.services.get_escola")
     def test_200_repassa_codigo_escola(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 repassando o código da escola ao service."""
         mock_svc.return_value = _ESCOLA
         resp = _cliente_autenticado().get("/api/escolas/019308/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         mock_svc.assert_called_once_with("019308")
 
     @patch("apps.institucional.views.services.get_escola")
-    def test_404_quando_escola_inexistente(self, mock_svc: MagicMock) -> None:
+    def test_200_quando_retorna_lista(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 usando o primeiro item quando o service devolve lista."""
+        mock_svc.return_value = [_ESCOLA]
+        resp = _cliente_autenticado().get("/api/escolas/019308/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    @patch("apps.institucional.views.services.get_escola")
+    def test_404_quando_escola_inexistente(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna 404 quando o sidecar responde com 404."""
         mock_svc.side_effect = _httpx_404()
         resp = _cliente_autenticado().get("/api/escolas/999999/")
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch("apps.institucional.views.services.get_escola")
+    def test_404_quando_item_vazio(self, mock_svc: MagicMock) -> None:
+        """Retorna 404 quando o service devolve lista vazia."""
+        mock_svc.return_value = []
+        resp = _cliente_autenticado().get("/api/escolas/999999/")
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch("apps.institucional.views.services.get_escola")
+    def test_propaga_erro_http_nao_404(self, mock_svc: MagicMock) -> None:
+        """Propaga HTTPStatusError quando o status do sidecar não é 404."""
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "500", request=MagicMock(), response=mock_response
+        )
+        with self.assertRaises(httpx.HTTPStatusError):
+            _cliente_autenticado().get("/api/escolas/019308/")
 
 
 class EquipamentosViewTest(SimpleTestCase):
@@ -151,6 +482,7 @@ class EquipamentosViewTest(SimpleTestCase):
 
     @patch("apps.institucional.views.services.get_equipamentos")
     def test_200_sem_filtros(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 passando todos os filtros como None quando não informados."""
         mock_svc.return_value = [_EQUIPAMENTO]
         resp = _cliente_autenticado().get("/api/escolas/equipamentos/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -165,6 +497,7 @@ class EquipamentosViewTest(SimpleTestCase):
 
     @patch("apps.institucional.views.services.get_equipamentos")
     def test_200_com_filtro_codigo_eol(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 repassando o filtro codigoEol ao service."""
         mock_svc.return_value = [_EQUIPAMENTO]
         resp = _cliente_autenticado().get(
             "/api/escolas/equipamentos/?codigoEol=019716"
@@ -181,6 +514,7 @@ class EquipamentosViewTest(SimpleTestCase):
 
     @patch("apps.institucional.views.services.get_equipamentos")
     def test_200_lista_vazia(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 com lista vazia quando não há equipamentos."""
         mock_svc.return_value = []
         resp = _cliente_autenticado().get("/api/escolas/equipamentos/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
