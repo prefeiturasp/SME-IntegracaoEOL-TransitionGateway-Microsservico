@@ -81,6 +81,35 @@ class FuncionarioEscolaSerializer(serializers.Serializer):
     tipoFuncaoExterno = serializers.IntegerField(source="tipo_funcao_externo")
 
 
+class FuncionarioCargoSerializer(serializers.Serializer):
+    """Serializa vínculo de funcionário com cargo."""
+
+    funcionarioRF = serializers.CharField(source="codigo_rf")
+    funcionarioNome = serializers.CharField(
+        allow_null=True,
+    )
+    cargoId = serializers.IntegerField(source="cargo_id")
+
+
+class FuncionarioFuncaoAtividadeSerializer(serializers.Serializer):
+    """Serializa vínculo de funcionário com função atividade."""
+
+    funcionarioRF = serializers.CharField(source="codigo_rf")
+    funcionarioNome = serializers.CharField(
+        allow_null=True,
+    )
+    funcaoAtividadeId = serializers.IntegerField(
+        source="codigo_funcao_atividade"
+    )
+
+
+class FuncionarioFuncaoExternaSerializer(serializers.Serializer):
+    """Serializa vínculo de funcionário com função externa."""
+
+    funcionarioCpf = serializers.CharField(source="cpf")
+    funcaoExternaId = serializers.IntegerField(source="funcao_externo")
+
+
 class ProfessorTurmaSerializer(serializers.Serializer):
     """Serializa dados de turma atribuída."""
 

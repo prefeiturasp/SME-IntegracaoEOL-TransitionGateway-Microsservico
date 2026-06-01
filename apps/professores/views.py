@@ -8,7 +8,10 @@ from rest_framework.views import APIView
 from apps.core.responses import Response, detail_response
 from apps.professores import services
 from apps.professores.serializers import (
+    FuncionarioCargoSerializer,
     FuncionarioEscolaSerializer,
+    FuncionarioFuncaoAtividadeSerializer,
+    FuncionarioFuncaoExternaSerializer,
     ListaStringSerializer,
     NomeServidorSerializer,
     ProfessorBuscarPorRfSerializer,
@@ -26,11 +29,29 @@ _MSG_CODIGO_UE_OBRIGATORIO = "E necessario informar o codigoUE."
 _MSG_REGISTRO_FUNCIONAL_OBRIGATORIO = (
     "E necessario informar o registro funcional."
 )
+_MSG_RESPOSTA_INVALIDA_SIDECAR = "Resposta invalida do sidecar de professores."
 _CAMPOS_TURMA = {
     "codigo_turma",
     "data_disponibilizacao_aulas",
     "data_atribuicao_aula",
 }
+
+
+def _query_params(
+    request: Request,
+    lista: set[str],
+    simples: set[str],
+) -> dict[str, str | list[str]]:
+    params: dict[str, str | list[str]] = {}
+    for nome in lista:
+        valores = request.query_params.getlist(nome)
+        if valores:
+            params[nome] = valores
+    for nome in simples:
+        valor = request.query_params.get(nome)
+        if valor is not None:
+            params[nome] = valor
+    return params
 
 
 def _parse_bool_param(value: str | None) -> bool | None:
@@ -48,6 +69,12 @@ def _is_lista_turmas(data: object) -> bool:
     return isinstance(data, list) and all(
         isinstance(item, dict) and item.keys() >= _CAMPOS_TURMA
         for item in data
+    )
+
+
+def _is_lista_dicionarios(data: object) -> bool:
+    return isinstance(data, list) and all(
+        isinstance(item, dict) for item in data
     )
 
 
@@ -222,6 +249,133 @@ class EscolaFuncionariosCargoView(APIView):
         return Response(FuncionarioEscolaSerializer(data, many=True).data)
 
 
+class EscolaFuncionariosCargosView(APIView):
+    """Retorna funcionários da escola filtrados por cargos."""
+
+    @extend_schema(
+        tags=_TAG_ESCOLA,
+        description=("Retorna funcionários da escola filtrados por cargos."),
+        parameters=[
+            OpenApiParameter(
+                "cargos",
+                int,
+                OpenApiParameter.QUERY,
+                required=False,
+                many=True,
+            ),
+            OpenApiParameter(
+                "codigo_dre",
+                OpenApiTypes.INT,
+                OpenApiParameter.QUERY,
+                required=True,
+            ),
+        ],
+        responses={200: FuncionarioCargoSerializer(many=True), 204: None},
+    )
+    def get(self, request: Request, codigo_ue: str) -> Response:
+        if not codigo_ue.strip():
+            return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
+        params = _query_params(request, {"cargos"}, {"dre_codigo"})
+        data = services.get_funcionarios_escola_cargos(codigo_ue, params)
+        if data is None:
+            return Response(status=204)
+        if not _is_lista_dicionarios(data):
+            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+        return Response(FuncionarioCargoSerializer(data, many=True).data)
+
+
+class EscolaFuncionariosFuncoesAtividadesView(APIView):
+    """Retorna funcionários da escola por funções atividades."""
+
+    @extend_schema(
+        tags=_TAG_ESCOLA,
+        description=("Retorna funcionários da escola por funções atividades."),
+        parameters=[
+            OpenApiParameter(
+                "funcoes_atividades",
+                int,
+                OpenApiParameter.QUERY,
+                required=False,
+                many=True,
+            ),
+            OpenApiParameter(
+                "codigo_dre",
+                OpenApiTypes.INT,
+                OpenApiParameter.QUERY,
+                required=True,
+            ),
+        ],
+        responses={
+            200: FuncionarioFuncaoAtividadeSerializer(many=True),
+            204: None,
+        },
+    )
+    def get(self, request: Request, codigo_ue: str) -> Response:
+        if not codigo_ue.strip():
+            return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
+        params = _query_params(
+            request,
+            {"funcoes_atividades"},
+            {"codigo_dre"},
+        )
+        data = services.get_funcionarios_escola_funcoes_atividades(
+            codigo_ue,
+            params,
+        )
+        if data is None:
+            return Response(status=204)
+        if not _is_lista_dicionarios(data):
+            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+        return Response(
+            FuncionarioFuncaoAtividadeSerializer(data, many=True).data
+        )
+
+
+class EscolaFuncionariosFuncoesExternasView(APIView):
+    """Retorna funcionários da escola por funções externas."""
+
+    @extend_schema(
+        tags=_TAG_ESCOLA,
+        description=("Retorna funcionários da escola por funções externas."),
+        parameters=[
+            OpenApiParameter(
+                "funcoes",
+                int,
+                OpenApiParameter.QUERY,
+                required=False,
+                many=True,
+            ),
+            OpenApiParameter(
+                "codigo_dre",
+                OpenApiTypes.INT,
+                OpenApiParameter.QUERY,
+                required=True,
+            ),
+        ],
+        responses={
+            200: FuncionarioFuncaoExternaSerializer(many=True),
+            204: None,
+        },
+    )
+    def get(self, request: Request, codigo_ue: str) -> Response:
+        if not codigo_ue.strip():
+            return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
+        params = _query_params(request, {"funcoes"}, {"codigo_dre"})
+        if "codigo_dre" not in params:
+            return Response(status=400)
+        data = services.get_funcionarios_escola_funcoes_externas(
+            codigo_ue,
+            params,
+        )
+        if data is None:
+            return Response(status=204)
+        if not _is_lista_dicionarios(data):
+            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+        return Response(
+            FuncionarioFuncaoExternaSerializer(data, many=True).data
+        )
+
+
 class EscolaFuncionariosView(APIView):
     """Retorna funcionários vinculados à escola."""
 
@@ -277,8 +431,5 @@ class ProfessorDisciplinaTurmasView(APIView):
         if data is None:
             return Response(status=204)
         if not _is_lista_turmas(data):
-            return detail_response(
-                "Resposta invalida do sidecar de professores.",
-                502,
-            )
+            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
         return Response(ProfessorTurmaSerializer(data, many=True).data)

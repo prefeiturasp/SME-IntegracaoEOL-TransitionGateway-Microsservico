@@ -19,6 +19,122 @@ _client = ServiceClient(
 )
 
 
+def _valores_param(
+    params: dict[str, str | list[str]],
+    nome: str,
+) -> list[str]:
+    """Retorna valores não vazios de um parâmetro de filtro.
+
+    Args:
+        params: Parâmetros recebidos para a consulta.
+        nome: Nome do parâmetro consultado.
+
+    Returns:
+        Lista normalizada de valores informados.
+    """
+    value = params.get(nome)
+    if isinstance(value, list):
+        return [item for item in value if item]
+    if value:
+        return [value]
+    return []
+
+
+def _params_com_valor(
+    params: dict[str, str | list[str]],
+    nome: str,
+    nome_destino: str,
+    value: str,
+) -> dict[str, str | list[str]]:
+    """Retorna parâmetros com um único valor de filtro.
+
+    Args:
+        params: Parâmetros recebidos para a consulta.
+        nome: Nome original do parâmetro de filtro.
+        nome_destino: Nome usado no parâmetro de saída.
+        value: Valor isolado para a consulta.
+
+    Returns:
+        Cópia dos parâmetros com o filtro normalizado.
+    """
+    params_filtrados = params.copy()
+    if nome_destino != nome:
+        params_filtrados.pop(nome, None)
+    params_filtrados[nome_destino] = [value]
+    return params_filtrados
+
+
+def _adicionar_id_filtro(
+    data: Any,
+    value: str | None,
+    nome_campo: str,
+) -> Any:
+    """Adiciona o identificador do filtro quando a lista não o contém.
+
+    Args:
+        data: Dados retornados pela consulta.
+        value: Valor do filtro usado na consulta.
+        nome_campo: Campo que receberá o identificador.
+
+    Returns:
+        Dados com o identificador preenchido quando aplicável.
+
+    Raises:
+        ValueError: Quando o valor do filtro não for numérico.
+    """
+    if not value or not isinstance(data, list):
+        return data
+    return [
+        (
+            {**item, nome_campo: int(value)}
+            if isinstance(item, dict) and nome_campo not in item
+            else item
+        )
+        for item in data
+    ]
+
+
+def _get_funcionarios_escola_por_filtro(
+    codigo_ue: str,
+    params: dict[str, str | list[str]],
+    nome_param: str,
+    nome_campo: str,
+    nome_param_sidecar: str | None = None,
+) -> Any:
+    """Lista funcionários de escola para cada valor de filtro.
+
+    Args:
+        codigo_ue: Código da unidade escolar usada na consulta.
+        params: Parâmetros recebidos para a consulta.
+        nome_param: Nome do filtro recebido.
+        nome_campo: Campo preenchido com o valor do filtro.
+        nome_param_sidecar: Nome alternativo usado na consulta.
+
+    Returns:
+        Lista consolidada de funcionários encontrados.
+
+    Raises:
+        ValueError: Quando algum valor do filtro não for numérico.
+    """
+    path = f"{_BASE_ESCOLAS}/{codigo_ue}/funcionarios/"
+    valores = _valores_param(params, nome_param)
+    if not valores:
+        return []
+
+    nome_destino = nome_param_sidecar or nome_param
+    resultado: list[Any] = []
+    for value in valores:
+        resp = _client.get(
+            path,
+            params=_params_com_valor(params, nome_param, nome_destino, value),
+        )
+        data = _client.json_or_none(resp)
+        data = _adicionar_id_filtro(data, value, nome_campo)
+        if isinstance(data, list):
+            resultado.extend(data)
+    return resultado
+
+
 def get_professor(rf_professor: str) -> Any:
     """Retorna o nome do professor.
 
@@ -165,6 +281,79 @@ def get_funcionarios_escola_por_cargo(
         f"{_BASE_ESCOLAS}/{codigo_ue}/funcionarios/?cargos={codigo_cargo}"
     )
     return _client.json_or_none(resp)
+
+
+def get_funcionarios_escola_cargos(
+    codigo_ue: str,
+    params: dict[str, str | list[str]],
+) -> Any:
+    """Retorna funcionários da escola filtrados por cargos.
+
+    Args:
+        codigo_ue: Código da unidade escolar usada na consulta.
+        params: Parâmetros de filtro recebidos para a consulta.
+
+    Returns:
+        Lista de funcionários filtrados por cargos ou ausência de conteúdo.
+
+    Raises:
+        ValueError: Quando algum código de cargo não for numérico.
+    """
+    return _get_funcionarios_escola_por_filtro(
+        codigo_ue,
+        params,
+        "cargos",
+        "cargo_id",
+    )
+
+
+def get_funcionarios_escola_funcoes_atividades(
+    codigo_ue: str,
+    params: dict[str, str | list[str]],
+) -> Any:
+    """Retorna funcionários da escola por funções atividades.
+
+    Args:
+        codigo_ue: Código da unidade escolar usada na consulta.
+        params: Parâmetros de filtro recebidos para a consulta.
+
+    Returns:
+        Lista de funcionários por funções atividades ou ausência de conteúdo.
+
+    Raises:
+        ValueError: Quando alguma função atividade não for numérica.
+    """
+    return _get_funcionarios_escola_por_filtro(
+        codigo_ue,
+        params,
+        "funcoes_atividades",
+        "codigo_funcao_atividade",
+    )
+
+
+def get_funcionarios_escola_funcoes_externas(
+    codigo_ue: str,
+    params: dict[str, str | list[str]],
+) -> Any:
+    """Retorna funcionários da escola por funções externas.
+
+    Args:
+        codigo_ue: Código da unidade escolar usada na consulta.
+        params: Parâmetros de filtro recebidos para a consulta.
+
+    Returns:
+        Lista de funcionários por funções externas ou ausência de conteúdo.
+
+    Raises:
+        ValueError: Quando alguma função externa não for numérica.
+    """
+    return _get_funcionarios_escola_por_filtro(
+        codigo_ue,
+        params,
+        "funcoes",
+        "funcao_externo",
+        "funcoes_externas",
+    )
 
 
 def get_turmas_professor_disciplina(
