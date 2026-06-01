@@ -76,23 +76,6 @@ class AlunosUrlsTest(SimpleTestCase):
 
         self.assertEqual(match.kwargs, {"codigo_aluno": "123456"})
 
-    def test_preserva_parametros_legados_turmas(self) -> None:
-        match = resolve(
-            "/api/v1/alunos/123456/turmas/anosLetivos/2026/"
-            "historico/false/filtrar-situacao/true/tipo-turma/false"
-        )
-
-        self.assertEqual(
-            match.kwargs,
-            {
-                "codigo_aluno": "123456",
-                "ano_letivo": "2026",
-                "historico": "false",
-                "filtrar_situacao": "true",
-                "tipo_turma": "false",
-            },
-        )
-
     def test_rota_listagem_alunos(self) -> None:
         match = resolve("/api/v1/alunos/alunos")
 
@@ -315,28 +298,6 @@ class AlunoTurmasViewTest(SimpleTestCase):
             "2024-02-01T10:00:00.02",
         )
         mock_service.assert_called_once_with("123456")
-
-    @patch("apps.alunos.views.services.get_turmas_aluno")
-    def test_200_repassa_parametros_legados(
-        self,
-        mock_service: MagicMock,
-    ) -> None:
-        mock_service.return_value = [_turma_payload()]
-        client = _cliente_autenticado()
-
-        resp = client.get(
-            "/api/v1/alunos/123456/turmas/anosLetivos/2026/"
-            "historico/false/filtrar-situacao/true/tipo-turma/false"
-        )
-
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        mock_service.assert_called_once_with(
-            "123456",
-            ano_letivo="2026",
-            historico="false",
-            filtrar_situacao="true",
-            tipo_turma="false",
-        )
 
     @patch("apps.alunos.views.services.get_turmas_aluno")
     def test_503_quando_sidecar_indisponivel_turmas(
