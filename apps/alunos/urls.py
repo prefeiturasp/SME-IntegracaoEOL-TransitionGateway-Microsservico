@@ -1,12 +1,11 @@
 """Rotas do domínio de alunos."""
 
-from django.urls import path, re_path
+from django.urls import path
 
 from apps.alunos.views import (
     AlunoInformacoesView,
     AlunoNecessidadesEspeciaisView,
     AlunosListView,
-    AlunoTurmasLegadoView,
     AlunoTurmasView,
 )
 
@@ -31,13 +30,5 @@ urlpatterns = [
         "<str:codigo_aluno>/turmas/",
         AlunoTurmasView.as_view(),
         name="aluno-turmas-com-barra",
-    ),
-    re_path(
-        r"^(?P<codigo_aluno>[^/]+)/turmas/anosLetivos/"
-        r"(?P<ano_letivo>[^/]+)/historico/(?P<historico>[^/]+)/"
-        r"filtrar-situacao/(?P<filtrar_situacao>[^/]+)/"
-        r"tipo-turma/(?P<tipo_turma>[^/]+)$",
-        AlunoTurmasLegadoView.as_view(),
-        name="aluno-turmas-com-filtros",
     ),
 ]
