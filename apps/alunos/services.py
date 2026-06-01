@@ -52,21 +52,11 @@ def get_necessidades_especiais_aluno(codigo_aluno: str) -> Any:
     return _client.json_or_none(resp) or []
 
 
-def get_turmas_aluno(
-    codigo_aluno: str,
-    ano_letivo: str | None = None,
-    historico: str | None = None,
-    filtrar_situacao: str | None = None,
-    tipo_turma: str | None = None,
-) -> Any:
+def get_turmas_aluno(codigo_aluno: str) -> Any:
     """Retorna turmas do aluno.
 
     Args:
         codigo_aluno: Código do aluno.
-        ano_letivo: Ano letivo do filtro legado.
-        historico: Flag de histórico do filtro legado.
-        filtrar_situacao: Flag de situação do filtro legado.
-        tipo_turma: Flag de tipo de turma do filtro legado.
 
     Returns:
         Lista de turmas retornada pelo sidecar.
@@ -75,16 +65,7 @@ def get_turmas_aluno(
         httpx.HTTPStatusError: Se o sidecar retornar status de erro.
         httpx.RequestError: Se o sidecar estiver inacessível.
     """
-    path = f"{_BASE}/{codigo_aluno}/turmas/"
-    if all(
-        value is not None
-        for value in (ano_letivo, historico, filtrar_situacao, tipo_turma)
-    ):
-        path = (
-            f"{path}anos_letivos/{ano_letivo}/historico/{historico}/"
-            f"filtrar-situacao/{filtrar_situacao}/tipo-turma/{tipo_turma}"
-        )
-    resp = _client.get(path)
+    resp = _client.get(f"{_BASE}/{codigo_aluno}/turmas/")
     resp.raise_for_status()
     return _client.json_or_none(resp) or []
 

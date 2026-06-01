@@ -5,7 +5,7 @@ from typing import Any
 
 import httpx
 from django.http import HttpResponse
-from drf_spectacular.utils import OpenApiParameter, extend_schema
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
@@ -92,7 +92,14 @@ class AlunoInformacoesView(APIView):
         tags=_TAG,
         summary="Informações do aluno",
         description="Retorna informações completas do aluno pelo código.",
-        responses={200: AlunoInformacoesSerializer, 204: None},
+        parameters=[
+            OpenApiParameter(
+                "codigo_aluno",
+                int,
+                OpenApiParameter.PATH,
+            )
+        ],
+        responses={200: OpenApiResponse(description="Success"), 204: None},
     )
     def get(self, _request: Request, codigo_aluno: str) -> Response:
         """Busca informações cadastrais de um aluno.
@@ -104,8 +111,12 @@ class AlunoInformacoesView(APIView):
         Returns:
             Resposta com dados cadastrais, 204 ou erro do sidecar.
         """
-        if not codigo_aluno.strip():
+        try:
+            codigo_int = int(codigo_aluno)
+        except (ValueError, TypeError):
             return detail_response(_MSG_CODIGO_OBRIGATORIO)
+        if codigo_int <= 0:
+            return _legacy_status_601_response(_MSG_CODIGO_OBRIGATORIO)
         try:
             data = services.get_informacoes_aluno(codigo_aluno)
         except httpx.HTTPStatusError as exc:
@@ -126,7 +137,7 @@ class AlunoNecessidadesEspeciaisView(APIView):
         tags=_TAG,
         summary="Necessidades especiais do aluno",
         description="Retorna lista de necessidades especiais do aluno.",
-        responses={200: NecessidadeEspecialSerializer},
+        responses={200: OpenApiResponse(description="Success")},
     )
     def get(self, _request: Request, codigo_aluno: str) -> Response:
         """Busca necessidades especiais do aluno.
@@ -182,40 +193,6 @@ class AlunoTurmasView(APIView):
         return Response(TurmaDoAlunoSerializer(data, many=True).data)
 
 
-class AlunoTurmasLegadoView(APIView):
-    """Retorna turmas do aluno com os parâmetros do contrato legado."""
-
-    @extend_schema(exclude=True)
-    def get(self, _request: Request, **kwargs: str) -> Response:
-        """Busca turmas pelo endpoint completo legado.
-
-        Args:
-            _request: Requisição HTTP recebida.
-            **kwargs: Parâmetros de rota do contrato legado.
-
-        Returns:
-            Resposta com lista de turmas filtrada pelo sidecar.
-        """
-        codigo_aluno = kwargs.get("codigoAluno")
-        if codigo_aluno is None:
-            return detail_response(_MSG_CODIGO_OBRIGATORIO)
-        if not codigo_aluno.strip():
-            return detail_response(_MSG_CODIGO_OBRIGATORIO)
-        try:
-            data = services.get_turmas_aluno(
-                codigo_aluno,
-                ano_letivo=kwargs.get("anoLetivo"),
-                historico=kwargs.get("historico"),
-                filtrar_situacao=kwargs.get("filtrarSituacao"),
-                tipo_turma=kwargs.get("tipoTurma"),
-            )
-        except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
-        except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
-        return Response(TurmaDoAlunoSerializer(data, many=True).data)
-
-
 class AlunosListView(APIView):
     """Lista alunos."""
 
@@ -232,7 +209,7 @@ class AlunosListView(APIView):
                 required=False,
             )
         ],
-        responses={200: AlunoPorCodigoSerializer(many=True)},
+        responses={200: OpenApiResponse(description="Success")},
     )
     def get(self, request: Request) -> Response:
         """Lista alunos pelos códigos informados na query string.

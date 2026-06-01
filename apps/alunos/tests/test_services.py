@@ -87,34 +87,6 @@ class GetTurmasAlunoTest(SimpleTestCase):
         mock_resp.raise_for_status.assert_called_once_with()
         self.assertEqual(result, payload)
 
-    @patch.object(services._client, "get")
-    def test_chama_path_legado_com_filtros(
-        self,
-        mock_get: MagicMock,
-    ) -> None:
-        payload = [{"codigo_turma": 9001}]
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.content = b"[]"
-        mock_resp.json.return_value = payload
-        mock_get.return_value = mock_resp
-
-        result = services.get_turmas_aluno(
-            "123456",
-            ano_letivo="2026",
-            historico="false",
-            filtrar_situacao="true",
-            tipo_turma="false",
-        )
-
-        mock_get.assert_called_once_with(
-            f"{_BASE}/123456/turmas/anos_letivos/2026/"
-            "historico/false/filtrar-situacao/true/tipo-turma/false"
-        )
-        mock_resp.raise_for_status.assert_called_once_with()
-        self.assertEqual(result, payload)
-
-
 class ListarAlunosTest(SimpleTestCase):
     """Valida a consulta de listagem de alunos."""
 
