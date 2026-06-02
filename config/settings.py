@@ -3,7 +3,7 @@
 import os
 from pathlib import Path
 
-from apps.alunos.utils import aluno_turmas_legacy_operation
+from apps.alunos.utils import aluno_turmas_operation
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -91,14 +91,9 @@ SPECTACULAR_SETTINGS = {
         }
     },
     "APPEND_PATHS": {
-        "/api/v1/alunos/{codigoAluno}/turmas": aluno_turmas_legacy_operation(
-            "v1_alunos_turmas_legacy_short_list"
+        "/api/v1/alunos/{codigo_aluno}/turmas": aluno_turmas_operation(
+            "v1_alunos_turmas_list"
         ),
-        (
-            "/api/v1/alunos/{codigoAluno}/turmas/anosLetivos/{anoLetivo}/"
-            "historico/{historico}/filtrar-situacao/{filtrarSituacao}/"
-            "tipo-turma/{tipoTurma}"
-        ): aluno_turmas_legacy_operation("v1_alunos_turmas_legado_list"),
     },
     "SECURITY": [{"ApiKeyAuth": []}],
     "SWAGGER_UI_SETTINGS": {
