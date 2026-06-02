@@ -2,12 +2,203 @@
 
 from unittest.mock import MagicMock, patch
 
+import httpx
 from django.test import SimpleTestCase
 
 from apps.pedagogico import services
 
-# Prefixo das rotas de componentes curriculares no sidecar pedagógico.
+
 _BASE = "/api/v1/pedagogico/componentes-curriculares"
+_BASE_TURMAS = "/api/v1/pedagogico/turmas"
+_TURMA_MS = {
+    "codigo": 3034092,
+    "ano_letivo": 2026,
+    "ano": "1",
+    "tipo_turma": 1,
+    "nome_turma": "1A",
+    "duracao_turno": 55,
+    "tipo_turno": 6,
+    "data_inicio_turma": "2026-02-04T03:00:00Z",
+    "data_fim": None,
+    "extinta": False,
+    "situacao": "O",
+    "ue_codigo": "092622",
+    "serie_ensino": "1o Ano",
+    "codigo_serie_ensino": 84,
+    "modalidade": "Fundamental",
+    "codigo_modalidade": 5,
+    "semestre": 0,
+    "ensino_especial": False,
+}
+
+class PostTurmasRegularesTest(SimpleTestCase):
+    """Valida a consulta de turmas regulares."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_chama_path_correto(self, mock_client: MagicMock) -> None:
+        """Monta o path e envia os codigos como inteiros."""
+        mock_client.json_or_none.return_value = [
+            {"codigo": 3014194, "nome_turma": "1D"},
+            {"codigo": 3024590, "nome_turma": "1B"},
+        ]
+
+        result = services.post_turmas_regulares(["3024590", "3014194"])
+
+        mock_client.post.assert_called_once_with(
+            f"{_BASE_TURMAS}/turmas-regulares/",
+            payload=[3024590, 3014194],
+        )
+        self.assertEqual(result, ["3014194", "3024590"])
+
+    @patch("apps.pedagogico.services._client")
+    def test_lista_vazia_nao_chama_sidecar(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        result = services.post_turmas_regulares([])
+
+        mock_client.post.assert_not_called()
+        self.assertEqual(result, [])
+
+
+class PostTurmasProgramaTest(SimpleTestCase):
+    """Valida a consulta de turmas programa."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_chama_path_correto(self, mock_client: MagicMock) -> None:
+        """Monta o path e envia os codigos como inteiros."""
+        mock_client.json_or_none.return_value = [
+            {"codigo": 3133093, "nome_turma": "1A"},
+            {"codigo": 3133096, "nome_turma": "1A"},
+        ]
+
+        result = services.post_turmas_programa(["3133093", "3133096"])
+
+        mock_client.post.assert_called_once_with(
+            f"{_BASE_TURMAS}/turmas-programa/",
+            payload=[3133093, 3133096],
+        )
+        self.assertEqual(result, ["3133093", "3133096"])
+
+    @patch("apps.pedagogico.services._client")
+    def test_lista_vazia_nao_chama_sidecar(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        result = services.post_turmas_programa([])
+
+        mock_client.post.assert_not_called()
+        self.assertEqual(result, [])
+
+    @patch("apps.pedagogico.services._client")
+    def test_retorna_lista_vazia_quando_ms_responde_sem_corpo(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        mock_client.post.return_value = httpx.Response(200, content=b"")
+        mock_client.json_or_none.return_value = None
+
+        result = services.post_turmas_programa(["3133093"])
+
+        mock_client.json_or_none.assert_called_once_with(
+            mock_client.post.return_value
+        )
+        self.assertEqual(result, [])
+
+    @patch("apps.pedagogico.services._client")
+    def test_aceita_payload_ms_com_lista_de_strings(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        mock_client.json_or_none.return_value = ["3133093", "3133096"]
+
+        result = services.post_turmas_programa(["3133093", "3133096"])
+
+        self.assertEqual(result, ["3133093", "3133096"])
+
+    @patch("apps.pedagogico.services._client")
+    def test_aceita_payload_ms_com_lista_de_inteiros(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        mock_client.json_or_none.return_value = [3133093, 3133096]
+
+        result = services.post_turmas_programa(["3133093", "3133096"])
+
+        self.assertEqual(result, ["3133093", "3133096"])
+
+
+class PostListarTurmasTest(SimpleTestCase):
+    """Valida a listagem de dados de turmas."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_chama_path_correto(self, mock_client: MagicMock) -> None:
+        mock_client.post.return_value.json.return_value = [_TURMA_MS]
+
+        result = services.post_listar_turmas(["3034092"])
+
+        mock_client.post.assert_called_once_with(
+            f"{_BASE_TURMAS}/listar-turmas/",
+            payload=[3034092],
+        )
+        self.assertEqual(result[0]["codigo"], 3034092)
+        self.assertEqual(result[0]["anoLetivo"], 2026)
+        self.assertEqual(result[0]["nomeTurma"], "1A")
+        self.assertEqual(result[0]["dataInicioTurma"], "2026-02-04T00:00:00")
+        self.assertEqual(result[0]["modalidade"], None)
+        self.assertEqual(result[0]["codigoModalidade"], 0)
+        self.assertEqual(result[0]["serieEnsino"], None)
+        self.assertEqual(result[0]["situacao"], None)
+        self.assertEqual(result[0]["ehistorico"], False)
+        self.assertEqual(result[0]["etapaEJA"], 0)
+
+    @patch("apps.pedagogico.services._client")
+    def test_preserva_fracao_minima_de_data_fim(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        turma = {
+            **_TURMA_MS,
+            "data_fim": "2025-09-11T15:13:34.040000Z",
+        }
+        mock_client.post.return_value.json.return_value = [turma]
+
+        result = services.post_listar_turmas(["3029408"])
+
+        self.assertEqual(result[0]["dataFim"], "2025-09-11T12:13:34.04")
+
+    @patch("apps.pedagogico.services._client")
+    def test_lista_vazia_nao_chama_sidecar(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        result = services.post_listar_turmas([])
+
+        mock_client.post.assert_not_called()
+        self.assertEqual(result, [])
+
+
+class GetDadosTurmaTest(SimpleTestCase):
+    """Valida a consulta de dados de uma turma."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_chama_path_correto(self, mock_client: MagicMock) -> None:
+        mock_client.get.return_value.json.return_value = _TURMA_MS
+
+        result = services.get_dados_turma("3034092")
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE_TURMAS}/3034092/dados/"
+        )
+        self.assertEqual(result["codigo"], 3034092)
+        self.assertEqual(result["tipoTurma"], 1)
+        self.assertEqual(result["ueCodigo"], "092622")
+        self.assertEqual(result["modalidade"], None)
+        self.assertEqual(result["codigoModalidade"], 0)
+        self.assertEqual(result["serieEnsino"], None)
+        self.assertEqual(result["situacao"], None)
+        self.assertEqual(result["ehistorico"], False)
+        self.assertEqual(result["etapaEJA"], 0)
 
 
 class GetComponentesUeAnosTest(SimpleTestCase):

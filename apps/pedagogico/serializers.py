@@ -1,6 +1,56 @@
 """Serializers de saída para o domínio pedagógico."""
 
+from typing import Any, cast
+
 from rest_framework import serializers
+
+
+class CodigoTurmaField(serializers.CharField):
+    """Valida codigo de turma numerico em texto."""
+
+    def to_internal_value(self, data: Any) -> str:
+        """Valida o codigo informado."""
+        if not isinstance(data, str):
+            self.fail("invalid")
+        value = cast(str, super().to_internal_value(data))
+        if not value.isdecimal():
+            raise serializers.ValidationError(
+                "Todos os codigos devem conter apenas numeros."
+            )
+        return value
+
+
+class CodigoTurmaListSerializer(serializers.ListSerializer):
+    """Serializa lista de codigos de turma."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        kwargs.setdefault("child", CodigoTurmaField(allow_blank=False))
+        kwargs.setdefault("allow_empty", True)
+        super().__init__(*args, **kwargs)
+
+
+class TurmaDadosSerializer(serializers.Serializer):
+    """Serializa dados de turma no contrato legado."""
+
+    ano = serializers.CharField(allow_null=True)
+    anoLetivo = serializers.IntegerField(allow_null=True)
+    codigo = serializers.IntegerField()
+    tipoTurma = serializers.IntegerField(allow_null=True)
+    modalidade = serializers.CharField(allow_null=True)
+    codigoModalidade = serializers.IntegerField(allow_null=True)
+    nomeTurma = serializers.CharField(allow_null=True)
+    semestre = serializers.IntegerField(allow_null=True)
+    duracaoTurno = serializers.IntegerField(allow_null=True)
+    tipoTurno = serializers.IntegerField(allow_null=True)
+    dataFim = serializers.CharField(allow_null=True)
+    ehistorico = serializers.BooleanField()
+    ensinoEspecial = serializers.BooleanField(allow_null=True)
+    etapaEJA = serializers.IntegerField()
+    serieEnsino = serializers.CharField(allow_null=True)
+    dataInicioTurma = serializers.CharField(allow_null=True)
+    extinta = serializers.BooleanField(allow_null=True)
+    situacao = serializers.CharField(allow_null=True)
+    ueCodigo = serializers.CharField(allow_null=True)
 
 
 class ComponenteBaseSerializer(serializers.Serializer):

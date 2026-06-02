@@ -8,13 +8,153 @@ from rest_framework.views import APIView
 
 from apps.pedagogico import services
 from apps.pedagogico.serializers import (
+    CodigoTurmaListSerializer,
     ComponenteBaseSerializer,
     ComponenteCurricularSerializer,
     ComponenteRegenciaSerializer,
     GradeCurricularSerializer,
+    TurmaDadosSerializer,
 )
 
 _TAG = ["ComponenteCurricular"]
+_TAG_TURMA = ["Turma"]
+_TURMA_REQUEST_SCHEMA = {
+    "type": "array",
+    "items": {"type": "string"},
+    "description": (
+        "Body opcional com `codigos_turmas`; informe uma lista JSON de "
+        "codigos de turmas."
+    ),
+}
+
+
+class TurmasRegularesViewSet(APIView):
+    """Lista turmas regulares existentes."""
+
+    @extend_schema(
+        tags=_TAG_TURMA,
+        summary="Turmas regulares por lista de codigos",
+        description=(
+            "Retorna os codigos de turmas regulares encontradas.\n\n"
+            "RequestBody: `codigos_turmas`."
+        ),
+        request={"application/json": _TURMA_REQUEST_SCHEMA},
+        responses={200: CodigoTurmaListSerializer},
+    )
+    def post(self, request: Request) -> Response:
+        """Retorna codigos de turmas regulares.
+
+        Args:
+            request: Requisicao HTTP com os codigos das turmas.
+
+        Returns:
+            Resposta HTTP com codigos de turmas regulares.
+
+        Raises:
+            httpx.HTTPError: Se a chamada ao servico pedagogico falhar.
+            ValueError: Se a resposta do servico nao for JSON valido.
+        """
+        serializer = CodigoTurmaListSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if not serializer.validated_data:
+            return Response([])
+
+        data = services.post_turmas_regulares(serializer.validated_data)
+        return Response(CodigoTurmaListSerializer(data).data)
+
+
+class TurmasProgramaViewSet(APIView):
+    """Lista turmas programa existentes."""
+
+    @extend_schema(
+        tags=_TAG_TURMA,
+        summary="Turmas programa por lista de codigos",
+        description=(
+            "Retorna os codigos de turmas programa encontradas.\n\n"
+            "RequestBody: `codigos_turmas`."
+        ),
+        request={"application/json": _TURMA_REQUEST_SCHEMA},
+        responses={200: CodigoTurmaListSerializer},
+    )
+    def post(self, request: Request) -> Response:
+        """Retorna codigos de turmas programa.
+
+        Args:
+            request: Requisicao HTTP com os codigos das turmas.
+
+        Returns:
+            Resposta HTTP com codigos de turmas programa.
+
+        Raises:
+            httpx.HTTPError: Se a chamada ao servico pedagogico falhar.
+            ValueError: Se a resposta do servico nao for JSON valido.
+        """
+        serializer = CodigoTurmaListSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if not serializer.validated_data:
+            return Response([])
+
+        data = services.post_turmas_programa(serializer.validated_data)
+        return Response(CodigoTurmaListSerializer(data).data)
+
+
+class ListarTurmasViewSet(APIView):
+    """Lista dados de turmas existentes."""
+
+    @extend_schema(
+        tags=_TAG_TURMA,
+        summary="Dados de turmas por lista de codigos",
+        description="Retorna dados das turmas encontradas.",
+        request={"application/json": _TURMA_REQUEST_SCHEMA},
+        responses={200: TurmaDadosSerializer(many=True)},
+    )
+    def post(self, request: Request) -> Response:
+        """Retorna dados de turmas.
+
+        Args:
+            request: Requisicao HTTP com os codigos das turmas.
+
+        Returns:
+            Resposta HTTP com dados das turmas.
+
+        Raises:
+            httpx.HTTPError: Se a chamada ao servico pedagogico falhar.
+            ValueError: Se a resposta do servico nao for JSON valido.
+        """
+        serializer = CodigoTurmaListSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if not serializer.validated_data:
+            return Response([])
+
+        data = services.post_listar_turmas(serializer.validated_data)
+        return Response(TurmaDadosSerializer(data, many=True).data)
+
+
+class DadosTurmaViewSet(APIView):
+    """Retorna dados de uma turma."""
+
+    @extend_schema(
+        tags=_TAG_TURMA,
+        summary="Dados da turma",
+        description="Retorna dados da turma encontrada.",
+        responses={200: TurmaDadosSerializer},
+    )
+    def get(self, _request: Request, codigo_turma: str) -> Response:
+        """Retorna dados da turma.
+
+        Args:
+            _request: Requisicao HTTP recebida.
+            codigo_turma: Codigo da turma.
+
+        Returns:
+            Resposta HTTP com dados da turma.
+
+        Raises:
+            httpx.HTTPError: Se a chamada ao servico pedagogico falhar.
+            ValueError: Se a resposta do servico nao for JSON valido.
+        """
+        data = services.get_dados_turma(codigo_turma)
+        return Response(TurmaDadosSerializer(data).data)
 
 
 class ComponentesCurricularesViewSet(APIView):
