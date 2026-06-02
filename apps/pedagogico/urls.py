@@ -9,9 +9,32 @@ from apps.pedagogico.views import (
     ComponentesTurmaAnoViewSet,
     ComponentesTurmaProgramaViewSet,
     ComponentesTurmaViewSet,
+    DadosTurmaViewSet,
     GradeComponentesCurricularesViewSet,
+    ListarTurmasViewSet,
+    TurmasProgramaViewSet,
+    TurmasRegularesViewSet,
     ValidarComponentePapViewSet,
 )
+
+turma_urlpatterns = [
+    path(
+        "turmas-regulares/",
+        TurmasRegularesViewSet.as_view(),
+    ),
+    path(
+        "turmas-programa/",
+        TurmasProgramaViewSet.as_view(),
+    ),
+    path(
+        "listar-turmas/",
+        ListarTurmasViewSet.as_view(),
+    ),
+    path(
+        "<str:codigo_turma>/dados/",
+        DadosTurmaViewSet.as_view(),
+    ),
+]
 
 urlpatterns = [
     path(
