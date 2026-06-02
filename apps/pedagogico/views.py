@@ -33,7 +33,6 @@ class TurmasRegularesViewSet(APIView):
 
     @extend_schema(
         tags=_TAG_TURMA,
-        summary="Turmas regulares por lista de codigos",
         description=(
             "Retorna os codigos de turmas regulares encontradas.\n\n"
             "RequestBody: `codigos_turmas`."
@@ -68,7 +67,6 @@ class TurmasProgramaViewSet(APIView):
 
     @extend_schema(
         tags=_TAG_TURMA,
-        summary="Turmas programa por lista de codigos",
         description=(
             "Retorna os codigos de turmas programa encontradas.\n\n"
             "RequestBody: `codigos_turmas`."
@@ -103,7 +101,6 @@ class ListarTurmasViewSet(APIView):
 
     @extend_schema(
         tags=_TAG_TURMA,
-        summary="Dados de turmas por lista de codigos",
         description="Retorna dados das turmas encontradas.",
         request={"application/json": _TURMA_REQUEST_SCHEMA},
         responses={200: TurmaDadosSerializer(many=True)},
@@ -135,7 +132,6 @@ class DadosTurmaViewSet(APIView):
 
     @extend_schema(
         tags=_TAG_TURMA,
-        summary="Dados da turma",
         description="Retorna dados da turma encontrada.",
         responses={200: TurmaDadosSerializer},
     )
