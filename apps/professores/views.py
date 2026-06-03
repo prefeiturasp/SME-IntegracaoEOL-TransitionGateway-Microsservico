@@ -11,6 +11,7 @@ from apps.professores.serializers import (
     FuncionarioCargoSerializer,
     FuncionarioEscolaSerializer,
     FuncionarioFuncaoAtividadeSerializer,
+    FuncionarioFuncaoAtividadeUeSerializer,
     FuncionarioFuncaoExternaSerializer,
     ListaStringSerializer,
     NomeServidorSerializer,
@@ -24,12 +25,18 @@ _TAG_ESCOLA = ["Escola"]
 _TAG_FUNCIONARIO = ["Funcionario"]
 _TAG_PROFESSOR = ["Professor"]
 
-_MSG_CODIGO_RF_OBRIGATORIO = "E necessario informar o codigoRF."
-_MSG_CODIGO_UE_OBRIGATORIO = "E necessario informar o codigoUE."
-_MSG_REGISTRO_FUNCIONAL_OBRIGATORIO = (
-    "E necessario informar o registro funcional."
+_MSG_CODIGO_RF_OBRIGATORIO = "É necessário informar o codigoRF."
+_MSG_CODIGO_UE_OBRIGATORIO = "É necessário informar o codigoUE."
+_MSG_CODIGO_FUNCAO_EXTERNA_OBRIGATORIO = (
+    "É necessário informar o codigoFuncaoExterna."
 )
-_MSG_RESPOSTA_INVALIDA_SIDECAR = "Resposta invalida do sidecar de professores."
+_MSG_CODIGO_FUNCAO_ATIVIDADE_OBRIGATORIO = (
+    "É necessário informar o codigoFuncaoAtividade."
+)
+_MSG_REGISTRO_FUNCIONAL_OBRIGATORIO = (
+    "É necessário informar o registro funcional."
+)
+_MSG_RESPOSTA_INVALIDA_SIDECAR = "Resposta inválida do sidecar de professores."
 _CAMPOS_TURMA = {
     "codigo_turma",
     "data_disponibilizacao_aulas",
@@ -239,7 +246,7 @@ class EscolaFuncionariosCargoView(APIView):
         if not codigo_ue.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
         if not codigo_cargo.strip():
-            return detail_response("E necessario informar o codigoCargo.")
+            return detail_response("É necessário informar o codigoCargo.")
         data = services.get_funcionarios_escola_por_cargo(
             codigo_ue,
             codigo_cargo,
@@ -376,6 +383,73 @@ class EscolaFuncionariosFuncoesExternasView(APIView):
         )
 
 
+class EscolaFuncionariosFuncaoExternaView(APIView):
+    """Retorna funcionários da escola por uma função externa específica."""
+
+    @extend_schema(
+        tags=_TAG_ESCOLA,
+        description=(
+            "Retorna funcionários da escola por uma função externa."
+        ),
+        responses={200: FuncionarioEscolaSerializer(many=True), 204: None},
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_ue: str,
+        codigo_funcao_externa: str,
+    ) -> Response:
+        if not codigo_ue.strip():
+            return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
+        if not codigo_funcao_externa.strip():
+            return detail_response(_MSG_CODIGO_FUNCAO_EXTERNA_OBRIGATORIO)
+        data = services.get_funcionarios_escola_por_funcao_externa(
+            codigo_ue,
+            codigo_funcao_externa,
+        )
+        if not data:
+            return Response(status=204)
+        if not _is_lista_dicionarios(data):
+            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+        return Response(FuncionarioEscolaSerializer(data, many=True).data)
+
+
+class EscolaFuncionariosFuncaoAtividadeView(APIView):
+    """Retorna funcionários da escola por uma função atividade específica."""
+
+    @extend_schema(
+        tags=_TAG_ESCOLA,
+        description=(
+            "Retorna funcionários da escola por uma função atividade."
+        ),
+        responses={
+            200: FuncionarioFuncaoAtividadeUeSerializer(many=True),
+            204: None,
+        },
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_ue: str,
+        codigo_funcao_atividade: str,
+    ) -> Response:
+        if not codigo_ue.strip():
+            return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
+        if not codigo_funcao_atividade.strip():
+            return detail_response(_MSG_CODIGO_FUNCAO_ATIVIDADE_OBRIGATORIO)
+        data = services.get_funcionarios_escola_por_funcao_atividade(
+            codigo_ue,
+            codigo_funcao_atividade,
+        )
+        if not data:
+            return Response(status=204)
+        if not _is_lista_dicionarios(data):
+            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+        return Response(
+            FuncionarioFuncaoAtividadeUeSerializer(data, many=True).data
+        )
+
+
 class EscolaFuncionariosView(APIView):
     """Retorna funcionários vinculados à escola."""
 
@@ -420,7 +494,7 @@ class ProfessorDisciplinaTurmasView(APIView):
         if not codigo_rf.strip():
             return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
         if not disciplina_id.strip():
-            return detail_response("E necessario informar a disciplina.")
+            return detail_response("É necessário informar a disciplina.")
         serializer = TurmasIdsSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = services.get_turmas_professor_disciplina(

@@ -5,6 +5,8 @@ from django.urls import path
 from apps.professores.views import (
     EscolaFuncionariosCargosView,
     EscolaFuncionariosCargoView,
+    EscolaFuncionariosFuncaoAtividadeView,
+    EscolaFuncionariosFuncaoExternaView,
     EscolaFuncionariosFuncoesAtividadesView,
     EscolaFuncionariosFuncoesExternasView,
     EscolaFuncionariosView,
@@ -52,8 +54,18 @@ urlpatterns = [
         FuncionariosBuscarPorListaRfView.as_view(),
     ),
     path(
+        "escolas/<str:codigo_ue>/funcionarios/funcoes-atividades/"
+        "<str:codigo_funcao_atividade>/",
+        EscolaFuncionariosFuncaoAtividadeView.as_view(),
+    ),
+    path(
         "escolas/<str:codigo_ue>/funcionarios/funcoes-atividades/",
         EscolaFuncionariosFuncoesAtividadesView.as_view(),
+    ),
+    path(
+        "escolas/<str:codigo_ue>/funcionarios/funcoes-externas/"
+        "<str:codigo_funcao_externa>/",
+        EscolaFuncionariosFuncaoExternaView.as_view(),
     ),
     path(
         "escolas/<str:codigo_ue>/funcionarios/funcoes-externas/",

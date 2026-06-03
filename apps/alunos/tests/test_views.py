@@ -202,7 +202,7 @@ class AlunoInformacoesViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": "E necessario informar o codigo do aluno."},
+            {"detail": "É necessário informar o codigo do aluno."},
         )
 
     def test_601_quando_codigo_aluno_e_zero(self) -> None:
@@ -213,7 +213,7 @@ class AlunoInformacoesViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, 601)
         self.assertEqual(
             resp.json(),
-            "E necessario informar o codigo do aluno.",
+            "É necessário informar o codigo do aluno.",
         )
 
     def test_400_quando_codigo_aluno_nao_e_inteiro(self) -> None:
@@ -224,7 +224,7 @@ class AlunoInformacoesViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": "E necessario informar o codigo do aluno."},
+            {"detail": "É necessário informar o codigo do aluno."},
         )
 
 
@@ -277,7 +277,7 @@ class AlunoNecessidadesEspeciaisViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": "E necessario informar o codigo do aluno."},
+            {"detail": "É necessário informar o codigo do aluno."},
         )
 
 
@@ -362,7 +362,7 @@ class AlunoTurmasViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": "E necessario informar o codigo do aluno."},
+            {"detail": "É necessário informar o codigo do aluno."},
         )
 
 
