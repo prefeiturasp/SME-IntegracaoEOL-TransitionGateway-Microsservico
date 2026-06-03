@@ -49,6 +49,16 @@ def _query_params(
     lista: set[str],
     simples: set[str],
 ) -> dict[str, str | list[str]]:
+    """Coleta parâmetros de consulta informados na requisição.
+
+    Args:
+        request: Requisição com os parâmetros de consulta.
+        lista: Nomes de parâmetros que aceitam múltiplos valores.
+        simples: Nomes de parâmetros com valor único.
+
+    Returns:
+        Parâmetros presentes, como lista ou valor único conforme o nome.
+    """
     params: dict[str, str | list[str]] = {}
     for nome in lista:
         valores = request.query_params.getlist(nome)
@@ -62,6 +72,14 @@ def _query_params(
 
 
 def _parse_bool_param(value: str | None) -> bool | None:
+    """Retorna o booleano correspondente ao parâmetro textual.
+
+    Args:
+        value: Valor textual recebido na consulta.
+
+    Returns:
+        Booleano correspondente, ou ``None`` quando o valor não é reconhecido.
+    """
     if value is None:
         return None
     normalized = value.lower()
@@ -73,6 +91,14 @@ def _parse_bool_param(value: str | None) -> bool | None:
 
 
 def _is_lista_turmas(data: object) -> bool:
+    """Verifica se os dados representam uma lista de turmas.
+
+    Args:
+        data: Conteúdo retornado pela consulta ao sidecar.
+
+    Returns:
+        ``True`` quando todos os itens têm os campos de turma esperados.
+    """
     return isinstance(data, list) and all(
         isinstance(item, dict) and item.keys() >= _CAMPOS_TURMA
         for item in data
@@ -80,6 +106,14 @@ def _is_lista_turmas(data: object) -> bool:
 
 
 def _is_lista_dicionarios(data: object) -> bool:
+    """Verifica se os dados são uma lista de dicionários.
+
+    Args:
+        data: Conteúdo retornado pela consulta ao sidecar.
+
+    Returns:
+        ``True`` quando os dados são uma lista composta só de dicionários.
+    """
     return isinstance(data, list) and all(
         isinstance(item, dict) for item in data
     )
@@ -96,6 +130,14 @@ class ProfessorView(APIView):
         responses={200: OpenApiTypes.STR, 204: None},
     )
     def get(self, _request: Request, rf_professor: str) -> Response:
+        """Retorna o nome do professor pelo código RF.
+
+        Args:
+            rf_professor: Registro funcional usado na consulta.
+
+        Returns:
+            Nome do professor, ou ausência de conteúdo quando não encontrado.
+        """
         if not rf_professor.strip():
             return detail_response("Codigo RF e obrigatorio.")
         data = services.get_professor(rf_professor)
@@ -113,6 +155,14 @@ class ValidadeProfessorView(APIView):
         responses={200: OpenApiTypes.BOOL},
     )
     def get(self, _request: Request, codigo_rf: str) -> Response:
+        """Retorna indicação de validade do professor.
+
+        Args:
+            codigo_rf: RF usado na consulta de validade.
+
+        Returns:
+            Indicador booleano de validade do professor.
+        """
         if not codigo_rf.strip():
             return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
         data = services.get_validade_professor(codigo_rf)
@@ -130,6 +180,14 @@ class FuncionarioAtivoView(APIView):
         responses={200: OpenApiTypes.BOOL},
     )
     def get(self, _request: Request, registro_funcional: str) -> Response:
+        """Retorna indicação de atividade do funcionário.
+
+        Args:
+            registro_funcional: Registro funcional usado na consulta.
+
+        Returns:
+            Indicador booleano de funcionário ativo.
+        """
         if not registro_funcional.strip():
             return detail_response(_MSG_REGISTRO_FUNCIONAL_OBRIGATORIO)
         data = services.get_funcionario_ativo(registro_funcional)
@@ -145,6 +203,14 @@ class NomeServidorView(APIView):
         responses={200: NomeServidorSerializer, 204: None},
     )
     def get(self, _request: Request, registro_funcional: str) -> Response:
+        """Retorna nome e CPF do servidor.
+
+        Args:
+            registro_funcional: Registro funcional usado na consulta.
+
+        Returns:
+            Dados de identificação do servidor, ou ausência de conteúdo.
+        """
         data = services.get_nome_servidor(registro_funcional)
         if data is None:
             return Response(status=204)
@@ -160,6 +226,14 @@ class NomeUsuarioEolView(APIView):
         responses={200: OpenApiTypes.STR, 204: None},
     )
     def get(self, _request: Request, registro_funcional: str) -> Response:
+        """Retorna nome de usuário EOL do funcionário.
+
+        Args:
+            registro_funcional: Registro funcional usado na consulta.
+
+        Returns:
+            Nome de usuário EOL, ou ausência de conteúdo quando não encontrado.
+        """
         if not registro_funcional.strip():
             return detail_response(_MSG_REGISTRO_FUNCIONAL_OBRIGATORIO)
         data = services.get_nome_usuario_eol(registro_funcional)
@@ -190,6 +264,16 @@ class ProfessorBuscarPorRfView(APIView):
         codigo_rf: str,
         ano_letivo: int,
     ) -> Response:
+        """Retorna professor por RF e ano letivo.
+
+        Args:
+            request: Requisição com o filtro opcional de outros cargos.
+            codigo_rf: RF usado na consulta.
+            ano_letivo: Ano letivo de referência.
+
+        Returns:
+            Dados resumidos do professor, ou ausência de conteúdo.
+        """
         if not codigo_rf.strip():
             return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
         buscar_outros_cargos_param = request.query_params.get(
@@ -221,6 +305,14 @@ class FuncionariosBuscarPorListaRfView(APIView):
         responses={200: ProfessorBuscarPorRfSerializer(many=True)},
     )
     def post(self, request: Request) -> Response:
+        """Retorna professores pelos RFs informados.
+
+        Args:
+            request: Requisição com a lista de RFs no corpo.
+
+        Returns:
+            Professores encontrados, ou ausência de conteúdo.
+        """
         serializer = ListaStringSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = services.get_professores_por_lista_rf(serializer.validated_data)
@@ -243,6 +335,15 @@ class EscolaFuncionariosCargoView(APIView):
         codigo_ue: str,
         codigo_cargo: str,
     ) -> Response:
+        """Retorna funcionários da escola filtrados por cargo.
+
+        Args:
+            codigo_ue: Código da unidade escolar usada na consulta.
+            codigo_cargo: Código do cargo usado como filtro.
+
+        Returns:
+            Funcionários no cargo informado, ou ausência de conteúdo.
+        """
         if not codigo_ue.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
         if not codigo_cargo.strip():
@@ -280,6 +381,15 @@ class EscolaFuncionariosCargosView(APIView):
         responses={200: FuncionarioCargoSerializer(many=True), 204: None},
     )
     def get(self, request: Request, codigo_ue: str) -> Response:
+        """Retorna funcionários da escola filtrados por cargos.
+
+        Args:
+            request: Requisição com os cargos e a DRE de filtro.
+            codigo_ue: Código da unidade escolar usada na consulta.
+
+        Returns:
+            Funcionários nos cargos informados, ou ausência de conteúdo.
+        """
         if not codigo_ue.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
         params = _query_params(request, {"cargos"}, {"dre_codigo"})
@@ -318,6 +428,15 @@ class EscolaFuncionariosFuncoesAtividadesView(APIView):
         },
     )
     def get(self, request: Request, codigo_ue: str) -> Response:
+        """Retorna funcionários da escola por funções atividades.
+
+        Args:
+            request: Requisição com as funções atividades e a DRE de filtro.
+            codigo_ue: Código da unidade escolar usada na consulta.
+
+        Returns:
+            Funcionários nas funções atividades, ou ausência de conteúdo.
+        """
         if not codigo_ue.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
         params = _query_params(
@@ -365,6 +484,15 @@ class EscolaFuncionariosFuncoesExternasView(APIView):
         },
     )
     def get(self, request: Request, codigo_ue: str) -> Response:
+        """Retorna funcionários da escola por funções externas.
+
+        Args:
+            request: Requisição com as funções externas e a DRE de filtro.
+            codigo_ue: Código da unidade escolar usada na consulta.
+
+        Returns:
+            Funcionários nas funções externas, ou ausência de conteúdo.
+        """
         if not codigo_ue.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
         params = _query_params(request, {"funcoes"}, {"codigo_dre"})
@@ -399,6 +527,15 @@ class EscolaFuncionariosFuncaoExternaView(APIView):
         codigo_ue: str,
         codigo_funcao_externa: str,
     ) -> Response:
+        """Retorna funcionários da escola por uma função externa específica.
+
+        Args:
+            codigo_ue: Código da unidade escolar usada na consulta.
+            codigo_funcao_externa: Código da função externa usado como filtro.
+
+        Returns:
+            Funcionários da função externa, ou ausência de conteúdo.
+        """
         if not codigo_ue.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
         if not codigo_funcao_externa.strip():
@@ -433,6 +570,16 @@ class EscolaFuncionariosFuncaoAtividadeView(APIView):
         codigo_ue: str,
         codigo_funcao_atividade: str,
     ) -> Response:
+        """Retorna funcionários da escola por uma função atividade específica.
+
+        Args:
+            codigo_ue: Código da unidade escolar usada na consulta.
+            codigo_funcao_atividade: Código da função atividade usado como
+                filtro.
+
+        Returns:
+            Funcionários da função atividade, ou ausência de conteúdo.
+        """
         if not codigo_ue.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
         if not codigo_funcao_atividade.strip():
@@ -459,6 +606,14 @@ class EscolaFuncionariosView(APIView):
         responses={200: FuncionarioEscolaSerializer(many=True), 204: None},
     )
     def get(self, _request: Request, codigo_ue: str) -> Response:
+        """Retorna funcionários vinculados à escola.
+
+        Args:
+            codigo_ue: Código da unidade escolar usada na consulta.
+
+        Returns:
+            Funcionários vinculados à escola, ou ausência de conteúdo.
+        """
         if not codigo_ue.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
         data = services.get_funcionarios_escola(codigo_ue)
@@ -491,6 +646,16 @@ class ProfessorDisciplinaTurmasView(APIView):
         codigo_rf: str,
         disciplina_id: str,
     ) -> Response:
+        """Retorna turmas do professor para a disciplina.
+
+        Args:
+            request: Requisição com as turmas consultadas no corpo.
+            codigo_rf: RF usado na consulta.
+            disciplina_id: Disciplina usada como filtro.
+
+        Returns:
+            Turmas atribuídas ao professor, ou ausência de conteúdo.
+        """
         if not codigo_rf.strip():
             return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
         if not disciplina_id.strip():
