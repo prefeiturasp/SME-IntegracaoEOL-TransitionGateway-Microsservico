@@ -19,7 +19,7 @@ from apps.alunos.serializers import (
 from apps.core.responses import Response, detail_response
 
 _TAG = ["Alunos"]
-_MSG_CODIGO_OBRIGATORIO = "E necessario informar o codigo do aluno."
+_MSG_CODIGO_OBRIGATORIO = "É necessário informar o codigo do aluno."
 _MSG_CODIGOS_ALUNOS_OBRIGATORIOS = "Os códigos dos Alunos são obrigatórios."
 _MSG_SIDECAR_INDISPONIVEL = "Servico de alunos indisponivel."
 

@@ -211,7 +211,7 @@ class ObterDadosSrmPaeeAlunoView(APIView):
     def get(self, _request: Request, codigo_aluno: str) -> Response:
         """ Verifica a resposta de dados de SRM/PAEE colaborativo do aluno."""
         if not codigo_aluno.strip():
-            return detail_response("E necessario informar o codigo_aluno.")
+            return detail_response("É necessário informar o codigo_aluno.")
         data = services.obter_dados_srm_paee_aluno(codigo_aluno=codigo_aluno)
         return Response(
             DadosSrmPaeeColaborativoSerializer(data, many=True).data
