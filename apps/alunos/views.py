@@ -1,26 +1,38 @@
 """Views do domínio de alunos."""
 
 import json
+from datetime import datetime
 from typing import Any
 
 import httpx
 from django.http import HttpResponse
-from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
+)
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
 from apps.alunos import services
 from apps.alunos.serializers import (
+    AlunoAutocompleteSerializer,
     AlunoInformacoesSerializer,
     AlunoPorCodigoSerializer,
+    InformacoesAlunoTurmaSerializer,
     NecessidadeEspecialSerializer,
+    ResponsavelResumidoSerializer,
     TurmaDoAlunoSerializer,
 )
 from apps.core.responses import Response, detail_response
 
 _TAG = ["Alunos"]
 _MSG_CODIGO_OBRIGATORIO = "E necessario informar o codigo do aluno."
+_MSG_CODIGO_TURMA_OBRIGATORIO = "E necessario informar o codigo da turma."
+_MSG_CODIGO_UE_OBRIGATORIO = "E necessario informar o codigo da UE."
 _MSG_CODIGOS_ALUNOS_OBRIGATORIOS = "Os códigos dos Alunos são obrigatórios."
+_MSG_NOME_ALUNO_MINIMO = "O Nome deve conter no mínimo 3 caracteres."
+_MSG_RESPONSAVEL_NAO_ENCONTRADO = "Responsável não encontrado."
 _MSG_SIDECAR_INDISPONIVEL = "Servico de alunos indisponivel."
 
 
@@ -85,6 +97,160 @@ def _legacy_status_601_response(message: str) -> HttpResponse:
     return response
 
 
+def _query_value(request: Request, *names: str) -> str | None:
+    """Lê o primeiro alias preenchido da query string.
+
+    Args:
+        request: Requisição HTTP recebida.
+        *names: Nomes aceitos para o mesmo parâmetro.
+
+    Returns:
+        Valor recebido, ou ``None`` quando nenhum alias estiver preenchido.
+    """
+    for name in names:
+        raw = request.query_params.get(name)
+        if raw not in (None, ""):
+            return str(raw)
+    return None
+
+
+def _query_int(request: Request, name: str, default: int) -> int:
+    """Lê um inteiro opcional da query string.
+
+    Args:
+        request: Requisição HTTP recebida.
+        name: Nome do parâmetro de query.
+        default: Valor usado quando o parâmetro estiver ausente.
+
+    Returns:
+        Valor convertido para inteiro.
+
+    Raises:
+        ValueError: Se o parâmetro não puder ser convertido.
+    """
+    raw = _query_value(request, name)
+    if raw is None or raw == "":
+        return default
+    try:
+        return int(raw)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            f"Parâmetro '{name}' deve ser um inteiro válido."
+        ) from exc
+
+
+def _query_int_alias(request: Request, default: int, *names: str) -> int:
+    """Lê inteiro opcional aceitando aliases de query string.
+
+    Args:
+        request: Requisição HTTP recebida.
+        default: Valor usado quando nenhum alias estiver preenchido.
+        *names: Nomes aceitos para o mesmo parâmetro.
+
+    Returns:
+        Valor convertido para inteiro.
+
+    Raises:
+        ValueError: Se algum alias preenchido não for inteiro válido.
+    """
+    raw = _query_value(request, *names)
+    if raw is None:
+        return default
+    try:
+        return int(raw)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            f"Parâmetro '{names[0]}' deve ser um inteiro válido."
+        ) from exc
+
+
+def _query_datetime_alias(
+    request: Request,
+    *names: str,
+) -> datetime | None:
+    """Lê uma data/hora ISO opcional da query string.
+
+    Args:
+        request: Requisição HTTP recebida.
+        name: Nome do parâmetro de query.
+
+    Returns:
+        Valor convertido para data/hora, ou ``None`` quando ausente.
+
+    Raises:
+        ValueError: Se o parâmetro não for ISO válido.
+    """
+    raw = _query_value(request, *names)
+    if not raw:
+        return None
+    try:
+        return datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(
+            f"Parâmetro '{names[0]}' deve ser uma data ISO 8601 válida."
+        ) from exc
+
+
+class AlunoAutocompleteAtivosView(APIView):
+    """Lista alunos ativos para autocomplete."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Autocomplete de alunos ativos",
+        description="Retorna alunos ativos de uma UE por filtro.",
+        parameters=[
+            OpenApiParameter("ue_codigo", str, OpenApiParameter.PATH),
+            OpenApiParameter("aluno_nome", str, OpenApiParameter.QUERY),
+            OpenApiParameter("alunoNome", str, OpenApiParameter.QUERY),
+            OpenApiParameter("data_referencia", str, OpenApiParameter.QUERY),
+            OpenApiParameter("dataReferencia", str, OpenApiParameter.QUERY),
+            OpenApiParameter("aluno_codigo", int, OpenApiParameter.QUERY),
+            OpenApiParameter("alunoCodigo", int, OpenApiParameter.QUERY),
+            OpenApiParameter("limite", int, OpenApiParameter.QUERY),
+        ],
+        responses={200: OpenApiResponse(description="Success")},
+    )
+    def get(self, request: Request, ue_codigo: str) -> Response:
+        """Busca alunos ativos para autocomplete.
+
+        Args:
+            request: Requisição HTTP recebida.
+            ue_codigo: Código da unidade educacional.
+
+        Returns:
+            Resposta com alunos encontrados ou erro de validação/sidecar.
+        """
+        if not ue_codigo.strip():
+            return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
+        aluno_nome = _query_value(request, "aluno_nome", "alunoNome")
+        aluno_nome = aluno_nome.strip() if aluno_nome is not None else None
+        try:
+            aluno_codigo = _query_int_alias(
+                request, 0, "aluno_codigo", "alunoCodigo"
+            )
+            limite = _query_int(request, "limite", 10)
+            data_referencia = _query_datetime_alias(
+                request, "data_referencia", "dataReferencia"
+            )
+        except ValueError as exc:
+            return detail_response(str(exc))
+        if aluno_codigo == 0 and len(aluno_nome or "") < 3:
+            return detail_response(_MSG_NOME_ALUNO_MINIMO)
+        try:
+            data = services.buscar_alunos_ativos_autocomplete(
+                ue_codigo=ue_codigo,
+                aluno_nome=aluno_nome,
+                data_referencia=data_referencia,
+                aluno_codigo=aluno_codigo,
+                limite=limite,
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+        return Response(AlunoAutocompleteSerializer(data, many=True).data)
+
+
 class AlunoInformacoesView(APIView):
     """Retorna informações completas do aluno."""
 
@@ -128,6 +294,86 @@ class AlunoInformacoesView(APIView):
         if data is None:
             return Response(status=204)
         return Response(AlunoInformacoesSerializer(data).data)
+
+
+class ResponsavelResumidoView(APIView):
+    """Retorna dados resumidos de responsável."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Dados resumidos do responsável",
+        description="Retorna dados resumidos de um responsável pelo CPF.",
+        parameters=[
+            OpenApiParameter(
+                "cpf_responsavel",
+                str,
+                OpenApiParameter.PATH,
+            )
+        ],
+        responses={200: OpenApiResponse(description="Success"), 404: None},
+    )
+    def get(self, _request: Request, cpf_responsavel: str) -> Response:
+        """Busca dados resumidos de responsável.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            cpf_responsavel: CPF do responsável.
+
+        Returns:
+            Resposta com dados resumidos, 404 ou erro do sidecar.
+        """
+        try:
+            data = services.get_responsavel_resumido(cpf_responsavel)
+        except httpx.HTTPStatusError as exc:
+            if _is_not_found(exc):
+                return detail_response(_MSG_RESPONSAVEL_NAO_ENCONTRADO, 404)
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+        if data is None:
+            return detail_response(_MSG_RESPONSAVEL_NAO_ENCONTRADO, 404)
+        return Response(ResponsavelResumidoSerializer(data).data)
+
+
+class InformacoesAlunosTurmaView(APIView):
+    """Lista informações dos alunos de uma turma."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Informações dos alunos da turma",
+        description="Retorna resumo dos alunos da turma no formato diário.",
+        parameters=[
+            OpenApiParameter(
+                "codigo_turma",
+                int,
+                OpenApiParameter.PATH,
+            )
+        ],
+        responses={200: OpenApiResponse(description="Success")},
+    )
+    def get(self, _request: Request, codigo_turma: str) -> Response:
+        """Busca informações resumidas dos alunos de uma turma.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            codigo_turma: Código EOL da turma.
+
+        Returns:
+            Resposta com lista de alunos da turma ou erro do sidecar.
+        """
+        try:
+            codigo_int = int(codigo_turma)
+        except (ValueError, TypeError):
+            return detail_response(_MSG_CODIGO_TURMA_OBRIGATORIO)
+        if codigo_int <= 0:
+            return detail_response(_MSG_CODIGO_TURMA_OBRIGATORIO)
+        try:
+            data = services.get_informacoes_alunos_turma(codigo_turma)
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+        return Response(InformacoesAlunoTurmaSerializer(data, many=True).data)
 
 
 class AlunoNecessidadesEspeciaisView(APIView):

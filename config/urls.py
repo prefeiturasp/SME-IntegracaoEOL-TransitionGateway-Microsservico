@@ -14,6 +14,7 @@ DOMAINS = {
     "institucional": settings.SIDECAR_INSTITUCIONAL_URL,
     "programasedu": settings.SIDECAR_PROGRAMASEDU_URL,
     "alunos": settings.SIDECAR_ALUNOS_URL,
+    "matriculas": settings.SIDECAR_ALUNOS_URL,
 }
 
 
@@ -43,4 +44,5 @@ urlpatterns = [
     path("api/", include("apps.institucional.urls")),
     path("api/", include("apps.programasedu.urls")),
     path(f"{API_PREFIX}alunos/", include("apps.alunos.urls")),
+    path(f"{API_PREFIX}matriculas/", include("apps.matriculas.urls")),
 ]

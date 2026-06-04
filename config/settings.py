@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     "apps.programasedu",
     "apps.institucional",
     "apps.alunos",
+    "apps.matriculas",
 ]
 
 MIDDLEWARE = [

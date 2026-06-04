@@ -189,7 +189,7 @@ def _endereco_legado(instance: Any) -> dict[str, Any] | None:
     """
     endereco = _get(instance, "endereco")
     if not isinstance(endereco, dict):
-        return endereco
+        return cast(dict[str, Any] | None, endereco)
     return {
         "id": _get(endereco, "id"),
         "nro": _get(endereco, "nro", "numero_endereco", "numeroEndereco"),
@@ -247,6 +247,68 @@ class AlunoInformacoesSerializer(serializers.Serializer):
             ),
             "nis": _get(instance, "nis"),
             "cns": _get(instance, "cns"),
+        }
+
+
+class AlunoAutocompleteSerializer(serializers.Serializer):
+    """Serializa dados de autocomplete de aluno."""
+
+    def to_representation(self, instance: Any) -> dict[str, Any]:
+        """Transforma dados de aluno no contrato de autocomplete.
+
+        Args:
+            instance: Dicionário ou objeto com dados do aluno e turma.
+
+        Returns:
+            Dicionário com os campos esperados pelo autocomplete legado.
+        """
+        return {
+            "codigoAluno": _get(instance, "codigo_aluno", "codigoAluno"),
+            "nomeAluno": _get(instance, "nome_aluno", "nomeAluno"),
+            "nomeSocialAluno": _get(
+                instance,
+                "nome_social_aluno",
+                "nomeSocialAluno",
+            ),
+            "codigoTurma": _get(instance, "codigo_turma", "codigoTurma"),
+            "numeroAlunoChamada": _numero_chamada(instance),
+            "turma": _get(instance, "turma"),
+            "modalidade": _get(instance, "modalidade"),
+        }
+
+
+class InformacoesAlunoTurmaSerializer(serializers.Serializer):
+    """Serializa resumo de aluno em turma."""
+
+    def to_representation(self, instance: Any) -> dict[str, Any]:
+        """Transforma dados de aluno da turma no contrato legado.
+
+        Args:
+            instance: Dicionário ou objeto com dados resumidos do aluno.
+
+        Returns:
+            Dicionário com os campos esperados pelo diário/lista de chamada.
+        """
+        return {
+            "numeroChamada": _get(
+                instance,
+                "numero_chamada",
+                "numeroChamada",
+            ),
+            "codigoAluno": _get(instance, "codigo_aluno", "codigoAluno"),
+            "nomeAluno": _get(instance, "nome_aluno", "nomeAluno"),
+            "nomeSocialAluno": _get(
+                instance,
+                "nome_social_aluno",
+                "nomeSocialAluno",
+            ),
+            "sexo": _get(instance, "sexo"),
+            "raca": _get(instance, "raca", "raca_cor", "racaCor"),
+            "codigoRaca": _get(
+                instance,
+                "codigo_raca",
+                "codigoRaca",
+            ),
         }
 
 
@@ -459,4 +521,43 @@ class AlunoPorCodigoSerializer(serializers.Serializer):
                 or _get(instance, "data_situacao", "dataSituacao")
                 or _DATA_PADRAO_LEGADO
             ),
+        }
+
+
+class ResponsavelResumidoSerializer(serializers.Serializer):
+    """Serializa dados resumidos de responsável."""
+
+    def to_representation(self, instance: Any) -> dict[str, Any]:
+        """Transforma dados de responsável no contrato legado.
+
+        Args:
+            instance: Dicionário ou objeto com dados do responsável.
+
+        Returns:
+            Dicionário com os campos resumidos do responsável.
+        """
+        return {
+            "id": _get(instance, "id", "codigo_responsavel"),
+            "cpf": _get(instance, "cpf"),
+            "email": _get(instance, "email"),
+            "nome": _get(instance, "nome"),
+            "tipoResponsavel": _get(
+                instance,
+                "tipo_responsavel",
+                "tipoResponsavel",
+            ),
+            "dataNascimento": _datetime_legado(
+                _get(instance, "data_nascimento", "dataNascimento")
+            ),
+            "dataAtualizacao": _datetime_legado(
+                _get(instance, "data_atualizacao", "dataAtualizacao")
+            ),
+            "nomeMae": _get(instance, "nome_mae", "nomeMae"),
+            "dddCelular": _get(instance, "ddd_celular", "dddCelular"),
+            "numeroCelular": _get(
+                instance,
+                "numero_celular",
+                "numeroCelular",
+            ),
+            "codigoAluno": _get(instance, "codigo_aluno", "codigoAluno"),
         }
