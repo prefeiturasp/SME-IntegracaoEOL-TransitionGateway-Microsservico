@@ -27,9 +27,9 @@ from apps.alunos.serializers import (
 from apps.core.responses import Response, detail_response
 
 _TAG = ["Alunos"]
-_MSG_CODIGO_OBRIGATORIO = "E necessario informar o codigo do aluno."
-_MSG_CODIGO_TURMA_OBRIGATORIO = "E necessario informar o codigo da turma."
-_MSG_CODIGO_UE_OBRIGATORIO = "E necessario informar o codigo da UE."
+_MSG_CODIGO_OBRIGATORIO = "É necessário informar o codigo do aluno."
+_MSG_CODIGO_TURMA_OBRIGATORIO = "É necessário informar o codigo da turma."
+_MSG_CODIGO_UE_OBRIGATORIO = "É necessário informar o codigo da UE."
 _MSG_CODIGOS_ALUNOS_OBRIGATORIOS = "Os códigos dos Alunos são obrigatórios."
 _MSG_NOME_ALUNO_MINIMO = "O Nome deve conter no mínimo 3 caracteres."
 _MSG_RESPONSAVEL_NAO_ENCONTRADO = "Responsável não encontrado."

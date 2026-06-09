@@ -356,6 +356,46 @@ def get_funcionarios_escola_funcoes_externas(
     )
 
 
+def get_funcionarios_escola_por_funcao_externa(
+    codigo_ue: str,
+    codigo_funcao_externa: str,
+) -> Any:
+    """Retorna funcionários da escola por uma função externa específica.
+
+    Args:
+        codigo_ue: Código da unidade escolar usada na consulta.
+        codigo_funcao_externa: Código da função externa usado como filtro.
+
+    Returns:
+        Lista de funcionários da função externa ou ausência de conteúdo.
+    """
+    resp = _client.get(
+        f"{_BASE_ESCOLAS}/{codigo_ue}/funcionarios/",
+        params={"funcoes_externas": codigo_funcao_externa},
+    )
+    return _client.json_or_none(resp)
+
+
+def get_funcionarios_escola_por_funcao_atividade(
+    codigo_ue: str,
+    codigo_funcao_atividade: str,
+) -> Any:
+    """Retorna funcionários da escola por uma função atividade específica.
+
+    Args:
+        codigo_ue: Código da unidade escolar usada na consulta.
+        codigo_funcao_atividade: Código da função atividade usado como filtro.
+
+    Returns:
+        Lista de funcionários da função atividade ou ausência de conteúdo.
+    """
+    resp = _client.get(
+        f"{_BASE_ESCOLAS}/{codigo_ue}/funcionarios/",
+        params={"funcoes_atividades": codigo_funcao_atividade},
+    )
+    return _client.json_or_none(resp)
+
+
 def get_turmas_professor_disciplina(
     codigo_rf: str,
     disciplina_id: str,
