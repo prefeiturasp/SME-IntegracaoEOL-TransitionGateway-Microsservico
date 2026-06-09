@@ -178,7 +178,7 @@ class AlunoAutocompleteAtivosViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": "E necessario informar o codigo da UE."},
+            {"detail": "É necessário informar o codigo da UE."},
         )
         mock_service.assert_not_called()
 
@@ -519,7 +519,7 @@ class InformacoesAlunosTurmaViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": "E necessario informar o codigo da turma."},
+            {"detail": "É necessário informar o codigo da turma."},
         )
         mock_service.assert_not_called()
 
@@ -534,7 +534,7 @@ class InformacoesAlunosTurmaViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": "E necessario informar o codigo da turma."},
+            {"detail": "É necessário informar o codigo da turma."},
         )
         mock_service.assert_not_called()
 
