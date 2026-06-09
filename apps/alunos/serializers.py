@@ -221,7 +221,7 @@ class AlunoInformacoesSerializer(serializers.Serializer):
             instance: Dicionário ou objeto com os dados do aluno.
 
         Returns:
-            Dicionário com os campos esperados pelo endpoint legado.
+            Dicionário com os campos cadastrais do aluno.
         """
         return {
             "codigoAluno": _get(instance, "codigo_aluno", "codigoAluno"),
@@ -260,7 +260,7 @@ class AlunoAutocompleteSerializer(serializers.Serializer):
             instance: Dicionário ou objeto com dados do aluno e turma.
 
         Returns:
-            Dicionário com os campos esperados pelo autocomplete legado.
+            Dicionário com os campos de identificação do aluno para autocomplete.
         """
         return {
             "codigoAluno": _get(instance, "codigo_aluno", "codigoAluno"),
@@ -448,7 +448,7 @@ class AlunoPorCodigoSerializer(serializers.Serializer):
             instance: Dicionário ou objeto com dados do aluno e matrícula.
 
         Returns:
-            Dicionário com os campos esperados em ``/alunos/alunos``.
+            Dicionário com os campos de listagem do aluno.
         """
         return {
             "codigoAluno": _get(instance, "codigo_aluno", "codigoAluno"),

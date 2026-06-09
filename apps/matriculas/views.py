@@ -15,7 +15,7 @@ from apps.core.responses import Response, detail_response
 from apps.matriculas import services
 from apps.matriculas.serializers import MatriculaSerializer
 
-_TAG = ["Matriculas"]
+_TAG = ["Alunos"]
 _MSG_PARAMETROS_OBRIGATORIOS = "ano_letivo e ue_codigo são obrigatórios."
 _MSG_ANO_LETIVO_INVALIDO = "ano_letivo deve ser um inteiro válido."
 _MSG_SIDECAR_INDISPONIVEL = "Servico de matriculas indisponivel."
@@ -45,7 +45,7 @@ def _sidecar_unavailable_response(_exc: httpx.RequestError) -> Response:
         _exc: Exceção de comunicação com o sidecar.
 
     Returns:
-        Resposta HTTP 503 no formato padrão do gateway.
+        Resposta de indisponibilidade no formato do gateway.
     """
     return Response({"detail": _MSG_SIDECAR_INDISPONIVEL}, status=503)
 
@@ -89,7 +89,7 @@ class MatriculasAnoAtualView(APIView):
             request: Requisição HTTP recebida.
 
         Returns:
-            Resposta com matrículas consolidadas ou erro de validação/sidecar.
+            Matrículas consolidadas por turma.
         """
         ano_raw = _query_alias(request, "ano_letivo", "anoLetivo")
         ue_codigo = _query_alias(request, "ue_codigo", "ueCodigo")

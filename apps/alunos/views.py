@@ -37,10 +37,10 @@ _MSG_SIDECAR_INDISPONIVEL = "Servico de alunos indisponivel."
 
 
 def _sidecar_error_response(exc: httpx.HTTPStatusError) -> Response:
-    """Monta resposta do gateway para erro HTTP do sidecar.
+    """Monta resposta de erro a partir da exceção HTTP recebida.
 
     Args:
-        exc: Exceção HTTP lançada pelo cliente do sidecar.
+        exc: Exceção HTTP lançada pelo cliente externo.
 
     Returns:
         Resposta com o corpo e status retornados pelo sidecar.
@@ -60,7 +60,7 @@ def _sidecar_unavailable_response(_exc: httpx.RequestError) -> Response:
         _exc: Exceção de comunicação com o sidecar.
 
     Returns:
-        Resposta HTTP 503 no formato padrão do gateway.
+        Resposta de indisponibilidade no formato do gateway.
     """
     return Response(
         {"detail": _MSG_SIDECAR_INDISPONIVEL},
@@ -69,26 +69,12 @@ def _sidecar_unavailable_response(_exc: httpx.RequestError) -> Response:
 
 
 def _is_not_found(exc: httpx.HTTPStatusError) -> bool:
-    """Verifica se a exceção representa status HTTP 404.
-
-    Args:
-        exc: Exceção HTTP retornada pelo sidecar.
-
-    Returns:
-        ``True`` quando o status da resposta for 404.
-    """
+    """Verifica se a exceção representa recurso não encontrado."""
     return exc.response.status_code == 404
 
 
 def _legacy_status_601_response(message: str) -> HttpResponse:
-    """Monta resposta com status 601 usado pelo legado.
-
-    Args:
-        message: Mensagem serializada no corpo da resposta.
-
-    Returns:
-        Resposta HTTP com status 601 e corpo JSON.
-    """
+    """Monta resposta no formato esperado pelo contrato legado."""
     response = HttpResponse(
         json.dumps(message, ensure_ascii=False),
         content_type="application/json",
@@ -172,7 +158,7 @@ def _query_datetime_alias(
 
     Args:
         request: Requisição HTTP recebida.
-        name: Nome do parâmetro de query.
+        *names: Nomes aceitos para o mesmo parâmetro.
 
     Returns:
         Valor convertido para data/hora, ou ``None`` quando ausente.
@@ -215,10 +201,10 @@ class AlunoAutocompleteAtivosView(APIView):
 
         Args:
             request: Requisição HTTP recebida.
-            ue_codigo: Código da unidade educacional.
+            ue_codigo: Código EOL da unidade educacional.
 
         Returns:
-            Resposta com alunos encontrados ou erro de validação/sidecar.
+            Alunos encontrados compatíveis com os filtros.
         """
         if not ue_codigo.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
@@ -271,11 +257,10 @@ class AlunoInformacoesView(APIView):
         """Busca informações cadastrais de um aluno.
 
         Args:
-            _request: Requisição HTTP recebida.
             codigo_aluno: Código EOL do aluno.
 
         Returns:
-            Resposta com dados cadastrais, 204 ou erro do sidecar.
+            Dados cadastrais do aluno.
         """
         try:
             codigo_int = int(codigo_aluno)
@@ -316,11 +301,10 @@ class ResponsavelResumidoView(APIView):
         """Busca dados resumidos de responsável.
 
         Args:
-            _request: Requisição HTTP recebida.
             cpf_responsavel: CPF do responsável.
 
         Returns:
-            Resposta com dados resumidos, 404 ou erro do sidecar.
+            Dados resumidos do responsável.
         """
         try:
             data = services.get_responsavel_resumido(cpf_responsavel)
@@ -355,11 +339,10 @@ class InformacoesAlunosTurmaView(APIView):
         """Busca informações resumidas dos alunos de uma turma.
 
         Args:
-            _request: Requisição HTTP recebida.
             codigo_turma: Código EOL da turma.
 
         Returns:
-            Resposta com lista de alunos da turma ou erro do sidecar.
+            Lista de alunos da turma.
         """
         try:
             codigo_int = int(codigo_turma)
@@ -389,11 +372,10 @@ class AlunoNecessidadesEspeciaisView(APIView):
         """Busca necessidades especiais do aluno.
 
         Args:
-            _request: Requisição HTTP recebida.
             codigo_aluno: Código EOL do aluno.
 
         Returns:
-            Resposta com a necessidade especial principal, 204 ou erro.
+            Necessidade especial vinculada ao aluno.
         """
         if not codigo_aluno.strip():
             return detail_response(_MSG_CODIGO_OBRIGATORIO)
@@ -419,14 +401,13 @@ class AlunoTurmasView(APIView):
 
     @extend_schema(exclude=True)
     def get(self, _request: Request, codigo_aluno: str) -> Response:
-        """Busca turmas pelo endpoint curto legado.
+        """Retorna turmas do aluno.
 
         Args:
-            _request: Requisição HTTP recebida.
             codigo_aluno: Código EOL do aluno.
 
         Returns:
-            Resposta com lista de turmas do aluno.
+            Lista de turmas do aluno.
         """
         if not codigo_aluno.strip():
             return detail_response(_MSG_CODIGO_OBRIGATORIO)
@@ -464,7 +445,7 @@ class AlunosListView(APIView):
             request: Requisição HTTP recebida.
 
         Returns:
-            Resposta com lista de alunos ou erro legado 601.
+            Lista de alunos correspondentes aos códigos informados.
         """
         codigos_aluno = request.query_params.getlist(
             "codigos_aluno"
