@@ -128,6 +128,15 @@ class ComponenteRegenciaSerializer(serializers.Serializer):
     )  # NOSONAR
 
 
+class DadosAulaTurmaSerializer(serializers.Serializer):
+    """Serializa dados de aula por turma no contrato legado."""
+
+    componenteCurricularCodigo = serializers.CharField()
+    componenteCurricularDescricao = serializers.CharField()
+    turmaCodigo = serializers.CharField()
+    dataInicioTurma = serializers.CharField(allow_null=True)
+
+
 class GradeCurricularSerializer(serializers.Serializer):
     """Serializa dados da grade curricular por ano letivo."""
 

@@ -5,10 +5,16 @@ from django.urls import path
 from apps.pedagogico.views import (
     ComponentesCurricularesViewSet,
     ComponentesFuncionarioViewSet,
+    ComponentesPlanejamentoViewSet,
+    ComponentesPorListaTurmasViewSet,
     ComponentesRegenciaViewSet,
+    ComponentesSemAtribuicaoViewSet,
     ComponentesTurmaAnoViewSet,
+    ComponentesTurmaFuncionarioViewSet,
     ComponentesTurmaProgramaViewSet,
+    ComponentesTurmasRegularesViewSet,
     ComponentesTurmaViewSet,
+    DadosAulaTurmaViewSet,
     DadosTurmaViewSet,
     GradeComponentesCurricularesViewSet,
     ListarTurmasViewSet,
@@ -38,8 +44,35 @@ turma_urlpatterns = [
 
 urlpatterns = [
     path(
+        "turmas/regulares/",
+        ComponentesTurmasRegularesViewSet.as_view(),
+    ),
+    path(
+        "turmas/",
+        ComponentesPorListaTurmasViewSet.as_view(),
+    ),
+    path(
+        "dados-aula-turma/",
+        DadosAulaTurmaViewSet.as_view(),
+    ),
+    path(
         "anos/<int:ano_turma>/regencia/",
         ComponentesRegenciaViewSet.as_view(),
+    ),
+    path(
+        "turmas/<str:codigo_turma>/funcionarios/<str:login>/"
+        "perfis/<str:id_perfil>/agrupaComponenteCurricular/"
+        "<str:agrupa_componente_curricular>/",
+        ComponentesTurmaFuncionarioViewSet.as_view(),
+    ),
+    path(
+        "turmas/<str:codigo_turma>/funcionarios/<str:login>/"
+        "perfis/<str:id_perfil>/planejamento/",
+        ComponentesPlanejamentoViewSet.as_view(),
+    ),
+    path(
+        "turmas/<str:codigo_turma>/sem-atribuicao/" "<int:data_base_tick>/",
+        ComponentesSemAtribuicaoViewSet.as_view(),
     ),
     path(
         "turmas/<str:codigo_turma>/funcionarios/<str:login>/"
