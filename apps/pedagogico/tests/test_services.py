@@ -7,7 +7,6 @@ from django.test import SimpleTestCase
 
 from apps.pedagogico import services
 
-
 _BASE = "/api/v1/pedagogico/componentes-curriculares"
 _BASE_TURMAS = "/api/v1/pedagogico/turmas"
 _TURMA_MS = {
@@ -30,6 +29,7 @@ _TURMA_MS = {
     "semestre": 0,
     "ensino_especial": False,
 }
+
 
 class PostTurmasRegularesTest(SimpleTestCase):
     """Valida a consulta de turmas regulares."""
@@ -291,6 +291,161 @@ class GetComponentesFuncionarioTest(SimpleTestCase):
         )
 
         self.assertEqual(result, [])
+
+
+class GetComponentesTurmaFuncionarioTest(SimpleTestCase):
+    """Valida a consulta de componentes por turma e funcionário."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_chama_path_com_filtros(self, mock_client: MagicMock) -> None:
+        mock_client.get.return_value.json.return_value = []
+
+        result = services.get_componentes_turma_funcionario(
+            "T001",
+            "RF001",
+            "P1",
+            True,
+            checa_motivo_disponibilizacao=False,
+            considera_turma_infantil=True,
+        )
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/funcionarios/RF001",
+            params={
+                "idPerfil": "P1",
+                "codigoTurma": "T001",
+                "agrupaComponenteCurricular": True,
+                "checaMotivoDisponibilizacao": False,
+                "consideraTurmaInfantil": True,
+            },
+        )
+        self.assertEqual(result, [])
+
+
+class GetComponentesPlanejamentoTest(SimpleTestCase):
+    """Valida a consulta de componentes de planejamento."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_chama_path_com_planejamento(self, mock_client: MagicMock) -> None:
+        mock_client.get.return_value.json.return_value = []
+
+        result = services.get_componentes_planejamento("T001", "RF001", "P1")
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/funcionarios/RF001",
+            params={
+                "idPerfil": "P1",
+                "codigoTurma": "T001",
+                "planejamento": True,
+            },
+        )
+        self.assertEqual(result, [])
+
+
+class GetComponentesPorListaTurmasTest(SimpleTestCase):
+    """Valida a consulta de componentes por lista de turmas."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_chama_path_com_filtros(self, mock_client: MagicMock) -> None:
+        mock_client.get.return_value.json.return_value = []
+
+        result = services.get_componentes_por_lista_turmas(
+            ["T001", "T002"],
+            adicionar_componentes_planejamento=False,
+        )
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/turmas",
+            params={
+                "codigoTurmas": ["T001", "T002"],
+                "adicionarComponentesPlanejamento": False,
+            },
+        )
+        self.assertEqual(result, [])
+
+
+class GetComponentesTurmasRegularesTest(SimpleTestCase):
+    """Valida a consulta de componentes de turmas regulares."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_chama_path_com_turmas(self, mock_client: MagicMock) -> None:
+        mock_client.get.return_value.json.return_value = []
+
+        result = services.get_componentes_turmas_regulares(["T001", "T002"])
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/turmas/brutos",
+            params={"codigoTurmas": ["T001", "T002"]},
+        )
+        self.assertEqual(result, [])
+
+
+class GetDadosAulaTurmaTest(SimpleTestCase):
+    """Valida a consulta de dados de aula por turma."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_mapeia_resposta_para_legado(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        mock_client.get.return_value.json.return_value = [
+            {
+                "componente_codigo": "138",
+                "componente_descricao": "LINGUA PORTUGUESA",
+                "turma_codigo": "T001",
+                "data_inicio_turma": "2024-02-05T03:00:00Z",
+            }
+        ]
+
+        result = services.get_dados_aula_turma(
+            "UE001",
+            2024,
+            ["138"],
+            1,
+        )
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/turmas/vigencia",
+            params={
+                "ueCodigo": "UE001",
+                "anoLetivo": 2024,
+                "componentesCurriculares": ["138"],
+                "semestre": 1,
+            },
+        )
+        self.assertEqual(
+            result,
+            [
+                {
+                    "componenteCurricularCodigo": "138",
+                    "componenteCurricularDescricao": "LINGUA PORTUGUESA",
+                    "turmaCodigo": "T001",
+                    "dataInicioTurma": "2024-02-05T00:00:00",
+                }
+            ],
+        )
+
+
+class GetComponentesSemAtribuicaoTest(SimpleTestCase):
+    """Valida a consulta de componentes sem atribuição."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_converte_ticks_para_data_iso(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        mock_client.get.return_value.json.return_value = ["ARTE"]
+
+        result = services.get_componentes_sem_atribuicao(
+            "T001",
+            638396640000000000,
+        )
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/turmas/T001/sem-atribuicao",
+            params={"data_base": "2024-01-01"},
+        )
+        self.assertEqual(result, ["ARTE"])
 
 
 class GetComponentesPorTurmasUeTest(SimpleTestCase):

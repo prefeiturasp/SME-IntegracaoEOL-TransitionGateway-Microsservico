@@ -271,9 +271,7 @@ class TurmasSchemaTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         schema = resp.data
         self.assertEqual(
-            schema["paths"]["/api/turmas/turmas-regulares/"]["post"][
-                "tags"
-            ],
+            schema["paths"]["/api/turmas/turmas-regulares/"]["post"]["tags"],
             ["Turma"],
         )
         self.assertEqual(
@@ -312,6 +310,62 @@ class TurmasSchemaTest(SimpleTestCase):
                     "RequestBody: `codigos_turmas`",
                     operation["description"],
                 )
+
+
+class ComponentesNovosSchemaTest(SimpleTestCase):
+    """Valida a documentação dos novos endpoints no OpenAPI."""
+
+    def test_endpoints_possuem_resumo_e_descricao(self) -> None:
+        """Garante que todas as operações tenham documentação textual."""
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/v1/schema/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        schema = resp.data
+        operacoes = (
+            (
+                "/api/v1/componentes-curriculares/turmas/"
+                "{codigo_turma}/funcionarios/{login}/perfis/{id_perfil}/"
+                "agrupaComponenteCurricular/"
+                "{agrupa_componente_curricular}/",
+                "get",
+            ),
+            (
+                "/api/v1/componentes-curriculares/turmas/"
+                "{codigo_turma}/funcionarios/{login}/perfis/{id_perfil}/"
+                "planejamento/",
+                "get",
+            ),
+            ("/api/v1/componentes-curriculares/turmas/", "get"),
+            ("/api/v1/componentes-curriculares/turmas/regulares/", "get"),
+            ("/api/v1/componentes-curriculares/dados-aula-turma/", "get"),
+            (
+                "/api/v1/componentes-curriculares/turmas/"
+                "{codigo_turma}/sem-atribuicao/{data_base_tick}/",
+                "get",
+            ),
+        )
+
+        for path, metodo in operacoes:
+            with self.subTest(path=path, metodo=metodo):
+                operation = schema["paths"][path][metodo]
+                self.assertTrue(operation["summary"])
+                self.assertTrue(operation["description"])
+
+    def test_endpoint_agrupamento_nao_expoe_post(self) -> None:
+        """Garante que o contrato de agrupamento permaneça somente GET."""
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/v1/schema/")
+
+        path = (
+            "/api/v1/componentes-curriculares/turmas/"
+            "{codigo_turma}/funcionarios/{login}/perfis/{id_perfil}/"
+            "agrupaComponenteCurricular/"
+            "{agrupa_componente_curricular}/"
+        )
+        self.assertNotIn("post", resp.data["paths"][path])
 
 
 class ComponentesCurricularesViewSetTest(SimpleTestCase):
@@ -432,6 +486,159 @@ class ComponentesFuncionarioViewSetTest(SimpleTestCase):
         mock_svc.assert_called_once_with(
             login="RF001",
             id_perfil="P1",
+        )
+
+
+class ComponentesTurmaFuncionarioViewSetTest(SimpleTestCase):
+    """Valida a view de componentes por turma e funcionário."""
+
+    @patch("apps.pedagogico.views.services.get_componentes_turma_funcionario")
+    def test_get_repassa_path_e_filtros(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = [_CC]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX}/turmas/T001/funcionarios/RF001/perfis/P1/"
+            "agrupaComponenteCurricular/true/"
+            "?checaMotivoDisponibilizacao=false"
+            "&consideraTurmaInfantil=true"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data[0]["codigo"], 1)
+        mock_svc.assert_called_once_with(
+            codigo_turma="T001",
+            login="RF001",
+            id_perfil="P1",
+            agrupa_componente_curricular=True,
+            checa_motivo_disponibilizacao=False,
+            considera_turma_infantil=True,
+        )
+
+    @patch("apps.pedagogico.views.services.get_componentes_turma_funcionario")
+    def test_get_retorna_204_quando_vazio(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        mock_svc.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX}/turmas/T001/funcionarios/RF001/perfis/P1/"
+            "agrupaComponenteCurricular/false/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+
+class ComponentesPlanejamentoViewSetTest(SimpleTestCase):
+    """Valida a view de componentes para planejamento."""
+
+    @patch("apps.pedagogico.views.services.get_componentes_planejamento")
+    def test_repassa_parametros_do_path(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = [_CC]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX}/turmas/T001/funcionarios/RF001/"
+            "perfis/P1/planejamento/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_svc.assert_called_once_with(
+            codigo_turma="T001",
+            login="RF001",
+            id_perfil="P1",
+        )
+
+
+class ComponentesPorListaTurmasViewSetTest(SimpleTestCase):
+    """Valida a view de componentes por lista de turmas."""
+
+    @patch("apps.pedagogico.views.services.get_componentes_por_lista_turmas")
+    def test_repassa_turmas_e_planejamento(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        mock_svc.return_value = [_CC]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX}/turmas/?codigoTurmas=T001&codigoTurmas=T002"
+            "&adicionarComponentesPlanejamento=false"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_svc.assert_called_once_with(
+            codigos_turmas=["T001", "T002"],
+            adicionar_componentes_planejamento=False,
+        )
+
+
+class ComponentesTurmasRegularesViewSetTest(SimpleTestCase):
+    """Valida a view de componentes de turmas regulares."""
+
+    @patch("apps.pedagogico.views.services.get_componentes_turmas_regulares")
+    def test_repassa_lista_de_turmas(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = [_CC]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX}/turmas/regulares/"
+            "?codigoTurmas=T001&codigoTurmas=T002"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_svc.assert_called_once_with(["T001", "T002"])
+
+
+class DadosAulaTurmaViewSetTest(SimpleTestCase):
+    """Valida a view de dados de aula por turma."""
+
+    @patch("apps.pedagogico.views.services.get_dados_aula_turma")
+    def test_repassa_filtros(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = [
+            {
+                "componenteCurricularCodigo": "138",
+                "componenteCurricularDescricao": "LINGUA PORTUGUESA",
+                "turmaCodigo": "T001",
+                "dataInicioTurma": "2024-02-05T00:00:00",
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX}/dados-aula-turma/?ueCodigo=UE001"
+            "&anoLetivo=2024&componentesCurriculares=138&semestre=1"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data[0]["turmaCodigo"], "T001")
+        mock_svc.assert_called_once_with(
+            ue_codigo="UE001",
+            ano_letivo=2024,
+            componentes_curriculares=["138"],
+            semestre=1,
+        )
+
+
+class ComponentesSemAtribuicaoViewSetTest(SimpleTestCase):
+    """Valida a view de componentes sem atribuição."""
+
+    @patch("apps.pedagogico.views.services.get_componentes_sem_atribuicao")
+    def test_repassa_turma_e_ticks(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = ["ARTE", "EDUCACAO FISICA"]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX}/turmas/T001/sem-atribuicao/" "638396640000000000/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data, ["ARTE", "EDUCACAO FISICA"])
+        mock_svc.assert_called_once_with(
+            codigo_turma="T001",
+            data_base_tick=638396640000000000,
         )
 
 
