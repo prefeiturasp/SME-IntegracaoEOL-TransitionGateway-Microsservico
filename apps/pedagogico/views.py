@@ -1,5 +1,7 @@
 """Views do domínio pedagógico."""
 
+import json
+
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.request import Request
@@ -27,6 +29,33 @@ _TURMA_REQUEST_SCHEMA = {
         "codigos de turmas."
     ),
 }
+
+
+def _obter_lista_query(request: Request, nome: str) -> list[str]:
+    """Obtém uma lista de valores de um parâmetro de query.
+
+    Aceita parâmetros repetidos e o array JSON produzido por algumas versões
+    do Swagger UI.
+
+    Args:
+        request: Requisição HTTP recebida.
+        nome: Nome do parâmetro de query.
+
+    Returns:
+        Valores normalizados como lista de strings.
+    """
+    valores = request.query_params.getlist(nome)
+    if len(valores) != 1:
+        return valores
+
+    try:
+        valor_json = json.loads(valores[0])
+    except (json.JSONDecodeError, TypeError):
+        return valores
+
+    if not isinstance(valor_json, list):
+        return valores
+    return [str(valor) for valor in valor_json]
 
 
 class TurmasRegularesViewSet(APIView):
@@ -398,6 +427,16 @@ class ComponentesTurmaFuncionarioViewSet(APIView):
         ),
         parameters=[
             OpenApiParameter(
+                "agrupa_componente_curricular",
+                OpenApiTypes.BOOL,
+                OpenApiParameter.PATH,
+                required=True,
+                enum=[True, False],
+                description=(
+                    "Define se os componentes curriculares serão agrupados."
+                ),
+            ),
+            OpenApiParameter(
                 "checaMotivoDisponibilizacao",
                 OpenApiTypes.BOOL,
                 OpenApiParameter.QUERY,
@@ -650,6 +689,8 @@ class DadosAulaTurmaViewSet(APIView):
                 OpenApiParameter.QUERY,
                 required=True,
                 many=True,
+                style="form",
+                explode=True,
                 description=("Lista de códigos dos componentes curriculares."),
             ),
             OpenApiParameter(
@@ -682,8 +723,9 @@ class DadosAulaTurmaViewSet(APIView):
         data = services.get_dados_aula_turma(
             ue_codigo=request.query_params.get("ueCodigo", ""),
             ano_letivo=int(request.query_params.get("anoLetivo", 0)),
-            componentes_curriculares=request.query_params.getlist(
-                "componentesCurriculares"
+            componentes_curriculares=_obter_lista_query(
+                request,
+                "componentesCurriculares",
             ),
             semestre=int(semestre) if semestre else None,
         )

@@ -367,6 +367,49 @@ class ComponentesNovosSchemaTest(SimpleTestCase):
         )
         self.assertNotIn("post", resp.data["paths"][path])
 
+    def test_agrupamento_documentado_como_booleano(self) -> None:
+        """Expõe o agrupamento como seletor booleano no Swagger."""
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/v1/schema/")
+
+        path = (
+            "/api/v1/componentes-curriculares/turmas/"
+            "{codigo_turma}/funcionarios/{login}/perfis/{id_perfil}/"
+            "agrupaComponenteCurricular/"
+            "{agrupa_componente_curricular}/"
+        )
+        parametros = resp.data["paths"][path]["get"]["parameters"]
+        agrupamento = next(
+            item
+            for item in parametros
+            if item["name"] == "agrupa_componente_curricular"
+        )
+        self.assertEqual(agrupamento["schema"]["type"], "boolean")
+        self.assertEqual(
+            set(agrupamento["schema"]["enum"]),
+            {True, False},
+        )
+
+    def test_dados_aula_serializa_componentes_como_query_repetida(
+        self,
+    ) -> None:
+        """Documenta a lista conforme o formato aceito pelo legado."""
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/v1/schema/")
+
+        path = "/api/v1/componentes-curriculares/dados-aula-turma/"
+        parametros = resp.data["paths"][path]["get"]["parameters"]
+        componentes = next(
+            item
+            for item in parametros
+            if item["name"] == "componentesCurriculares"
+        )
+        self.assertEqual(componentes["schema"]["type"], "array")
+        self.assertEqual(componentes["style"], "form")
+        self.assertTrue(componentes["explode"])
+
 
 class ComponentesCurricularesViewSetTest(SimpleTestCase):
     """Valida a view de catálogo de componentes curriculares."""
@@ -618,6 +661,30 @@ class DadosAulaTurmaViewSetTest(SimpleTestCase):
             ue_codigo="UE001",
             ano_letivo=2024,
             componentes_curriculares=["138"],
+            semestre=1,
+        )
+
+    @patch("apps.pedagogico.views.services.get_dados_aula_turma")
+    def test_normaliza_array_json_enviado_pelo_swagger(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        """Converte o array textual do Swagger em parâmetros separados."""
+        mock_svc.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX}/dados-aula-turma/?ueCodigo=000566"
+            "&anoLetivo=2024"
+            "&componentesCurriculares=%5B%221030%22%2C%20%221056%22%5D"
+            "&semestre=1"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_svc.assert_called_once_with(
+            ue_codigo="000566",
+            ano_letivo=2024,
+            componentes_curriculares=["1030", "1056"],
             semestre=1,
         )
 
