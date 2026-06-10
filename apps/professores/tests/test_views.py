@@ -805,7 +805,8 @@ class EscolaFuncionariosFuncoesExternasViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/escolas/400870/funcionarios/funcoes-externas/" "?funcoes=5"
+            "/api/escolas/400870/funcionarios/funcoes-externas/"  # NOSONAR
+            "?funcoes=5"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)

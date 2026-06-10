@@ -13,10 +13,12 @@ _FUSO = timezone(timedelta(hours=-3))
 class DataMatriculaField(serializers.DateTimeField):
     """Serializa data_matricula em ISO para o consumidor legado."""
 
-    def to_representation(self, value: Any) -> str:
+    def to_representation(  # type: ignore[override]
+        self, value: Any
+    ) -> str | None:
         """Serialize a data em ISO, removendo zeros à direita."""
         if value in (None, ""):
-            return None  # type: ignore[return-value]
+            return None
         if isinstance(value, str):
             value = datetime.fromisoformat(value.replace("Z", "+00:00"))
         if not isinstance(value, datetime):
