@@ -13,6 +13,7 @@ from apps.programasedu.serializers import (
     ComponenteTurmaProgramaAlunoSerializer,
     DadosSrmPaeeColaborativoSerializer,
     TurmaPapResumoSerializer,
+    TurmaSrmRegularDoAlunoSerializer,
 )
 
 _TAG = ["Aluno"]
@@ -49,7 +50,19 @@ class ObterTurmasPapView(APIView):
     def get(
         self, _request: Request, ano_letivo: int, codigo_escola: str
     ) -> Response:
-        """ Verifica a resposta de turmas PAP por ano letivo e UE."""
+        """Lista as turmas PAP de uma UE em um ano letivo.
+
+        Args:
+            ano_letivo: Ano letivo das turmas PAP.
+            codigo_escola: Código EOL da escola (UE).
+
+        Returns:
+            Resposta com as turmas PAP serializadas.
+
+        Raises:
+            httpx.HTTPError: Em caso de falha de transporte ou timeout
+                na chamada ao serviço externo.
+        """
         if not codigo_escola.strip():
             return detail_response("É necessário informar o codigo_escola.")
         data = services.listar_turmas_pap(
@@ -88,7 +101,19 @@ class VerificarSeAlunosSaoTurmaProgramaPapView(APIView):
         responses={200: AlunoTurmaProgramaPapSerializer(many=True)},
     )
     def get(self, request: Request, ano_letivo: int) -> Response:
-        """ Verifica a resposta de verificação de alunos em turmas PAP."""
+        """Filtra os alunos vinculados a turmas PAP no ano letivo.
+
+        Args:
+            request: Requisição com ``codigos_alunos`` nos query params.
+            ano_letivo: Ano letivo de referência.
+
+        Returns:
+            Resposta com os alunos vinculados a turmas PAP.
+
+        Raises:
+            httpx.HTTPError: Em caso de falha de transporte ou timeout
+                na chamada ao serviço externo.
+        """
         codigos_alunos = request.query_params.getlist("codigos_alunos")
         if not codigos_alunos:
             return detail_response(
@@ -114,7 +139,15 @@ class ObterAlunosPapAnoCorrenteView(APIView):
         responses={200: AlunoTurmaPapSerializer(many=True)},
     )
     def get(self, _request: Request) -> Response:
-        """ Verifica a resposta de alunos PAP do ano corrente."""
+        """Lista os alunos vinculados a turmas PAP no ano corrente.
+
+        Returns:
+            Resposta com os alunos PAP do ano corrente.
+
+        Raises:
+            httpx.HTTPError: Em caso de falha de transporte ou timeout
+                na chamada ao serviço externo.
+        """
         data = services.listar_alunos_pap_ano_corrente()
         return Response(AlunoTurmaPapSerializer(data, many=True).data)
 
@@ -141,7 +174,18 @@ class ObterAlunosPapPorAnoLetivoView(APIView):
         responses={200: AlunoTurmaPapSerializer(many=True)},
     )
     def get(self, _request: Request, ano_letivo: int) -> Response:
-        """ Verifica a resposta de alunos PAP por ano letivo."""
+        """Lista os alunos vinculados a turmas PAP no ano letivo.
+
+        Args:
+            ano_letivo: Ano letivo de referência.
+
+        Returns:
+            Resposta com os alunos PAP do ano informado.
+
+        Raises:
+            httpx.HTTPError: Em caso de falha de transporte ou timeout
+                na chamada ao serviço externo.
+        """
         data = services.listar_alunos_pap_por_ano(ano_letivo=ano_letivo)
         return Response(AlunoTurmaPapSerializer(data, many=True).data)
 
@@ -177,7 +221,19 @@ class ObterComponentesCurricularesTurmasProgramaAlunoView(APIView):
     def get(
         self, _request: Request, codigo_aluno: str, ano_letivo: int
     ) -> Response:
-        """ Verifica a resposta de componentes curriculares das turmas de programa do aluno."""
+        """Lista os componentes curriculares das turmas de programa do aluno.
+
+        Args:
+            codigo_aluno: Código EOL do aluno.
+            ano_letivo: Ano letivo de referência.
+
+        Returns:
+            Resposta com os componentes curriculares das turmas de programa.
+
+        Raises:
+            httpx.HTTPError: Em caso de falha de transporte ou timeout
+                na chamada ao serviço externo.
+        """
         if not codigo_aluno.strip():
             return detail_response("É necessário informar o codigo_aluno.")
         data = services.listar_componentes_turmas_programa_aluno(
@@ -209,10 +265,64 @@ class ObterDadosSrmPaeeAlunoView(APIView):
         responses={200: DadosSrmPaeeColaborativoSerializer(many=True)},
     )
     def get(self, _request: Request, codigo_aluno: str) -> Response:
-        """ Verifica a resposta de dados de SRM/PAEE colaborativo do aluno."""
+        """Obtém os dados de SRM/PAEE colaborativo do aluno.
+
+        Args:
+            codigo_aluno: Código EOL do aluno.
+
+        Returns:
+            Resposta com os dados de SRM/PAEE colaborativo do aluno.
+
+        Raises:
+            httpx.HTTPError: Em caso de falha de transporte ou timeout
+                na chamada ao serviço externo.
+        """
         if not codigo_aluno.strip():
             return detail_response("É necessário informar o codigo_aluno.")
         data = services.obter_dados_srm_paee_aluno(codigo_aluno=codigo_aluno)
         return Response(
             DadosSrmPaeeColaborativoSerializer(data, many=True).data
+        )
+
+
+class ObterTurmaSrmERegularDoAlunoView(APIView):
+    """Retorna turmas SRM e regulares do aluno."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Turmas SRM e regulares do aluno",
+        description=(
+            "Retorna dados de turmas regulares e de programa do aluno, incluindo as que oferecem "
+        ),
+        parameters=[
+            OpenApiParameter(
+                "codigo_aluno",
+                OpenApiTypes.STR,
+                OpenApiParameter.PATH,
+                required=True,
+                description="Código EOL do aluno.",
+            ),
+        ],
+        responses={200: TurmaSrmRegularDoAlunoSerializer(many=True)},
+    )
+    def get(self, _request: Request, codigo_aluno: str) -> Response:
+        """Obtém as turmas SRM e regulares do aluno.
+
+        Args:
+            codigo_aluno: Código EOL do aluno.
+
+        Returns:
+            Resposta com as turmas SRM e regulares do aluno.
+
+        Raises:
+            httpx.HTTPError: Em caso de falha de transporte ou timeout
+                na chamada ao serviço externo.
+        """
+        if not codigo_aluno.strip():
+            return detail_response("É necessário informar o codigo_aluno.")
+        data = services.obter_turma_srm_e_regular_do_aluno(
+            codigo_aluno=codigo_aluno
+        )
+        return Response(
+            TurmaSrmRegularDoAlunoSerializer(data, many=True).data
         )

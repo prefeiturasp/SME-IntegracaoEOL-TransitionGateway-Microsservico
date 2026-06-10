@@ -105,3 +105,9 @@ Programas educacionais
 .. autoclass:: apps.programasedu.views.ObterAlunosPapAnoCorrenteView
 
 .. autoclass:: apps.programasedu.views.ObterAlunosPapPorAnoLetivoView
+
+.. autoclass:: apps.programasedu.views.ObterComponentesCurricularesTurmasProgramaAlunoView
+
+.. autoclass:: apps.programasedu.views.ObterDadosSrmPaeeAlunoView
+
+.. autoclass:: apps.programasedu.views.ObterTurmaSrmERegularDoAlunoView
