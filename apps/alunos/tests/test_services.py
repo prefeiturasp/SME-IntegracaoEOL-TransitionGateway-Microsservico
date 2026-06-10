@@ -15,6 +15,7 @@ class GetInformacoesAlunoTest(SimpleTestCase):
 
     @patch.object(services._client, "get")
     def test_chama_path_correto(self, mock_get: MagicMock) -> None:
+        """Valida a consulta de informações do aluno."""
         payload = {"codigo_aluno": 123456, "nome_aluno": "Fulano de Tal"}
         mock_resp = MagicMock()
         mock_resp.status_code = 200
@@ -32,6 +33,7 @@ class GetInformacoesAlunoTest(SimpleTestCase):
 
     @patch.object(services._client, "get")
     def test_retorna_none_quando_204(self, mock_get: MagicMock) -> None:
+        """Valida que a consulta de informações do aluno retorna None quando o status"""
         mock_resp = MagicMock()
         mock_resp.status_code = 204
         mock_resp.content = b""
@@ -48,6 +50,7 @@ class GetNecessidadesEspeciaisAlunoTest(SimpleTestCase):
 
     @patch.object(services._client, "get")
     def test_chama_path_correto(self, mock_get: MagicMock) -> None:
+        """Valida a consulta de necessidades especiais do aluno."""
         payload = [
             {
                 "codigo_aluno": 123456,
@@ -190,6 +193,7 @@ class GetTurmasAlunoTest(SimpleTestCase):
 
     @patch.object(services._client, "get")
     def test_chama_path_correto(self, mock_get: MagicMock) -> None:
+        """Valida a consulta de turmas do aluno."""
         payload = [{"codigo_turma": 9001}]
         mock_resp = MagicMock()
         mock_resp.status_code = 200
@@ -204,11 +208,37 @@ class GetTurmasAlunoTest(SimpleTestCase):
         self.assertEqual(result, payload)
 
 
+class GetTurmasAlunoComProgramaTest(SimpleTestCase):
+    """Valida a consulta de turmas do aluno incluindo programa."""
+
+    @patch.object(services._client, "get")
+    def test_chama_turmas_com_filtros_desativados(
+        self, mock_get: MagicMock
+    ) -> None:
+        """Valida a consulta de turmas do aluno com filtros de tipo e situação desativados."""
+        payload = [{"codigo_turma": 9001}]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[]"
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_turmas_aluno_com_programa("123456")
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/123456/turmas/",
+            params={"tipo_turma": "false", "filtrar_situacao": "false"},
+        )
+        mock_resp.raise_for_status.assert_called_once_with()
+        self.assertEqual(result, payload)
+
+
 class ListarAlunosTest(SimpleTestCase):
     """Valida a consulta de listagem de alunos."""
 
     @patch.object(services._client, "get")
     def test_chama_path_correto(self, mock_get: MagicMock) -> None:
+        """Valida a consulta de listagem de alunos."""
         payload = [{"codigo_aluno": 1, "nome_aluno": "Fulano"}]
         mock_resp = MagicMock()
         mock_resp.status_code = 200

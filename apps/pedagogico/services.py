@@ -11,13 +11,30 @@ from apps.core.http_client import ServiceClient
 _BASE = "/api/v1/pedagogico/componentes-curriculares"
 _BASE_TURMAS = "/api/v1/pedagogico/turmas"
 
-
 _client = ServiceClient(
     base_url=settings.SIDECAR_PEDAGOGICO_URL,
     dominio="pedagogico",
     api_key=settings.SIDECAR_PEDAGOGICO_API_KEY,
     api_key_header=settings.SIDECAR_PEDAGOGICO_API_KEY_HEADER,
 )
+
+
+def listar_turmas(codigos: list[int]) -> Any:
+    """Lista dados resumidos de turmas pelos códigos informados.
+
+    Args:
+        codigos: Códigos das turmas consultadas.
+
+    Returns:
+        Lista de turmas retornada pelo sidecar (inclui ``nome_turma``,
+        ``tipo_turno``, ``codigo_etapa_ensino`` e ``codigo_ciclo_ensino``).
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+    """
+    resp = _client.post(f"{_BASE_TURMAS}/listar-turmas/", payload=codigos)
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
 
 
 def get_componentes_curriculares() -> Any:

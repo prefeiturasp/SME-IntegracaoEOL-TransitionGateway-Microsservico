@@ -150,3 +150,104 @@ class ObterDadosSrmPaeeAlunoTest(SimpleTestCase):
         result = services.obter_dados_srm_paee_aluno(codigo_aluno="7410182")
 
         self.assertEqual(result, [])
+
+
+class ObterTurmaSrmERegularDoAlunoTest(SimpleTestCase):
+    """Valida a orquestração de turmas SRM e regulares do aluno."""
+
+    @patch("apps.programasedu.services.pedagogico_services.listar_turmas")
+    @patch("apps.programasedu.services.obter_dados_srm_paee_aluno")
+    @patch(
+        "apps.programasedu.services.alunos_services."
+        "get_turmas_aluno_com_programa"
+    )
+    def test_filtra_regular_ou_srm_e_compoe_shape(
+        self,
+        mock_turmas: MagicMock,
+        mock_srm: MagicMock,
+        mock_listar: MagicMock,
+    ) -> None:
+        """Verifica o filtro regular-ou-SRM e a composição dos campos."""
+        mock_turmas.return_value = [
+            {
+                "codigo_aluno": 7360328,
+                "ano_letivo": 2026,
+                "nome_aluno": "AGATHA",
+                "nome_social_aluno": None,
+                "codigo_situacao_matricula": 11,
+                "situacao_matricula": "Deslocamento",
+                "data_situacao": "2026-01-06",
+                "data_nascimento": "2025-11-05",
+                "numero_aluno_chamada": None,
+                "codigo_turma": 3031432,
+                "nome_responsavel": "DARA",
+                "tipo_responsavel": 1,
+                "ddd_celular": "11",
+                "numero_celular": "989400396",
+                "data_atualizacao_contato": "2025-01-23",
+                "codigo_tipo_turma": 1,
+            },
+            {
+                "codigo_aluno": 7360328,
+                "ano_letivo": 2026,
+                "codigo_turma": 555,
+                "codigo_tipo_turma": 3,
+                "ddd_celular": None,
+                "numero_celular": None,
+            },
+            {
+                "codigo_aluno": 7360328,
+                "ano_letivo": 2026,
+                "codigo_turma": 999,
+                "codigo_tipo_turma": 3,
+            },
+        ]
+        mock_srm.return_value = [{"codigo_turma": 555}]
+        mock_listar.return_value = [
+            {
+                "codigo": 3031432,
+                "nome_turma": "2B",
+                "tipo_turno": 1,
+                "codigo_etapa_ensino": 5,
+                "codigo_ciclo_ensino": 3,
+            },
+            {
+                "codigo": 555,
+                "nome_turma": "SRM",
+                "tipo_turno": 2,
+                "codigo_etapa_ensino": 1,
+                "codigo_ciclo_ensino": 2,
+            },
+        ]
+
+        resultado = services.obter_turma_srm_e_regular_do_aluno("7360328")
+
+        # Programa sem SRM (999) é descartado; sobram regular e SRM.
+        self.assertEqual(
+            sorted(r["codigo_turma"] for r in resultado), [555, 3031432]
+        )
+        regular = next(r for r in resultado if r["codigo_turma"] == 3031432)
+        self.assertEqual(regular["tipo_turno"], 1)
+        self.assertEqual(regular["turma_nome"], "2B")
+        self.assertEqual(regular["etapa_ensino"], 5)
+        self.assertEqual(regular["ciclo_ensino"], 3)
+        self.assertEqual(regular["desc_etapa_ensino"], "FUND9A")
+        # numero_aluno_chamada ausente → default "000" (paridade legado).
+        self.assertEqual(regular["numero_aluno_chamada"], "000")
+        self.assertEqual(regular["celular_responsavel"], "11989400396")
+        self.assertIsNone(regular["desc_ciclo_ensino"])
+        self.assertEqual(
+            regular["data_atualizacao_tabela"], "0001-01-01T00:00:00"
+        )
+
+    @patch(
+        "apps.programasedu.services.alunos_services."
+        "get_turmas_aluno_com_programa"
+    )
+    def test_sem_turmas_retorna_vazio(self, mock_turmas: MagicMock) -> None:
+        """Verifica que aluno sem turmas resulta em lista vazia."""
+        mock_turmas.return_value = []
+
+        self.assertEqual(
+            services.obter_turma_srm_e_regular_do_aluno("123"), []
+        )
