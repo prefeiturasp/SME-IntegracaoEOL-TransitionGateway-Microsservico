@@ -6,7 +6,7 @@ from rest_framework import serializers
 
 # Fuso de São Paulo (UTC-3, sem horário de verão desde 2019).
 # fuso para reproduzir o tempo decorrido.
-_FUSO_LEGADO = timezone(timedelta(hours=-3))
+_FUSO = timezone(timedelta(hours=-3))
 
 
 class DataMatriculaField(serializers.DateTimeField):
@@ -50,7 +50,7 @@ class LegadoDateTimeField(serializers.CharField):
         if dt.year <= 1:
             return self._SENTINELA
         if dt.tzinfo is not None:
-            dt = dt.astimezone(_FUSO_LEGADO)
+            dt = dt.astimezone(_FUSO)
         texto = dt.replace(tzinfo=None).isoformat(timespec="microseconds")
         if "." in texto:
             texto = texto.rstrip("0").rstrip(".")
