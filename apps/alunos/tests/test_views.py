@@ -1,5 +1,6 @@
 """Valida as views do domínio de alunos."""
 
+from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import httpx
@@ -80,6 +81,151 @@ class AlunosUrlsTest(SimpleTestCase):
         match = resolve("/api/v1/alunos/alunos")
 
         self.assertEqual(match.kwargs, {})
+
+    def test_preserva_ue_codigo_autocomplete_ativos(self) -> None:
+        match = resolve("/api/v1/alunos/ues/100001/autocomplete/ativos")
+
+        self.assertEqual(match.kwargs, {"ue_codigo": "100001"})
+
+    def test_preserva_cpf_responsavel_resumido(self) -> None:
+        match = resolve(
+            "/api/v1/alunos/responsaveis/12345678900/resumido"
+        )
+
+        self.assertEqual(match.kwargs, {"cpf_responsavel": "12345678900"})
+
+    def test_preserva_codigo_turma_informacoes_alunos_turma(self) -> None:
+        match = resolve("/api/v1/alunos/9001/turma/informacoes")
+
+        self.assertEqual(match.kwargs, {"codigo_turma": "9001"})
+
+
+class AlunoAutocompleteAtivosViewTest(SimpleTestCase):
+    """Valida a view de autocomplete de alunos ativos."""
+
+    @patch("apps.alunos.views.services.buscar_alunos_ativos_autocomplete")
+    def test_200_retorna_lista_alunos(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = [
+            {
+                "codigo_aluno": 123456,
+                "nome_aluno": "Fulano de Tal",
+                "nome_social_aluno": None,
+                "codigo_turma": 9001,
+                "numero_aluno_chamada": "15",
+                "turma": "7A",
+                "modalidade": "EI",
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/v1/alunos/ues/100001/autocomplete/ativos"
+            "?aluno_nome=Fulano&data_referencia=2026-02-03T10:00:00"
+            "&aluno_codigo=0&limite=5"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        data = resp.json()
+        self.assertEqual(data[0]["codigoAluno"], 123456)
+        self.assertEqual(data[0]["nomeAluno"], "Fulano de Tal")
+        self.assertIsNone(data[0]["nomeSocialAluno"])
+        self.assertEqual(data[0]["codigoTurma"], 9001)
+        self.assertEqual(data[0]["numeroAlunoChamada"], "15")
+        self.assertEqual(data[0]["turma"], "7A")
+        self.assertEqual(data[0]["modalidade"], "EI")
+        mock_service.assert_called_once_with(
+            ue_codigo="100001",
+            aluno_nome="Fulano",
+            data_referencia=datetime(2026, 2, 3, 10, 0, 0),
+            aluno_codigo=0,
+            limite=5,
+        )
+
+    @patch("apps.alunos.views.services.buscar_alunos_ativos_autocomplete")
+    def test_200_aceita_query_params_camelcase(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/v1/alunos/ues/100001/autocomplete/ativos"
+            "?alunoNome=Fulano&dataReferencia=2026-02-03T10:00:00"
+            "&alunoCodigo=0&limite=5"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_service.assert_called_once_with(
+            ue_codigo="100001",
+            aluno_nome="Fulano",
+            data_referencia=datetime(2026, 2, 3, 10, 0, 0),
+            aluno_codigo=0,
+            limite=5,
+        )
+
+    @patch("apps.alunos.views.services.buscar_alunos_ativos_autocomplete")
+    def test_400_quando_ue_codigo_vazio(
+        self, mock_service: MagicMock
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/v1/alunos/ues/%20/autocomplete/ativos?aluno_nome=Fulano"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "É necessário informar o codigo da UE."},
+        )
+        mock_service.assert_not_called()
+
+    @patch("apps.alunos.views.services.buscar_alunos_ativos_autocomplete")
+    def test_400_quando_nome_menor_que_tres_sem_codigo(
+        self, mock_service: MagicMock
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/v1/alunos/ues/100001/autocomplete/ativos?aluno_nome=ab"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "O Nome deve conter no mínimo 3 caracteres."},
+        )
+        mock_service.assert_not_called()
+
+    @patch("apps.alunos.views.services.buscar_alunos_ativos_autocomplete")
+    def test_503_quando_sidecar_indisponivel(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.side_effect = _request_error()
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/v1/alunos/ues/100001/autocomplete/ativos"
+            "?aluno_nome=Fulano"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "Servico de alunos indisponivel."},
+        )
+
+    def test_403_sem_autenticacao(self) -> None:
+        client = APIClient()
+
+        resp = client.get(
+            "/api/v1/alunos/ues/100001/autocomplete/ativos"
+            "?aluno_nome=Fulano"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class AlunoInformacoesViewTest(SimpleTestCase):
@@ -209,6 +355,210 @@ class AlunoInformacoesViewTest(SimpleTestCase):
             resp.json(),
             {"detail": "É necessário informar o codigo do aluno."},
         )
+
+    def test_403_sem_autenticacao(self) -> None:
+        client = APIClient()
+
+        resp = client.get("/api/v1/alunos/123456/informacoes")
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class ResponsavelResumidoViewTest(SimpleTestCase):
+    """Valida a view de dados resumidos do responsável."""
+
+    @patch("apps.alunos.views.services.get_responsavel_resumido")
+    def test_200_retorna_responsavel_resumido(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = {
+            "id": 9999,
+            "cpf": "12345678900",
+            "email": "responsavel@email.com",
+            "nome": "Maria da Silva",
+            "tipo_responsavel": 1,
+            "data_nascimento": "2001-08-30",
+            "data_atualizacao": "2021-10-01T10:09:53.003",
+            "nome_mae": "Josefa",
+            "ddd_celular": "11",
+            "numero_celular": "999999999",
+            "codigo_aluno": None,
+        }
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/v1/alunos/responsaveis/12345678900/resumido"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.json(),
+            {
+                "id": 9999,
+                "cpf": "12345678900",
+                "email": "responsavel@email.com",
+                "nome": "Maria da Silva",
+                "tipoResponsavel": 1,
+                "dataNascimento": "2001-08-30T00:00:00",
+                "dataAtualizacao": "2021-10-01T10:09:53.003",
+                "nomeMae": "Josefa",
+                "dddCelular": "11",
+                "numeroCelular": "999999999",
+                "codigoAluno": None,
+            },
+        )
+        mock_service.assert_called_once_with("12345678900")
+
+    @patch("apps.alunos.views.services.get_responsavel_resumido")
+    def test_404_quando_sidecar_nao_encontra(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.side_effect = _http_status_error(
+            status.HTTP_404_NOT_FOUND,
+            {"detail": "Responsável não encontrado."},
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/v1/alunos/responsaveis/12345678900/resumido"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "Responsável não encontrado."},
+        )
+
+    @patch("apps.alunos.views.services.get_responsavel_resumido")
+    def test_503_quando_sidecar_indisponivel(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.side_effect = _request_error()
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/v1/alunos/responsaveis/12345678900/resumido"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "Servico de alunos indisponivel."},
+        )
+
+    def test_403_sem_autenticacao(self) -> None:
+        client = APIClient()
+
+        resp = client.get(
+            "/api/v1/alunos/responsaveis/12345678900/resumido"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class InformacoesAlunosTurmaViewTest(SimpleTestCase):
+    """Valida a view de informações dos alunos de uma turma."""
+
+    @patch("apps.alunos.views.services.get_informacoes_alunos_turma")
+    def test_200_retorna_alunos_da_turma(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = [
+            {
+                "numero_chamada": 3,
+                "codigo_aluno": 123456,
+                "nome_aluno": "Fulano da Silva",
+                "nome_social_aluno": None,
+                "sexo": "M",
+                "raca": "Parda",
+                "codigo_raca": 3,
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/v1/alunos/9001/turma/informacoes")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.json(),
+            [
+                {
+                    "numeroChamada": 3,
+                    "codigoAluno": 123456,
+                    "nomeAluno": "Fulano da Silva",
+                    "nomeSocialAluno": None,
+                    "sexo": "M",
+                    "raca": "Parda",
+                    "codigoRaca": 3,
+                }
+            ],
+        )
+        mock_service.assert_called_once_with("9001")
+
+    @patch("apps.alunos.views.services.get_informacoes_alunos_turma")
+    def test_200_retorna_lista_vazia(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/v1/alunos/9001/turma/informacoes")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+        mock_service.assert_called_once_with("9001")
+
+    @patch("apps.alunos.views.services.get_informacoes_alunos_turma")
+    def test_400_quando_codigo_turma_nao_e_inteiro(
+        self, mock_service: MagicMock
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/v1/alunos/abc/turma/informacoes")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "É necessário informar o codigo da turma."},
+        )
+        mock_service.assert_not_called()
+
+    @patch("apps.alunos.views.services.get_informacoes_alunos_turma")
+    def test_400_quando_codigo_turma_e_zero(
+        self, mock_service: MagicMock
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/v1/alunos/0/turma/informacoes")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "É necessário informar o codigo da turma."},
+        )
+        mock_service.assert_not_called()
+
+    @patch("apps.alunos.views.services.get_informacoes_alunos_turma")
+    def test_503_quando_sidecar_indisponivel(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.side_effect = _request_error()
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/v1/alunos/9001/turma/informacoes")
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "Servico de alunos indisponivel."},
+        )
+
+    def test_403_sem_autenticacao(self) -> None:
+        client = APIClient()
+
+        resp = client.get("/api/v1/alunos/9001/turma/informacoes")
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class AlunoNecessidadesEspeciaisViewTest(SimpleTestCase):
