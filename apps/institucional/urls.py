@@ -3,13 +3,13 @@
 from django.urls import path
 
 from apps.institucional.views import (
+    DadosEscolaView,
     DREDetalheView,
     DREListView,
-    DadosEscolaView,
-    EscolaDetalheView,
-    EscolasPorDREView,
-    EscolasPorDREeTipoView,
     EquipamentosView,
+    EscolaDetalheView,
+    EscolasPorDREeTipoView,
+    EscolasPorDREView,
     SubprefeiturasPorDREView,
     TiposEscolasView,
     UesPorDREView,

@@ -87,6 +87,7 @@ class GetTurmasAlunoTest(SimpleTestCase):
         mock_resp.raise_for_status.assert_called_once_with()
         self.assertEqual(result, payload)
 
+
 class ListarAlunosTest(SimpleTestCase):
     """Valida a consulta de listagem de alunos."""
 

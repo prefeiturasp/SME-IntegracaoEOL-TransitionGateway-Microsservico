@@ -550,9 +550,7 @@ class EscolaFuncionariosFuncaoExternaView(APIView):
 
     @extend_schema(
         tags=_TAG_ESCOLA,
-        description=(
-            "Retorna funcionários da escola por uma função externa."
-        ),
+        description=("Retorna funcionários da escola por uma função externa."),
         responses={200: FuncionarioEscolaSerializer(many=True), 204: None},
     )
     def get(

@@ -14,9 +14,7 @@ class CodigoTurmaListSerializerTest(SimpleTestCase):
     """Valida a lista de codigos de turma."""
 
     def test_valida_lista_de_strings_numericas(self) -> None:
-        serializer = CodigoTurmaListSerializer(
-            data=["3024590", "3014194"]
-        )
+        serializer = CodigoTurmaListSerializer(data=["3024590", "3014194"])
 
         self.assertTrue(serializer.is_valid())
         self.assertEqual(serializer.validated_data, ["3024590", "3014194"])

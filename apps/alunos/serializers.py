@@ -189,7 +189,7 @@ def _endereco_legado(instance: Any) -> dict[str, Any] | None:
     """
     endereco = _get(instance, "endereco")
     if not isinstance(endereco, dict):
-        return endereco
+        return cast(dict[str, Any] | None, endereco)
     return {
         "id": _get(endereco, "id"),
         "nro": _get(endereco, "nro", "numero_endereco", "numeroEndereco"),

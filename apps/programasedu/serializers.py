@@ -1,17 +1,18 @@
 """Serializers do domínio de programas educacionais."""
 
 from datetime import datetime
+from typing import Any
 
 from rest_framework import serializers
 
 
 class DataMatriculaField(serializers.DateTimeField):
-    """Serializa data_matricula em formato ISO compatível com o consumidor legado."""
+    """Serializa data_matricula em ISO para o consumidor legado."""
 
-    def to_representation(self, value: object) -> str | None:
-        """ Serializa a data de matrícula em formato ISO, removendo zeros à direita."""
+    def to_representation(self, value: Any) -> str:
+        """Serialize a data em ISO, removendo zeros à direita."""
         if value in (None, ""):
-            return None
+            return None  # type: ignore[return-value]
         if isinstance(value, str):
             value = datetime.fromisoformat(value.replace("Z", "+00:00"))
         if not isinstance(value, datetime):

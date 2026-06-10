@@ -1,11 +1,15 @@
 """Views do domínio de alunos."""
 
 import json
-from typing import Any
+from typing import Any, cast
 
 import httpx
 from django.http import HttpResponse
-from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
+)
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
@@ -68,7 +72,7 @@ def _is_not_found(exc: httpx.HTTPStatusError) -> bool:
     return exc.response.status_code == 404
 
 
-def _legacy_status_601_response(message: str) -> HttpResponse:
+def _legacy_status_601_response(message: str) -> Response:
     """Monta resposta com status 601 usado pelo legado.
 
     Args:
@@ -82,7 +86,7 @@ def _legacy_status_601_response(message: str) -> HttpResponse:
         content_type="application/json",
     )
     response.status_code = 601
-    return response
+    return cast(Response, response)
 
 
 class AlunoInformacoesView(APIView):

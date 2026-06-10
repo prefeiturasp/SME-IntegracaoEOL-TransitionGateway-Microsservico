@@ -121,7 +121,7 @@ class VerificarAlunosPapViewTest(SimpleTestCase):
         )
 
     def test_400_quando_codigos_alunos_ausente(self) -> None:
-        """Verifica a rejeicao quando os codigos dos alunos nao sao informados."""
+        """Rejeita a chamada sem os códigos dos alunos."""
         client = _cliente_autenticado()
 
         resp = client.get("/api/alunos/alunos-pap/2026/")

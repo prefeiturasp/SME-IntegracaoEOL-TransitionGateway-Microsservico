@@ -294,9 +294,7 @@ class GetFuncionariosEscolaCargosTest(SimpleTestCase):
     """Valida busca de funcionários por cargos."""
 
     @patch.object(services._client, "get")
-    def test_chama_path_correto_com_params(
-        self, mock_get: MagicMock
-    ) -> None:
+    def test_chama_path_correto_com_params(self, mock_get: MagicMock) -> None:
         mock_resp_3239 = MagicMock()
         mock_resp_3239.status_code = 200
         mock_resp_3239.content = b"[{}]"
@@ -351,9 +349,7 @@ class GetFuncionariosEscolaCargosTest(SimpleTestCase):
         )
 
     @patch.object(services._client, "get")
-    def test_retorna_lista_vazia_sem_cargos(
-        self, mock_get: MagicMock
-    ) -> None:
+    def test_retorna_lista_vazia_sem_cargos(self, mock_get: MagicMock) -> None:
         result = services.get_funcionarios_escola_cargos("019465", {})
 
         mock_get.assert_not_called()
@@ -397,9 +393,7 @@ class GetFuncionariosEscolaFuncoesAtividadesTest(SimpleTestCase):
     """Valida busca de funcionários por funções atividades."""
 
     @patch.object(services._client, "get")
-    def test_chama_path_correto_com_params(
-        self, mock_get: MagicMock
-    ) -> None:
+    def test_chama_path_correto_com_params(self, mock_get: MagicMock) -> None:
         mock_resp_30 = MagicMock()
         mock_resp_30.status_code = 200
         mock_resp_30.content = b"[{}]"
@@ -523,9 +517,7 @@ class GetFuncionariosEscolaFuncoesExternasTest(SimpleTestCase):
     """Valida busca de funcionários por funções externas."""
 
     @patch.object(services._client, "get")
-    def test_chama_path_correto_com_params(
-        self, mock_get: MagicMock
-    ) -> None:
+    def test_chama_path_correto_com_params(self, mock_get: MagicMock) -> None:
         mock_resp_5 = MagicMock()
         mock_resp_5.status_code = 200
         mock_resp_5.content = b"[{}]"
@@ -636,7 +628,7 @@ class GetFuncionariosEscolaPorFuncaoExternaTest(SimpleTestCase):
 
     @patch.object(services._client, "get")
     def test_chama_path_correto(self, mock_get: MagicMock) -> None:
-        """ Verifica se o path é chamado corretamente."""
+        """Verifica se o path é chamado corretamente."""
         payload = [
             {
                 "codigo_rf": "000001",
@@ -670,7 +662,7 @@ class GetFuncionariosEscolaPorFuncaoExternaTest(SimpleTestCase):
 
     @patch.object(services._client, "get")
     def test_retorna_none_quando_204(self, mock_get: MagicMock) -> None:
-        """ Verifica se retorna None quando o status code é 204."""
+        """Verifica se retorna None quando o status code é 204."""
         mock_resp = MagicMock()
         mock_resp.status_code = 204
         mock_resp.content = b""
@@ -689,7 +681,7 @@ class GetFuncionariosEscolaPorFuncaoAtividadeTest(SimpleTestCase):
 
     @patch.object(services._client, "get")
     def test_chama_path_correto(self, mock_get: MagicMock) -> None:
-        """ Verifica se o path é chamado corretamente."""
+        """Verifica se o path é chamado corretamente."""
         payload = [
             {
                 "codigo_rf": "7654321",
@@ -719,7 +711,7 @@ class GetFuncionariosEscolaPorFuncaoAtividadeTest(SimpleTestCase):
 
     @patch.object(services._client, "get")
     def test_retorna_none_quando_204(self, mock_get: MagicMock) -> None:
-        """ Verifica se retorna None quando o status code é 204."""
+        """Verifica se retorna None quando o status code é 204."""
         mock_resp = MagicMock()
         mock_resp.status_code = 204
         mock_resp.content = b""

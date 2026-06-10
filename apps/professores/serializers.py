@@ -129,11 +129,11 @@ class FuncionarioFuncaoAtividadeUeSerializer(serializers.Serializer):
         return None
 
     def get_cd_cargo(self, obj: Any) -> int:
-        """Converte o código do cargo para inteiro, com zero como padrão."""
+        """Converta o código do cargo para inteiro, usando zero como padrão."""
         valor = obj.get("codigo_cargo") if isinstance(obj, dict) else None
         if valor in (None, ""):
             return 0
-        return int(valor)
+        return int(str(valor))
 
 
 class ProfessorTurmaSerializer(serializers.Serializer):

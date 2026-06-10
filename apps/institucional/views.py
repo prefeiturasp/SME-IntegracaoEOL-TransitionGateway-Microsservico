@@ -1,5 +1,7 @@
 """Views do domínio institucional."""
 
+from typing import cast
+
 import httpx
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
@@ -9,8 +11,8 @@ from rest_framework.views import APIView
 
 from apps.institucional import services
 from apps.institucional.serializers import (
-    DRESerializer,
     DadosEscolaSerializer,
+    DRESerializer,
     EquipamentoSerializer,
     EscolaPorDreETipoSerializer,
     EscolaResumoSerializer,
@@ -125,7 +127,7 @@ class DREListView(APIView):
         responses={200: DRESerializer(many=True), 204: None},
     )
     def post(self, request: Request) -> Response:
-        codigos = request.data
+        codigos = cast(list[str], request.data)
         data = services.get_dres_por_codigos(codigos)
         if not data:
             return Response(status=status.HTTP_204_NO_CONTENT)
