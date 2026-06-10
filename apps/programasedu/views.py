@@ -293,7 +293,8 @@ class ObterTurmaSrmERegularDoAlunoView(APIView):
         tags=_TAG,
         summary="Turmas SRM e regulares do aluno",
         description=(
-            "Retorna dados de turmas regulares e de programa do aluno, incluindo as que oferecem "
+            "Retorna dados de turmas regulares e de programa do aluno, "
+            "incluindo as que oferecem SRM."
         ),
         parameters=[
             OpenApiParameter(
@@ -324,6 +325,4 @@ class ObterTurmaSrmERegularDoAlunoView(APIView):
         data = services.obter_turma_srm_e_regular_do_aluno(
             codigo_aluno=codigo_aluno
         )
-        return Response(
-            TurmaSrmRegularDoAlunoSerializer(data, many=True).data
-        )
+        return Response(TurmaSrmRegularDoAlunoSerializer(data, many=True).data)

@@ -101,6 +101,27 @@ O gateway mapeia 4 rotas legadas para os endpoints canônicos EP-02 a EP-05 do M
 - Python 3.12+
 - Docker e Docker Compose
 
+## Instalação para desenvolvimento
+
+Crie um ambiente virtual e instale as dependências locais:
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements/local.txt
+```
+
+Instale os hooks do `pre-commit` antes de criar o primeiro commit:
+
+```bash
+pre-commit install
+pre-commit run --all-files
+```
+
+O `pre-commit install` é obrigatório no setup local. Depois de instalado, os
+formatadores e validadores são executados automaticamente em cada commit,
+evitando o envio de código fora do padrão do projeto.
+
 ## Configuração do ambiente
 
 ```bash

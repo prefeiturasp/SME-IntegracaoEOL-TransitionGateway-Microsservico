@@ -57,9 +57,7 @@ class ProgramasEduUrlsTest(SimpleTestCase):
 
     def test_preserva_kwargs_turma_srm_e_regular(self) -> None:
         """Verifica os kwargs extraidos da rota de turma SRM e regular."""
-        match = resolve(
-            "/api/alunos/paee/turma-srm-e-regular/aluno/123/"
-        )
+        match = resolve("/api/alunos/paee/turma-srm-e-regular/aluno/123/")
         self.assertEqual(match.kwargs, {"codigo_aluno": "123"})
 
 
@@ -128,7 +126,7 @@ class VerificarAlunosPapViewTest(SimpleTestCase):
         )
 
     def test_400_quando_codigos_alunos_ausente(self) -> None:
-        """Verifica a rejeicao quando os codigos dos alunos nao sao informados."""
+        """Rejeita a chamada sem os códigos dos alunos."""
         client = _cliente_autenticado()
 
         resp = client.get("/api/alunos/alunos-pap/2026/")
@@ -320,7 +318,5 @@ class ObterTurmaSrmERegularDoAlunoViewTest(SimpleTestCase):
             item["dataAtualizacaoContato"], "2025-01-23T00:00:00Z"
         )
         # Sentinela de data ausente (DateTime.MinValue), sem Z.
-        self.assertEqual(
-            item["dataAtualizacaoTabela"], "0001-01-01T00:00:00"
-        )
+        self.assertEqual(item["dataAtualizacaoTabela"], "0001-01-01T00:00:00")
         mock_service.assert_called_once_with(codigo_aluno="7360328")

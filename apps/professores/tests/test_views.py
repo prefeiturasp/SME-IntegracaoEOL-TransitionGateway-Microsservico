@@ -78,9 +78,7 @@ class ProfessoresUrlsTest(SimpleTestCase):
     def test_preserva_codigo_ue_funcionarios_funcoes_atividades(
         self,
     ) -> None:
-        match = resolve(
-            "/api/escolas/019465/funcionarios/funcoes-atividades/"
-        )
+        match = resolve("/api/escolas/019465/funcionarios/funcoes-atividades/")
 
         self.assertEqual(match.kwargs, {"codigo_ue": "019465"})
 
@@ -90,9 +88,7 @@ class ProfessoresUrlsTest(SimpleTestCase):
         self.assertEqual(match.kwargs, {"codigo_ue": "400870"})
 
     def test_preserva_codigo_ue_e_funcao_externa(self) -> None:
-        match = resolve(
-            "/api/escolas/400870/funcionarios/funcoes-externas/7/"
-        )
+        match = resolve("/api/escolas/400870/funcionarios/funcoes-externas/7/")
 
         self.assertEqual(
             match.kwargs,
@@ -252,9 +248,7 @@ class NomeUsuarioEolViewTest(SimpleTestCase):
         mock_service.assert_called_once_with("RF001")
 
     @patch("apps.professores.views.services.get_nome_usuario_eol")
-    def test_204_quando_usuario_ausente(
-        self, mock_service: MagicMock
-    ) -> None:
+    def test_204_quando_usuario_ausente(self, mock_service: MagicMock) -> None:
         mock_service.return_value = None
         client = _cliente_autenticado()
 
@@ -569,9 +563,7 @@ class EscolaFuncionariosCargosViewTest(SimpleTestCase):
         )
 
     @patch("apps.professores.views.services.get_funcionarios_escola_cargos")
-    def test_204_quando_sem_conteudo(
-        self, mock_service: MagicMock
-    ) -> None:
+    def test_204_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
         mock_service.return_value = None
         client = _cliente_autenticado()
 
@@ -666,9 +658,7 @@ class EscolaFuncionariosFuncoesAtividadesViewTest(SimpleTestCase):
         "apps.professores.views.services."
         "get_funcionarios_escola_funcoes_atividades"
     )
-    def test_204_quando_sem_conteudo(
-        self, mock_service: MagicMock
-    ) -> None:
+    def test_204_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
         mock_service.return_value = None
         client = _cliente_autenticado()
 
@@ -723,9 +713,7 @@ class EscolaFuncionariosFuncoesAtividadesViewTest(SimpleTestCase):
     def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get(
-            "/api/escolas/%20/funcionarios/funcoes-atividades/"
-        )
+        resp = client.get("/api/escolas/%20/funcionarios/funcoes-atividades/")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -813,14 +801,11 @@ class EscolaFuncionariosFuncoesExternasViewTest(SimpleTestCase):
         "apps.professores.views.services."
         "get_funcionarios_escola_funcoes_externas"
     )
-    def test_400_quando_sem_codigo_dre(
-        self, mock_service: MagicMock
-    ) -> None:
+    def test_400_quando_sem_codigo_dre(self, mock_service: MagicMock) -> None:
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/escolas/400870/funcionarios/funcoes-externas/"
-            "?funcoes=5"
+            "/api/escolas/400870/funcionarios/funcoes-externas/" "?funcoes=5"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -902,7 +887,7 @@ class EscolaFuncionariosFuncaoExternaViewTest(SimpleTestCase):
         "get_funcionarios_escola_por_funcao_externa"
     )
     def test_204_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
-        """ Testa retorno 204 quando sidecar retorna None para função externa."""
+        """Testa 204 quando o sidecar retorna None para função externa."""
         mock_service.return_value = None
         client = _cliente_autenticado()
 
@@ -917,7 +902,7 @@ class EscolaFuncionariosFuncaoExternaViewTest(SimpleTestCase):
         "get_funcionarios_escola_por_funcao_externa"
     )
     def test_204_quando_lista_vazia(self, mock_service: MagicMock) -> None:
-        """ Testa retorno 204 quando sidecar retorna lista vazia para função externa."""
+        """Testa 204 quando o sidecar retorna lista vazia."""
         mock_service.return_value = []
         client = _cliente_autenticado()
 
@@ -934,7 +919,7 @@ class EscolaFuncionariosFuncaoExternaViewTest(SimpleTestCase):
     def test_502_quando_sidecar_retorna_texto(
         self, mock_service: MagicMock
     ) -> None:
-        """ Testa retorno 502 quando sidecar retorna texto ao invés de lista para função externa."""
+        """Testa 502 quando o sidecar retorna texto para função externa."""
         mock_service.return_value = "erro de contrato"
         client = _cliente_autenticado()
 
@@ -949,12 +934,10 @@ class EscolaFuncionariosFuncaoExternaViewTest(SimpleTestCase):
         )
 
     def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
-        """ Testa retorno 400 quando codigoUE é somente espaços para função externa."""
+        """Testa 400 para codigoUE vazio na função externa."""
         client = _cliente_autenticado()
 
-        resp = client.get(
-            "/api/escolas/%20/funcionarios/funcoes-externas/7/"
-        )
+        resp = client.get("/api/escolas/%20/funcionarios/funcoes-externas/7/")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -1010,7 +993,7 @@ class EscolaFuncionariosFuncaoAtividadeViewTest(SimpleTestCase):
         "get_funcionarios_escola_por_funcao_atividade"
     )
     def test_204_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
-        """ Testa retorno 204 quando sidecar retorna None para função atividade."""
+        """Testa 204 quando o sidecar retorna None para função atividade."""
         mock_service.return_value = None
         client = _cliente_autenticado()
 
@@ -1025,7 +1008,7 @@ class EscolaFuncionariosFuncaoAtividadeViewTest(SimpleTestCase):
         "get_funcionarios_escola_por_funcao_atividade"
     )
     def test_204_quando_lista_vazia(self, mock_service: MagicMock) -> None:
-        """ Testa retorno 204 quando sidecar retorna lista vazia para função atividade."""
+        """Testa 204 quando o sidecar retorna lista vazia."""
         mock_service.return_value = []
         client = _cliente_autenticado()
 
@@ -1042,7 +1025,7 @@ class EscolaFuncionariosFuncaoAtividadeViewTest(SimpleTestCase):
     def test_502_quando_sidecar_retorna_texto(
         self, mock_service: MagicMock
     ) -> None:
-        """ Testa retorno 502 quando sidecar retorna texto ao invés de lista para função atividade."""
+        """Testa 502 quando o sidecar retorna texto para função atividade."""
         mock_service.return_value = "erro de contrato"
         client = _cliente_autenticado()
 
@@ -1057,7 +1040,7 @@ class EscolaFuncionariosFuncaoAtividadeViewTest(SimpleTestCase):
         )
 
     def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
-        """ Testa retorno 400 quando codigoUE é somente espaços para função atividade."""
+        """Testa 400 para codigoUE vazio na função atividade."""
         client = _cliente_autenticado()
 
         resp = client.get(

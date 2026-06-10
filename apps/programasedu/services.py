@@ -123,9 +123,8 @@ def obter_dados_srm_paee_aluno(codigo_aluno: str) -> Any:
 def obter_turma_srm_e_regular_do_aluno(codigo_aluno: str) -> list[dict]:
     """Compõe as turmas SRM e regulares do aluno no shape legado.
 
-
-    1. Alunos-MS → turmas do aluno (incluindo programa) + ``codigo_tipo_turma``.
-    2. ProgramasEdu-MS → conjunto de ``codigo_turma`` com SRM (componente 1030).
+    1. Alunos-MS retorna turmas do aluno e ``codigo_tipo_turma``.
+    2. ProgramasEdu-MS retorna turmas com o componente SRM 1030.
     3. Filtro: mantém turma regular (tipo 1) OU programa (tipo 3) que esteja
        no conjunto SRM.
     4. Pedagogico-MS → ``nome_turma``/``tipo_turno``/etapa/ciclo por turma.
@@ -170,9 +169,10 @@ def obter_turma_srm_e_regular_do_aluno(codigo_aluno: str) -> list[dict]:
         numero = t.get("numero_celular") or ""
         # ausente/'NULL' vira "000"; valor real passa sem alteração.
         numero_chamada = t.get("numero_aluno_chamada")
-        if numero_chamada is None or str(
-            numero_chamada
-        ).strip().upper() in ("", "NULL"):
+        if numero_chamada is None or str(numero_chamada).strip().upper() in (
+            "",
+            "NULL",
+        ):
             numero_chamada = "000"
         saida.append(
             {

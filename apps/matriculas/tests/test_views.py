@@ -42,9 +42,7 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
         ]
         client = _cliente_autenticado()
 
-        resp = client.get(
-            "/api/v1/matriculas/?anoLetivo=2026&ueCodigo=100001"
-        )
+        resp = client.get("/api/v1/matriculas/?anoLetivo=2026&ueCodigo=100001")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(
@@ -110,9 +108,7 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get(
-            "/api/v1/matriculas/?anoLetivo=abc&ueCodigo=100001"
-        )
+        resp = client.get("/api/v1/matriculas/?anoLetivo=abc&ueCodigo=100001")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -128,9 +124,7 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
         mock_service.side_effect = _request_error()
         client = _cliente_autenticado()
 
-        resp = client.get(
-            "/api/v1/matriculas/?anoLetivo=2026&ueCodigo=100001"
-        )
+        resp = client.get("/api/v1/matriculas/?anoLetivo=2026&ueCodigo=100001")
 
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertEqual(
@@ -141,8 +135,6 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
     def test_403_sem_autenticacao(self) -> None:
         client = APIClient()
 
-        resp = client.get(
-            "/api/v1/matriculas/?anoLetivo=2026&ueCodigo=100001"
-        )
+        resp = client.get("/api/v1/matriculas/?anoLetivo=2026&ueCodigo=100001")
 
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)

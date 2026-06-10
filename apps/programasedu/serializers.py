@@ -1,6 +1,7 @@
 """Serializers do domínio de programas educacionais."""
 
 from datetime import date, datetime, timedelta, timezone
+from typing import Any
 
 from rest_framework import serializers
 
@@ -10,12 +11,12 @@ _FUSO = timezone(timedelta(hours=-3))
 
 
 class DataMatriculaField(serializers.DateTimeField):
-    """Serializa data_matricula em formato ISO compatível com o consumidor legado."""
+    """Serializa data_matricula em ISO para o consumidor legado."""
 
-    def to_representation(self, value: object) -> str | None:
-        """ Serializa a data de matrícula em formato ISO, removendo zeros à direita."""
+    def to_representation(self, value: Any) -> str:
+        """Serialize a data em ISO, removendo zeros à direita."""
         if value in (None, ""):
-            return None
+            return None  # type: ignore[return-value]
         if isinstance(value, str):
             value = datetime.fromisoformat(value.replace("Z", "+00:00"))
         if not isinstance(value, datetime):
@@ -35,13 +36,13 @@ class LegadoDateTimeField(serializers.CharField):
 
     _SENTINELA = "0001-01-01T00:00:00"
 
-    def get_attribute(self, instance: object) -> object:
+    def get_attribute(self, instance: object) -> str | None:
         """Retorna o valor do atributo ou a sentinela se for None."""
         value = super().get_attribute(instance)
         return "" if value is None else value
 
     def to_representation(self, value: object) -> str:
-        """Serializa o valor em formato ISO-8601 ou retorna a sentinela para valores ausentes."""
+        """Serializa o valor em ISO-8601 ou retorna a sentinela."""
         if value in (None, ""):
             return self._SENTINELA
         dt = self._para_datetime(value)
@@ -58,7 +59,7 @@ class LegadoDateTimeField(serializers.CharField):
 
     @staticmethod
     def _para_datetime(value: object) -> datetime | None:
-        """Converte o valor para datetime, se possível, ou retorna None."""
+        """Converta o valor para datetime, retornando None quando inválido."""
         if isinstance(value, datetime):
             return value
         if isinstance(value, date):

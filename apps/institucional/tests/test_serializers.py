@@ -3,8 +3,8 @@
 from django.test import SimpleTestCase
 
 from apps.institucional.serializers import (
-    DRESerializer,
     DadosEscolaSerializer,
+    DRESerializer,
     EquipamentoSerializer,
     EscolaPorDreETipoSerializer,
     EscolaResumoSerializer,
@@ -98,7 +98,7 @@ class EscolaResumoSerializerTest(SimpleTestCase):
     }
 
     def test_payload_completo_valido(self) -> None:
-        """Aceita payload com todos os campos preenchidos, incluindo nullable."""
+        """Aceita payload completo, incluindo campos nullable."""
         s = EscolaResumoSerializer(data=self._PAYLOAD)
         self.assertTrue(s.is_valid(), s.errors)
 
@@ -275,11 +275,9 @@ class EquipamentoSerializerTest(SimpleTestCase):
         self.assertTrue(s.is_valid(), s.errors)
 
     def test_cd_equipamento_obrigatorio(self) -> None:
-        """Rejeita o payload quando falta o campo obrigatório cd_equipamento."""
+        """Rejeita payload sem o campo obrigatório cd_equipamento."""
         payload = {
-            k: v
-            for k, v in self._PAYLOAD.items()
-            if k != "cd_equipamento"
+            k: v for k, v in self._PAYLOAD.items() if k != "cd_equipamento"
         }
         s = EquipamentoSerializer(data=payload)
         self.assertFalse(s.is_valid())

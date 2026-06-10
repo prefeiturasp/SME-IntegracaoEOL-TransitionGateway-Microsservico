@@ -2,7 +2,7 @@
 
 import json
 from datetime import datetime
-from typing import Any
+from typing import Any, cast
 
 import httpx
 from django.http import HttpResponse
@@ -73,14 +73,14 @@ def _is_not_found(exc: httpx.HTTPStatusError) -> bool:
     return exc.response.status_code == 404
 
 
-def _legacy_status_601_response(message: str) -> HttpResponse:
+def _legacy_status_601_response(message: str) -> Response:
     """Monta resposta no formato esperado pelo contrato legado."""
     response = HttpResponse(
         json.dumps(message, ensure_ascii=False),
         content_type="application/json",
     )
     response.status_code = 601
-    return response
+    return cast(Response, response)
 
 
 def _query_value(request: Request, *names: str) -> str | None:
