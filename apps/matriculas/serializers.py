@@ -4,7 +4,7 @@ from typing import Any
 
 from rest_framework import serializers
 
-from apps.alunos.serializers import _get
+from apps.core.utils import get_first_value
 
 
 class MatriculaSerializer(serializers.Serializer):
@@ -20,12 +20,12 @@ class MatriculaSerializer(serializers.Serializer):
             Dicionário com os campos esperados pelo legado.
         """
         return {
-            "turmaCodigo": _get(
+            "turmaCodigo": get_first_value(
                 instance,
                 "turma_codigo",
                 "turmaCodigo",
                 "codigo_turma",
                 "codigoTurma",
             ),
-            "quantidade": _get(instance, "quantidade"),
+            "quantidade": get_first_value(instance, "quantidade"),
         }
