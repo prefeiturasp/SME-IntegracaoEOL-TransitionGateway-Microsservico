@@ -17,6 +17,7 @@ from apps.programasedu.serializers import (
 )
 
 _TAG = ["Aluno"]
+_ERRO_CODIGO_ALUNO_OBRIGATORIO = "É necessário informar o codigo_aluno."
 
 
 class ObterTurmasPapView(APIView):
@@ -235,7 +236,7 @@ class ObterComponentesCurricularesTurmasProgramaAlunoView(APIView):
                 na chamada ao serviço externo.
         """
         if not codigo_aluno.strip():
-            return detail_response("É necessário informar o codigo_aluno.")
+            return detail_response(_ERRO_CODIGO_ALUNO_OBRIGATORIO)
         data = services.listar_componentes_turmas_programa_aluno(
             codigo_aluno=codigo_aluno, ano_letivo=ano_letivo
         )
@@ -278,7 +279,7 @@ class ObterDadosSrmPaeeAlunoView(APIView):
                 na chamada ao serviço externo.
         """
         if not codigo_aluno.strip():
-            return detail_response("É necessário informar o codigo_aluno.")
+            return detail_response(_ERRO_CODIGO_ALUNO_OBRIGATORIO)
         data = services.obter_dados_srm_paee_aluno(codigo_aluno=codigo_aluno)
         return Response(
             DadosSrmPaeeColaborativoSerializer(data, many=True).data
@@ -319,7 +320,7 @@ class ObterTurmaSrmERegularDoAlunoView(APIView):
                 na chamada ao serviço externo.
         """
         if not codigo_aluno.strip():
-            return detail_response("É necessário informar o codigo_aluno.")
+            return detail_response(_ERRO_CODIGO_ALUNO_OBRIGATORIO)
         data = services.obter_turma_srm_e_regular_do_aluno(
             codigo_aluno=codigo_aluno
         )
