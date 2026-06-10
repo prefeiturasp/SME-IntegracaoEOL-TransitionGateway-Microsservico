@@ -27,6 +27,28 @@ class NumeroAlunoChamadaField(serializers.CharField):
         return "0" if value in (None, "") else str(value)
 
 
+class DatetimeLegadoField(serializers.Field):
+    """Serializa data/hora no formato ISO do contrato legado."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        kwargs.setdefault("allow_null", True)
+        super().__init__(**kwargs)
+
+    def to_representation(self, value: Any) -> str | None:
+        return datetime_legado(value)
+
+
+class StringOrNoneField(serializers.Field):
+    """Serializa valor como string, preservando ausência como ``None``."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        kwargs.setdefault("allow_null", True)
+        super().__init__(**kwargs)
+
+    def to_representation(self, value: Any) -> str | None:
+        return string_or_none(value)
+
+
 def _idade(value: Any) -> int | None:
     """Calcula idade em anos completos.
 
@@ -55,114 +77,59 @@ def _celular_responsavel(instance: Any) -> str:
     Returns:
         Celular já informado ou concatenação de DDD e número.
     """
-    celular = get_first_value(
-        instance,
-        "celular_responsavel",
-        "celularResponsavel",
-    )
+    celular = get_first_value(instance, "celular_responsavel")
     if celular is not None:
         return str(celular)
-    ddd = get_first_value(instance, "ddd_celular", "dddCelular")
-    numero = get_first_value(instance, "numero_celular", "numeroCelular")
+    ddd = get_first_value(instance, "ddd_celular")
+    numero = get_first_value(instance, "numero_celular")
     if ddd or numero:
         return f"{ddd or ''}{numero or ''}"
     return ""
 
 
-def _numero_chamada(instance: Any) -> str:
-    """Obtém o número de chamada do aluno.
+class EnderecoLegadoSerializer(serializers.Serializer):
+    """Serializa endereço no contrato legado."""
 
-    Args:
-        instance: Dicionário ou objeto com os dados da matrícula.
-
-    Returns:
-        Número de chamada como string, usando ``"0"`` como fallback.
-    """
-    value = get_first_value(
-        instance,
-        "numero_aluno_chamada",
-        "numeroAlunoChamada",
-    )
-    return "0" if value in (None, "") else str(value)
-
-
-def _endereco_legado(instance: Any) -> dict[str, Any] | None:
-    """Normaliza o bloco de endereço para o contrato legado.
-
-    Args:
-        instance: Dicionário ou objeto com campo ``endereco``.
-
-    Returns:
-        Endereço com chaves legadas, ou o valor original quando não for dict.
-    """
-    endereco = get_first_value(instance, "endereco")
-    if not isinstance(endereco, dict):
-        return cast(dict[str, Any] | None, endereco)
-    return {
-        "id": get_first_value(endereco, "id"),
-        "nro": get_first_value(
-            endereco,
-            "nro",
-            "numero_endereco",
-            "numeroEndereco",
-        ),
-        "complemento": get_first_value(endereco, "complemento"),
-        "bairro": get_first_value(endereco, "bairro"),
-        "cep": get_first_value(endereco, "cep"),
-        "nomeMunicipio": get_first_value(
-            endereco,
-            "nomeMunicipio",
-            "nome_municipio",
-        ),
-        "siglaUF": get_first_value(endereco, "siglaUF", "sigla_uf"),
-        "tipologradouro": get_first_value(
-            endereco,
-            "tipologradouro",
-            "tipo_logradouro",
-        ),
-        "logradouro": get_first_value(endereco, "logradouro"),
-    }
+    id = serializers.IntegerField(allow_null=True)
+    nro = serializers.CharField(allow_null=True)
+    complemento = serializers.CharField(allow_null=True)
+    bairro = serializers.CharField(allow_null=True)
+    cep = serializers.IntegerField(allow_null=True)
+    nomeMunicipio = serializers.CharField(
+        source="nome_municipio", allow_null=True
+    )  # NOSONAR
+    siglaUF = serializers.CharField(
+        source="sigla_uf", allow_null=True
+    )  # NOSONAR
+    tipologradouro = serializers.CharField(
+        source="tipo_logradouro", allow_null=True
+    )  # NOSONAR
+    logradouro = serializers.CharField(allow_null=True)
 
 
 class AlunoInformacoesSerializer(serializers.Serializer):
     """Serializa informações cadastrais do aluno."""
 
-    def to_representation(self, instance: Any) -> dict[str, Any]:
-        """Transforma dados cadastrais no contrato legado.
-
-        Args:
-            instance: Dicionário ou objeto com os dados do aluno.
-
-        Returns:
-            Dicionário com os campos cadastrais do aluno.
-        """
-        return {
-            "codigoAluno": get_first_value(
-                instance, "codigo_aluno", "codigoAluno"
-            ),
-            "nomeAluno": get_first_value(instance, "nome_aluno", "nomeAluno"),
-            "nomeMae": get_first_value(instance, "nome_mae", "nomeMae"),
-            "sexo": get_first_value(instance, "sexo"),
-            "grupoEtnico": get_first_value(
-                instance,
-                "grupo_etnico",
-                "grupoEtnico",
-                "raca_cor",
-                "racaCor",
-            ),
-            "nacionalidade": get_first_value(instance, "nacionalidade"),
-            "endereco": _endereco_legado(instance),
-            "ehImigrante": bool(
-                get_first_value(
-                    instance,
-                    "eh_imigrante",
-                    "ehImigrante",
-                    default=False,
-                )
-            ),
-            "nis": get_first_value(instance, "nis"),
-            "cns": get_first_value(instance, "cns"),
-        }
+    codigoAluno = serializers.IntegerField(
+        source="codigo_aluno", allow_null=True
+    )  # NOSONAR
+    nomeAluno = serializers.CharField(
+        source="nome_aluno", allow_null=True
+    )  # NOSONAR
+    nomeMae = serializers.CharField(
+        source="nome_mae", allow_null=True
+    )  # NOSONAR
+    sexo = serializers.CharField(allow_null=True)
+    grupoEtnico = serializers.CharField(
+        source="raca_cor", allow_null=True
+    )  # NOSONAR
+    nacionalidade = serializers.CharField(allow_null=True)
+    endereco = EnderecoLegadoSerializer(allow_null=True)
+    ehImigrante = serializers.BooleanField(
+        source="eh_imigrante", default=False
+    )  # NOSONAR
+    nis = serializers.CharField(allow_null=True)
+    cns = serializers.CharField(allow_null=True)
 
 
 class AlunoAutocompleteSerializer(serializers.Serializer):
@@ -190,316 +157,191 @@ class AlunoAutocompleteSerializer(serializers.Serializer):
 class InformacoesAlunoTurmaSerializer(serializers.Serializer):
     """Serializa resumo de aluno em turma."""
 
-    def to_representation(self, instance: Any) -> dict[str, Any]:
-        """Transforma dados de aluno da turma no contrato legado.
-
-        Args:
-            instance: Dicionário ou objeto com dados resumidos do aluno.
-
-        Returns:
-            Dicionário com os campos esperados pelo diário/lista de chamada.
-        """
-        return {
-            "numeroChamada": get_first_value(
-                instance,
-                "numero_chamada",
-                "numeroChamada",
-            ),
-            "codigoAluno": get_first_value(
-                instance, "codigo_aluno", "codigoAluno"
-            ),
-            "nomeAluno": get_first_value(instance, "nome_aluno", "nomeAluno"),
-            "nomeSocialAluno": get_first_value(
-                instance,
-                "nome_social_aluno",
-                "nomeSocialAluno",
-            ),
-            "sexo": get_first_value(instance, "sexo"),
-            "raca": get_first_value(instance, "raca", "raca_cor", "racaCor"),
-            "codigoRaca": get_first_value(
-                instance,
-                "codigo_raca",
-                "codigoRaca",
-            ),
-        }
+    numeroChamada = serializers.IntegerField(
+        source="numero_chamada", allow_null=True
+    )  # NOSONAR
+    codigoAluno = serializers.IntegerField(
+        source="codigo_aluno", allow_null=True
+    )  # NOSONAR
+    nomeAluno = serializers.CharField(
+        source="nome_aluno", allow_null=True
+    )  # NOSONAR
+    nomeSocialAluno = serializers.CharField(
+        source="nome_social_aluno", allow_null=True
+    )  # NOSONAR
+    sexo = serializers.CharField(allow_null=True)
+    raca = serializers.CharField(allow_null=True)
+    codigoRaca = serializers.IntegerField(
+        source="codigo_raca", allow_null=True
+    )  # NOSONAR
 
 
 class NecessidadeEspecialSerializer(serializers.Serializer):
     """Serializa necessidade especial do aluno."""
 
-    def to_representation(self, instance: Any) -> dict[str, Any]:
-        """Transforma necessidade especial no contrato legado.
+    codigoAluno = serializers.IntegerField(
+        source="codigo_aluno", allow_null=True
+    )  # NOSONAR
+    tipoNecessidadeEspecial = serializers.IntegerField(
+        source="tipo_necessidade_especial", allow_null=True
+    )  # NOSONAR
+    descricaoNecessidadeEspecial = serializers.CharField(
+        source="descricao_necessidade_especial", allow_null=True
+    )  # NOSONAR
+    tipoRecurso = serializers.IntegerField(
+        source="tipo_recurso", allow_null=True
+    )  # NOSONAR
+    descricaoRecurso = serializers.CharField(
+        source="descricao_recurso", allow_null=True
+    )  # NOSONAR
+
+
+class AlunoLegadoBaseSerializer(serializers.Serializer):
+    """Serializa campos comuns do contrato legado de aluno e matrícula."""
+
+    codigoAluno = serializers.IntegerField(
+        source="codigo_aluno", allow_null=True
+    )  # NOSONAR
+    anoLetivo = serializers.IntegerField(
+        source="ano_letivo", allow_null=True
+    )  # NOSONAR
+    nomeAluno = serializers.CharField(
+        source="nome_aluno", allow_null=True
+    )  # NOSONAR
+    nomeSocialAluno = serializers.CharField(
+        source="nome_social_aluno", allow_null=True
+    )  # NOSONAR
+    codigoSituacaoMatricula = serializers.IntegerField(
+        source="codigo_situacao_matricula", allow_null=True
+    )  # NOSONAR
+    situacaoMatricula = serializers.CharField(
+        source="situacao_matricula", allow_null=True
+    )  # NOSONAR
+    dataSituacao = DatetimeLegadoField(source="data_situacao")  # NOSONAR
+    dataNascimento = DatetimeLegadoField(source="data_nascimento")  # NOSONAR
+    numeroAlunoChamada = NumeroAlunoChamadaField(
+        source="numero_aluno_chamada"
+    )  # NOSONAR
+    codigoTurma = serializers.IntegerField(
+        source="codigo_turma", allow_null=True
+    )  # NOSONAR
+    nomeResponsavel = serializers.CharField(
+        source="nome_responsavel", allow_null=True
+    )  # NOSONAR
+    tipoResponsavel = StringOrNoneField(source="tipo_responsavel")  # NOSONAR
+    celularResponsavel = serializers.SerializerMethodField(
+        method_name="get_celular_responsavel"
+    )  # NOSONAR
+    dataAtualizacaoContato = DatetimeLegadoField(
+        source="data_atualizacao_contato"
+    )  # NOSONAR
+    codigoTipoTurma = serializers.IntegerField(
+        source="codigo_tipo_turma", allow_null=True
+    )  # NOSONAR
+    dataAtualizacaoTabela = serializers.SerializerMethodField(
+        method_name="get_data_atualizacao_tabela"
+    )  # NOSONAR
+
+    def get_celular_responsavel(self, instance: Any) -> str:
+        """Monta o celular do responsável.
 
         Args:
-            instance: Dicionário ou objeto com a necessidade especial.
+            instance: Dicionário ou objeto com campos de contato.
 
         Returns:
-            Dicionário com necessidade e recurso no formato legado.
+            Celular já informado ou concatenação de DDD e número.
         """
-        return {
-            "codigoAluno": get_first_value(
-                instance, "codigo_aluno", "codigoAluno"
-            ),
-            "tipoNecessidadeEspecial": get_first_value(
-                instance,
-                "tipo_necessidade_especial",
-                "tipoNecessidadeEspecial",
-                "codigoNecessidadeEspecial",
-            ),
-            "descricaoNecessidadeEspecial": get_first_value(
-                instance,
-                "descricao_necessidade_especial",
-                "descricaoNecessidadeEspecial",
-                "descricao",
-            ),
-            "tipoRecurso": get_first_value(
-                instance, "tipo_recurso", "tipoRecurso"
-            ),
-            "descricaoRecurso": get_first_value(
-                instance,
-                "descricao_recurso",
-                "descricaoRecurso",
-            ),
-        }
+        return _celular_responsavel(instance)
+
+    def get_data_atualizacao_tabela(self, instance: Any) -> str | None:
+        """Resolve a data de atualização com fallback do legado.
+
+        Args:
+            instance: Dicionário ou objeto com dados da matrícula.
+
+        Returns:
+            Data formatada, usando a data de situação ou o padrão legado
+            como fallback.
+        """
+        return datetime_legado(
+            get_first_value(instance, "data_atualizacao_tabela")
+            or get_first_value(instance, "data_situacao")
+            or _DATA_PADRAO_LEGADO
+        )
 
 
-class TurmaDoAlunoSerializer(serializers.Serializer):
+class TurmaDoAlunoSerializer(AlunoLegadoBaseSerializer):
     """Serializa dados de matrícula e turma do aluno."""
 
-    def to_representation(self, instance: Any) -> dict[str, Any]:
-        """Transforma matrícula/turma no contrato legado.
+    idade = serializers.SerializerMethodField()
+    documentoCpf = serializers.CharField(
+        source="documento_cpf", allow_null=True
+    )  # NOSONAR
+    dataMatricula = DatetimeLegadoField(source="data_matricula")  # NOSONAR
+    codigoEscola = serializers.CharField(
+        source="codigo_escola", allow_null=True
+    )  # NOSONAR
+
+    def get_idade(self, instance: Any) -> int | None:
+        """Resolve a idade informada ou calculada do nascimento.
 
         Args:
-            instance: Dicionário ou objeto com dados de matrícula e turma.
+            instance: Dicionário ou objeto com dados do aluno.
 
         Returns:
-            Dicionário com os campos de turma esperados pelo legado.
+            Idade informada pela origem, ou calculada da data de
+            nascimento quando ausente.
         """
-        data_nascimento = get_first_value(
-            instance,
-            "data_nascimento",
-            "dataNascimento",
-        )
-        return {
-            "codigoAluno": get_first_value(
-                instance, "codigo_aluno", "codigoAluno"
-            ),
-            "anoLetivo": get_first_value(instance, "ano_letivo", "anoLetivo"),
-            "nomeAluno": get_first_value(instance, "nome_aluno", "nomeAluno"),
-            "nomeSocialAluno": get_first_value(
-                instance,
-                "nome_social_aluno",
-                "nomeSocialAluno",
-            ),
-            "codigoSituacaoMatricula": get_first_value(
-                instance,
-                "codigo_situacao_matricula",
-                "codigoSituacaoMatricula",
-            ),
-            "situacaoMatricula": get_first_value(
-                instance,
-                "situacao_matricula",
-                "situacaoMatricula",
-            ),
-            "dataSituacao": datetime_legado(
-                get_first_value(instance, "data_situacao", "dataSituacao")
-            ),
-            "dataNascimento": datetime_legado(data_nascimento),
-            "idade": get_first_value(
-                instance, "idade", default=_idade(data_nascimento)
-            ),
-            "documentoCpf": get_first_value(
-                instance,
-                "documento_cpf",
-                "documentoCpf",
-                "cpf",
-            ),
-            "dataMatricula": datetime_legado(
-                get_first_value(instance, "data_matricula", "dataMatricula")
-            ),
-            "numeroAlunoChamada": _numero_chamada(instance),
-            "codigoTurma": get_first_value(
-                instance, "codigo_turma", "codigoTurma"
-            ),
-            "nomeResponsavel": get_first_value(
-                instance,
-                "nome_responsavel",
-                "nomeResponsavel",
-            ),
-            "tipoResponsavel": string_or_none(
-                get_first_value(
-                    instance, "tipo_responsavel", "tipoResponsavel"
-                )
-            ),
-            "celularResponsavel": _celular_responsavel(instance),
-            "dataAtualizacaoContato": datetime_legado(
-                get_first_value(
-                    instance,
-                    "data_atualizacao_contato",
-                    "dataAtualizacaoContato",
-                )
-            ),
-            "codigoEscola": get_first_value(
-                instance,
-                "codigo_escola",
-                "codigoEscola",
-                "codigo_ue",
-            ),
-            "codigoTipoTurma": get_first_value(
-                instance,
-                "codigo_tipo_turma",
-                "codigoTipoTurma",
-            ),
-            "dataAtualizacaoTabela": datetime_legado(
-                get_first_value(
-                    instance,
-                    "data_atualizacao_tabela",
-                    "dataAtualizacaoTabela",
-                )
-                or get_first_value(instance, "data_situacao", "dataSituacao")
-                or _DATA_PADRAO_LEGADO
-            ),
-        }
+        idade = get_first_value(instance, "idade")
+        if idade is not None:
+            return cast(int, idade)
+        return _idade(get_first_value(instance, "data_nascimento"))
 
 
-class AlunoPorCodigoSerializer(serializers.Serializer):
+class AlunoPorCodigoSerializer(AlunoLegadoBaseSerializer):
     """Serializa dados do aluno com campos do contrato de listagem."""
 
-    def to_representation(self, instance: Any) -> dict[str, Any]:
-        """Transforma dados do aluno no contrato de listagem legado.
-
-        Args:
-            instance: Dicionário ou objeto com dados do aluno e matrícula.
-
-        Returns:
-            Dicionário com os campos de listagem do aluno.
-        """
-        return {
-            "codigoAluno": get_first_value(
-                instance, "codigo_aluno", "codigoAluno"
-            ),
-            "tipoTurno": get_first_value(
-                instance, "tipo_turno", "tipoTurno", default=0
-            ),
-            "anoLetivo": get_first_value(instance, "ano_letivo", "anoLetivo"),
-            "nomeAluno": get_first_value(instance, "nome_aluno", "nomeAluno"),
-            "nomeSocialAluno": get_first_value(
-                instance,
-                "nome_social_aluno",
-                "nomeSocialAluno",
-            ),
-            "codigoSituacaoMatricula": get_first_value(
-                instance,
-                "codigo_situacao_matricula",
-                "codigoSituacaoMatricula",
-            ),
-            "situacaoMatricula": get_first_value(
-                instance,
-                "situacao_matricula",
-                "situacaoMatricula",
-            ),
-            "dataSituacao": datetime_legado(
-                get_first_value(instance, "data_situacao", "dataSituacao")
-            ),
-            "dataNascimento": datetime_legado(
-                get_first_value(instance, "data_nascimento", "dataNascimento")
-            ),
-            "numeroAlunoChamada": _numero_chamada(instance),
-            "codigoTurma": get_first_value(
-                instance, "codigo_turma", "codigoTurma"
-            ),
-            "nomeResponsavel": get_first_value(
-                instance,
-                "nome_responsavel",
-                "nomeResponsavel",
-            ),
-            "tipoResponsavel": string_or_none(
-                get_first_value(
-                    instance, "tipo_responsavel", "tipoResponsavel"
-                )
-            ),
-            "celularResponsavel": _celular_responsavel(instance),
-            "dataAtualizacaoContato": datetime_legado(
-                get_first_value(
-                    instance,
-                    "data_atualizacao_contato",
-                    "dataAtualizacaoContato",
-                )
-            ),
-            "codigoTipoTurma": get_first_value(
-                instance,
-                "codigo_tipo_turma",
-                "codigoTipoTurma",
-            ),
-            "turmaNome": get_first_value(instance, "turma_nome", "turmaNome"),
-            "etapaEnsino": get_first_value(
-                instance, "etapa_ensino", "etapaEnsino"
-            ),
-            "cicloEnsino": get_first_value(
-                instance, "ciclo_ensino", "cicloEnsino"
-            ),
-            "descEtapaEnsino": get_first_value(
-                instance,
-                "desc_etapa_ensino",
-                "descEtapaEnsino",
-            ),
-            "descCicloEnsino": get_first_value(
-                instance,
-                "desc_ciclo_ensino",
-                "descCicloEnsino",
-            ),
-            "dataAtualizacaoTabela": datetime_legado(
-                get_first_value(
-                    instance,
-                    "data_atualizacao_tabela",
-                    "dataAtualizacaoTabela",
-                )
-                or get_first_value(instance, "data_situacao", "dataSituacao")
-                or _DATA_PADRAO_LEGADO
-            ),
-        }
+    tipoTurno = serializers.IntegerField(
+        source="tipo_turno", default=0
+    )  # NOSONAR
+    turmaNome = serializers.CharField(
+        source="turma_nome", allow_null=True
+    )  # NOSONAR
+    etapaEnsino = serializers.CharField(
+        source="etapa_ensino", allow_null=True
+    )  # NOSONAR
+    cicloEnsino = serializers.CharField(
+        source="ciclo_ensino", allow_null=True
+    )  # NOSONAR
+    descEtapaEnsino = serializers.CharField(
+        source="desc_etapa_ensino", allow_null=True
+    )  # NOSONAR
+    descCicloEnsino = serializers.CharField(
+        source="desc_ciclo_ensino", allow_null=True
+    )  # NOSONAR
 
 
 class ResponsavelResumidoSerializer(serializers.Serializer):
     """Serializa dados resumidos de responsável."""
 
-    def to_representation(self, instance: Any) -> dict[str, Any]:
-        """Transforma dados de responsável no contrato legado.
-
-        Args:
-            instance: Dicionário ou objeto com dados do responsável.
-
-        Returns:
-            Dicionário com os campos resumidos do responsável.
-        """
-        return {
-            "id": get_first_value(instance, "id", "codigo_responsavel"),
-            "cpf": get_first_value(instance, "cpf"),
-            "email": get_first_value(instance, "email"),
-            "nome": get_first_value(instance, "nome"),
-            "tipoResponsavel": get_first_value(
-                instance,
-                "tipo_responsavel",
-                "tipoResponsavel",
-            ),
-            "dataNascimento": datetime_legado(
-                get_first_value(instance, "data_nascimento", "dataNascimento")
-            ),
-            "dataAtualizacao": datetime_legado(
-                get_first_value(
-                    instance, "data_atualizacao", "dataAtualizacao"
-                )
-            ),
-            "nomeMae": get_first_value(instance, "nome_mae", "nomeMae"),
-            "dddCelular": get_first_value(
-                instance, "ddd_celular", "dddCelular"
-            ),
-            "numeroCelular": get_first_value(
-                instance,
-                "numero_celular",
-                "numeroCelular",
-            ),
-            "codigoAluno": get_first_value(
-                instance, "codigo_aluno", "codigoAluno"
-            ),
-        }
+    id = serializers.IntegerField(allow_null=True)
+    cpf = serializers.CharField(allow_null=True)
+    email = serializers.CharField(allow_null=True)
+    nome = serializers.CharField(allow_null=True)
+    tipoResponsavel = serializers.IntegerField(
+        source="tipo_responsavel", allow_null=True
+    )  # NOSONAR
+    dataNascimento = DatetimeLegadoField(source="data_nascimento")  # NOSONAR
+    dataAtualizacao = DatetimeLegadoField(source="data_atualizacao")  # NOSONAR
+    nomeMae = serializers.CharField(
+        source="nome_mae", allow_null=True
+    )  # NOSONAR
+    dddCelular = serializers.CharField(
+        source="ddd_celular", allow_null=True
+    )  # NOSONAR
+    numeroCelular = serializers.CharField(
+        source="numero_celular", allow_null=True
+    )  # NOSONAR
+    codigoAluno = serializers.CharField(
+        source="codigo_aluno", allow_null=True
+    )  # NOSONAR
