@@ -42,9 +42,7 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
         ]
         client = _cliente_autenticado()
 
-        resp = client.get(
-            "/api/v1/matriculas/?anoLetivo=2026&ueCodigo=100001"
-        )
+        resp = client.get("/api/v1/matriculas/?anoLetivo=2026&ueCodigo=100001")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(
@@ -75,33 +73,27 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
         )
 
     @patch("apps.matriculas.views.services.get_matriculas_ano_atual")
-    def test_400_quando_ano_letivo_ausente(
+    def test_200_vazio_quando_ano_letivo_ausente(
         self, mock_service: MagicMock
     ) -> None:
         client = _cliente_autenticado()
 
         resp = client.get("/api/v1/matriculas/?ueCodigo=100001")
 
-        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(
-            resp.json(),
-            {"detail": "ano_letivo e ue_codigo são obrigatórios."},
-        )
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
         mock_service.assert_not_called()
 
     @patch("apps.matriculas.views.services.get_matriculas_ano_atual")
-    def test_400_quando_ue_codigo_ausente(
+    def test_200_vazio_quando_ue_codigo_ausente(
         self, mock_service: MagicMock
     ) -> None:
         client = _cliente_autenticado()
 
         resp = client.get("/api/v1/matriculas/?anoLetivo=2026")
 
-        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(
-            resp.json(),
-            {"detail": "ano_letivo e ue_codigo são obrigatórios."},
-        )
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
         mock_service.assert_not_called()
 
     @patch("apps.matriculas.views.services.get_matriculas_ano_atual")
@@ -110,9 +102,7 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get(
-            "/api/v1/matriculas/?anoLetivo=abc&ueCodigo=100001"
-        )
+        resp = client.get("/api/v1/matriculas/?anoLetivo=abc&ueCodigo=100001")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -128,9 +118,7 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
         mock_service.side_effect = _request_error()
         client = _cliente_autenticado()
 
-        resp = client.get(
-            "/api/v1/matriculas/?anoLetivo=2026&ueCodigo=100001"
-        )
+        resp = client.get("/api/v1/matriculas/?anoLetivo=2026&ueCodigo=100001")
 
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertEqual(
@@ -141,8 +129,6 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
     def test_403_sem_autenticacao(self) -> None:
         client = APIClient()
 
-        resp = client.get(
-            "/api/v1/matriculas/?anoLetivo=2026&ueCodigo=100001"
-        )
+        resp = client.get("/api/v1/matriculas/?anoLetivo=2026&ueCodigo=100001")
 
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)

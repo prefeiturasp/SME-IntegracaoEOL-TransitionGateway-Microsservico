@@ -105,9 +105,7 @@ class BuscarAlunosAtivosAutocompleteTest(SimpleTestCase):
         self.assertEqual(result, payload)
 
     @patch.object(services._client, "get")
-    def test_omite_params_opcionais_vazios(
-        self, mock_get: MagicMock
-    ) -> None:
+    def test_omite_params_opcionais_vazios(self, mock_get: MagicMock) -> None:
         mock_resp = MagicMock()
         mock_resp.status_code = 200
         mock_resp.content = b"[]"
@@ -164,9 +162,7 @@ class GetInformacoesAlunosTurmaTest(SimpleTestCase):
 
         result = services.get_informacoes_alunos_turma("9001")
 
-        mock_get.assert_called_once_with(
-            f"{_BASE}/9001/turma/informacoes"
-        )
+        mock_get.assert_called_once_with(f"{_BASE}/9001/turma/informacoes")
         mock_resp.raise_for_status.assert_called_once_with()
         self.assertEqual(result, payload)
 

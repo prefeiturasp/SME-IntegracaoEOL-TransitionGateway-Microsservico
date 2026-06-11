@@ -16,7 +16,6 @@ from apps.matriculas import services
 from apps.matriculas.serializers import MatriculaSerializer
 
 _TAG = ["Alunos"]
-_MSG_PARAMETROS_OBRIGATORIOS = "ano_letivo e ue_codigo são obrigatórios."
 _MSG_ANO_LETIVO_INVALIDO = "ano_letivo deve ser um inteiro válido."
 _MSG_SIDECAR_INDISPONIVEL = "Servico de matriculas indisponivel."
 
@@ -94,7 +93,9 @@ class MatriculasAnoAtualView(APIView):
         ano_raw = _query_alias(request, "ano_letivo", "anoLetivo")
         ue_codigo = _query_alias(request, "ue_codigo", "ueCodigo")
         if not ano_raw or not ue_codigo:
-            return detail_response(_MSG_PARAMETROS_OBRIGATORIOS)
+            # Réplica do legado: parâmetros ausentes zeram o binding e a
+            # consulta responde 200 com lista vazia.
+            return Response([])
         try:
             ano_letivo = int(ano_raw)
         except (TypeError, ValueError):
