@@ -33,7 +33,7 @@ class GetInformacoesAlunoTest(SimpleTestCase):
 
     @patch.object(services._client, "get")
     def test_retorna_none_quando_204(self, mock_get: MagicMock) -> None:
-        """Valida que a consulta de informações do aluno retorna None quando o status"""
+        """Valida retorno None quando a consulta responde com status 204."""
         mock_resp = MagicMock()
         mock_resp.status_code = 204
         mock_resp.content = b""
@@ -108,9 +108,7 @@ class BuscarAlunosAtivosAutocompleteTest(SimpleTestCase):
         self.assertEqual(result, payload)
 
     @patch.object(services._client, "get")
-    def test_omite_params_opcionais_vazios(
-        self, mock_get: MagicMock
-    ) -> None:
+    def test_omite_params_opcionais_vazios(self, mock_get: MagicMock) -> None:
         mock_resp = MagicMock()
         mock_resp.status_code = 200
         mock_resp.content = b"[]"
@@ -167,9 +165,7 @@ class GetInformacoesAlunosTurmaTest(SimpleTestCase):
 
         result = services.get_informacoes_alunos_turma("9001")
 
-        mock_get.assert_called_once_with(
-            f"{_BASE}/9001/turma/informacoes"
-        )
+        mock_get.assert_called_once_with(f"{_BASE}/9001/turma/informacoes")
         mock_resp.raise_for_status.assert_called_once_with()
         self.assertEqual(result, payload)
 
@@ -215,7 +211,7 @@ class GetTurmasAlunoComProgramaTest(SimpleTestCase):
     def test_chama_turmas_com_filtros_desativados(
         self, mock_get: MagicMock
     ) -> None:
-        """Valida a consulta de turmas do aluno com filtros de tipo e situação desativados."""
+        """Valida a consulta com filtros de tipo e situação desativados."""
         payload = [{"codigo_turma": 9001}]
         mock_resp = MagicMock()
         mock_resp.status_code = 200

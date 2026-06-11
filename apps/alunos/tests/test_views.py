@@ -88,9 +88,7 @@ class AlunosUrlsTest(SimpleTestCase):
         self.assertEqual(match.kwargs, {"ue_codigo": "100001"})
 
     def test_preserva_cpf_responsavel_resumido(self) -> None:
-        match = resolve(
-            "/api/v1/alunos/responsaveis/12345678900/resumido"
-        )
+        match = resolve("/api/v1/alunos/responsaveis/12345678900/resumido")
 
         self.assertEqual(match.kwargs, {"cpf_responsavel": "12345678900"})
 
@@ -104,9 +102,7 @@ class AlunoAutocompleteAtivosViewTest(SimpleTestCase):
     """Valida a view de autocomplete de alunos ativos."""
 
     @patch("apps.alunos.views.services.buscar_alunos_ativos_autocomplete")
-    def test_200_retorna_lista_alunos(
-        self, mock_service: MagicMock
-    ) -> None:
+    def test_200_retorna_lista_alunos(self, mock_service: MagicMock) -> None:
         mock_service.return_value = [
             {
                 "codigo_aluno": 123456,
@@ -166,9 +162,7 @@ class AlunoAutocompleteAtivosViewTest(SimpleTestCase):
         )
 
     @patch("apps.alunos.views.services.buscar_alunos_ativos_autocomplete")
-    def test_400_quando_ue_codigo_vazio(
-        self, mock_service: MagicMock
-    ) -> None:
+    def test_400_quando_ue_codigo_vazio(self, mock_service: MagicMock) -> None:
         client = _cliente_autenticado()
 
         resp = client.get(
@@ -386,9 +380,7 @@ class ResponsavelResumidoViewTest(SimpleTestCase):
         }
         client = _cliente_autenticado()
 
-        resp = client.get(
-            "/api/v1/alunos/responsaveis/12345678900/resumido"
-        )
+        resp = client.get("/api/v1/alunos/responsaveis/12345678900/resumido")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(
@@ -419,9 +411,7 @@ class ResponsavelResumidoViewTest(SimpleTestCase):
         )
         client = _cliente_autenticado()
 
-        resp = client.get(
-            "/api/v1/alunos/responsaveis/12345678900/resumido"
-        )
+        resp = client.get("/api/v1/alunos/responsaveis/12345678900/resumido")
 
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(
@@ -436,9 +426,7 @@ class ResponsavelResumidoViewTest(SimpleTestCase):
         mock_service.side_effect = _request_error()
         client = _cliente_autenticado()
 
-        resp = client.get(
-            "/api/v1/alunos/responsaveis/12345678900/resumido"
-        )
+        resp = client.get("/api/v1/alunos/responsaveis/12345678900/resumido")
 
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertEqual(
@@ -449,9 +437,7 @@ class ResponsavelResumidoViewTest(SimpleTestCase):
     def test_403_sem_autenticacao(self) -> None:
         client = APIClient()
 
-        resp = client.get(
-            "/api/v1/alunos/responsaveis/12345678900/resumido"
-        )
+        resp = client.get("/api/v1/alunos/responsaveis/12345678900/resumido")
 
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -496,9 +482,7 @@ class InformacoesAlunosTurmaViewTest(SimpleTestCase):
         mock_service.assert_called_once_with("9001")
 
     @patch("apps.alunos.views.services.get_informacoes_alunos_turma")
-    def test_200_retorna_lista_vazia(
-        self, mock_service: MagicMock
-    ) -> None:
+    def test_200_retorna_lista_vazia(self, mock_service: MagicMock) -> None:
         mock_service.return_value = []
         client = _cliente_autenticado()
 
