@@ -32,8 +32,12 @@ _MSG_CODIGO_TURMA_OBRIGATORIO = "É necessário informar o codigo da turma."
 _MSG_CODIGO_UE_OBRIGATORIO = "É necessário informar o codigo da UE."
 _MSG_CODIGOS_ALUNOS_OBRIGATORIOS = "Os códigos dos Alunos são obrigatórios."
 _MSG_NOME_ALUNO_MINIMO = "O Nome deve conter no mínimo 3 caracteres."
-_MSG_RESPONSAVEL_NAO_ENCONTRADO = "Responsável não encontrado."
+_MSG_CPF_RESPONSAVEL_INVALIDO = "CPF do responsável inválido."
+_MSG_CODIGO_TURMA_LEGADO = "O código da turma é obrigatório."
 _MSG_SIDECAR_INDISPONIVEL = "Servico de alunos indisponivel."
+_MSG_LEGADO_ERRO_INESPERADO = (
+    "Houve um comportamento inesperado do sistema. Por favor, contate a SME."
+)
 
 
 def _sidecar_error_response(exc: httpx.HTTPStatusError) -> Response:
@@ -73,14 +77,27 @@ def _is_not_found(exc: httpx.HTTPStatusError) -> bool:
     return exc.response.status_code == 404
 
 
-def _legacy_status_601_response(message: str) -> Response:
-    """Monta resposta no formato esperado pelo contrato legado."""
+def _legacy_string_response(message: str, status_code: int) -> Response:
+    """Monta resposta de texto puro no formato do contrato legado.
+
+    Args:
+        message: Mensagem serializada como string JSON no corpo.
+        status_code: Código HTTP retornado pelo legado.
+
+    Returns:
+        Resposta HTTP idêntica à emitida pela API legada.
+    """
     response = HttpResponse(
         json.dumps(message, ensure_ascii=False),
         content_type="application/json",
     )
-    response.status_code = 601
+    response.status_code = status_code
     return cast(Response, response)
+
+
+def _legacy_status_601_response(message: str) -> Response:
+    """Monta resposta no formato esperado pelo contrato legado."""
+    return _legacy_string_response(message, 601)
 
 
 def _query_value(request: Request, *names: str) -> str | None:
@@ -187,11 +204,8 @@ class AlunoAutocompleteAtivosView(APIView):
         parameters=[
             OpenApiParameter("ue_codigo", str, OpenApiParameter.PATH),
             OpenApiParameter("aluno_nome", str, OpenApiParameter.QUERY),
-            OpenApiParameter("alunoNome", str, OpenApiParameter.QUERY),
             OpenApiParameter("data_referencia", str, OpenApiParameter.QUERY),
-            OpenApiParameter("dataReferencia", str, OpenApiParameter.QUERY),
             OpenApiParameter("aluno_codigo", int, OpenApiParameter.QUERY),
-            OpenApiParameter("alunoCodigo", int, OpenApiParameter.QUERY),
             OpenApiParameter("limite", int, OpenApiParameter.QUERY),
         ],
         responses={200: OpenApiResponse(description="Success")},
@@ -206,18 +220,20 @@ class AlunoAutocompleteAtivosView(APIView):
         Returns:
             Alunos encontrados compatíveis com os filtros.
         """
+        if _query_value(request, "data_referencia") is None:
+            # Réplica do legado: dataReferencia é obrigatório no binding do
+            # ASP.NET e a ausência falha antes de qualquer outra validação.
+            # TODO(149612): tratar dataReferencia como opcional  # NOSONAR
+            # quando o contrato legado for descontinuado.
+            return _legacy_string_response(_MSG_LEGADO_ERRO_INESPERADO, 400)
         if not ue_codigo.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
-        aluno_nome = _query_value(request, "aluno_nome", "alunoNome")
+        aluno_nome = _query_value(request, "aluno_nome")
         aluno_nome = aluno_nome.strip() if aluno_nome is not None else None
         try:
-            aluno_codigo = _query_int_alias(
-                request, 0, "aluno_codigo", "alunoCodigo"
-            )
+            aluno_codigo = _query_int_alias(request, 0, "aluno_codigo")
             limite = _query_int(request, "limite", 10)
-            data_referencia = _query_datetime_alias(
-                request, "data_referencia", "dataReferencia"
-            )
+            data_referencia = _query_datetime_alias(request, "data_referencia")
         except ValueError as exc:
             return detail_response(str(exc))
         if aluno_codigo == 0 and len(aluno_nome or "") < 3:
@@ -295,7 +311,7 @@ class ResponsavelResumidoView(APIView):
                 OpenApiParameter.PATH,
             )
         ],
-        responses={200: OpenApiResponse(description="Success"), 404: None},
+        responses={200: OpenApiResponse(description="Success"), 204: None},
     )
     def get(self, _request: Request, cpf_responsavel: str) -> Response:
         """Busca dados resumidos de responsável.
@@ -304,18 +320,27 @@ class ResponsavelResumidoView(APIView):
             cpf_responsavel: CPF do responsável.
 
         Returns:
-            Dados resumidos do responsável.
+            Dados resumidos do responsável, ou 204 quando não encontrado.
         """
+        if not cpf_responsavel.isdigit():
+            # Réplica do legado: CPF não numérico falha na consulta e
+            # responde 400.
+            return detail_response(_MSG_CPF_RESPONSAVEL_INVALIDO)
         try:
             data = services.get_responsavel_resumido(cpf_responsavel)
         except httpx.HTTPStatusError as exc:
             if _is_not_found(exc):
-                return detail_response(_MSG_RESPONSAVEL_NAO_ENCONTRADO, 404)
+                # Réplica do legado: não encontrado responde 204.
+                # TODO(149612): responder 404 aqui  # NOSONAR
+                # quando o contrato legado for descontinuado.
+                return Response(status=204)
             return _sidecar_error_response(exc)
         except httpx.RequestError as exc:
             return _sidecar_unavailable_response(exc)
         if data is None:
-            return detail_response(_MSG_RESPONSAVEL_NAO_ENCONTRADO, 404)
+            # TODO(149612): responder 404 aqui  # NOSONAR
+            # quando o contrato legado for descontinuado.
+            return Response(status=204)
         return Response(ResponsavelResumidoSerializer(data).data)
 
 
@@ -348,8 +373,16 @@ class InformacoesAlunosTurmaView(APIView):
             codigo_int = int(codigo_turma)
         except (ValueError, TypeError):
             return detail_response(_MSG_CODIGO_TURMA_OBRIGATORIO)
-        if codigo_int <= 0:
-            return detail_response(_MSG_CODIGO_TURMA_OBRIGATORIO)
+        if codigo_int == 0:
+            # Réplica do legado: turma zero responde com o status 601.
+            # TODO(149612): responder 400 aqui  # NOSONAR
+            # quando o contrato legado for descontinuado.
+            return _legacy_string_response(_MSG_CODIGO_TURMA_LEGADO, 601)
+        if codigo_int < 0:
+            # Réplica do legado: turma negativa consulta e retorna vazio.
+            # TODO(149612): responder 400 aqui  # NOSONAR
+            # quando o contrato legado for descontinuado.
+            return Response([])
         try:
             data = services.get_informacoes_alunos_turma(codigo_turma)
         except httpx.HTTPStatusError as exc:

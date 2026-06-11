@@ -16,7 +16,6 @@ from apps.matriculas import services
 from apps.matriculas.serializers import MatriculaSerializer
 
 _TAG = ["Alunos"]
-_MSG_PARAMETROS_OBRIGATORIOS = "ano_letivo e ue_codigo são obrigatórios."
 _MSG_ANO_LETIVO_INVALIDO = "ano_letivo deve ser um inteiro válido."
 _MSG_SIDECAR_INDISPONIVEL = "Servico de matriculas indisponivel."
 
@@ -76,9 +75,7 @@ class MatriculasAnoAtualView(APIView):
         description="Retorna quantidade de matrículas por turma de uma UE.",
         parameters=[
             OpenApiParameter("ano_letivo", int, OpenApiParameter.QUERY),
-            OpenApiParameter("anoLetivo", int, OpenApiParameter.QUERY),
             OpenApiParameter("ue_codigo", str, OpenApiParameter.QUERY),
-            OpenApiParameter("ueCodigo", str, OpenApiParameter.QUERY),
         ],
         responses={200: OpenApiResponse(description="Success")},
     )
@@ -91,10 +88,14 @@ class MatriculasAnoAtualView(APIView):
         Returns:
             Matrículas consolidadas por turma.
         """
-        ano_raw = _query_alias(request, "ano_letivo", "anoLetivo")
-        ue_codigo = _query_alias(request, "ue_codigo", "ueCodigo")
+        ano_raw = _query_alias(request, "ano_letivo")
+        ue_codigo = _query_alias(request, "ue_codigo")
         if not ano_raw or not ue_codigo:
-            return detail_response(_MSG_PARAMETROS_OBRIGATORIOS)
+            # Réplica do legado: parâmetros ausentes zeram o binding e a
+            # consulta responde 200 com lista vazia.
+            # TODO(149612): exigir ano_letivo e ue_codigo  # NOSONAR
+            # quando o contrato legado for descontinuado.
+            return Response([])
         try:
             ano_letivo = int(ano_raw)
         except (TypeError, ValueError):

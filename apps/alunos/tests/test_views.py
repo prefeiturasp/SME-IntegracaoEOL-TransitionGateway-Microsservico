@@ -140,10 +140,10 @@ class AlunoAutocompleteAtivosViewTest(SimpleTestCase):
         )
 
     @patch("apps.alunos.views.services.buscar_alunos_ativos_autocomplete")
-    def test_200_aceita_query_params_camelcase(
+    def test_400_quando_query_params_camelcase(
         self, mock_service: MagicMock
     ) -> None:
-        mock_service.return_value = []
+        """Verifica que aliases camelCase não são aceitos na entrada."""
         client = _cliente_autenticado()
 
         resp = client.get(
@@ -152,21 +152,16 @@ class AlunoAutocompleteAtivosViewTest(SimpleTestCase):
             "&alunoCodigo=0&limite=5"
         )
 
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        mock_service.assert_called_once_with(
-            ue_codigo="100001",
-            aluno_nome="Fulano",
-            data_referencia=datetime(2026, 2, 3, 10, 0, 0),
-            aluno_codigo=0,
-            limite=5,
-        )
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_service.assert_not_called()
 
     @patch("apps.alunos.views.services.buscar_alunos_ativos_autocomplete")
     def test_400_quando_ue_codigo_vazio(self, mock_service: MagicMock) -> None:
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/v1/alunos/ues/%20/autocomplete/ativos?aluno_nome=Fulano"
+            "/api/v1/alunos/ues/%20/autocomplete/ativos"
+            "?aluno_nome=Fulano&data_referencia=2026-02-03T10:00:00"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -177,13 +172,32 @@ class AlunoAutocompleteAtivosViewTest(SimpleTestCase):
         mock_service.assert_not_called()
 
     @patch("apps.alunos.views.services.buscar_alunos_ativos_autocomplete")
+    def test_400_legado_quando_data_referencia_ausente(
+        self, mock_service: MagicMock
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/v1/alunos/ues/100001/autocomplete/ativos?aluno_nome=Fulano"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            "Houve um comportamento inesperado do sistema. "
+            "Por favor, contate a SME.",
+        )
+        mock_service.assert_not_called()
+
+    @patch("apps.alunos.views.services.buscar_alunos_ativos_autocomplete")
     def test_400_quando_nome_menor_que_tres_sem_codigo(
         self, mock_service: MagicMock
     ) -> None:
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/v1/alunos/ues/100001/autocomplete/ativos?aluno_nome=ab"
+            "/api/v1/alunos/ues/100001/autocomplete/ativos"
+            "?aluno_nome=ab&data_referencia=2026-02-03T10:00:00"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -202,7 +216,7 @@ class AlunoAutocompleteAtivosViewTest(SimpleTestCase):
 
         resp = client.get(
             "/api/v1/alunos/ues/100001/autocomplete/ativos"
-            "?aluno_nome=Fulano"
+            "?aluno_nome=Fulano&data_referencia=2026-02-03T10:00:00"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
@@ -402,7 +416,7 @@ class ResponsavelResumidoViewTest(SimpleTestCase):
         mock_service.assert_called_once_with("12345678900")
 
     @patch("apps.alunos.views.services.get_responsavel_resumido")
-    def test_404_quando_sidecar_nao_encontra(
+    def test_204_quando_sidecar_nao_encontra(
         self, mock_service: MagicMock
     ) -> None:
         mock_service.side_effect = _http_status_error(
@@ -413,11 +427,33 @@ class ResponsavelResumidoViewTest(SimpleTestCase):
 
         resp = client.get("/api/v1/alunos/responsaveis/12345678900/resumido")
 
-        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch("apps.alunos.views.services.get_responsavel_resumido")
+    def test_204_quando_responsavel_ausente(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = None
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/v1/alunos/responsaveis/12345678900/resumido")
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch("apps.alunos.views.services.get_responsavel_resumido")
+    def test_400_quando_cpf_nao_numerico(
+        self, mock_service: MagicMock
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/v1/alunos/responsaveis/abc/resumido")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": "Responsável não encontrado."},
+            {"detail": "CPF do responsável inválido."},
         )
+        mock_service.assert_not_called()
 
     @patch("apps.alunos.views.services.get_responsavel_resumido")
     def test_503_quando_sidecar_indisponivel(
@@ -508,18 +544,27 @@ class InformacoesAlunosTurmaViewTest(SimpleTestCase):
         mock_service.assert_not_called()
 
     @patch("apps.alunos.views.services.get_informacoes_alunos_turma")
-    def test_400_quando_codigo_turma_e_zero(
+    def test_601_quando_codigo_turma_e_zero(
         self, mock_service: MagicMock
     ) -> None:
         client = _cliente_autenticado()
 
         resp = client.get("/api/v1/alunos/0/turma/informacoes")
 
-        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(
-            resp.json(),
-            {"detail": "É necessário informar o codigo da turma."},
-        )
+        self.assertEqual(resp.status_code, 601)
+        self.assertEqual(resp.json(), "O código da turma é obrigatório.")
+        mock_service.assert_not_called()
+
+    @patch("apps.alunos.views.services.get_informacoes_alunos_turma")
+    def test_200_vazio_quando_codigo_turma_negativo(
+        self, mock_service: MagicMock
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/v1/alunos/-1/turma/informacoes")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
         mock_service.assert_not_called()
 
     @patch("apps.alunos.views.services.get_informacoes_alunos_turma")
