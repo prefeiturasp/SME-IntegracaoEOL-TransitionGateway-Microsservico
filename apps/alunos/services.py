@@ -157,15 +157,19 @@ def get_turmas_aluno_com_programa(codigo_aluno: str) -> Any:
 
     Returns:
         Lista de turmas (regulares e de programa) retornada pelo sidecar.
+        Lista vazia quando o sidecar responde 4xx (código inválido como
+        ``"00000"`` ou aluno sem turmas).
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.HTTPStatusError: Se o sidecar retornar erro de servidor (5xx).
         httpx.RequestError: Se o sidecar estiver inacessível.
     """
     resp = _client.get(
         f"{_BASE}/{codigo_aluno}/turmas/",
         params={"tipo_turma": "false", "filtrar_situacao": "false"},
     )
+    if resp.status_code in (400, 404):
+        return []
     resp.raise_for_status()
     return _client.json_or_none(resp) or []
 
