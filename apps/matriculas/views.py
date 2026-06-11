@@ -75,9 +75,7 @@ class MatriculasAnoAtualView(APIView):
         description="Retorna quantidade de matrículas por turma de uma UE.",
         parameters=[
             OpenApiParameter("ano_letivo", int, OpenApiParameter.QUERY),
-            OpenApiParameter("anoLetivo", int, OpenApiParameter.QUERY),
             OpenApiParameter("ue_codigo", str, OpenApiParameter.QUERY),
-            OpenApiParameter("ueCodigo", str, OpenApiParameter.QUERY),
         ],
         responses={200: OpenApiResponse(description="Success")},
     )
@@ -90,8 +88,8 @@ class MatriculasAnoAtualView(APIView):
         Returns:
             Matrículas consolidadas por turma.
         """
-        ano_raw = _query_alias(request, "ano_letivo", "anoLetivo")
-        ue_codigo = _query_alias(request, "ue_codigo", "ueCodigo")
+        ano_raw = _query_alias(request, "ano_letivo")
+        ue_codigo = _query_alias(request, "ue_codigo")
         if not ano_raw or not ue_codigo:
             # Réplica do legado: parâmetros ausentes zeram o binding e a
             # consulta responde 200 com lista vazia.

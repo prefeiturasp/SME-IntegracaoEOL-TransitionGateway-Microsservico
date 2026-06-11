@@ -204,11 +204,8 @@ class AlunoAutocompleteAtivosView(APIView):
         parameters=[
             OpenApiParameter("ue_codigo", str, OpenApiParameter.PATH),
             OpenApiParameter("aluno_nome", str, OpenApiParameter.QUERY),
-            OpenApiParameter("alunoNome", str, OpenApiParameter.QUERY),
             OpenApiParameter("data_referencia", str, OpenApiParameter.QUERY),
-            OpenApiParameter("dataReferencia", str, OpenApiParameter.QUERY),
             OpenApiParameter("aluno_codigo", int, OpenApiParameter.QUERY),
-            OpenApiParameter("alunoCodigo", int, OpenApiParameter.QUERY),
             OpenApiParameter("limite", int, OpenApiParameter.QUERY),
         ],
         responses={200: OpenApiResponse(description="Success")},
@@ -223,7 +220,7 @@ class AlunoAutocompleteAtivosView(APIView):
         Returns:
             Alunos encontrados compatíveis com os filtros.
         """
-        if _query_value(request, "data_referencia", "dataReferencia") is None:
+        if _query_value(request, "data_referencia") is None:
             # Réplica do legado: dataReferencia é obrigatório no binding do
             # ASP.NET e a ausência falha antes de qualquer outra validação.
             # TODO(149612): tratar dataReferencia como opcional  # NOSONAR
@@ -231,16 +228,12 @@ class AlunoAutocompleteAtivosView(APIView):
             return _legacy_string_response(_MSG_LEGADO_ERRO_INESPERADO, 400)
         if not ue_codigo.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
-        aluno_nome = _query_value(request, "aluno_nome", "alunoNome")
+        aluno_nome = _query_value(request, "aluno_nome")
         aluno_nome = aluno_nome.strip() if aluno_nome is not None else None
         try:
-            aluno_codigo = _query_int_alias(
-                request, 0, "aluno_codigo", "alunoCodigo"
-            )
+            aluno_codigo = _query_int_alias(request, 0, "aluno_codigo")
             limite = _query_int(request, "limite", 10)
-            data_referencia = _query_datetime_alias(
-                request, "data_referencia", "dataReferencia"
-            )
+            data_referencia = _query_datetime_alias(request, "data_referencia")
         except ValueError as exc:
             return detail_response(str(exc))
         if aluno_codigo == 0 and len(aluno_nome or "") < 3:

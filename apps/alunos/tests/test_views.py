@@ -140,10 +140,10 @@ class AlunoAutocompleteAtivosViewTest(SimpleTestCase):
         )
 
     @patch("apps.alunos.views.services.buscar_alunos_ativos_autocomplete")
-    def test_200_aceita_query_params_camelcase(
+    def test_400_quando_query_params_camelcase(
         self, mock_service: MagicMock
     ) -> None:
-        mock_service.return_value = []
+        """Verifica que aliases camelCase não são aceitos na entrada."""
         client = _cliente_autenticado()
 
         resp = client.get(
@@ -152,14 +152,8 @@ class AlunoAutocompleteAtivosViewTest(SimpleTestCase):
             "&alunoCodigo=0&limite=5"
         )
 
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        mock_service.assert_called_once_with(
-            ue_codigo="100001",
-            aluno_nome="Fulano",
-            data_referencia=datetime(2026, 2, 3, 10, 0, 0),
-            aluno_codigo=0,
-            limite=5,
-        )
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_service.assert_not_called()
 
     @patch("apps.alunos.views.services.buscar_alunos_ativos_autocomplete")
     def test_400_quando_ue_codigo_vazio(self, mock_service: MagicMock) -> None:
