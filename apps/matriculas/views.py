@@ -95,8 +95,8 @@ class MatriculasAnoAtualView(APIView):
         if not ano_raw or not ue_codigo:
             # Réplica do legado: parâmetros ausentes zeram o binding e a
             # consulta responde 200 com lista vazia.
-            # TODO(149612): quando o contrato legado for descontinuado,
-            # responder 400 exigindo ano_letivo e ue_codigo.
+            # TODO(149612): exigir ano_letivo e ue_codigo  # NOSONAR
+            # quando o contrato legado for descontinuado.
             return Response([])
         try:
             ano_letivo = int(ano_raw)

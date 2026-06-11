@@ -55,6 +55,11 @@ class ProgramasEduUrlsTest(SimpleTestCase):
         match = resolve("/api/alunos/srm-paee/aluno/123/")
         self.assertEqual(match.kwargs, {"codigo_aluno": "123"})
 
+    def test_preserva_kwargs_turma_srm_e_regular(self) -> None:
+        """Verifica os kwargs extraidos da rota de turma SRM e regular."""
+        match = resolve("/api/alunos/paee/turma-srm-e-regular/aluno/123/")
+        self.assertEqual(match.kwargs, {"codigo_aluno": "123"})
+
 
 class ObterTurmasPapViewTest(SimpleTestCase):
     """Valida a resposta da view de turmas PAP."""
@@ -121,7 +126,7 @@ class VerificarAlunosPapViewTest(SimpleTestCase):
         )
 
     def test_400_quando_codigos_alunos_ausente(self) -> None:
-        """Verifica a rejeicao quando os codigos dos alunos nao sao informados."""
+        """Rejeita a chamada sem os códigos dos alunos."""
         client = _cliente_autenticado()
 
         resp = client.get("/api/alunos/alunos-pap/2026/")
@@ -251,3 +256,67 @@ class ObterDadosSrmPaeeAlunoViewTest(SimpleTestCase):
             ],
         )
         mock_service.assert_called_once_with(codigo_aluno="123")
+
+
+class ObterTurmaSrmERegularDoAlunoViewTest(SimpleTestCase):
+    """Valida a view de turmas SRM e regulares do aluno."""
+
+    @patch(
+        "apps.programasedu.views.services."
+        "obter_turma_srm_e_regular_do_aluno"
+    )
+    def test_200_traduz_camelcase(self, mock_service: MagicMock) -> None:
+        """Verifica a tradução camelCase da resposta composta."""
+        mock_service.return_value = [
+            {
+                "codigo_aluno": 7360328,
+                "tipo_turno": 1,
+                "ano_letivo": 2026,
+                "nome_aluno": "AGATHA",
+                "nome_social_aluno": None,
+                "codigo_situacao_matricula": 11,
+                "situacao_matricula": "Deslocamento",
+                "data_situacao": "2026-01-06T15:41:55.393000+00:00",
+                "data_nascimento": "2025-11-05",
+                "numero_aluno_chamada": "000",
+                "codigo_turma": 3031432,
+                "nome_responsavel": "DARA",
+                "tipo_responsavel": 1,
+                "celular_responsavel": "11989400396",
+                "data_atualizacao_contato": "2025-01-23",
+                "codigo_tipo_turma": 1,
+                "turma_nome": "2B",
+                "etapa_ensino": 5,
+                "ciclo_ensino": 3,
+                "desc_etapa_ensino": "FUND9A",
+                "desc_ciclo_ensino": None,
+                "data_atualizacao_tabela": "0001-01-01T00:00:00",
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/alunos/paee/turma-srm-e-regular/aluno/7360328/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        item = resp.json()[0]
+        self.assertEqual(item["codigoAluno"], 7360328)
+        self.assertEqual(item["tipoTurno"], 1)
+        self.assertEqual(item["etapaEnsino"], 5)
+        self.assertEqual(item["cicloEnsino"], 3)
+        self.assertEqual(item["descEtapaEnsino"], "FUND9A")
+        self.assertIsNone(item["descCicloEnsino"])
+        self.assertEqual(item["celularResponsavel"], "11989400396")
+        self.assertEqual(item["numeroAlunoChamada"], "000")
+        self.assertEqual(item["tipoResponsavel"], "1")
+        # UTC 15:41 → wall-clock de SP (UTC-3) 12:41 + Z, trim de zeros.
+        self.assertEqual(item["dataSituacao"], "2026-01-06T12:41:55.393Z")
+        # Data pura (naive) não sofre conversão de fuso.
+        self.assertEqual(item["dataNascimento"], "2025-11-05T00:00:00Z")
+        self.assertEqual(
+            item["dataAtualizacaoContato"], "2025-01-23T00:00:00Z"
+        )
+        # Sentinela de data ausente (DateTime.MinValue), sem Z.
+        self.assertEqual(item["dataAtualizacaoTabela"], "0001-01-01T00:00:00")
+        mock_service.assert_called_once_with(codigo_aluno="7360328")

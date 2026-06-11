@@ -2,7 +2,7 @@
 
 import json
 from datetime import datetime
-from typing import Any
+from typing import Any, cast
 
 import httpx
 from django.http import HttpResponse
@@ -77,7 +77,7 @@ def _is_not_found(exc: httpx.HTTPStatusError) -> bool:
     return exc.response.status_code == 404
 
 
-def _legacy_string_response(message: str, status_code: int) -> HttpResponse:
+def _legacy_string_response(message: str, status_code: int) -> Response:
     """Monta resposta de texto puro no formato do contrato legado.
 
     Args:
@@ -92,10 +92,10 @@ def _legacy_string_response(message: str, status_code: int) -> HttpResponse:
         content_type="application/json",
     )
     response.status_code = status_code
-    return response
+    return cast(Response, response)
 
 
-def _legacy_status_601_response(message: str) -> HttpResponse:
+def _legacy_status_601_response(message: str) -> Response:
     """Monta resposta no formato esperado pelo contrato legado."""
     return _legacy_string_response(message, 601)
 
@@ -226,8 +226,8 @@ class AlunoAutocompleteAtivosView(APIView):
         if _query_value(request, "data_referencia", "dataReferencia") is None:
             # Réplica do legado: dataReferencia é obrigatório no binding do
             # ASP.NET e a ausência falha antes de qualquer outra validação.
-            # TODO(149612): quando o contrato legado for descontinuado,
-            # tratar dataReferencia como opcional (400 só com erro real).
+            # TODO(149612): tratar dataReferencia como opcional  # NOSONAR
+            # quando o contrato legado for descontinuado.
             return _legacy_string_response(_MSG_LEGADO_ERRO_INESPERADO, 400)
         if not ue_codigo.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
@@ -338,15 +338,15 @@ class ResponsavelResumidoView(APIView):
         except httpx.HTTPStatusError as exc:
             if _is_not_found(exc):
                 # Réplica do legado: não encontrado responde 204.
-                # TODO(149612): quando o contrato legado for descontinuado,
-                # responder 404 para responsável não encontrado.
+                # TODO(149612): responder 404 aqui  # NOSONAR
+                # quando o contrato legado for descontinuado.
                 return Response(status=204)
             return _sidecar_error_response(exc)
         except httpx.RequestError as exc:
             return _sidecar_unavailable_response(exc)
         if data is None:
-            # TODO(149612): quando o contrato legado for descontinuado,
-            # responder 404 para responsável não encontrado.
+            # TODO(149612): responder 404 aqui  # NOSONAR
+            # quando o contrato legado for descontinuado.
             return Response(status=204)
         return Response(ResponsavelResumidoSerializer(data).data)
 
@@ -382,13 +382,13 @@ class InformacoesAlunosTurmaView(APIView):
             return detail_response(_MSG_CODIGO_TURMA_OBRIGATORIO)
         if codigo_int == 0:
             # Réplica do legado: turma zero responde com o status 601.
-            # TODO(149612): quando o contrato legado for descontinuado,
-            # responder 400 para código de turma inválido.
+            # TODO(149612): responder 400 aqui  # NOSONAR
+            # quando o contrato legado for descontinuado.
             return _legacy_string_response(_MSG_CODIGO_TURMA_LEGADO, 601)
         if codigo_int < 0:
             # Réplica do legado: turma negativa consulta e retorna vazio.
-            # TODO(149612): quando o contrato legado for descontinuado,
-            # responder 400 para código de turma inválido.
+            # TODO(149612): responder 400 aqui  # NOSONAR
+            # quando o contrato legado for descontinuado.
             return Response([])
         try:
             data = services.get_informacoes_alunos_turma(codigo_turma)

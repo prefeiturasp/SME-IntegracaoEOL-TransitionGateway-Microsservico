@@ -156,9 +156,7 @@ class GetDadosEscolaTest(SimpleTestCase):
     """Valida a consulta de dados completos de uma escola."""
 
     @patch("apps.institucional.services._client")
-    def test_chama_path_dados_com_codigo(
-        self, mock_client: MagicMock
-    ) -> None:
+    def test_chama_path_dados_com_codigo(self, mock_client: MagicMock) -> None:
         """Monta o path de dados com o código da escola."""
         mock_client.get.return_value.raise_for_status = MagicMock()
         mock_client.json_or_none.return_value = {
@@ -228,9 +226,7 @@ class GetEquipamentosTest(SimpleTestCase):
         self.assertEqual(result, [])
 
     @patch("apps.institucional.services._client")
-    def test_com_codigo_eol_passa_params(
-        self, mock_client: MagicMock
-    ) -> None:
+    def test_com_codigo_eol_passa_params(self, mock_client: MagicMock) -> None:
         """Envia codigoEol nos params quando o filtro é informado."""
         mock_client.get.return_value.raise_for_status = MagicMock()
         mock_client.get.return_value.json.return_value = [
@@ -251,9 +247,7 @@ class GetEquipamentosTest(SimpleTestCase):
         mock_client.get.return_value.raise_for_status = MagicMock()
         mock_client.get.return_value.json.return_value = []
 
-        services.get_equipamentos(
-            tipos_escola=["1", "2"], tipos_unidade=["1"]
-        )
+        services.get_equipamentos(tipos_escola=["1", "2"], tipos_unidade=["1"])
 
         mock_client.get.assert_called_once_with(
             f"{_BASE}/escolas/equipamentos/",

@@ -19,11 +19,14 @@ class TextoEstritoFieldTest(SimpleTestCase):
     def test_erro_quando_super_nao_retorna_texto(self) -> None:
         field = TextoEstritoField()
 
-        with patch.object(
-            serializers.CharField,
-            "to_internal_value",
-            return_value=123,
-        ), self.assertRaises(serializers.ValidationError):
+        with (
+            patch.object(
+                serializers.CharField,
+                "to_internal_value",
+                return_value=123,
+            ),
+            self.assertRaises(serializers.ValidationError),
+        ):
             field.to_internal_value("abc")
 
 

@@ -8,6 +8,7 @@ from apps.programasedu.views import (
     ObterComponentesCurricularesTurmasProgramaAlunoView,
     ObterDadosSrmPaeeAlunoView,
     ObterTurmasPapView,
+    ObterTurmaSrmERegularDoAlunoView,
     VerificarSeAlunosSaoTurmaProgramaPapView,
 )
 
@@ -42,5 +43,10 @@ urlpatterns = [
         "alunos/srm-paee/aluno/<str:codigo_aluno>/",
         ObterDadosSrmPaeeAlunoView.as_view(),
         name="obter-dados-srm-paee-aluno",
+    ),
+    path(
+        "alunos/paee/turma-srm-e-regular/aluno/<str:codigo_aluno>/",
+        ObterTurmaSrmERegularDoAlunoView.as_view(),
+        name="obter-turma-srm-e-regular-do-aluno",
     ),
 ]
