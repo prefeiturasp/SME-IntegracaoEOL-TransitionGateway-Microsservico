@@ -228,6 +228,34 @@ class GetTurmasAlunoComProgramaTest(SimpleTestCase):
         mock_resp.raise_for_status.assert_called_once_with()
         self.assertEqual(result, payload)
 
+    @patch.object(services._client, "get")
+    def test_codigo_invalido_retorna_lista_vazia(
+        self, mock_get: MagicMock
+    ) -> None:
+        """Sidecar 400 (ex.: "00000") vira lista vazia, sem propagar erro."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 400
+        mock_get.return_value = mock_resp
+
+        result = services.get_turmas_aluno_com_programa("00000")
+
+        self.assertEqual(result, [])
+        mock_resp.raise_for_status.assert_not_called()
+
+    @patch.object(services._client, "get")
+    def test_aluno_sem_turmas_retorna_lista_vazia(
+        self, mock_get: MagicMock
+    ) -> None:
+        """Sidecar 404 (aluno sem turmas) vira lista vazia."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 404
+        mock_get.return_value = mock_resp
+
+        result = services.get_turmas_aluno_com_programa("123456")
+
+        self.assertEqual(result, [])
+        mock_resp.raise_for_status.assert_not_called()
+
 
 class ListarAlunosTest(SimpleTestCase):
     """Valida a consulta de listagem de alunos."""
