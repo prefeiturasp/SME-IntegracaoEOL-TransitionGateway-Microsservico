@@ -158,7 +158,7 @@ def get_turmas_aluno_com_programa(codigo_aluno: str) -> Any:
     Returns:
         Lista de turmas (regulares e de programa) retornada pelo sidecar.
         Lista vazia quando o sidecar responde 4xx (código inválido como
-        ``"00000"`` ou aluno sem turmas), espelhando o legado.
+        ``"00000"`` ou aluno sem turmas).
 
     Raises:
         httpx.HTTPStatusError: Se o sidecar retornar erro de servidor (5xx).
