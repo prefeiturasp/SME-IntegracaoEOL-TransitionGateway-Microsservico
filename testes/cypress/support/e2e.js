@@ -1,7 +1,11 @@
-import '@shelex/cypress-allure-plugin'
+import "@shelex/cypress-allure-plugin";
 
-// Seus comandos
-import './commands_api/commands_professores'
+// Comandos
+import "./commands_api/commands_professores";
+import "./commands_api/commands_alunos";
+import "./commands_api/commands_escolas";
+import "./commands_api/commands_turmas";
+import "./commands_api/commands_funcionarios";
 
 // Evita quebra de teste
-Cypress.on('uncaught:exception', () => false)
+Cypress.on("uncaught:exception", () => false);
