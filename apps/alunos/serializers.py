@@ -147,8 +147,8 @@ class AlunoAutocompleteSerializer(serializers.Serializer):
     codigoTurma = serializers.IntegerField(
         source="codigo_turma", allow_null=True
     )  # NOSONAR
-    numeroAlunoChamada = NumeroAlunoChamadaField(
-        source="numero_aluno_chamada"
+    numeroAlunoChamada = serializers.CharField(
+        source="numero_aluno_chamada", allow_null=True
     )  # NOSONAR
     turma = serializers.CharField(allow_null=True)
     modalidade = serializers.CharField(allow_null=True)
