@@ -299,7 +299,7 @@ class ObterTurmaSrmERegularDoAlunoView(APIView):
         parameters=[
             OpenApiParameter(
                 "codigo_aluno",
-                OpenApiTypes.STR,
+                OpenApiTypes.INT,
                 OpenApiParameter.PATH,
                 required=True,
                 description="Código EOL do aluno.",
@@ -307,7 +307,7 @@ class ObterTurmaSrmERegularDoAlunoView(APIView):
         ],
         responses={200: TurmaSrmRegularDoAlunoSerializer(many=True)},
     )
-    def get(self, _request: Request, codigo_aluno: str) -> Response:
+    def get(self, _request: Request, codigo_aluno: int) -> Response:
         """Obtém as turmas SRM e regulares do aluno.
 
         Args:
@@ -320,9 +320,7 @@ class ObterTurmaSrmERegularDoAlunoView(APIView):
             httpx.HTTPError: Em caso de falha de transporte ou timeout
                 na chamada ao serviço externo.
         """
-        if not codigo_aluno.strip():
-            return detail_response(_ERRO_CODIGO_ALUNO_OBRIGATORIO)
         data = services.obter_turma_srm_e_regular_do_aluno(
-            codigo_aluno=codigo_aluno
+            codigo_aluno=str(codigo_aluno)
         )
         return Response(TurmaSrmRegularDoAlunoSerializer(data, many=True).data)
