@@ -294,9 +294,7 @@ class GetFuncionariosEscolaCargosTest(SimpleTestCase):
     """Valida busca de funcionários por cargos."""
 
     @patch.object(services._client, "get")
-    def test_chama_path_correto_com_params(
-        self, mock_get: MagicMock
-    ) -> None:
+    def test_chama_path_correto_com_params(self, mock_get: MagicMock) -> None:
         mock_resp_3239 = MagicMock()
         mock_resp_3239.status_code = 200
         mock_resp_3239.content = b"[{}]"
@@ -351,9 +349,7 @@ class GetFuncionariosEscolaCargosTest(SimpleTestCase):
         )
 
     @patch.object(services._client, "get")
-    def test_retorna_lista_vazia_sem_cargos(
-        self, mock_get: MagicMock
-    ) -> None:
+    def test_retorna_lista_vazia_sem_cargos(self, mock_get: MagicMock) -> None:
         result = services.get_funcionarios_escola_cargos("019465", {})
 
         mock_get.assert_not_called()
@@ -397,9 +393,7 @@ class GetFuncionariosEscolaFuncoesAtividadesTest(SimpleTestCase):
     """Valida busca de funcionários por funções atividades."""
 
     @patch.object(services._client, "get")
-    def test_chama_path_correto_com_params(
-        self, mock_get: MagicMock
-    ) -> None:
+    def test_chama_path_correto_com_params(self, mock_get: MagicMock) -> None:
         mock_resp_30 = MagicMock()
         mock_resp_30.status_code = 200
         mock_resp_30.content = b"[{}]"
@@ -523,9 +517,7 @@ class GetFuncionariosEscolaFuncoesExternasTest(SimpleTestCase):
     """Valida busca de funcionários por funções externas."""
 
     @patch.object(services._client, "get")
-    def test_chama_path_correto_com_params(
-        self, mock_get: MagicMock
-    ) -> None:
+    def test_chama_path_correto_com_params(self, mock_get: MagicMock) -> None:
         mock_resp_5 = MagicMock()
         mock_resp_5.status_code = 200
         mock_resp_5.content = b"[{}]"
@@ -629,6 +621,108 @@ class GetFuncionariosEscolaFuncoesExternasTest(SimpleTestCase):
 
         mock_get.assert_not_called()
         self.assertEqual(result, [])
+
+
+class GetFuncionariosEscolaPorFuncaoExternaTest(SimpleTestCase):
+    """Valida a busca de funcionários por uma função externa."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_correto(self, mock_get: MagicMock) -> None:
+        """Verifica se o path é chamado corretamente."""
+        payload = [
+            {
+                "codigo_rf": "000001",
+                "nome": "NOME SERVIDOR",
+                "data_inicio": None,
+                "data_fim": None,
+                "cargo": "",
+                "codigo_cargo": "",
+                "codigo_tipo_funcao_atividade": 0,
+                "esta_afastado": False,
+                "funcao_externo": 7,
+                "tipo_funcao_externo": 2,
+            },
+        ]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[{}]"
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_funcionarios_escola_por_funcao_externa(
+            "000123",
+            "7",
+        )
+
+        mock_get.assert_called_once_with(
+            "/api/v1/professores/escolas/000123/funcionarios/",
+            params={"funcoes_externas": "7"},
+        )
+        self.assertEqual(result, payload)
+
+    @patch.object(services._client, "get")
+    def test_retorna_none_quando_204(self, mock_get: MagicMock) -> None:
+        """Verifica se retorna None quando o status code é 204."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 204
+        mock_resp.content = b""
+        mock_get.return_value = mock_resp
+
+        result = services.get_funcionarios_escola_por_funcao_externa(
+            "000123",
+            "7",
+        )
+
+        self.assertIsNone(result)
+
+
+class GetFuncionariosEscolaPorFuncaoAtividadeTest(SimpleTestCase):
+    """Valida a busca de funcionários por uma função atividade."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_correto(self, mock_get: MagicMock) -> None:
+        """Verifica se o path é chamado corretamente."""
+        payload = [
+            {
+                "codigo_rf": "7654321",
+                "nome": "NOME SERVIDOR",
+                "codigo_cargo": "3379",
+                "codigo_tipo_funcao_atividade": 1,
+                "funcao_externo": 0,
+                "tipo_funcao_externo": 0,
+            },
+        ]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[{}]"
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_funcionarios_escola_por_funcao_atividade(
+            "000123",
+            "1",
+        )
+
+        mock_get.assert_called_once_with(
+            "/api/v1/professores/escolas/000123/funcionarios/",
+            params={"funcoes_atividades": "1"},
+        )
+        self.assertEqual(result, payload)
+
+    @patch.object(services._client, "get")
+    def test_retorna_none_quando_204(self, mock_get: MagicMock) -> None:
+        """Verifica se retorna None quando o status code é 204."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 204
+        mock_resp.content = b""
+        mock_get.return_value = mock_resp
+
+        result = services.get_funcionarios_escola_por_funcao_atividade(
+            "000123",
+            "1",
+        )
+
+        self.assertIsNone(result)
 
 
 class GetTurmasProfessorDisciplinaTest(SimpleTestCase):

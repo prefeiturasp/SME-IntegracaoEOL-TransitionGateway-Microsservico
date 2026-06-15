@@ -110,6 +110,32 @@ class FuncionarioFuncaoExternaSerializer(serializers.Serializer):
     funcaoExternaId = serializers.IntegerField(source="funcao_externo")
 
 
+class FuncionarioFuncaoAtividadeUeSerializer(serializers.Serializer):
+    """Serializa funcionário de UE por função atividade."""
+
+    codigoRf = serializers.CharField(source="codigo_rf")
+    login = serializers.SerializerMethodField(method_name="get_login")
+    nomeServidor = serializers.CharField(source="nome")
+    cdCargo = serializers.SerializerMethodField(method_name="get_cd_cargo")
+    codigoFuncaoAtividade = serializers.IntegerField(
+        source="codigo_tipo_funcao_atividade"
+    )
+    funcaoExterno = serializers.IntegerField(source="funcao_externo")
+    tipoFuncaoExterno = serializers.IntegerField(source="tipo_funcao_externo")
+
+    def get_login(self, _obj: Any) -> None:
+        """Retorna `login` sempre nulo."""
+        # A consulta legada por função não fornece login.
+        return None
+
+    def get_cd_cargo(self, obj: Any) -> int:
+        """Converta o código do cargo para inteiro, usando zero como padrão."""
+        valor = obj.get("codigo_cargo") if isinstance(obj, dict) else None
+        if valor in (None, ""):
+            return 0
+        return int(str(valor))
+
+
 class ProfessorTurmaSerializer(serializers.Serializer):
     """Serializa dados de turma atribuída."""
 

@@ -78,9 +78,7 @@ class ProfessoresUrlsTest(SimpleTestCase):
     def test_preserva_codigo_ue_funcionarios_funcoes_atividades(
         self,
     ) -> None:
-        match = resolve(
-            "/api/escolas/019465/funcionarios/funcoes-atividades/"
-        )
+        match = resolve("/api/escolas/019465/funcionarios/funcoes-atividades/")
 
         self.assertEqual(match.kwargs, {"codigo_ue": "019465"})
 
@@ -88,6 +86,24 @@ class ProfessoresUrlsTest(SimpleTestCase):
         match = resolve("/api/escolas/400870/funcionarios/funcoes-externas/")
 
         self.assertEqual(match.kwargs, {"codigo_ue": "400870"})
+
+    def test_preserva_codigo_ue_e_funcao_externa(self) -> None:
+        match = resolve("/api/escolas/400870/funcionarios/funcoes-externas/7/")
+
+        self.assertEqual(
+            match.kwargs,
+            {"codigo_ue": "400870", "codigo_funcao_externa": "7"},
+        )
+
+    def test_preserva_codigo_ue_e_funcao_atividade(self) -> None:
+        match = resolve(
+            "/api/escolas/019465/funcionarios/funcoes-atividades/30/"
+        )
+
+        self.assertEqual(
+            match.kwargs,
+            {"codigo_ue": "019465", "codigo_funcao_atividade": "30"},
+        )
 
     def test_preserva_professor_disciplina_turmas(self) -> None:
         match = resolve("/api/professores/000001/disciplina/5/turmas/")
@@ -154,7 +170,7 @@ class ValidadeProfessorViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": "E necessario informar o codigoRF."},
+            {"detail": "É necessário informar o codigoRF."},
         )
 
 
@@ -180,7 +196,7 @@ class FuncionarioAtivoViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": "E necessario informar o registro funcional."},
+            {"detail": "É necessário informar o registro funcional."},
         )
 
 
@@ -232,9 +248,7 @@ class NomeUsuarioEolViewTest(SimpleTestCase):
         mock_service.assert_called_once_with("RF001")
 
     @patch("apps.professores.views.services.get_nome_usuario_eol")
-    def test_204_quando_usuario_ausente(
-        self, mock_service: MagicMock
-    ) -> None:
+    def test_204_quando_usuario_ausente(self, mock_service: MagicMock) -> None:
         mock_service.return_value = None
         client = _cliente_autenticado()
 
@@ -250,7 +264,7 @@ class NomeUsuarioEolViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": "E necessario informar o registro funcional."},
+            {"detail": "É necessário informar o registro funcional."},
         )
 
 
@@ -329,7 +343,7 @@ class ProfessorBuscarPorRfViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": "E necessario informar o codigoRF."},
+            {"detail": "É necessário informar o codigoRF."},
         )
 
     def test_400_quando_buscar_outros_cargos_invalido(self) -> None:
@@ -451,7 +465,7 @@ class EscolaFuncionariosViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": "E necessario informar o codigoUE."},
+            {"detail": "É necessário informar o codigoUE."},
         )
 
 
@@ -489,7 +503,7 @@ class EscolaFuncionariosCargoViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": "E necessario informar o codigoCargo."},
+            {"detail": "É necessário informar o codigoCargo."},
         )
 
     def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
@@ -500,7 +514,7 @@ class EscolaFuncionariosCargoViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": "E necessario informar o codigoUE."},
+            {"detail": "É necessário informar o codigoUE."},
         )
 
     @patch("apps.professores.views.services.get_funcionarios_escola_por_cargo")
@@ -549,9 +563,7 @@ class EscolaFuncionariosCargosViewTest(SimpleTestCase):
         )
 
     @patch("apps.professores.views.services.get_funcionarios_escola_cargos")
-    def test_204_quando_sem_conteudo(
-        self, mock_service: MagicMock
-    ) -> None:
+    def test_204_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
         mock_service.return_value = None
         client = _cliente_autenticado()
 
@@ -589,7 +601,7 @@ class EscolaFuncionariosCargosViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(
             resp.json(),
-            {"detail": "Resposta invalida do sidecar de professores."},
+            {"detail": "Resposta inválida do sidecar de professores."},
         )
 
     def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
@@ -600,7 +612,7 @@ class EscolaFuncionariosCargosViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": "E necessario informar o codigoUE."},
+            {"detail": "É necessário informar o codigoUE."},
         )
 
 
@@ -646,9 +658,7 @@ class EscolaFuncionariosFuncoesAtividadesViewTest(SimpleTestCase):
         "apps.professores.views.services."
         "get_funcionarios_escola_funcoes_atividades"
     )
-    def test_204_quando_sem_conteudo(
-        self, mock_service: MagicMock
-    ) -> None:
+    def test_204_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
         mock_service.return_value = None
         client = _cliente_autenticado()
 
@@ -697,20 +707,18 @@ class EscolaFuncionariosFuncoesAtividadesViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(
             resp.json(),
-            {"detail": "Resposta invalida do sidecar de professores."},
+            {"detail": "Resposta inválida do sidecar de professores."},
         )
 
     def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get(
-            "/api/escolas/%20/funcionarios/funcoes-atividades/"
-        )
+        resp = client.get("/api/escolas/%20/funcionarios/funcoes-atividades/")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": "E necessario informar o codigoUE."},
+            {"detail": "É necessário informar o codigoUE."},
         )
 
 
@@ -793,13 +801,11 @@ class EscolaFuncionariosFuncoesExternasViewTest(SimpleTestCase):
         "apps.professores.views.services."
         "get_funcionarios_escola_funcoes_externas"
     )
-    def test_400_quando_sem_codigo_dre(
-        self, mock_service: MagicMock
-    ) -> None:
+    def test_400_quando_sem_codigo_dre(self, mock_service: MagicMock) -> None:
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/escolas/400870/funcionarios/funcoes-externas/"
+            "/api/escolas/400870/funcionarios/funcoes-externas/"  # NOSONAR
             "?funcoes=5"
         )
 
@@ -825,7 +831,7 @@ class EscolaFuncionariosFuncoesExternasViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(
             resp.json(),
-            {"detail": "Resposta invalida do sidecar de professores."},
+            {"detail": "Resposta inválida do sidecar de professores."},
         )
 
     def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
@@ -836,7 +842,216 @@ class EscolaFuncionariosFuncoesExternasViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": "E necessario informar o codigoUE."},
+            {"detail": "É necessário informar o codigoUE."},
+        )
+
+
+class EscolaFuncionariosFuncaoExternaViewTest(SimpleTestCase):
+    """Valida resposta de funcionários por uma função externa."""
+
+    @patch(
+        "apps.professores.views.services."
+        "get_funcionarios_escola_por_funcao_externa"
+    )
+    def test_200_retorna_funcionarios(self, mock_service: MagicMock) -> None:
+        """Testa retorno de funcionários por função externa."""
+        mock_service.return_value = [
+            {
+                "codigo_rf": "000001",
+                "nome": "NOME SERVIDOR",
+                "data_inicio": None,
+                "data_fim": None,
+                "cargo": "",
+                "codigo_cargo": "",
+                "codigo_tipo_funcao_atividade": 0,
+                "esta_afastado": False,
+                "funcao_externo": 7,
+                "tipo_funcao_externo": 2,
+            },
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/escolas/000123/funcionarios/funcoes-externas/7/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        item = resp.json()[0]
+        self.assertEqual(item["codigoRF"], "000001")
+        self.assertEqual(item["nomeServidor"], "NOME SERVIDOR")
+        self.assertEqual(item["funcaoExterno"], 7)
+        self.assertEqual(item["tipoFuncaoExterno"], 2)
+        mock_service.assert_called_once_with("000123", "7")
+
+    @patch(
+        "apps.professores.views.services."
+        "get_funcionarios_escola_por_funcao_externa"
+    )
+    def test_204_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
+        """Testa 204 quando o sidecar retorna None para função externa."""
+        mock_service.return_value = None
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/escolas/000123/funcionarios/funcoes-externas/7/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch(
+        "apps.professores.views.services."
+        "get_funcionarios_escola_por_funcao_externa"
+    )
+    def test_204_quando_lista_vazia(self, mock_service: MagicMock) -> None:
+        """Testa 204 quando o sidecar retorna lista vazia."""
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/escolas/000123/funcionarios/funcoes-externas/7/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch(
+        "apps.professores.views.services."
+        "get_funcionarios_escola_por_funcao_externa"
+    )
+    def test_502_quando_sidecar_retorna_texto(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Testa 502 quando o sidecar retorna texto para função externa."""
+        mock_service.return_value = "erro de contrato"
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/escolas/000123/funcionarios/funcoes-externas/7/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "Resposta inválida do sidecar de professores."},
+        )
+
+    def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
+        """Testa 400 para codigoUE vazio na função externa."""
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/escolas/%20/funcionarios/funcoes-externas/7/")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "É necessário informar o codigoUE."},
+        )
+
+
+class EscolaFuncionariosFuncaoAtividadeViewTest(SimpleTestCase):
+    """Valida resposta de funcionários por uma função atividade."""
+
+    @patch(
+        "apps.professores.views.services."
+        "get_funcionarios_escola_por_funcao_atividade"
+    )
+    def test_200_retorna_funcionarios(self, mock_service: MagicMock) -> None:
+        """Testa retorno de funcionários por função atividade."""
+        mock_service.return_value = [
+            {
+                "codigo_rf": "7654321",
+                "nome": "NOME SERVIDOR",
+                "codigo_cargo": "3379",
+                "codigo_tipo_funcao_atividade": 1,
+                "funcao_externo": 0,
+                "tipo_funcao_externo": 0,
+            },
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/escolas/000123/funcionarios/funcoes-atividades/1/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.json(),
+            [
+                {
+                    "codigoRf": "7654321",
+                    "login": None,
+                    "nomeServidor": "NOME SERVIDOR",
+                    "cdCargo": 3379,
+                    "codigoFuncaoAtividade": 1,
+                    "funcaoExterno": 0,
+                    "tipoFuncaoExterno": 0,
+                },
+            ],
+        )
+        mock_service.assert_called_once_with("000123", "1")
+
+    @patch(
+        "apps.professores.views.services."
+        "get_funcionarios_escola_por_funcao_atividade"
+    )
+    def test_204_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
+        """Testa 204 quando o sidecar retorna None para função atividade."""
+        mock_service.return_value = None
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/escolas/000123/funcionarios/funcoes-atividades/1/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch(
+        "apps.professores.views.services."
+        "get_funcionarios_escola_por_funcao_atividade"
+    )
+    def test_204_quando_lista_vazia(self, mock_service: MagicMock) -> None:
+        """Testa 204 quando o sidecar retorna lista vazia."""
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/escolas/000123/funcionarios/funcoes-atividades/1/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch(
+        "apps.professores.views.services."
+        "get_funcionarios_escola_por_funcao_atividade"
+    )
+    def test_502_quando_sidecar_retorna_texto(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Testa 502 quando o sidecar retorna texto para função atividade."""
+        mock_service.return_value = "erro de contrato"
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/escolas/000123/funcionarios/funcoes-atividades/1/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "Resposta inválida do sidecar de professores."},
+        )
+
+    def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
+        """Testa 400 para codigoUE vazio na função atividade."""
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/escolas/%20/funcionarios/funcoes-atividades/1/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "É necessário informar o codigoUE."},
         )
 
 
@@ -880,7 +1095,7 @@ class ProfessorDisciplinaTurmasViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(
             resp.json(),
-            {"detail": "Resposta invalida do sidecar de professores."},
+            {"detail": "Resposta inválida do sidecar de professores."},
         )
         mock_service.assert_called_once_with("000001", "5", ["3030050"])
 
@@ -920,7 +1135,7 @@ class ProfessorDisciplinaTurmasViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": "E necessario informar o codigoRF."},
+            {"detail": "É necessário informar o codigoRF."},
         )
 
     def test_400_quando_disciplina_e_somente_espacos(self) -> None:
@@ -935,5 +1150,5 @@ class ProfessorDisciplinaTurmasViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": "E necessario informar a disciplina."},
+            {"detail": "É necessário informar a disciplina."},
         )
