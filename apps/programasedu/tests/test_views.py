@@ -58,7 +58,7 @@ class ProgramasEduUrlsTest(SimpleTestCase):
     def test_preserva_kwargs_turma_srm_e_regular(self) -> None:
         """Verifica os kwargs extraidos da rota de turma SRM e regular."""
         match = resolve("/api/alunos/paee/turma-srm-e-regular/aluno/123/")
-        self.assertEqual(match.kwargs, {"codigo_aluno": "123"})
+        self.assertEqual(match.kwargs, {"codigo_aluno": 123})
 
 
 class ObterTurmasPapViewTest(SimpleTestCase):

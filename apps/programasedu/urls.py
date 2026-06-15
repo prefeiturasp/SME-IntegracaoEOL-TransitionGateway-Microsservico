@@ -45,7 +45,7 @@ urlpatterns = [
         name="obter-dados-srm-paee-aluno",
     ),
     path(
-        "alunos/paee/turma-srm-e-regular/aluno/<str:codigo_aluno>/",
+        "alunos/paee/turma-srm-e-regular/aluno/<int:codigo_aluno>/",
         ObterTurmaSrmERegularDoAlunoView.as_view(),
         name="obter-turma-srm-e-regular-do-aluno",
     ),
