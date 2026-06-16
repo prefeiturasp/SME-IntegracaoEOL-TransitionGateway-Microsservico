@@ -253,3 +253,67 @@ class GetEquipamentosTest(SimpleTestCase):
             f"{_BASE}/escolas/equipamentos/",
             params={"tiposEscola": ["1", "2"], "tiposUnidade": ["1"]},
         )
+
+
+class GetTodasUnidadesTest(SimpleTestCase):
+    """Valida a consulta de todas as unidades educacionais."""
+
+    @patch("apps.institucional.services._client")
+    def test_chama_path_correto(self, mock_client: MagicMock) -> None:
+        """Monta o path de listagem de todas as unidades."""
+        mock_client.get.return_value.raise_for_status = MagicMock()
+        mock_client.get.return_value.json.return_value = []
+
+        result = services.get_todas_unidades()
+
+        mock_client.get.assert_called_once_with(f"{_BASE}/escolas/todas-unidades/")
+        self.assertEqual(result, [])
+
+    @patch("apps.institucional.services._client")
+    def test_retorna_lista_unidades(self, mock_client: MagicMock) -> None:
+        """Retorna payload paginado de unidades do sidecar."""
+        mock_unidade = {
+            "codigoEscola": "019308",
+            "nomeEscola": "EMEF TESTE",
+            "codigoDRE": "BT",
+            "nomeDRE": "DRE BUTANTA",
+        }
+        mock_client.get.return_value.raise_for_status = MagicMock()
+        mock_client.get.return_value.json.return_value = {
+            "count": 1,
+            "results": [mock_unidade],
+        }
+
+        result = services.get_todas_unidades()
+
+        self.assertEqual(result["count"], 1)
+        self.assertEqual(result["results"][0]["codigoEscola"], "019308")
+
+
+class GetTiposUnidadeEducacaoTest(SimpleTestCase):
+    """Valida a consulta de tipos de unidade educacional."""
+
+    @patch("apps.institucional.services._client")
+    def test_chama_path_correto(self, mock_client: MagicMock) -> None:
+        """Monta o path de listagem de tipos de unidade educacional."""
+        mock_client.get.return_value.raise_for_status = MagicMock()
+        mock_client.get.return_value.json.return_value = []
+
+        result = services.get_tipos_unidade_educacao()
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/escolas/tipos_unidade_educacao/"
+        )
+        self.assertEqual(result, [])
+
+    @patch("apps.institucional.services._client")
+    def test_retorna_lista_tipos(self, mock_client: MagicMock) -> None:
+        """Retorna a lista de strings de tipos de unidade do sidecar."""
+        mock_client.get.return_value.raise_for_status = MagicMock()
+        mock_client.get.return_value.json.return_value = [
+            "ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL"
+        ]
+
+        result = services.get_tipos_unidade_educacao()
+
+        self.assertEqual(result[0], "ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL")

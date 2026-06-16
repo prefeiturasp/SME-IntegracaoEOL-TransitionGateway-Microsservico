@@ -12,6 +12,8 @@ from apps.institucional.views import (
     EscolasPorDREView,
     SubprefeiturasPorDREView,
     TiposEscolasView,
+    TiposUnidadeEducacaoView,
+    TodasUnidadesView,
     UesPorDREView,
     UnidadesPorDREView,
 )
@@ -64,6 +66,16 @@ urlpatterns = [
         "escolas/equipamentos/",
         EquipamentosView.as_view(),
         name="escola-equipamentos",
+    ),
+    path(
+        "escolas/todas-unidades/",
+        TodasUnidadesView.as_view(),
+        name="escola-todas-unidades",
+    ),
+    path(
+        "escolas/tipos_unidade_educacao/",
+        TiposUnidadeEducacaoView.as_view(),
+        name="escola-tipos-unidade-educacao",
     ),
     path(
         "escolas/dados/<str:codigo_escola_eol>/",

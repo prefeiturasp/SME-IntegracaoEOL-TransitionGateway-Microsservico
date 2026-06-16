@@ -505,3 +505,76 @@ class EquipamentosViewTest(SimpleTestCase):
         resp = _cliente_autenticado().get("/api/escolas/equipamentos/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
+
+
+class TodasUnidadesViewTest(SimpleTestCase):
+    """Valida a view de todas as unidades educacionais."""
+
+    @patch("apps.institucional.views.services.get_todas_unidades")
+    def test_200_retorna_lista_unidades(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 com lista de todas as unidades."""
+        mock_unidade = {
+            "codigoEscola": "019308",
+            "nomeEscola": "EMEF TESTE",
+            "codigoDRE": "BT",
+            "nomeDRE": "DRE BUTANTA",
+            "siglaDRE": "DRE-BT",
+            "tipoEscola": "ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL",
+            "siglaTipoEscola": "EMEF",
+        }
+        mock_svc.return_value = {"count": 1, "results": [mock_unidade]}
+        resp = _cliente_autenticado().get("/api/escolas/todas-unidades/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()["count"], 1)
+        self.assertEqual(len(resp.json()["results"]), 1)
+        mock_svc.assert_called_once_with()
+
+    @patch("apps.institucional.views.services.get_todas_unidades")
+    def test_200_lista_vazia(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 com lista vazia quando não há unidades."""
+        mock_svc.return_value = {"count": 0, "results": []}
+        resp = _cliente_autenticado().get("/api/escolas/todas-unidades/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), {"count": 0, "results": []})
+
+    @patch("apps.institucional.views.services.get_todas_unidades")
+    def test_502_quando_servico_institucional_indisponivel(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna 502 quando o serviço institucional é indisponível."""
+        mock_svc.side_effect = httpx.RequestError("Connection error")
+        resp = _cliente_autenticado().get("/api/escolas/todas-unidades/")
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+        self.assertIn("indisponível", resp.json()["detail"])
+
+
+class TiposUnidadeEducacaoViewTest(SimpleTestCase):
+    """Valida a view de tipos de unidade educacional."""
+
+    @patch("apps.institucional.views.services.get_tipos_unidade_educacao")
+    def test_200_retorna_lista_tipos(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 com lista de tipos de unidade educacional."""
+        mock_svc.return_value = ["ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL"]
+        resp = _cliente_autenticado().get("/api/escolas/tipos_unidade_educacao/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(resp.json()), 1)
+        self.assertEqual(resp.json()[0], "ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL")
+        mock_svc.assert_called_once_with()
+
+    @patch("apps.institucional.views.services.get_tipos_unidade_educacao")
+    def test_200_lista_vazia(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 com lista vazia quando não há tipos."""
+        mock_svc.return_value = []
+        resp = _cliente_autenticado().get("/api/escolas/tipos_unidade_educacao/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+
+    @patch("apps.institucional.views.services.get_tipos_unidade_educacao")
+    def test_502_quando_servico_institucional_indisponivel(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna 502 quando o serviço institucional é indisponível."""
+        mock_svc.side_effect = httpx.RequestError("Connection error")
+        resp = _cliente_autenticado().get("/api/escolas/tipos_unidade_educacao/")
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+        self.assertIn("indisponível", resp.json()["detail"])

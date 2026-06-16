@@ -225,3 +225,33 @@ def get_equipamentos(
     resp = _client.get(f"{_BASE}/escolas/equipamentos/", params=params or None)
     resp.raise_for_status()
     return resp.json()
+
+
+def get_todas_unidades() -> Any:
+    """Lista todas as unidades educacionais.
+
+    Returns:
+        Todas as unidades educacionais cadastradas.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status
+            HTTP de erro.
+    """
+    resp = _client.get(f"{_BASE}/escolas/todas-unidades/")
+    resp.raise_for_status()
+    return resp.json()
+
+
+def get_tipos_unidade_educacao() -> Any:
+    """Lista tipos de unidade de educação.
+
+    Returns:
+        Tipos de unidade educacional cadastrados.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status
+            HTTP de erro.
+    """
+    resp = _client.get(f"{_BASE}/escolas/tipos_unidade_educacao/")
+    resp.raise_for_status()
+    return resp.json()

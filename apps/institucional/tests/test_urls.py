@@ -61,3 +61,11 @@ class URLsInstitucionalTest(SimpleTestCase):
         match = resolve("/api/escolas/019308/")
         self.assertEqual(match.view_name, "escola-detalhe")
         self.assertEqual(match.kwargs["codigo_escola_eol"], "019308")
+
+    def test_todas_unidades_resolve(self) -> None:
+        match = resolve("/api/escolas/todas-unidades/")
+        self.assertEqual(match.view_name, "escola-todas-unidades")
+
+    def test_tipos_unidade_educacao_resolve(self) -> None:
+        match = resolve("/api/escolas/tipos_unidade_educacao/")
+        self.assertEqual(match.view_name, "escola-tipos-unidade-educacao")
