@@ -504,8 +504,7 @@ class TodasUnidadesView(APIView):
         summary="Todas as unidades educacionais",
         description=(
             "Retorna lista completa de todas as unidades educacionais "
-            "cadastradas no sistema.\n\n"
-            "Contrato E27: `GET /api/escolas/todas-unidades`."
+            "cadastradas no sistema."
         ),
     )
     def get(self, _request: Request) -> Response:
@@ -527,8 +526,7 @@ class TiposUnidadeEducacaoView(APIView):
         summary="Tipos de unidade educacional",
         description=(
             "Retorna lista de tipos de unidade educacional cadastrados "
-            "no sistema.\n\n"
-            "Contrato E10: `GET /api/escolas/tipos_unidade_educacao`."
+            "no sistema."
         ),
     )
     def get(self, _request: Request) -> Response:
