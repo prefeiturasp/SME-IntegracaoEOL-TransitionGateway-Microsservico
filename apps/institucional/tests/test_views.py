@@ -505,3 +505,154 @@ class EquipamentosViewTest(SimpleTestCase):
         resp = _cliente_autenticado().get("/api/escolas/equipamentos/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
+
+
+class TodasUnidadesViewTest(SimpleTestCase):
+    """Valida a view de todas as unidades educacionais."""
+
+    @patch("apps.institucional.views.services.get_todas_unidades")
+    def test_200_com_paginacao(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 repassando limite e offset ao service."""
+        mock_svc.return_value = {"count": 9335, "results": []}
+        resp = _cliente_autenticado().get(
+            "/api/unidade-educacional/todas-unidades/?limite=10&offset=0"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_svc.assert_called_once_with(limite=10, offset=0)
+
+    @patch("apps.institucional.views.services.get_todas_unidades")
+    def test_200_sem_parametros(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 sem parâmetros passando None ao service."""
+        mock_svc.return_value = {"count": 9335, "results": []}
+        resp = _cliente_autenticado().get(
+            "/api/unidade-educacional/todas-unidades/"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_svc.assert_called_once_with(limite=None, offset=None)
+
+    def test_400_quando_limite_nao_inteiro(self) -> None:
+        """Retorna 400 quando limite não é um inteiro."""
+        resp = _cliente_autenticado().get(
+            "/api/unidade-educacional/todas-unidades/?limite=abc"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("inteiros", resp.json()["error"])
+
+    def test_400_quando_limite_negativo(self) -> None:
+        """Retorna 400 quando limite é negativo."""
+        resp = _cliente_autenticado().get(
+            "/api/unidade-educacional/todas-unidades/?limite=-1"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("limite", resp.json()["error"].lower())
+
+    def test_400_quando_offset_negativo(self) -> None:
+        """Retorna 400 quando offset é negativo."""
+        resp = _cliente_autenticado().get(
+            "/api/unidade-educacional/todas-unidades/?offset=-1"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("offset", resp.json()["error"].lower())
+
+    @patch("apps.institucional.views.services.get_todas_unidades")
+    def test_502_quando_sidecar_indisponivel(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna 502 quando o sidecar está indisponível."""
+        mock_svc.side_effect = httpx.ConnectError(
+            "Connection refused", request=MagicMock()
+        )
+        resp = _cliente_autenticado().get(
+            "/api/unidade-educacional/todas-unidades/"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+
+
+class DreEscolasSigpaeViewTest(SimpleTestCase):
+    """Valida a view de escolas Sigpae por DRE."""
+
+    @patch("apps.institucional.views.services.get_escolas_sigpae_por_dre")
+    def test_200_repassa_codigo_dre(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 repassando o código da DRE ao service."""
+        mock_svc.return_value = []
+        resp = _cliente_autenticado().get("/api/DREs/108100/escola/Sigpae/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_svc.assert_called_once_with("108100")
+
+    @patch("apps.institucional.views.services.get_escolas_sigpae_por_dre")
+    def test_404_quando_dre_inexistente(self, mock_svc: MagicMock) -> None:
+        """Retorna 404 quando o sidecar responde com 404."""
+        mock_svc.side_effect = _httpx_404()
+        resp = _cliente_autenticado().get("/api/DREs/INEXISTENTE/escola/Sigpae/")
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch("apps.institucional.views.services.get_escolas_sigpae_por_dre")
+    def test_502_quando_sidecar_indisponivel(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna 502 quando o sidecar está indisponível."""
+        mock_svc.side_effect = httpx.ConnectError(
+            "Connection refused", request=MagicMock()
+        )
+        resp = _cliente_autenticado().get("/api/DREs/108100/escola/Sigpae/")
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+
+    @patch("apps.institucional.views.services.get_escolas_sigpae_por_dre")
+    def test_propaga_erro_http_nao_404(self, mock_svc: MagicMock) -> None:
+        """Propaga HTTPStatusError quando o status do sidecar não é 404."""
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "500", request=MagicMock(), response=mock_response
+        )
+        with self.assertRaises(httpx.HTTPStatusError):
+            _cliente_autenticado().get("/api/DREs/108100/escola/Sigpae/")
+
+
+class UnidadesCodigoIntegracaoViewTest(SimpleTestCase):
+    """Valida a view de unidades com código de integração por DRE."""
+
+    @patch("apps.institucional.views.services.get_unidades_codigo_integracao")
+    def test_200_repassa_codigo_dre(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 repassando o código da DRE ao service."""
+        mock_svc.return_value = []
+        resp = _cliente_autenticado().get(
+            "/api/DREs/108100/unidades/codigo-integracao/"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_svc.assert_called_once_with("108100")
+
+    @patch("apps.institucional.views.services.get_unidades_codigo_integracao")
+    def test_404_quando_dre_inexistente(self, mock_svc: MagicMock) -> None:
+        """Retorna 404 quando o sidecar responde com 404."""
+        mock_svc.side_effect = _httpx_404()
+        resp = _cliente_autenticado().get(
+            "/api/DREs/INEXISTENTE/unidades/codigo-integracao/"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch("apps.institucional.views.services.get_unidades_codigo_integracao")
+    def test_502_quando_sidecar_indisponivel(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna 502 quando o sidecar está indisponível."""
+        mock_svc.side_effect = httpx.ConnectError(
+            "Connection refused", request=MagicMock()
+        )
+        resp = _cliente_autenticado().get(
+            "/api/DREs/108100/unidades/codigo-integracao/"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+
+    @patch("apps.institucional.views.services.get_unidades_codigo_integracao")
+    def test_propaga_erro_http_nao_404(self, mock_svc: MagicMock) -> None:
+        """Propaga HTTPStatusError quando o status do sidecar não é 404."""
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "500", request=MagicMock(), response=mock_response
+        )
+        with self.assertRaises(httpx.HTTPStatusError):
+            _cliente_autenticado().get(
+                "/api/DREs/108100/unidades/codigo-integracao/"
+            )

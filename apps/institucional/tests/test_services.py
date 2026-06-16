@@ -253,3 +253,68 @@ class GetEquipamentosTest(SimpleTestCase):
             f"{_BASE}/escolas/equipamentos/",
             params={"tiposEscola": ["1", "2"], "tiposUnidade": ["1"]},
         )
+
+
+class GetTodasUnidadesTest(SimpleTestCase):
+    """Valida a consulta de todas as unidades educacionais."""
+
+    @patch("apps.institucional.services._client")
+    def test_sem_paginacao_nao_passa_params(self, mock_client: MagicMock) -> None:
+        """Não envia params quando limite e offset não são informados."""
+        mock_client.get.return_value.raise_for_status = MagicMock()
+        mock_client.get.return_value.json.return_value = {"count": 0, "results": []}
+
+        result = services.get_todas_unidades()
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/escolas/todas-unidades/", params=None
+        )
+        self.assertEqual(result["count"], 0)
+
+    @patch("apps.institucional.services._client")
+    def test_com_paginacao_passa_params(self, mock_client: MagicMock) -> None:
+        """Envia limite e offset nos params quando informados."""
+        mock_client.get.return_value.raise_for_status = MagicMock()
+        mock_client.get.return_value.json.return_value = {"count": 9335, "results": []}
+
+        result = services.get_todas_unidades(limite=10, offset=20)
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/escolas/todas-unidades/",
+            params={"limite": 10, "offset": 20},
+        )
+        self.assertEqual(result["count"], 9335)
+
+
+class GetEscolasSigpaePorDRETest(SimpleTestCase):
+    """Valida a consulta de escolas Sigpae por DRE."""
+
+    @patch("apps.institucional.services._client")
+    def test_chama_path_com_codigo_dre(self, mock_client: MagicMock) -> None:
+        """Monta o path de escolas Sigpae com o código da DRE."""
+        mock_client.get.return_value.raise_for_status = MagicMock()
+        mock_client.json_or_none.return_value = []
+
+        result = services.get_escolas_sigpae_por_dre("108100")
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/dres/108100/escola/Sigpae/"
+        )
+        self.assertEqual(result, [])
+
+
+class GetUnidadesCodigoIntegracaoTest(SimpleTestCase):
+    """Valida a consulta de unidades com código de integração por DRE."""
+
+    @patch("apps.institucional.services._client")
+    def test_chama_path_com_codigo_dre(self, mock_client: MagicMock) -> None:
+        """Monta o path de unidades/codigo-integracao com o código da DRE."""
+        mock_client.get.return_value.raise_for_status = MagicMock()
+        mock_client.json_or_none.return_value = []
+
+        result = services.get_unidades_codigo_integracao("108100")
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/dres/108100/unidades/codigo-integracao/"
+        )
+        self.assertEqual(result, [])

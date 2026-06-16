@@ -225,3 +225,63 @@ def get_equipamentos(
     resp = _client.get(f"{_BASE}/escolas/equipamentos/", params=params or None)
     resp.raise_for_status()
     return resp.json()
+
+
+def get_todas_unidades(limite: int | None = None, offset: int | None = None) -> Any:
+    """Lista todas as unidades educacionais com paginação.
+
+    Args:
+        limite: Limite de registros por página.
+        offset: Deslocamento para paginação.
+
+    Returns:
+        Lista paginada de todas as unidades educacionais.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status
+            HTTP de erro.
+    """
+    params: dict[str, Any] = {}
+    if limite is not None:
+        params["limite"] = limite
+    if offset is not None:
+        params["offset"] = offset
+    resp = _client.get(f"{_BASE}/escolas/todas-unidades/", params=params or None)
+    resp.raise_for_status()
+    return resp.json()
+
+
+def get_escolas_sigpae_por_dre(codigo_eol_dre: str) -> Any:
+    """Lista escolas Sigpae de uma Diretoria Regional de Educação.
+
+    Args:
+        codigo_eol_dre: Código EOL da Diretoria Regional de Educação.
+
+    Returns:
+        Escolas Sigpae da DRE informada.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status
+            HTTP de erro.
+    """
+    resp = _client.get(f"{_BASE}/dres/{codigo_eol_dre}/escola/Sigpae/")
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
+def get_unidades_codigo_integracao(dre_codigo: str) -> Any:
+    """Lista unidades de uma DRE com código de integração.
+
+    Args:
+        dre_codigo: Código da Diretoria Regional de Educação.
+
+    Returns:
+        Unidades com código de integração da DRE informada.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status
+            HTTP de erro.
+    """
+    resp = _client.get(f"{_BASE}/dres/{dre_codigo}/unidades/codigo-integracao/")
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []

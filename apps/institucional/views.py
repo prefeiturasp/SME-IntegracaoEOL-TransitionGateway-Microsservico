@@ -15,10 +15,13 @@ from apps.institucional.serializers import (
     DRESerializer,
     EquipamentoSerializer,
     EscolaPorDreETipoSerializer,
+    EscolaSigpaeSerializer,
     EscolaResumoSerializer,
     EscolaSerializer,
     SubprefeiturasSerializer,
     TipoEscolaSerializer,
+    TodasUnidadesResponseSerializer,
+    UnidadeCodigoIntegracaoSerializer,
 )
 
 _TAG_DRE = ["DiretoriaRegionalEducacao"]
@@ -494,3 +497,146 @@ class EquipamentosView(APIView):
         )
         serializer = EquipamentoSerializer(data, many=True)
         return Response(serializer.data)
+
+
+class TodasUnidadesView(APIView):
+    """Lista todas as unidades educacionais com paginação."""
+
+    @extend_schema(
+        tags=_TAG_ESCOLA,
+        summary="Todas as unidades educacionais",
+        description=(
+            "Retorna lista paginada de todas as unidades educacionais.\n\n"
+            "Contrato E27: `GET /api/unidade-educacional/todas-unidades`."
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="limite",
+                location=OpenApiParameter.QUERY,
+                description="Limite de registros por página",
+                required=False,
+                type=int,
+            ),
+            OpenApiParameter(
+                name="offset",
+                location=OpenApiParameter.QUERY,
+                description="Deslocamento para paginação",
+                required=False,
+                type=int,
+            ),
+        ],
+        responses={200: TodasUnidadesResponseSerializer},
+    )
+    def get(self, request: Request) -> Response:
+        try:
+            limite = request.query_params.get("limite")
+            offset = request.query_params.get("offset")
+            
+            # Validar conversão de parâmetros
+            try:
+                limite = int(limite) if limite else None
+                offset = int(offset) if offset else None
+            except ValueError:
+                return Response(
+                    {"error": "Parâmetros 'limite' e 'offset' devem ser inteiros"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            
+            # Validar valores negativos
+            if limite is not None and limite < 0:
+                return Response(
+                    {"error": "Parâmetro 'limite' não pode ser negativo"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if offset is not None and offset < 0:
+                return Response(
+                    {"error": "Parâmetro 'offset' não pode ser negativo"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            
+            data = services.get_todas_unidades(limite=limite, offset=offset)
+        except httpx.RequestError:
+            return Response(
+                {"error": "Serviço institucional indisponível"},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+            raise
+        
+        serializer = TodasUnidadesResponseSerializer(data)
+        return Response(serializer.data)
+
+
+class DreEscolasSigpaeView(APIView):
+    """Lista escolas Sigpae de uma DRE."""
+
+    @extend_schema(
+        tags=_TAG_DRE,
+        summary="Escolas Sigpae de uma DRE",
+        description=(
+            "Retorna lista de escolas Sigpae vinculadas à DRE informada.\n\n"
+            "Contrato D09: `GET /api/DREs/{codigoEolDRE}/escola/Sigpae`."
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="codigo_eol_dre",
+                location=OpenApiParameter.PATH,
+                description="Código EOL da DRE",
+                required=True,
+                type=str,
+            )
+        ],
+        responses={200: EscolaSigpaeSerializer(many=True), 404: None},
+    )
+    def get(self, _request: Request, codigo_eol_dre: str) -> Response:
+        try:
+            data = services.get_escolas_sigpae_por_dre(codigo_eol_dre)
+        except httpx.RequestError:
+            return Response(
+                {"error": "Serviço institucional indisponível"},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+            raise
+        return Response(data)
+
+
+class UnidadesCodigoIntegracaoView(APIView):
+    """Lista unidades com código de integração de uma DRE."""
+
+    @extend_schema(
+        tags=_TAG_DRE,
+        summary="Unidades com código de integração de uma DRE",
+        description=(
+            "Retorna lista de unidades com código de integração "
+            "vinculadas à DRE informada.\n\n"
+            "Contrato D11: `GET /api/DREs/{dreCodigo}/unidades/codigo-integracao`."
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="dre_codigo",
+                location=OpenApiParameter.PATH,
+                description="Código da DRE",
+                required=True,
+                type=str,
+            )
+        ],
+        responses={200: UnidadeCodigoIntegracaoSerializer(many=True), 404: None},
+    )
+    def get(self, _request: Request, dre_codigo: str) -> Response:
+        try:
+            data = services.get_unidades_codigo_integracao(dre_codigo)
+        except httpx.RequestError:
+            return Response(
+                {"error": "Serviço institucional indisponível"},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+            raise
+        return Response(data)

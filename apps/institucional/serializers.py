@@ -99,3 +99,38 @@ class EquipamentoSerializer(serializers.Serializer):
     codigoSubprefeitura = serializers.CharField(allow_null=True)
     nomeSubprefeitura = serializers.CharField(allow_null=True)
     ehCeu = serializers.BooleanField()
+
+
+class TodasUnidadesResponseSerializer(serializers.Serializer):
+    """Serializa resposta paginada de todas as unidades educacionais."""
+
+    count = serializers.IntegerField()
+    results = serializers.ListField(child=serializers.DictField())
+
+
+class UnidadeEducacionalBasicaSerializer(serializers.Serializer):
+    """Serializa unidade educacional básica com paginação."""
+
+    codigo = serializers.CharField()
+    nome = serializers.CharField()
+    codigoDre = serializers.CharField(allow_null=True, required=False)
+    tipo = serializers.CharField(allow_null=True, required=False)
+
+
+class EscolaSigpaeSerializer(serializers.Serializer):
+    """Serializa escola Sigpae de uma DRE."""
+
+    codigoEscola = serializers.CharField()
+    nomeEscola = serializers.CharField()
+    codigoDRE = serializers.CharField()
+    tipoEscola = serializers.CharField()
+    siglaTipoEscola = serializers.CharField()
+
+
+class UnidadeCodigoIntegracaoSerializer(serializers.Serializer):
+    """Serializa unidade com código de integração."""
+
+    codigo = serializers.CharField()
+    nome = serializers.CharField()
+    codigoIntegracao = serializers.CharField(allow_null=True, required=False)
+    tipo = serializers.CharField(allow_null=True, required=False)

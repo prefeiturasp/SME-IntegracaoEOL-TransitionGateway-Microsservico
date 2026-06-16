@@ -61,3 +61,22 @@ class URLsInstitucionalTest(SimpleTestCase):
         match = resolve("/api/escolas/019308/")
         self.assertEqual(match.view_name, "escola-detalhe")
         self.assertEqual(match.kwargs["codigo_escola_eol"], "019308")
+
+    def test_todas_unidades_resolve(self) -> None:
+        match = resolve("/api/unidade-educacional/todas-unidades/")
+        self.assertEqual(match.view_name, "ue-todas-unidades")
+
+    def test_dre_escolas_sigpae_resolve(self) -> None:
+        match = resolve("/api/DREs/108100/escola/Sigpae/")
+        self.assertEqual(match.view_name, "dre-escolas-sigpae")
+        self.assertEqual(match.kwargs["codigo_eol_dre"], "108100")
+
+    def test_dre_unidades_codigo_integracao_resolve(self) -> None:
+        match = resolve("/api/DREs/108100/unidades/codigo-integracao/")
+        self.assertEqual(match.view_name, "dre-unidades-codigo-integracao")
+        self.assertEqual(match.kwargs["dre_codigo"], "108100")
+
+    def test_codigo_integracao_resolve_antes_de_unidades(self) -> None:
+        # Garante que 'codigo-integracao/' não é capturado por 'unidades/'
+        match = resolve("/api/DREs/108100/unidades/codigo-integracao/")
+        self.assertNotEqual(match.view_name, "dre-unidades")
