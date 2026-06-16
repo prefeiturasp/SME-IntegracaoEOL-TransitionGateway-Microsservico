@@ -23,18 +23,6 @@ Cypress.Commands.add("getAlunoNecessidadesEspeciais", () => {
   });
 });
 
-// Cypress.Commands.add("getAlunoTurmas", () => {
-//   return cy.request({
-//     method: "GET",
-//     url: `${Cypress.env("API_URL")}/api/v1/alunos/${Cypress.env("CODIGO_ALUNO")}/turmas`,
-//     headers: {
-//       accept: "application/json",
-//       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
-//     },
-//     failOnStatusCode: false,
-//   });
-// });
-
 Cypress.Commands.add("getAlunosPorCodigos", () => {
   return cy.request({
     method: "GET",
@@ -171,20 +159,6 @@ Cypress.Commands.add("getAlunoSrmPaee", (valor) => {
   });
 });
 
-/////////////////////
-
-// Cypress.Commands.add("getTurmasAluno", () => {
-//   return cy.request({
-//     method: "GET",
-//     url: `${Cypress.env("API_URL")}/api/v1/alunos/${Cypress.env("CODIGO_ALUNO")}/turmas`,
-//     headers: {
-//       accept: "application/json",
-//       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
-//     },
-//     failOnStatusCode: false,
-//   });
-// });
-
 Cypress.Commands.add("getTurmasPapPorAnoLetivoEEscola", () => {
   return cy.request({
     method: "GET",
@@ -221,18 +195,6 @@ Cypress.Commands.add("getVerificacaoAlunosTurmasPap", () => {
     failOnStatusCode: false,
   });
 });
-
-// Cypress.Commands.add("getTurmasAluno", () => {
-//   return cy.request({
-//     method: "GET",
-//     url: `${Cypress.env("API_URL")}/api/v1/alunos/${Cypress.env("CODIGO_ALUNO")}/turmas`,
-//     headers: {
-//       accept: "application/json",
-//       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
-//     },
-//     failOnStatusCode: false,
-//   });
-// });
 
 Cypress.Commands.add("getTurmasPapPorAnoLetivoEEscola", () => {
   return cy.request({
