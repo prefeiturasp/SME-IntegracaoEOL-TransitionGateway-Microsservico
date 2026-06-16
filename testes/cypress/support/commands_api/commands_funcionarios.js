@@ -24,7 +24,11 @@ Cypress.Commands.add("getFuncionarioNomeEol", (valor) => {
   });
 });
 
-Cypress.Commands.add("postBuscarPorListaRf", () => {
+Cypress.Commands.add("postBuscarPorListaRf", (valor) => {
+  let rf =
+    valor === true
+      ? `${Cypress.env("UE_TURMAS_CODIGO")}`
+      : ["242257", "212121"];
   return cy.request({
     method: "POST",
     url: `${Cypress.env("API_URL")}/api/funcionarios/BuscarPorListaRF/`,
@@ -33,7 +37,7 @@ Cypress.Commands.add("postBuscarPorListaRf", () => {
       "Content-Type": "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
     },
-    body: Cypress.env("REGISTRO_FUNCIONAL"),
+    body: rf,
     failOnStatusCode: false,
   });
 });

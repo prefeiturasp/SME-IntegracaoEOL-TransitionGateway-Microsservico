@@ -30,6 +30,14 @@ When("realizo consulta de nome do funcionário no EOL não encontrado", () => {
   cy.getFuncionarioNomeEol(false).as("response");
 });
 
+When("realizo consulta de funcionários por RFs", () => {
+  cy.postBuscarPorListaRf(true).as("response");
+});
+
+When("realizo consulta de funcionários por RFs com RFs inválidos", () => {
+  cy.postBuscarPorListaRf(false).as("response");
+});
+
 // THEN
 
 Then("retorna o status 200", function () {
@@ -79,6 +87,16 @@ And("o retorno deve conter o nome do funcionário", () => {
     if (response.status === 200) {
       expect(response.body).to.exist;
       expect(response.body).to.be.a("string");
+    }
+  });
+});
+
+And("o retorno deve conter os RFs dos funcionários", () => {
+  cy.get("@response").then((response) => {
+    if (response.status === 200) {
+      expect(response.body).to.exist;
+      expect(response.body).to.be.an("array");
+      expect(response.body.length).to.be.greaterThan(0);
     }
   });
 });
