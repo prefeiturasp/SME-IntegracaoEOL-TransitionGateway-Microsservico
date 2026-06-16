@@ -99,3 +99,23 @@ class EquipamentoSerializer(serializers.Serializer):
     codigoSubprefeitura = serializers.CharField(allow_null=True)
     nomeSubprefeitura = serializers.CharField(allow_null=True)
     ehCeu = serializers.BooleanField()
+
+
+class UnidadeEducacionalSerializer(serializers.Serializer):
+    """Serializa dados de unidade educacional (todas-unidades)."""
+
+    codigoUe = serializers.CharField()
+    nomeUe = serializers.CharField()
+    codigoDRE = serializers.CharField()
+    nomeDRE = serializers.CharField()
+    siglaDRE = serializers.CharField()
+    tipoUnidade = serializers.CharField()
+    descTipoUnidade = serializers.CharField()
+
+
+class TipoUnidadeEducacaoSerializer(serializers.Serializer):
+    """Serializa tipo de unidade educacional."""
+
+    codigo = serializers.IntegerField()
+    descricao = serializers.CharField()
+    sigla = serializers.CharField()

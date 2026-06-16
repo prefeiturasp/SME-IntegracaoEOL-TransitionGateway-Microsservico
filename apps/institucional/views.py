@@ -494,3 +494,49 @@ class EquipamentosView(APIView):
         )
         serializer = EquipamentoSerializer(data, many=True)
         return Response(serializer.data)
+
+
+class TodasUnidadesView(APIView):
+    """Lista todas as unidades educacionais."""
+
+    @extend_schema(
+        tags=_TAG_ESCOLA,
+        summary="Todas as unidades educacionais",
+        description=(
+            "Retorna lista completa de todas as unidades educacionais "
+            "cadastradas no sistema.\n\n"
+            "Contrato E27: `GET /api/escolas/todas-unidades`."
+        ),
+    )
+    def get(self, _request: Request) -> Response:
+        try:
+            data = services.get_todas_unidades()
+        except httpx.RequestError:
+            return Response(
+                {"detail": "Serviço institucional indisponível"},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        return Response(data)
+
+
+class TiposUnidadeEducacaoView(APIView):
+    """Lista tipos de unidade educacional."""
+
+    @extend_schema(
+        tags=_TAG_ESCOLA,
+        summary="Tipos de unidade educacional",
+        description=(
+            "Retorna lista de tipos de unidade educacional cadastrados "
+            "no sistema.\n\n"
+            "Contrato E10: `GET /api/escolas/tipos_unidade_educacao`."
+        ),
+    )
+    def get(self, _request: Request) -> Response:
+        try:
+            data = services.get_tipos_unidade_educacao()
+        except httpx.RequestError:
+            return Response(
+                {"detail": "Serviço institucional indisponível"},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        return Response(data)
