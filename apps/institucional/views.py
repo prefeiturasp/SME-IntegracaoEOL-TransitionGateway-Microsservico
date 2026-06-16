@@ -26,6 +26,9 @@ from apps.institucional.serializers import (
 
 _TAG_DRE = ["DiretoriaRegionalEducacao"]
 _TAG_ESCOLA = ["Escola"]
+_ERRO_SERVICO_INSTITUCIONAL_INDISPONIVEL = (
+    "Serviço institucional indisponível"
+)
 
 _ESCOLA_RESUMO_CAMPOS = {
     "codigoEscola",
@@ -557,7 +560,7 @@ class TodasUnidadesView(APIView):
             data = services.get_todas_unidades(limite=limite, offset=offset)
         except httpx.RequestError:
             return Response(
-                {"error": "Serviço institucional indisponível"},
+                {"error": _ERRO_SERVICO_INSTITUCIONAL_INDISPONIVEL},
                 status=status.HTTP_502_BAD_GATEWAY,
             )
         except httpx.HTTPStatusError as exc:
@@ -595,7 +598,7 @@ class DreEscolasSigpaeView(APIView):
             data = services.get_escolas_sigpae_por_dre(codigo_eol_dre)
         except httpx.RequestError:
             return Response(
-                {"error": "Serviço institucional indisponível"},
+                {"error": _ERRO_SERVICO_INSTITUCIONAL_INDISPONIVEL},
                 status=status.HTTP_502_BAD_GATEWAY,
             )
         except httpx.HTTPStatusError as exc:
@@ -632,7 +635,7 @@ class UnidadesCodigoIntegracaoView(APIView):
             data = services.get_unidades_codigo_integracao(dre_codigo)
         except httpx.RequestError:
             return Response(
-                {"error": "Serviço institucional indisponível"},
+                {"error": _ERRO_SERVICO_INSTITUCIONAL_INDISPONIVEL},
                 status=status.HTTP_502_BAD_GATEWAY,
             )
         except httpx.HTTPStatusError as exc:
