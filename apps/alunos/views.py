@@ -206,7 +206,7 @@ class AlunoAutocompleteAtivosView(APIView):
             OpenApiParameter("aluno_nome", str, OpenApiParameter.QUERY),
             OpenApiParameter("data_referencia", str, OpenApiParameter.QUERY),
             OpenApiParameter("aluno_codigo", int, OpenApiParameter.QUERY),
-            OpenApiParameter("limite", int, OpenApiParameter.QUERY),
+            OpenApiParameter("limite", int, OpenApiParameter.QUERY, default=10),
         ],
         responses={200: OpenApiResponse(description="Success")},
     )
