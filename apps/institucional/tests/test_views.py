@@ -514,19 +514,29 @@ class TodasUnidadesViewTest(SimpleTestCase):
     def test_200_retorna_lista_unidades(self, mock_svc: MagicMock) -> None:
         """Retorna 200 com lista de todas as unidades."""
         mock_unidade = {
-            "codigoEscola": "019308",
-            "nomeEscola": "EMEF TESTE",
+            "codigoEscola": "400496",
+            "nomeEscola": "13 DE MAIO",
+            "nomeDRE": "DIRETORIA REGIONAL DE EDUCACAO IPIRANGA",
+            "siglaDRE": "DRE - IP",
             "codigoDRE": "BT",
-            "nomeDRE": "DRE BUTANTA",
-            "siglaDRE": "DRE-BT",
-            "tipoEscola": "ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL",
-            "siglaTipoEscola": "EMEF",
+            "tipoEscola": "CENTRO DE EDUCACAO INFANTIL DIRETO",
+            "siglaTipoEscola": "CEI DIRET",
+            "codigoTipoEscola": 10,
+            "tipoEscolaId": 10,
         }
         mock_svc.return_value = {"count": 1, "results": [mock_unidade]}
         resp = _cliente_autenticado().get("/api/escolas/todas-unidades/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.json()["count"], 1)
-        self.assertEqual(len(resp.json()["results"]), 1)
+        self.assertEqual(len(resp.json()), 1)
+        self.assertEqual(resp.json()[0], {
+            "codigoEscola": "400496",
+            "nomeEscola": "13 DE MAIO",
+            "nomeDRE": "DIRETORIA REGIONAL DE EDUCACAO IPIRANGA",
+            "siglaDRE": "DRE - IP",
+            "codigoDRE": "BT",
+            "tipoEscola": "CENTRO DE EDUCACAO INFANTIL DIRETO",
+            "siglaTipoEscola": "CEI DIRET",
+        })
         mock_svc.assert_called_once_with()
 
     @patch("apps.institucional.views.services.get_todas_unidades")
@@ -535,7 +545,7 @@ class TodasUnidadesViewTest(SimpleTestCase):
         mock_svc.return_value = {"count": 0, "results": []}
         resp = _cliente_autenticado().get("/api/escolas/todas-unidades/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.json(), {"count": 0, "results": []})
+        self.assertEqual(resp.json(), [])
 
     @patch("apps.institucional.views.services.get_todas_unidades")
     def test_502_quando_servico_institucional_indisponivel(

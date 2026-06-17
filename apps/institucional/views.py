@@ -19,6 +19,7 @@ from apps.institucional.serializers import (
     EscolaSerializer,
     SubprefeiturasSerializer,
     TipoEscolaSerializer,
+    UnidadeEducacionalSerializer,
 )
 
 _TAG_DRE = ["DiretoriaRegionalEducacao"]
@@ -82,6 +83,16 @@ _DADOS_ESCOLA_CAMPOS = {
     "descTipoUnidadeAdm",
 }
 
+_TODA_UNIDADE_CAMPOS = {
+    "codigoEscola",
+    "nomeEscola",
+    "nomeDRE",
+    "siglaDRE",
+    "codigoDRE",
+    "tipoEscola",
+    "siglaTipoEscola",
+}
+
 
 def _filtrar_escola_resumo(item: dict) -> dict:
     return {k: v for k, v in item.items() if k in _ESCOLA_RESUMO_CAMPOS}
@@ -97,6 +108,10 @@ def _filtrar_escola_por_dre_tipo(item: dict) -> dict:
 
 def _filtrar_dados_escola(item: dict) -> dict:
     return {k: v for k, v in item.items() if k in _DADOS_ESCOLA_CAMPOS}
+
+
+def _filtrar_toda_unidade(item: dict) -> dict:
+    return {k: v for k, v in item.items() if k in _TODA_UNIDADE_CAMPOS}
 
 
 class DREListView(APIView):
@@ -506,6 +521,7 @@ class TodasUnidadesView(APIView):
             "Retorna lista completa de todas as unidades educacionais "
             "cadastradas no sistema."
         ),
+        responses={200: UnidadeEducacionalSerializer(many=True)},
     )
     def get(self, _request: Request) -> Response:
         try:
@@ -515,7 +531,12 @@ class TodasUnidadesView(APIView):
                 {"detail": "Serviço institucional indisponível"},
                 status=status.HTTP_502_BAD_GATEWAY,
             )
-        return Response(data)
+        resultados = data.get("results") if isinstance(data, dict) else data
+        if not resultados:
+            return Response([])
+        return Response([
+            _filtrar_toda_unidade(item) for item in resultados if isinstance(item, dict)
+        ])
 
 
 class TiposUnidadeEducacaoView(APIView):
