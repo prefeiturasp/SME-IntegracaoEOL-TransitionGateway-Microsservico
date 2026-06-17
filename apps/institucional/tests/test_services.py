@@ -273,10 +273,13 @@ class GetTodasUnidadesTest(SimpleTestCase):
     def test_retorna_lista_unidades(self, mock_client: MagicMock) -> None:
         """Retorna payload paginado de unidades do sidecar."""
         mock_unidade = {
-            "codigoEscola": "019308",
-            "nomeEscola": "EMEF TESTE",
-            "codigoDRE": "BT",
-            "nomeDRE": "DRE BUTANTA",
+            "codigoEscola": "400496",
+            "nomeEscola": "13 DE MAIO",
+            "nomeDRE": "DIRETORIA REGIONAL DE EDUCACAO IPIRANGA",
+            "siglaDRE": "DRE - IP",
+            "codigoDRE": "108600",
+            "tipoEscola": "CENTRO DE EDUCACAO INFANTIL DIRETO",
+            "siglaTipoEscola": "CEI DIRET",
         }
         mock_client.get.return_value.raise_for_status = MagicMock()
         mock_client.get.return_value.json.return_value = {
@@ -287,7 +290,7 @@ class GetTodasUnidadesTest(SimpleTestCase):
         result = services.get_todas_unidades()
 
         self.assertEqual(result["count"], 1)
-        self.assertEqual(result["results"][0]["codigoEscola"], "019308")
+        self.assertEqual(result["results"][0]["codigoEscola"], "400496")
 
 
 class GetTiposUnidadeEducacaoTest(SimpleTestCase):

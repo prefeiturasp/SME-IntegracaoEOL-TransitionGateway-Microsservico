@@ -102,15 +102,15 @@ class EquipamentoSerializer(serializers.Serializer):
 
 
 class UnidadeEducacionalSerializer(serializers.Serializer):
-    """Serializa dados de unidade educacional (todas-unidades)."""
+    """Serializa unidade educacional."""
 
-    codigoUe = serializers.CharField()
-    nomeUe = serializers.CharField()
+    codigoEscola = serializers.CharField()
+    nomeEscola = serializers.CharField()
     codigoDRE = serializers.CharField()
     nomeDRE = serializers.CharField()
     siglaDRE = serializers.CharField()
-    tipoUnidade = serializers.CharField()
-    descTipoUnidade = serializers.CharField()
+    tipoEscola = serializers.CharField()
+    siglaTipoEscola = serializers.CharField()
 
 
 class TipoUnidadeEducacaoSerializer(serializers.Serializer):
