@@ -15,7 +15,7 @@ from apps.core.responses import Response, detail_response
 from apps.matriculas import services
 from apps.matriculas.serializers import MatriculaSerializer
 
-_TAG = ["Alunos"]
+_TAG = ["Aluno"]
 _MSG_ANO_LETIVO_INVALIDO = "ano_letivo deve ser um inteiro válido."
 _MSG_SIDECAR_INDISPONIVEL = "Servico de matriculas indisponivel."
 
