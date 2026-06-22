@@ -40,13 +40,14 @@ turma_urlpatterns = [
         name="itinerarios-ensino-medio",
     ),
     path(
-        "ue/<str:codigo_ue>/" "sincronizacoes-institucionais/anos-letivos/",
+        "ue/<str:codigo_ue>/"
+        + "sincronizacoes-institucionais/anos-letivos/",
         SincronizacoesInstitucionaisAnosLetivosViewSet.as_view(),
         name="sincronizacoes-institucionais-anos-letivos",
     ),
     path(
         "ues/<str:codigo_ue>/turmas/<str:codigo_turma>/"
-        "sincronizacoes-institucionais/",
+        + "sincronizacoes-institucionais/",
         SincronizacaoInstitucionalTurmaViewSet.as_view(),
         name="sincronizacao-institucional-turma",
     ),
@@ -87,22 +88,23 @@ urlpatterns = [
     ),
     path(
         "turmas/<str:codigo_turma>/funcionarios/<str:login>/"
-        "perfis/<str:id_perfil>/agrupaComponenteCurricular/"
-        "<str:agrupa_componente_curricular>/",
+        + "perfis/<str:id_perfil>/agrupaComponenteCurricular/"
+        + "<str:agrupa_componente_curricular>/",
         ComponentesTurmaFuncionarioViewSet.as_view(),
     ),
     path(
         "turmas/<str:codigo_turma>/funcionarios/<str:login>/"
-        "perfis/<str:id_perfil>/planejamento/",
+        + "perfis/<str:id_perfil>/planejamento/",
         ComponentesPlanejamentoViewSet.as_view(),
     ),
     path(
-        "turmas/<str:codigo_turma>/sem-atribuicao/" "<int:data_base_tick>/",
+        "turmas/<str:codigo_turma>/sem-atribuicao/"
+        + "<int:data_base_tick>/",
         ComponentesSemAtribuicaoViewSet.as_view(),
     ),
     path(
         "turmas/<str:codigo_turma>/funcionarios/<str:login>/"
-        "perfis/<str:id_perfil>/validar/pap/",
+        + "perfis/<str:id_perfil>/validar/pap/",
         ValidarComponentePapViewSet.as_view(),
     ),
     path(
