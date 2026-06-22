@@ -237,9 +237,40 @@ def get_todas_unidades() -> Any:
         httpx.HTTPStatusError: Quando o serviço externo retorna status
             HTTP de erro.
     """
-    resp = _client.get(f"{_BASE}/escolas/todas-unidades/")
-    resp.raise_for_status()
-    return resp.json()
+    limite = 1000
+    offset = 0
+    acumulado: list[Any] = []
+
+    while True:
+        resp = _client.get(
+            f"{_BASE}/escolas/todas-unidades/",
+            params={"limite": limite, "offset": offset},
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+        if isinstance(data, list):
+            return data
+
+        if not isinstance(data, dict):
+            return []
+
+        resultados = data.get("results")
+        if not isinstance(resultados, list):
+            return []
+
+        acumulado.extend(resultados)
+
+        total = data.get("count")
+        if not isinstance(total, int):
+            break
+
+        if len(acumulado) >= total or not resultados:
+            break
+
+        offset += len(resultados)
+
+    return acumulado
 
 
 def get_tipos_unidade_educacao() -> Any:
