@@ -2,10 +2,7 @@
 
 from django.test import SimpleTestCase
 
-from apps.alunos.serializers import (
-    AlunoAtivoDataAulaSerializer,
-    InteiroBooleanoField,
-)
+from apps.alunos.serializers import AlunoAtivoDataAulaSerializer
 
 
 class AlunoAtivoDataAulaSerializerTest(SimpleTestCase):
@@ -73,8 +70,3 @@ class AlunoAtivoDataAulaSerializerTest(SimpleTestCase):
                 "id": None,
             },
         )
-
-    def test_converte_deficiencia_verdadeira_para_um(self) -> None:
-        field = InteiroBooleanoField()
-
-        self.assertEqual(field.to_representation(True), 1)

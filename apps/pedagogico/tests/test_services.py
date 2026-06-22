@@ -244,48 +244,140 @@ class GetDadosTurmaTest(SimpleTestCase):
 
 
 class GetTurmasHistoricasGeraisProfessorTest(SimpleTestCase):
-    """Valida a consulta de turmas históricas gerais do professor."""
+    """Valida a composição de turmas históricas gerais do professor."""
 
-    @patch.object(services._client, "get")
-    def test_chama_path_canonico(
+    @patch.object(services, "professores_services")
+    @patch.object(services._client, "post")
+    def test_compoe_codigos_professores_com_atributos_pedagogico(
         self,
-        mock_get: MagicMock,
+        mock_post: MagicMock,
+        mock_professores: MagicMock,
     ) -> None:
-        payload = [
-            {
-                "ano": "7",
-                "ano_letivo": 2025,
-                "codigo": 2825477,
-                "modalidade": "Infantil",
-                "codigo_modalidade": 1,
-                "nome_turma": "7A",
-                "semestre": 0,
-            }
+        """Usa códigos de professores e enriquece com o listar-turmas."""
+        obter_codigos = (
+            mock_professores.get_codigos_turmas_historicas_professor
+        )
+        obter_codigos.return_value = [
+            2822488,
+            2822517,
+            3016391,
         ]
+        elegivel = {
+            "ano": "7",
+            "ano_letivo": 2025,
+            "codigo": 2822488,
+            "modalidade": "Infantil",
+            "codigo_modalidade": 1,
+            "nome_turma": "7E",
+            "semestre": 0,
+            "codigo_etapa_ensino": 1,
+            "tipo_escola": 2,
+        }
+        inelegivel = {
+            "ano": "0",
+            "ano_letivo": 2025,
+            "codigo": 3016391,
+            "modalidade": None,
+            "codigo_modalidade": 1,
+            "nome_turma": "CB",
+            "semestre": 0,
+            "codigo_etapa_ensino": None,
+            "tipo_escola": 2,
+        }
+        codigo_extra = {
+            **elegivel,
+            "codigo": 9999999,
+            "nome_turma": "EXTRA",
+        }
         mock_response = MagicMock()
-        mock_response.json.return_value = payload
-        mock_get.return_value = mock_response
+        mock_response.json.return_value = [
+            elegivel,
+            inelegivel,
+            codigo_extra,
+        ]
+        mock_post.return_value = mock_response
 
         result = services.get_turmas_historicas_gerais_professor(
             ano_letivo=2025,
-            professor_rf="08381399",
+            professor_rf="7483147",
         )
 
-        mock_get.assert_called_once_with(
-            f"{_BASE_TURMAS}/anos-letivos/2025/professor/08381399/"
-            "turmas-historicas-geral/"
+        obter_codigos.assert_called_once_with(2025, "7483147")
+        mock_post.assert_called_once_with(
+            f"{_BASE_TURMAS}/listar-turmas/",
+            payload=[2822488, 2822517, 3016391],
         )
         mock_response.raise_for_status.assert_called_once_with()
-        self.assertEqual(result, payload)
+        self.assertEqual(result, [elegivel])
 
-    @patch.object(services._client, "get")
-    def test_retorna_lista_vazia(
+    @patch.object(services, "professores_services")
+    @patch.object(services._client, "post")
+    def test_aceita_turma_sem_tipo_escola(
         self,
-        mock_get: MagicMock,
+        mock_post: MagicMock,
+        mock_professores: MagicMock,
     ) -> None:
+        """Aceita tipo de escola ausente quando a etapa é elegível."""
+        obter_codigos = (
+            mock_professores.get_codigos_turmas_historicas_professor
+        )
+        obter_codigos.return_value = [2822488]
+        turma = {
+            "codigo": 2822488,
+            "codigo_etapa_ensino": 1,
+        }
         mock_response = MagicMock()
-        mock_response.json.return_value = []
-        mock_get.return_value = mock_response
+        mock_response.json.return_value = [turma]
+        mock_post.return_value = mock_response
+
+        result = services.get_turmas_historicas_gerais_professor(
+            ano_letivo=2025,
+            professor_rf="7483147",
+        )
+
+        self.assertEqual(result, [turma])
+
+    @patch.object(services, "professores_services")
+    @patch.object(services._client, "post")
+    def test_descarta_tipo_escola_inelegivel(
+        self,
+        mock_post: MagicMock,
+        mock_professores: MagicMock,
+    ) -> None:
+        """Descarta turma de tipo de escola fora do contrato legado."""
+        obter_codigos = (
+            mock_professores.get_codigos_turmas_historicas_professor
+        )
+        obter_codigos.return_value = [2822488]
+        mock_response = MagicMock()
+        mock_response.json.return_value = [
+            {
+                "codigo": 2822488,
+                "codigo_etapa_ensino": 1,
+                "tipo_escola": 99,
+            }
+        ]
+        mock_post.return_value = mock_response
+
+        result = services.get_turmas_historicas_gerais_professor(
+            ano_letivo=2025,
+            professor_rf="7483147",
+        )
+
+        self.assertEqual(result, [])
+
+    @patch.object(services, "professores_services")
+    @patch.object(services._client, "post")
+    def test_sem_codigos_nao_chama_pedagogico(
+        self,
+        mock_post: MagicMock,
+        mock_professores: MagicMock,
+    ) -> None:
+        """Retorna lista vazia sem consultar o pedagógico."""
+        obter_codigos = (
+            mock_professores.get_codigos_turmas_historicas_professor
+        )
+        obter_codigos.return_value = []
 
         result = services.get_turmas_historicas_gerais_professor(
             ano_letivo=2025,
@@ -293,15 +385,23 @@ class GetTurmasHistoricasGeraisProfessorTest(SimpleTestCase):
         )
 
         self.assertEqual(result, [])
+        mock_post.assert_not_called()
 
-    @patch.object(services._client, "get")
+    @patch.object(services, "professores_services")
+    @patch.object(services._client, "post")
     def test_rejeita_raiz_que_nao_seja_lista(
         self,
-        mock_get: MagicMock,
+        mock_post: MagicMock,
+        mock_professores: MagicMock,
     ) -> None:
+        """Erra quando o listar-turmas não devolve uma lista de objetos."""
+        obter_codigos = (
+            mock_professores.get_codigos_turmas_historicas_professor
+        )
+        obter_codigos.return_value = [2822488]
         mock_response = MagicMock()
-        mock_response.json.return_value = {"codigo": 2825477}
-        mock_get.return_value = mock_response
+        mock_response.json.return_value = {"codigo": 2822488}
+        mock_post.return_value = mock_response
 
         with self.assertRaisesMessage(
             ValueError,
@@ -309,17 +409,24 @@ class GetTurmasHistoricasGeraisProfessorTest(SimpleTestCase):
         ):
             services.get_turmas_historicas_gerais_professor(
                 ano_letivo=2025,
-                professor_rf="8381399",
+                professor_rf="7483147",
             )
 
-    @patch.object(services._client, "get")
+    @patch.object(services, "professores_services")
+    @patch.object(services._client, "post")
     def test_rejeita_item_que_nao_seja_objeto(
         self,
-        mock_get: MagicMock,
+        mock_post: MagicMock,
+        mock_professores: MagicMock,
     ) -> None:
+        """Erra quando o listar-turmas devolve item não objeto."""
+        obter_codigos = (
+            mock_professores.get_codigos_turmas_historicas_professor
+        )
+        obter_codigos.return_value = [2822488]
         mock_response = MagicMock()
-        mock_response.json.return_value = [2825477]
-        mock_get.return_value = mock_response
+        mock_response.json.return_value = [2822488]
+        mock_post.return_value = mock_response
 
         with self.assertRaisesMessage(
             ValueError,
@@ -327,7 +434,7 @@ class GetTurmasHistoricasGeraisProfessorTest(SimpleTestCase):
         ):
             services.get_turmas_historicas_gerais_professor(
                 ano_letivo=2025,
-                professor_rf="8381399",
+                professor_rf="7483147",
             )
 
 

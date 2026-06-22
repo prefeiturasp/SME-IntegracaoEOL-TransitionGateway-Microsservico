@@ -7,9 +7,18 @@ from django.conf import settings
 
 from apps.core.datetime import formatar_datetime_legado
 from apps.core.http_client import ServiceClient
+from apps.professores import services as professores_services
 
 _BASE = "/api/v1/pedagogico/componentes-curriculares"
 _BASE_TURMAS = "/api/v1/pedagogico/turmas"
+
+# Elegibilidade das turmas históricas do professor (contrato legado).
+_ETAPAS_TURMAS_HISTORICAS = frozenset(
+    {1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 17}
+)
+_TIPOS_ESCOLA_TURMAS_HISTORICAS = frozenset(
+    {1, 2, 3, 4, 16, 28, 31}
+)
 
 _client = ServiceClient(
     base_url=settings.SIDECAR_PEDAGOGICO_URL,
@@ -185,21 +194,31 @@ def get_turmas_historicas_gerais_professor(
 ) -> list[dict[str, Any]]:
     """Lista turmas históricas gerais de um professor.
 
+    Os códigos de turma vêm do domínio professores (cadeia de grade) e os
+    atributos de cada turma são obtidos no domínio pedagógico.
+
     Args:
         ano_letivo: Ano letivo usado na consulta.
         professor_rf: Registro funcional do professor.
 
     Returns:
-        Turmas históricas retornadas pelo serviço pedagógico.
+        Turmas históricas com os atributos do domínio pedagógico.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
-        ValueError: Se a resposta não for uma lista de objetos.
+        httpx.HTTPStatusError: Se algum sidecar retornar status de erro.
+        httpx.RequestError: Se algum sidecar estiver inacessível.
+        ValueError: Se alguma resposta não tiver o formato esperado.
     """
-    response = _client.get(
-        f"{_BASE_TURMAS}/anos-letivos/{ano_letivo}/professor/"
-        f"{professor_rf}/turmas-historicas-geral/"
+    codigos = professores_services.get_codigos_turmas_historicas_professor(
+        ano_letivo,
+        professor_rf,
+    )
+    if not codigos:
+        return []
+
+    response = _client.post(
+        f"{_BASE_TURMAS}/listar-turmas/",
+        payload=codigos,
     )
     response.raise_for_status()
     payload = response.json()
@@ -209,7 +228,34 @@ def get_turmas_historicas_gerais_professor(
         raise ValueError(
             "Resposta de turmas históricas deve ser uma lista de objetos."
         )
-    return payload
+    codigos_permitidos = set(codigos)
+    turmas: list[dict[str, Any]] = []
+    for turma in payload:
+        codigo = turma.get("codigo")
+        if not isinstance(codigo, int) or isinstance(codigo, bool):
+            raise ValueError(
+                "Resposta de turmas históricas deve conter código inteiro."
+            )
+        if (
+            codigo in codigos_permitidos
+            and _turma_historica_elegivel(turma)
+        ):
+            turmas.append(turma)
+    return turmas
+
+
+def _turma_historica_elegivel(turma: dict[str, Any]) -> bool:
+    """Verifica se a turma atende às etapas e escolas do contrato legado.
+
+    A etapa de ensino é obrigatória; o tipo de escola só restringe quando
+    presente no payload.
+    """
+    if turma.get("codigo_etapa_ensino") not in _ETAPAS_TURMAS_HISTORICAS:
+        return False
+    tipo_escola = turma.get("tipo_escola")
+    if tipo_escola is None:
+        return True
+    return tipo_escola in _TIPOS_ESCOLA_TURMAS_HISTORICAS
 
 
 def get_sincronizacao_institucional_turma(
