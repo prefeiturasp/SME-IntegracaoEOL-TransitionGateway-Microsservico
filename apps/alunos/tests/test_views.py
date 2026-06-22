@@ -156,7 +156,7 @@ class AlunoAutocompleteAtivosViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         data = resp.json()
         self.assertEqual(data[0]["codigoAluno"], 123456)
-        self.assertEqual(data[0]["nomeAluno"], "Aluno Teste")
+        self.assertEqual(data[0]["nomeAluno"], "Fulano de Tal")
         self.assertIsNone(data[0]["nomeSocialAluno"])
         self.assertEqual(data[0]["codigoTurma"], 9001)
         self.assertEqual(data[0]["numeroAlunoChamada"], "15")
