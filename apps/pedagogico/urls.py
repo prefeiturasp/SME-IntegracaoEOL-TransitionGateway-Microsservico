@@ -29,8 +29,8 @@ from apps.pedagogico.views import (
 
 turma_urlpatterns = [
     path(
-        "anos-letivos/<int:ano_letivo>/professor/<str:professor_rf>/"
-        "turmas-historicas-geral/",
+        "anos-letivos/<int:ano_letivo>/professor/"
+        + "<str:professor_rf>/turmas-historicas-geral/",
         TurmasHistoricasGeraisProfessorViewSet.as_view(),
         name="turmas-historicas-gerais-professor",
     ),

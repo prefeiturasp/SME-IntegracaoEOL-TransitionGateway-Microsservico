@@ -29,6 +29,10 @@ from apps.pedagogico.serializers import (
 
 _TAG = ["ComponenteCurricular"]
 _TAG_TURMA = ["Turma"]
+_SERVICO_PEDAGOGICO_INDISPONIVEL = "Servico pedagogico indisponivel."
+_RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA = (
+    "Resposta do servico pedagogico invalida."
+)
 _TURMA_REQUEST_SCHEMA = {
     "type": "array",
     "items": {"type": "string"},
@@ -234,12 +238,12 @@ class TurmasHistoricasGeraisProfessorViewSet(APIView):
             return Response(body, status=exc.response.status_code)
         except httpx.RequestError:
             return detail_response(
-                "Servico pedagogico indisponivel.",
+                _SERVICO_PEDAGOGICO_INDISPONIVEL,
                 503,
             )
         except ValueError:
             return detail_response(
-                "Resposta do servico pedagogico invalida.",
+                _RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA,
                 502,
             )
 
@@ -249,7 +253,7 @@ class TurmasHistoricasGeraisProfessorViewSet(APIView):
         )
         if not serializer.is_valid():
             return detail_response(
-                "Resposta do servico pedagogico invalida.",
+                _RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA,
                 502,
             )
         return Response(serializer.data)
@@ -295,7 +299,7 @@ class SincronizacaoInstitucionalTurmaViewSet(APIView):
             return Response(body, status=exc.response.status_code)
         except httpx.RequestError:
             return Response(
-                {"detail": "Servico pedagogico indisponivel."},
+                {"detail": _SERVICO_PEDAGOGICO_INDISPONIVEL},
                 status=503,
             )
         return Response(SincronizacaoInstitucionalTurmaSerializer(data).data)
@@ -362,7 +366,7 @@ class SincronizacoesInstitucionaisAnosLetivosViewSet(APIView):
             return Response(body, status=exc.response.status_code)
         except httpx.RequestError:
             return Response(
-                {"detail": "Servico pedagogico indisponivel."},
+                {"detail": _SERVICO_PEDAGOGICO_INDISPONIVEL},
                 status=503,
             )
 
@@ -399,12 +403,12 @@ class ItinerariosEnsinoMedioViewSet(APIView):
             return Response(body, status=exc.response.status_code)
         except httpx.RequestError:
             return detail_response(
-                "Servico pedagogico indisponivel.",
+                _SERVICO_PEDAGOGICO_INDISPONIVEL,
                 503,
             )
         except ValueError:
             return detail_response(
-                "Resposta do servico pedagogico invalida.",
+                _RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA,
                 502,
             )
 
@@ -414,7 +418,7 @@ class ItinerariosEnsinoMedioViewSet(APIView):
         )
         if not serializer.is_valid():
             return detail_response(
-                "Resposta do servico pedagogico invalida.",
+                _RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA,
                 502,
             )
         return Response(serializer.validated_data)
