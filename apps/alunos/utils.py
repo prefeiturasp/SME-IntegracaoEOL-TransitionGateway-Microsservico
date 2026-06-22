@@ -13,7 +13,7 @@ def aluno_turmas_operation(operation_id: str) -> dict:
     return {
         "get": {
             "operationId": operation_id,
-            "tags": ["Alunos"],
+            "tags": ["Aluno"],
             "summary": "Turmas do aluno",
             "description": "Retorna lista de turmas do aluno.",
             "parameters": [

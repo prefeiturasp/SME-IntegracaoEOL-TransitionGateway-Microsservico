@@ -17,13 +17,40 @@ from apps.pedagogico.views import (
     DadosAulaTurmaViewSet,
     DadosTurmaViewSet,
     GradeComponentesCurricularesViewSet,
+    ItinerariosEnsinoMedioViewSet,
     ListarTurmasViewSet,
+    SincronizacaoInstitucionalTurmaViewSet,
+    SincronizacoesInstitucionaisAnosLetivosViewSet,
+    TurmasHistoricasGeraisProfessorViewSet,
     TurmasProgramaViewSet,
     TurmasRegularesViewSet,
     ValidarComponentePapViewSet,
 )
 
 turma_urlpatterns = [
+    path(
+        "anos-letivos/<int:ano_letivo>/professor/"
+        + "<str:professor_rf>/turmas-historicas-geral/",
+        TurmasHistoricasGeraisProfessorViewSet.as_view(),
+        name="turmas-historicas-gerais-professor",
+    ),
+    path(
+        "itinerario/ensino-medio/",
+        ItinerariosEnsinoMedioViewSet.as_view(),
+        name="itinerarios-ensino-medio",
+    ),
+    path(
+        "ue/<str:codigo_ue>/"
+        + "sincronizacoes-institucionais/anos-letivos/",
+        SincronizacoesInstitucionaisAnosLetivosViewSet.as_view(),
+        name="sincronizacoes-institucionais-anos-letivos",
+    ),
+    path(
+        "ues/<str:codigo_ue>/turmas/<str:codigo_turma>/"
+        + "sincronizacoes-institucionais/",
+        SincronizacaoInstitucionalTurmaViewSet.as_view(),
+        name="sincronizacao-institucional-turma",
+    ),
     path(
         "turmas-regulares/",
         TurmasRegularesViewSet.as_view(),
@@ -61,22 +88,23 @@ urlpatterns = [
     ),
     path(
         "turmas/<str:codigo_turma>/funcionarios/<str:login>/"
-        "perfis/<str:id_perfil>/agrupaComponenteCurricular/"
-        "<str:agrupa_componente_curricular>/",
+        + "perfis/<str:id_perfil>/agrupaComponenteCurricular/"
+        + "<str:agrupa_componente_curricular>/",
         ComponentesTurmaFuncionarioViewSet.as_view(),
     ),
     path(
         "turmas/<str:codigo_turma>/funcionarios/<str:login>/"
-        "perfis/<str:id_perfil>/planejamento/",
+        + "perfis/<str:id_perfil>/planejamento/",
         ComponentesPlanejamentoViewSet.as_view(),
     ),
     path(
-        "turmas/<str:codigo_turma>/sem-atribuicao/" "<int:data_base_tick>/",
+        "turmas/<str:codigo_turma>/sem-atribuicao/"
+        + "<int:data_base_tick>/",
         ComponentesSemAtribuicaoViewSet.as_view(),
     ),
     path(
         "turmas/<str:codigo_turma>/funcionarios/<str:login>/"
-        "perfis/<str:id_perfil>/validar/pap/",
+        + "perfis/<str:id_perfil>/validar/pap/",
         ValidarComponentePapViewSet.as_view(),
     ),
     path(

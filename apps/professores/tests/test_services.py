@@ -754,3 +754,125 @@ class GetTurmasProfessorDisciplinaTest(SimpleTestCase):
             payload=["3030050"],
         )
         self.assertEqual(result, payload)
+
+
+class GetCodigosTurmasHistoricasProfessorTest(SimpleTestCase):
+    """Valida a extração de códigos de turmas históricas do professor."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_e_retorna_lista(self, mock_get: MagicMock) -> None:
+        """Extrai códigos dos objetos retornados pelo endpoint canônico."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b'[{"codigo":2822488},{"codigo":2822517}]'
+        mock_resp.json.return_value = [
+            {"codigo": 2822488},
+            {"codigo": 2822517},
+        ]
+        mock_get.return_value = mock_resp
+
+        result = services.get_codigos_turmas_historicas_professor(
+            2025,
+            "7483147",
+        )
+
+        mock_get.assert_called_once_with(
+            "/api/v1/professores/turmas/anos-letivos/2025/professor/"
+            "7483147/turmas-historicas-geral/"
+        )
+        self.assertEqual(result, [2822488, 2822517])
+
+    @patch.object(services._client, "get")
+    def test_aceita_lista_de_codigos_inteiros(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        """Aceita o formato simplificado retornado pelo sidecar."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[2822498]"
+        mock_resp.json.return_value = [2822498]
+        mock_get.return_value = mock_resp
+
+        result = services.get_codigos_turmas_historicas_professor(
+            2025,
+            "8057826",
+        )
+
+        self.assertEqual(result, [2822498])
+
+    @patch.object(services._client, "get")
+    def test_remove_codigos_duplicados_preservando_ordem(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        """Remove códigos repetidos sem alterar a ordem da resposta."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[{}]"
+        mock_resp.json.return_value = [
+            {"codigo": 2822517},
+            {"codigo": 2822488},
+            {"codigo": 2822517},
+        ]
+        mock_get.return_value = mock_resp
+
+        result = services.get_codigos_turmas_historicas_professor(
+            2025,
+            "7483147",
+        )
+
+        self.assertEqual(result, [2822517, 2822488])
+
+    @patch.object(services._client, "get")
+    def test_404_retorna_lista_vazia(self, mock_get: MagicMock) -> None:
+        """Trata 404 do professores como ausência de turmas."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 404
+        mock_get.return_value = mock_resp
+
+        result = services.get_codigos_turmas_historicas_professor(
+            2025,
+            "8381399",
+        )
+
+        self.assertEqual(result, [])
+        mock_resp.raise_for_status.assert_not_called()
+
+    @patch.object(services._client, "get")
+    def test_rejeita_item_sem_codigo_inteiro(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        """Erra quando um item não contém código inteiro."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b'[{"codigo":"2822488"}]'
+        mock_resp.json.return_value = [{"codigo": "2822488"}]
+        mock_get.return_value = mock_resp
+
+        with self.assertRaisesMessage(
+            ValueError,
+            "Resposta de turmas históricas deve conter códigos inteiros.",
+        ):
+            services.get_codigos_turmas_historicas_professor(
+                2025,
+                "7483147",
+            )
+
+    @patch.object(services._client, "get")
+    def test_rejeita_resposta_sem_corpo(self, mock_get: MagicMock) -> None:
+        """Erra quando o professores responde sem uma lista JSON."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b""
+        mock_get.return_value = mock_resp
+
+        with self.assertRaisesMessage(
+            ValueError,
+            "Resposta de turmas históricas deve conter códigos inteiros.",
+        ):
+            services.get_codigos_turmas_historicas_professor(
+                2025,
+                "7483147",
+            )

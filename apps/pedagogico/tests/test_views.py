@@ -3,6 +3,7 @@
 from typing import Any
 from unittest.mock import MagicMock, patch
 
+import httpx
 from django.contrib.auth.models import User
 from django.test import SimpleTestCase
 from rest_framework import status
@@ -77,6 +78,67 @@ _TURMA = {
     "situacao": "O",
     "ueCodigo": "092622",
 }
+
+_TURMA_HISTORICA_MS = {
+    "ano": "7",
+    "ano_letivo": 2025,
+    "codigo": 2825477,
+    "modalidade": "Infantil",
+    "codigo_modalidade": 1,
+    "nome_turma": "7A",
+    "semestre": 0,
+}
+
+_SINCRONIZACAO_INSTITUCIONAL = {
+    "ano": "7",
+    "ano_letivo": 2026,
+    "codigo": 3010807,
+    "tipo_turma": 1,
+    "modalidade": "Infantil",
+    "codigo_modalidade": 1,
+    "nome_turma": "7A",
+    "semestre": 0,
+    "duracao_turno": 6,
+    "tipo_turno": 1,
+    "data_fim_turma": None,
+    "ensino_especial": False,
+    "etapa_eja": 0,
+    "serie_ensino": "INFANTIL UNIFICADO",
+    "data_inicio_turma": "2026-02-04T03:00:00Z",
+    "extinta": False,
+    "situacao": "O",
+    "ue_codigo": "091120",
+    "data_atualizacao": "2026-06-17T08:11:45.807000Z",
+    "data_status_turma_escola": "2026-06-03T18:46:18.833000Z",
+    "etapa_ensino": 1,
+    "ciclo_ensino": 2,
+    "tipo_escola": 2,
+    "descricao_grade_programa": "INFANTIL UNIFICADO",
+    "tipo_grade_programa": 1,
+    "codigo_grade_programa": 4239,
+    "nome_filtro": "7A - INFANTIL UNIFICADO",
+    "componentes": [
+        {
+            "nome_componente_curricular": "ED.INF. EMEI 4 HS",
+            "componente_curricular_codigo": 512,
+            "registro_funcional": "7393423",
+            "data_disponibizacao": None,
+        }
+    ],
+}
+
+_ITINERARIOS_ENSINO_MEDIO = [
+    {
+        "id": 9,
+        "nome": "Investigação cientifica",
+        "serie": "2",
+    },
+    {
+        "id": 9,
+        "nome": "Investigação cientifica",
+        "serie": "2",
+    },
+]
 
 
 def _cliente_autenticado() -> APIClient:
@@ -260,6 +322,705 @@ class DadosTurmaViewSetTest(SimpleTestCase):
         mock_svc.assert_called_once_with("3034092")
 
 
+class TurmasHistoricasGeraisProfessorViewSetTest(SimpleTestCase):
+    """Valida a consulta de turmas históricas gerais do professor."""
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_turmas_historicas_gerais_professor"
+    )
+    def test_200_retorna_contrato_legado(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        mock_service.return_value = [_TURMA_HISTORICA_MS]
+        client = _cliente_autenticado()
+
+        response = client.get(
+            f"{_PREFIX_TURMAS}/anos-letivos/2025/professor/08381399/"
+            "turmas-historicas-geral/"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data[0]["anoLetivo"], 2025)
+        self.assertEqual(response.data[0]["tipoTurma"], 0)
+        self.assertEqual(response.data[0]["duracaoTurno"], 0)
+        self.assertIsNone(response.data[0]["ueCodigo"])
+        mock_service.assert_called_once_with(
+            ano_letivo=2025,
+            professor_rf="08381399",
+        )
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_turmas_historicas_gerais_professor"
+    )
+    def test_200_retorna_lista_vazia(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        response = client.get(
+            f"{_PREFIX_TURMAS}/anos-letivos/2025/professor/8381399/"
+            "turmas-historicas-geral/"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, [])
+
+    def test_403_sem_autenticacao(self) -> None:
+        client = APIClient()
+
+        response = client.get(
+            f"{_PREFIX_TURMAS}/anos-letivos/2025/professor/8381399/"
+            "turmas-historicas-geral/"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_turmas_historicas_gerais_professor"
+    )
+    def test_preserva_erro_http_do_sidecar(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        request = httpx.Request("GET", "https://sidecar.local/test")
+        sidecar_response = httpx.Response(
+            404,
+            request=request,
+            json={"detail": "Professor não encontrado."},
+        )
+        mock_service.side_effect = httpx.HTTPStatusError(
+            "Erro no sidecar",
+            request=request,
+            response=sidecar_response,
+        )
+        client = _cliente_autenticado()
+
+        response = client.get(
+            f"{_PREFIX_TURMAS}/anos-letivos/2025/professor/8381399/"
+            "turmas-historicas-geral/"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            response.data,
+            {"detail": "Professor não encontrado."},
+        )
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_turmas_historicas_gerais_professor"
+    )
+    def test_preserva_erro_http_sem_json(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        request = httpx.Request("GET", "https://sidecar.local/test")
+        sidecar_response = httpx.Response(
+            500,
+            request=request,
+            text="Falha interna",
+        )
+        mock_service.side_effect = httpx.HTTPStatusError(
+            "Erro no sidecar",
+            request=request,
+            response=sidecar_response,
+        )
+        client = _cliente_autenticado()
+
+        response = client.get(
+            f"{_PREFIX_TURMAS}/anos-letivos/2025/professor/8381399/"
+            "turmas-historicas-geral/"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+        self.assertEqual(response.data, {"detail": "Falha interna"})
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_turmas_historicas_gerais_professor"
+    )
+    def test_503_quando_sidecar_indisponivel(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        request = httpx.Request("GET", "https://sidecar.local/test")
+        mock_service.side_effect = httpx.ConnectError(
+            "Sidecar indisponível",
+            request=request,
+        )
+        client = _cliente_autenticado()
+
+        response = client.get(
+            f"{_PREFIX_TURMAS}/anos-letivos/2025/professor/8381399/"
+            "turmas-historicas-geral/"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+        self.assertEqual(
+            response.data,
+            {"detail": "Servico pedagogico indisponivel."},
+        )
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_turmas_historicas_gerais_professor"
+    )
+    def test_502_quando_service_rejeita_estrutura(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        mock_service.side_effect = ValueError(
+            "Resposta de turmas históricas deve ser uma lista de objetos."
+        )
+        client = _cliente_autenticado()
+
+        response = client.get(
+            f"{_PREFIX_TURMAS}/anos-letivos/2025/professor/8381399/"
+            "turmas-historicas-geral/"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_502_BAD_GATEWAY)
+        self.assertEqual(
+            response.data,
+            {"detail": "Resposta do servico pedagogico invalida."},
+        )
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_turmas_historicas_gerais_professor"
+    )
+    def test_502_quando_item_for_invalido(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        mock_service.return_value = [{"ano": "7"}]
+        client = _cliente_autenticado()
+
+        response = client.get(
+            f"{_PREFIX_TURMAS}/anos-letivos/2025/professor/8381399/"
+            "turmas-historicas-geral/"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_502_BAD_GATEWAY)
+
+
+class SincronizacaoInstitucionalTurmaViewSetTest(SimpleTestCase):
+    """Valida a view de sincronização institucional da turma."""
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_sincronizacao_institucional_turma"
+    )
+    def test_200_retorna_contrato_legado(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        mock_svc.return_value = _SINCRONIZACAO_INSTITUCIONAL
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_TURMAS}/ues/091120/turmas/3010807/"
+            "sincronizacoes-institucionais/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data["modalidade"], "1")
+        self.assertEqual(resp.data["tipoGradePrograma"], 1)
+        self.assertEqual(resp.data["ueCodigo"], "091120")
+        self.assertEqual(
+            resp.data["componentes"][0]["registroFuncional"],
+            "7393423",
+        )
+        mock_svc.assert_called_once_with(
+            codigo_ue="091120",
+            codigo_turma="3010807",
+        )
+
+    def test_403_sem_autenticacao(self) -> None:
+        client = APIClient()
+
+        resp = client.get(
+            f"{_PREFIX_TURMAS}/ues/091120/turmas/3010807/"
+            "sincronizacoes-institucionais/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_sincronizacao_institucional_turma"
+    )
+    def test_preserva_erro_http_do_sidecar(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        request = httpx.Request("GET", "https://sidecar.local/test")
+        response = httpx.Response(
+            404,
+            request=request,
+            json={"detail": "Turma não encontrada."},
+        )
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "Erro no sidecar",
+            request=request,
+            response=response,
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_TURMAS}/ues/091120/turmas/3010807/"
+            "sincronizacoes-institucionais/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(resp.data, {"detail": "Turma não encontrada."})
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_sincronizacao_institucional_turma"
+    )
+    def test_preserva_erro_http_sem_json(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        request = httpx.Request("GET", "https://sidecar.local/test")
+        response = httpx.Response(
+            500,
+            request=request,
+            text="Falha institucional",
+        )
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "Erro no sidecar",
+            request=request,
+            response=response,
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_TURMAS}/ues/091120/turmas/3010807/"
+            "sincronizacoes-institucionais/"
+        )
+
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+        self.assertEqual(resp.data, {"detail": "Falha institucional"})
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_sincronizacao_institucional_turma"
+    )
+    def test_503_quando_sidecar_indisponivel(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        request = httpx.Request("GET", "https://sidecar.local/test")
+        mock_svc.side_effect = httpx.ConnectError(
+            "Sidecar indisponível",
+            request=request,
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_TURMAS}/ues/091120/turmas/3010807/"
+            "sincronizacoes-institucionais/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(
+            resp.data,
+            {"detail": "Servico pedagogico indisponivel."},
+        )
+
+
+class SincronizacoesInstitucionaisAnosLetivosViewSetTest(SimpleTestCase):
+    """Valida a consulta institucional de turmas por anos letivos."""
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_sincronizacoes_institucionais_anos_letivos"
+    )
+    def test_200_retorna_codigos_com_anos_repetidos(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        mock_svc.return_value = [3036295, 3082921, 3036225]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_TURMAS}/ue/019437/"
+            "sincronizacoes-institucionais/anos-letivos/"
+            "?anos_letivos_vigente=2025&anos_letivos_vigente=2026"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data, [3036295, 3082921, 3036225])
+        mock_svc.assert_called_once_with(
+            codigo_ue="019437",
+            anos_letivos_vigente=[2025, 2026],
+        )
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_sincronizacoes_institucionais_anos_letivos"
+    )
+    def test_200_aceita_array_textual_do_swagger(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        mock_svc.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_TURMAS}/ue/019437/"
+            "sincronizacoes-institucionais/anos-letivos/",
+            {"anos_letivos_vigente": "[2025, 2026]"},
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_svc.assert_called_once_with(
+            codigo_ue="019437",
+            anos_letivos_vigente=[2025, 2026],
+        )
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_sincronizacoes_institucionais_anos_letivos"
+    )
+    def test_200_sem_filtro(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        mock_svc.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_TURMAS}/ue/019437/"
+            "sincronizacoes-institucionais/anos-letivos/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_svc.assert_called_once_with(
+            codigo_ue="019437",
+            anos_letivos_vigente=None,
+        )
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_sincronizacoes_institucionais_anos_letivos"
+    )
+    def test_400_quando_ano_for_invalido(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_TURMAS}/ue/019437/"
+            "sincronizacoes-institucionais/anos-letivos/"
+            "?anos_letivos_vigente=invalido"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_svc.assert_not_called()
+
+    def test_403_sem_autenticacao(self) -> None:
+        client = APIClient()
+
+        resp = client.get(
+            f"{_PREFIX_TURMAS}/ue/019437/"
+            "sincronizacoes-institucionais/anos-letivos/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_sincronizacoes_institucionais_anos_letivos"
+    )
+    def test_preserva_erro_http_do_sidecar(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        request = httpx.Request("GET", "https://sidecar.local/test")
+        response = httpx.Response(
+            404,
+            request=request,
+            json={"detail": "UE não encontrada."},
+        )
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "Erro no sidecar",
+            request=request,
+            response=response,
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_TURMAS}/ue/019437/"
+            "sincronizacoes-institucionais/anos-letivos/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(resp.data, {"detail": "UE não encontrada."})
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_sincronizacoes_institucionais_anos_letivos"
+    )
+    def test_preserva_erro_http_sem_json(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        request = httpx.Request("GET", "https://sidecar.local/test")
+        response = httpx.Response(
+            500,
+            request=request,
+            text="Falha na consulta",
+        )
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "Erro no sidecar",
+            request=request,
+            response=response,
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_TURMAS}/ue/019437/"
+            "sincronizacoes-institucionais/anos-letivos/"
+        )
+
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+        self.assertEqual(resp.data, {"detail": "Falha na consulta"})
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_sincronizacoes_institucionais_anos_letivos"
+    )
+    def test_503_quando_sidecar_indisponivel(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        request = httpx.Request("GET", "https://sidecar.local/test")
+        mock_svc.side_effect = httpx.ConnectError(
+            "Sidecar indisponível",
+            request=request,
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_TURMAS}/ue/019437/"
+            "sincronizacoes-institucionais/anos-letivos/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(
+            resp.data,
+            {"detail": "Servico pedagogico indisponivel."},
+        )
+
+
+class ItinerariosEnsinoMedioViewSetTest(SimpleTestCase):
+    """Valida a listagem de itinerários do ensino médio."""
+
+    @patch(
+        "apps.pedagogico.views.services.get_itinerarios_ensino_medio"
+    )
+    def test_200_converte_serie_e_preserva_ordem_e_duplicidades(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        mock_svc.return_value = _ITINERARIOS_ENSINO_MEDIO
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_TURMAS}/itinerario/ensino-medio/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.data,
+            [
+                {
+                    "id": 9,
+                    "nome": "Investigação cientifica",
+                    "serie": 2,
+                },
+                {
+                    "id": 9,
+                    "nome": "Investigação cientifica",
+                    "serie": 2,
+                },
+            ],
+        )
+        mock_svc.assert_called_once_with()
+
+    @patch(
+        "apps.pedagogico.views.services.get_itinerarios_ensino_medio"
+    )
+    def test_200_retorna_lista_vazia(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        mock_svc.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_TURMAS}/itinerario/ensino-medio/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data, [])
+
+    def test_403_sem_autenticacao(self) -> None:
+        client = APIClient()
+
+        resp = client.get(
+            f"{_PREFIX_TURMAS}/itinerario/ensino-medio/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    @patch(
+        "apps.pedagogico.views.services.get_itinerarios_ensino_medio"
+    )
+    def test_preserva_erro_http_do_sidecar(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        request = httpx.Request("GET", "https://sidecar.local/test")
+        response = httpx.Response(
+            404,
+            request=request,
+            json={"detail": "Itinerários não encontrados."},
+        )
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "Erro no sidecar",
+            request=request,
+            response=response,
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_TURMAS}/itinerario/ensino-medio/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            resp.data,
+            {"detail": "Itinerários não encontrados."},
+        )
+
+    @patch(
+        "apps.pedagogico.views.services.get_itinerarios_ensino_medio"
+    )
+    def test_preserva_erro_http_sem_json(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        request = httpx.Request("GET", "https://sidecar.local/test")
+        response = httpx.Response(
+            500,
+            request=request,
+            text="Falha nos itinerários",
+        )
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "Erro no sidecar",
+            request=request,
+            response=response,
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_TURMAS}/itinerario/ensino-medio/"
+        )
+
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+        self.assertEqual(resp.data, {"detail": "Falha nos itinerários"})
+
+    @patch(
+        "apps.pedagogico.views.services.get_itinerarios_ensino_medio"
+    )
+    def test_503_quando_sidecar_indisponivel(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        request = httpx.Request("GET", "https://sidecar.local/test")
+        mock_svc.side_effect = httpx.ConnectError(
+            "Sidecar indisponível",
+            request=request,
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_TURMAS}/itinerario/ensino-medio/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(
+            resp.data,
+            {"detail": "Servico pedagogico indisponivel."},
+        )
+
+    @patch(
+        "apps.pedagogico.views.services.get_itinerarios_ensino_medio"
+    )
+    def test_502_quando_contrato_canonico_for_invalido(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        mock_svc.return_value = [
+            {"id": 9, "nome": "Itinerário", "serie": "inválida"}
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_TURMAS}/itinerario/ensino-medio/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+        self.assertEqual(
+            resp.data,
+            {"detail": "Resposta do servico pedagogico invalida."},
+        )
+
+    @patch(
+        "apps.pedagogico.views.services.get_itinerarios_ensino_medio"
+    )
+    def test_502_quando_service_rejeita_estrutura(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        mock_svc.side_effect = ValueError(
+            "Resposta de itinerários deve ser uma lista de objetos."
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_TURMAS}/itinerario/ensino-medio/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+
+
 class TurmasSchemaTest(SimpleTestCase):
     """Valida a documentacao de turmas no schema OpenAPI."""
 
@@ -287,6 +1048,46 @@ class TurmasSchemaTest(SimpleTestCase):
                 "tags"
             ],
             ["Turma"],
+        )
+        path = (
+            "/api/turmas/ues/{codigo_ue}/turmas/{codigo_turma}/"
+            "sincronizacoes-institucionais/"
+        )
+        self.assertEqual(schema["paths"][path]["get"]["tags"], ["Turma"])
+        anos_path = (
+            "/api/turmas/ue/{codigo_ue}/"
+            "sincronizacoes-institucionais/anos-letivos/"
+        )
+        operation = schema["paths"][anos_path]["get"]
+        self.assertEqual(operation["tags"], ["Turma"])
+        query = next(
+            item
+            for item in operation["parameters"]
+            if item["name"] == "anos_letivos_vigente"
+        )
+        self.assertFalse(query.get("required", False))
+        self.assertEqual(query["schema"]["type"], "array")
+        self.assertEqual(query["schema"]["items"]["type"], "integer")
+        itinerarios_path = (
+            "/api/turmas/itinerario/ensino-medio/"
+        )
+        itinerarios = schema["paths"][itinerarios_path]["get"]
+        self.assertEqual(itinerarios["tags"], ["Turma"])
+        response_schema = itinerarios["responses"]["200"]["content"][
+            "application/json"
+        ]["schema"]
+        self.assertEqual(response_schema["type"], "array")
+        turmas_historicas_path = (
+            "/api/turmas/anos-letivos/{ano_letivo}/professor/"
+            "{professor_rf}/turmas-historicas-geral/"
+        )
+        turmas_historicas = schema["paths"][turmas_historicas_path]["get"]
+        self.assertEqual(turmas_historicas["tags"], ["Turma"])
+        self.assertEqual(
+            turmas_historicas["responses"]["200"]["content"][
+                "application/json"
+            ]["schema"]["type"],
+            "array",
         )
 
     def test_body_nao_obrigatorio_e_descreve_codigos_turmas(self) -> None:
@@ -588,6 +1389,21 @@ class ComponentesPlanejamentoViewSetTest(SimpleTestCase):
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    @patch("apps.pedagogico.views.services.get_componentes_planejamento")
+    def test_retorna_204_quando_lista_vazia(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        mock_svc.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX}/turmas/T001/funcionarios/RF001/perfis/P1/"
+            "planejamento/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
         mock_svc.assert_called_once_with(
             codigo_turma="T001",
             login="RF001",
