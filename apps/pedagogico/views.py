@@ -1,22 +1,30 @@
 """Views do domínio pedagógico."""
 
 import json
+from typing import Any, cast
 
+import httpx
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.responses import detail_response
 from apps.pedagogico import services
 from apps.pedagogico.serializers import (
+    AnosLetivosVigentesQuerySerializer,
+    CodigoTurmaInteiroListSerializer,
     CodigoTurmaListSerializer,
     ComponenteBaseSerializer,
     ComponenteCurricularSerializer,
     ComponenteRegenciaSerializer,
     DadosAulaTurmaSerializer,
     GradeCurricularSerializer,
+    ItinerarioEnsinoMedioSerializer,
+    SincronizacaoInstitucionalTurmaSerializer,
     TurmaDadosSerializer,
+    TurmaHistoricaGeralSerializer,
 )
 
 _TAG = ["ComponenteCurricular"]
@@ -44,12 +52,12 @@ def _obter_lista_query(request: Request, nome: str) -> list[str]:
     Returns:
         Valores normalizados como lista de strings.
     """
-    valores = request.query_params.getlist(nome)
+    valores = cast(list[str], request.query_params.getlist(nome))
     if len(valores) != 1:
         return valores
 
     try:
-        valor_json = json.loads(valores[0])
+        valor_json: Any = json.loads(valores[0])
     except (json.JSONDecodeError, TypeError):
         return valores
 
@@ -181,6 +189,235 @@ class DadosTurmaViewSet(APIView):
         """
         data = services.get_dados_turma(codigo_turma)
         return Response(TurmaDadosSerializer(data).data)
+
+
+class TurmasHistoricasGeraisProfessorViewSet(APIView):
+    """Lista turmas históricas gerais de um professor."""
+
+    @extend_schema(
+        tags=_TAG_TURMA,
+        description=(
+            "Retorna as turmas históricas gerais do professor no ano "
+            "letivo informado."
+        ),
+        responses={200: TurmaHistoricaGeralSerializer(many=True)},
+    )
+    def get(
+        self,
+        _request: Request,
+        ano_letivo: int,
+        professor_rf: str,
+    ) -> Response:
+        """Retorna turmas históricas gerais do professor.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            ano_letivo: Ano letivo usado na consulta.
+            professor_rf: Registro funcional do professor.
+
+        Returns:
+            Resposta HTTP com as turmas históricas encontradas.
+        """
+        try:
+            data = services.get_turmas_historicas_gerais_professor(
+                ano_letivo=ano_letivo,
+                professor_rf=professor_rf,
+            )
+        except httpx.HTTPStatusError as exc:
+            try:
+                body = exc.response.json()
+            except ValueError:
+                detail = (
+                    exc.response.text.strip() or exc.response.reason_phrase
+                )
+                body = {"detail": detail}
+            return Response(body, status=exc.response.status_code)
+        except httpx.RequestError:
+            return detail_response(
+                "Servico pedagogico indisponivel.",
+                503,
+            )
+        except ValueError:
+            return detail_response(
+                "Resposta do servico pedagogico invalida.",
+                502,
+            )
+
+        serializer = TurmaHistoricaGeralSerializer(
+            data=data,
+            many=True,
+        )
+        if not serializer.is_valid():
+            return detail_response(
+                "Resposta do servico pedagogico invalida.",
+                502,
+            )
+        return Response(serializer.data)
+
+
+class SincronizacaoInstitucionalTurmaViewSet(APIView):
+    """Retorna os dados institucionais de uma turma."""
+
+    @extend_schema(
+        tags=_TAG_TURMA,
+        description="Retorna os dados institucionais sincronizados da turma.",
+        responses={200: SincronizacaoInstitucionalTurmaSerializer},
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_ue: str,
+        codigo_turma: str,
+    ) -> Response:
+        """Retorna os dados institucionais da turma.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            codigo_ue: Código da unidade educacional.
+            codigo_turma: Código da turma.
+
+        Returns:
+            Resposta HTTP com os dados institucionais da turma.
+        """
+        try:
+            data = services.get_sincronizacao_institucional_turma(
+                codigo_ue=codigo_ue,
+                codigo_turma=codigo_turma,
+            )
+        except httpx.HTTPStatusError as exc:
+            try:
+                body = exc.response.json()
+            except ValueError:
+                detail = (
+                    exc.response.text.strip() or exc.response.reason_phrase
+                )
+                body = {"detail": detail}
+            return Response(body, status=exc.response.status_code)
+        except httpx.RequestError:
+            return Response(
+                {"detail": "Servico pedagogico indisponivel."},
+                status=503,
+            )
+        return Response(SincronizacaoInstitucionalTurmaSerializer(data).data)
+
+
+class SincronizacoesInstitucionaisAnosLetivosViewSet(APIView):
+    """Lista turmas institucionais da UE por anos letivos."""
+
+    @extend_schema(
+        tags=_TAG_TURMA,
+        description=(
+            "Retorna os códigos das turmas vinculadas às sincronizações "
+            "institucionais da UE."
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="anos_letivos_vigente",
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                many=True,
+            ),
+        ],
+        responses={200: CodigoTurmaInteiroListSerializer},
+    )
+    def get(
+        self,
+        request: Request,
+        codigo_ue: str,
+    ) -> Response:
+        """Lista códigos de turmas da UE.
+
+        Args:
+            request: Requisição HTTP recebida.
+            codigo_ue: Código da unidade educacional.
+
+        Returns:
+            Resposta HTTP com os códigos das turmas encontradas.
+        """
+        query_serializer = AnosLetivosVigentesQuerySerializer(
+            data={
+                "anos_letivos_vigente": _obter_lista_query(
+                    request,
+                    "anos_letivos_vigente",
+                )
+            }
+        )
+        query_serializer.is_valid(raise_exception=True)
+        anos = query_serializer.validated_data.get("anos_letivos_vigente")
+
+        try:
+            data = services.get_sincronizacoes_institucionais_anos_letivos(
+                codigo_ue=codigo_ue,
+                anos_letivos_vigente=anos or None,
+            )
+        except httpx.HTTPStatusError as exc:
+            try:
+                body = exc.response.json()
+            except ValueError:
+                detail = (
+                    exc.response.text.strip() or exc.response.reason_phrase
+                )
+                body = {"detail": detail}
+            return Response(body, status=exc.response.status_code)
+        except httpx.RequestError:
+            return Response(
+                {"detail": "Servico pedagogico indisponivel."},
+                status=503,
+            )
+
+        return Response(CodigoTurmaInteiroListSerializer(data).data)
+
+
+class ItinerariosEnsinoMedioViewSet(APIView):
+    """Lista os itinerários do ensino médio."""
+
+    @extend_schema(
+        tags=_TAG_TURMA,
+        description="Retorna os itinerários disponíveis no ensino médio.",
+        responses={200: ItinerarioEnsinoMedioSerializer(many=True)},
+    )
+    def get(self, _request: Request) -> Response:
+        """Retorna os itinerários do ensino médio.
+
+        Args:
+            _request: Requisição HTTP recebida.
+
+        Returns:
+            Resposta HTTP com os itinerários encontrados.
+        """
+        try:
+            data = services.get_itinerarios_ensino_medio()
+        except httpx.HTTPStatusError as exc:
+            try:
+                body = exc.response.json()
+            except ValueError:
+                detail = (
+                    exc.response.text.strip() or exc.response.reason_phrase
+                )
+                body = {"detail": detail}
+            return Response(body, status=exc.response.status_code)
+        except httpx.RequestError:
+            return detail_response(
+                "Servico pedagogico indisponivel.",
+                503,
+            )
+        except ValueError:
+            return detail_response(
+                "Resposta do servico pedagogico invalida.",
+                502,
+            )
+
+        serializer = ItinerarioEnsinoMedioSerializer(
+            data=data,
+            many=True,
+        )
+        if not serializer.is_valid():
+            return detail_response(
+                "Resposta do servico pedagogico invalida.",
+                502,
+            )
+        return Response(serializer.validated_data)
 
 
 class ComponentesCurricularesViewSet(APIView):

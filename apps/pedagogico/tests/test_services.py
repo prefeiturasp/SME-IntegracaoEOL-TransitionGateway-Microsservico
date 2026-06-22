@@ -31,6 +31,48 @@ _TURMA_MS = {
 }
 
 
+class ListarTurmasTest(SimpleTestCase):
+    """Valida a listagem resumida de turmas."""
+
+    @patch.object(services._client, "post")
+    def test_retorna_payload_json(
+        self,
+        mock_post: MagicMock,
+    ) -> None:
+        response = MagicMock()
+        mock_post.return_value = response
+        with patch.object(
+            services._client,
+            "json_or_none",
+            return_value=[{"codigo": 3034092}],
+        ) as mock_json_or_none:
+            result = services.listar_turmas([3034092])
+
+        mock_post.assert_called_once_with(
+            f"{_BASE_TURMAS}/listar-turmas/",
+            payload=[3034092],
+        )
+        response.raise_for_status.assert_called_once_with()
+        mock_json_or_none.assert_called_once_with(response)
+        self.assertEqual(result, [{"codigo": 3034092}])
+
+    @patch.object(services._client, "post")
+    def test_retorna_lista_vazia_sem_payload(
+        self,
+        mock_post: MagicMock,
+    ) -> None:
+        response = MagicMock()
+        mock_post.return_value = response
+        with patch.object(
+            services._client,
+            "json_or_none",
+            return_value=None,
+        ):
+            result = services.listar_turmas([])
+
+        self.assertEqual(result, [])
+
+
 class PostTurmasRegularesTest(SimpleTestCase):
     """Valida a consulta de turmas regulares."""
 
@@ -199,6 +241,292 @@ class GetDadosTurmaTest(SimpleTestCase):
         self.assertEqual(result["situacao"], None)
         self.assertEqual(result["ehistorico"], False)
         self.assertEqual(result["etapaEJA"], 0)
+
+
+class GetTurmasHistoricasGeraisProfessorTest(SimpleTestCase):
+    """Valida a consulta de turmas históricas gerais do professor."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_canonico(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        payload = [
+            {
+                "ano": "7",
+                "ano_letivo": 2025,
+                "codigo": 2825477,
+                "modalidade": "Infantil",
+                "codigo_modalidade": 1,
+                "nome_turma": "7A",
+                "semestre": 0,
+            }
+        ]
+        mock_response = MagicMock()
+        mock_response.json.return_value = payload
+        mock_get.return_value = mock_response
+
+        result = services.get_turmas_historicas_gerais_professor(
+            ano_letivo=2025,
+            professor_rf="08381399",
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE_TURMAS}/anos-letivos/2025/professor/08381399/"
+            "turmas-historicas-geral/"
+        )
+        mock_response.raise_for_status.assert_called_once_with()
+        self.assertEqual(result, payload)
+
+    @patch.object(services._client, "get")
+    def test_retorna_lista_vazia(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        mock_response = MagicMock()
+        mock_response.json.return_value = []
+        mock_get.return_value = mock_response
+
+        result = services.get_turmas_historicas_gerais_professor(
+            ano_letivo=2025,
+            professor_rf="8381399",
+        )
+
+        self.assertEqual(result, [])
+
+    @patch.object(services._client, "get")
+    def test_rejeita_raiz_que_nao_seja_lista(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"codigo": 2825477}
+        mock_get.return_value = mock_response
+
+        with self.assertRaisesMessage(
+            ValueError,
+            "Resposta de turmas históricas deve ser uma lista de objetos.",
+        ):
+            services.get_turmas_historicas_gerais_professor(
+                ano_letivo=2025,
+                professor_rf="8381399",
+            )
+
+    @patch.object(services._client, "get")
+    def test_rejeita_item_que_nao_seja_objeto(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        mock_response = MagicMock()
+        mock_response.json.return_value = [2825477]
+        mock_get.return_value = mock_response
+
+        with self.assertRaisesMessage(
+            ValueError,
+            "Resposta de turmas históricas deve ser uma lista de objetos.",
+        ):
+            services.get_turmas_historicas_gerais_professor(
+                ano_letivo=2025,
+                professor_rf="8381399",
+            )
+
+
+class GetSincronizacaoInstitucionalTurmaTest(SimpleTestCase):
+    """Valida a consulta de sincronização institucional da turma."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_canonico(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        payload = {"codigo": 3010807, "ue_codigo": "091120"}
+        mock_response = MagicMock()
+        mock_response.content = b'{"codigo": 3010807}'
+        mock_response.json.return_value = payload
+        mock_get.return_value = mock_response
+
+        result = services.get_sincronizacao_institucional_turma(
+            codigo_ue="091120",
+            codigo_turma="3010807",
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE_TURMAS}/ues/091120/turmas/3010807/"
+            "sincronizacoes-institucionais/"
+        )
+        mock_response.raise_for_status.assert_called_once_with()
+        self.assertEqual(result, payload)
+
+    @patch.object(services._client, "get")
+    def test_rejeita_resposta_que_nao_seja_objeto(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        mock_response = MagicMock()
+        mock_response.content = b"[]"
+        mock_response.json.return_value = []
+        mock_get.return_value = mock_response
+
+        with self.assertRaisesMessage(
+            ValueError,
+            "Resposta institucional da turma deve ser um objeto.",
+        ):
+            services.get_sincronizacao_institucional_turma(
+                codigo_ue="091120",
+                codigo_turma="3010807",
+            )
+
+
+class GetSincronizacoesInstitucionaisAnosLetivosTest(SimpleTestCase):
+    """Valida a consulta de turmas institucionais por anos letivos."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_canonico_com_anos(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        payload = [3036295, 3082921, 3036225]
+        mock_response = MagicMock()
+        mock_response.json.return_value = payload
+        mock_get.return_value = mock_response
+
+        result = services.get_sincronizacoes_institucionais_anos_letivos(
+            codigo_ue="019437",
+            anos_letivos_vigente=[2025, 2026],
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE_TURMAS}/ue/019437/"
+            "sincronizacoes-institucionais/anos-letivos/",
+            params={"anos_letivos_vigente": [2025, 2026]},
+        )
+        mock_response.raise_for_status.assert_called_once_with()
+        self.assertEqual(result, payload)
+
+    @patch.object(services._client, "get")
+    def test_omite_filtro_quando_anos_nao_informados(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        mock_response = MagicMock()
+        mock_response.json.return_value = []
+        mock_get.return_value = mock_response
+
+        result = services.get_sincronizacoes_institucionais_anos_letivos(
+            codigo_ue="019437",
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE_TURMAS}/ue/019437/"
+            "sincronizacoes-institucionais/anos-letivos/",
+            params=None,
+        )
+        self.assertEqual(result, [])
+
+    @patch.object(services._client, "get")
+    def test_rejeita_resposta_que_nao_seja_lista(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"codigo": 3036295}
+        mock_get.return_value = mock_response
+
+        with self.assertRaisesMessage(
+            ValueError,
+            "Resposta de anos letivos deve ser uma lista de inteiros.",
+        ):
+            services.get_sincronizacoes_institucionais_anos_letivos(
+                codigo_ue="019437",
+            )
+
+    @patch.object(services._client, "get")
+    def test_rejeita_item_que_nao_seja_inteiro(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        mock_response = MagicMock()
+        mock_response.json.return_value = [3036295, "3082921"]
+        mock_get.return_value = mock_response
+
+        with self.assertRaisesMessage(
+            ValueError,
+            "Resposta de anos letivos deve ser uma lista de inteiros.",
+        ):
+            services.get_sincronizacoes_institucionais_anos_letivos(
+                codigo_ue="019437",
+            )
+
+
+class GetItinerariosEnsinoMedioTest(SimpleTestCase):
+    """Valida a consulta de itinerários do ensino médio."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_canonico(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        payload = [
+            {
+                "id": 9,
+                "nome": "Investigação cientifica",
+                "serie": "2",
+            }
+        ]
+        mock_response = MagicMock()
+        mock_response.json.return_value = payload
+        mock_get.return_value = mock_response
+
+        result = services.get_itinerarios_ensino_medio()
+
+        mock_get.assert_called_once_with(
+            f"{_BASE_TURMAS}/itinerario/ensino-medio/"
+        )
+        mock_response.raise_for_status.assert_called_once_with()
+        self.assertEqual(result, payload)
+
+    @patch.object(services._client, "get")
+    def test_retorna_lista_vazia(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        mock_response = MagicMock()
+        mock_response.json.return_value = []
+        mock_get.return_value = mock_response
+
+        result = services.get_itinerarios_ensino_medio()
+
+        self.assertEqual(result, [])
+
+    @patch.object(services._client, "get")
+    def test_rejeita_raiz_que_nao_seja_lista(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"id": 9}
+        mock_get.return_value = mock_response
+
+        with self.assertRaisesMessage(
+            ValueError,
+            "Resposta de itinerários deve ser uma lista de objetos.",
+        ):
+            services.get_itinerarios_ensino_medio()
+
+    @patch.object(services._client, "get")
+    def test_rejeita_item_que_nao_seja_objeto(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        mock_response = MagicMock()
+        mock_response.json.return_value = [{"id": 9}, "inválido"]
+        mock_get.return_value = mock_response
+
+        with self.assertRaisesMessage(
+            ValueError,
+            "Resposta de itinerários deve ser uma lista de objetos.",
+        ):
+            services.get_itinerarios_ensino_medio()
 
 
 class GetComponentesUeAnosTest(SimpleTestCase):

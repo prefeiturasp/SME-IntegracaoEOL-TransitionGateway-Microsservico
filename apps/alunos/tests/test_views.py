@@ -122,7 +122,7 @@ class AlunosUrlsTest(SimpleTestCase):
             "data-aula-ticks/{data_ticks}/"
         )
         operation = resp.data["paths"][path]["get"]
-        self.assertEqual(operation["tags"], ["Aluno"])
+        self.assertEqual(operation["tags"], ["Turma"])
         self.assertEqual(
             {item["name"] for item in operation["parameters"]},
             {"codigo_turma", "data_ticks"},

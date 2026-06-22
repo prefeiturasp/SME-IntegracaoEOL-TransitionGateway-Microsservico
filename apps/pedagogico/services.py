@@ -179,6 +179,130 @@ def get_dados_turma(codigo_turma: str) -> dict[str, Any]:
     return _turma_legado(response.json())
 
 
+def get_turmas_historicas_gerais_professor(
+    ano_letivo: int,
+    professor_rf: str,
+) -> list[dict[str, Any]]:
+    """Lista turmas históricas gerais de um professor.
+
+    Args:
+        ano_letivo: Ano letivo usado na consulta.
+        professor_rf: Registro funcional do professor.
+
+    Returns:
+        Turmas históricas retornadas pelo serviço pedagógico.
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+        ValueError: Se a resposta não for uma lista de objetos.
+    """
+    response = _client.get(
+        f"{_BASE_TURMAS}/anos-letivos/{ano_letivo}/professor/"
+        f"{professor_rf}/turmas-historicas-geral/"
+    )
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, list) or any(
+        not isinstance(item, dict) for item in payload
+    ):
+        raise ValueError(
+            "Resposta de turmas históricas deve ser uma lista de objetos."
+        )
+    return payload
+
+
+def get_sincronizacao_institucional_turma(
+    codigo_ue: str,
+    codigo_turma: str,
+) -> dict[str, Any]:
+    """Retorna os dados institucionais sincronizados de uma turma.
+
+    Args:
+        codigo_ue: Código da unidade educacional.
+        codigo_turma: Código da turma.
+
+    Returns:
+        Dados institucionais da turma.
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+        ValueError: Se a resposta não representar um objeto.
+    """
+    response = _client.get(
+        f"{_BASE_TURMAS}/ues/{codigo_ue}/turmas/{codigo_turma}/"
+        "sincronizacoes-institucionais/"
+    )
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, dict):
+        raise ValueError("Resposta institucional da turma deve ser um objeto.")
+    return payload
+
+
+def get_sincronizacoes_institucionais_anos_letivos(
+    codigo_ue: str,
+    anos_letivos_vigente: list[int] | None = None,
+) -> list[int]:
+    """Lista turmas institucionais da UE por anos letivos.
+
+    Args:
+        codigo_ue: Código da unidade educacional.
+        anos_letivos_vigente: Anos letivos usados no filtro.
+
+    Returns:
+        Códigos das turmas encontradas.
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+        ValueError: Se a resposta não for uma lista de inteiros.
+    """
+    params = None
+    if anos_letivos_vigente:
+        params = {"anos_letivos_vigente": anos_letivos_vigente}
+
+    response = _client.get(
+        f"{_BASE_TURMAS}/ue/{codigo_ue}/"
+        "sincronizacoes-institucionais/anos-letivos/",
+        params=params,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, list) or any(
+        not isinstance(codigo, int) or isinstance(codigo, bool)
+        for codigo in payload
+    ):
+        raise ValueError(
+            "Resposta de anos letivos deve ser uma lista de inteiros."
+        )
+    return payload
+
+
+def get_itinerarios_ensino_medio() -> list[dict[str, Any]]:
+    """Lista os itinerários do ensino médio.
+
+    Returns:
+        Itinerários retornados pelo serviço pedagógico.
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+        ValueError: Se a resposta não for uma lista de objetos.
+    """
+    response = _client.get(f"{_BASE_TURMAS}/itinerario/ensino-medio/")
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, list) or any(
+        not isinstance(item, dict) for item in payload
+    ):
+        raise ValueError(
+            "Resposta de itinerários deve ser uma lista de objetos."
+        )
+    return payload
+
+
 def get_componentes_por_turmas_ue(
     ue_id: str,
     turmas: list[str],
