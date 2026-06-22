@@ -230,7 +230,7 @@ def get_equipamentos(
 def get_todas_unidades() -> Any:
     """Lista todas as unidades educacionais.
 
-    Irá retornar os dados paginados no formato {"count": int, "results": list}, percorrendo 
+    Retorna dados paginados no formato {"count": int, "results": list}, percorrendo 
     as páginas usando ``limite`` e ``offset`` e consolida todos os itens em uma 
     lista única antes de responder.
 
