@@ -524,7 +524,7 @@ class TodasUnidadesViewTest(SimpleTestCase):
             "codigoTipoEscola": 10,
             "tipoEscolaId": 10,
         }
-        mock_svc.return_value = {"count": 1, "results": [mock_unidade]}
+        mock_svc.return_value = [mock_unidade]
         resp = _cliente_autenticado().get("/api/escolas/todas-unidades/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(len(resp.json()), 1)
@@ -542,7 +542,7 @@ class TodasUnidadesViewTest(SimpleTestCase):
     @patch("apps.institucional.views.services.get_todas_unidades")
     def test_200_lista_vazia(self, mock_svc: MagicMock) -> None:
         """Retorna 200 com lista vazia quando não há unidades."""
-        mock_svc.return_value = {"count": 0, "results": []}
+        mock_svc.return_value = []
         resp = _cliente_autenticado().get("/api/escolas/todas-unidades/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
