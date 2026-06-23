@@ -184,6 +184,48 @@ class GetInformacoesAlunosTurmaTest(SimpleTestCase):
         self.assertEqual(result, [])
 
 
+class GetAlunosAtivosDataAulaTicksTest(SimpleTestCase):
+    """Valida a integração da consulta de alunos ativos."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_canonico(self, mock_get: MagicMock) -> None:
+        payload = [{"codigo_aluno": 123456}]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[]"
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_alunos_ativos_data_aula_ticks(
+            codigo_turma="3012185",
+            data_ticks="639031104000000000",
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/turmas/3012185/alunos-ativos/"
+            "data-aula-ticks/639031104000000000/"
+        )
+        mock_resp.raise_for_status.assert_called_once_with()
+        self.assertEqual(result, payload)
+
+    @patch.object(services._client, "get")
+    def test_retorna_lista_vazia_quando_sem_corpo(
+        self, mock_get: MagicMock
+    ) -> None:
+        mock_resp = MagicMock()
+        mock_resp.status_code = 204
+        mock_resp.content = b""
+        mock_get.return_value = mock_resp
+
+        result = services.get_alunos_ativos_data_aula_ticks(
+            codigo_turma="3012185",
+            data_ticks="639031104000000000",
+        )
+
+        mock_resp.raise_for_status.assert_called_once_with()
+        self.assertEqual(result, [])
+
+
 class GetTurmasAlunoTest(SimpleTestCase):
     """Valida a consulta de turmas do aluno."""
 

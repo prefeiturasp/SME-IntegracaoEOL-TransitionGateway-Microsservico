@@ -13,6 +13,7 @@ _BASE = "/api/v1/professores"
 _BASE_ACESSOS = f"{_BASE}/acessos"
 _BASE_FUNCIONARIOS = f"{_BASE}/funcionarios"
 _BASE_ESCOLAS = f"{_BASE}/escolas"
+_BASE_TURMAS = f"{_BASE}/turmas"
 
 _client = ServiceClient(
     base_url=settings.SIDECAR_PROFESSORES_URL,
@@ -136,6 +137,51 @@ def _get_funcionarios_escola_por_filtro(
         if isinstance(data, list):
             resultado.extend(data)
     return resultado
+
+
+def get_codigos_turmas_historicas_professor(
+    ano_letivo: int,
+    professor_rf: str,
+) -> list[int]:
+    """Lista códigos de turmas históricas do professor no ano letivo.
+
+    Args:
+        ano_letivo: Ano letivo usado na consulta.
+        professor_rf: Registro funcional do professor.
+
+    Returns:
+        Códigos de turma sem duplicidade.
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+        ValueError: Se a resposta não contiver códigos inteiros.
+    """
+    resp = _client.get(
+        f"{_BASE_TURMAS}/anos-letivos/{ano_letivo}/professor/"
+        f"{professor_rf}/turmas-historicas-geral/"
+    )
+    if resp.status_code == 404:
+        return []
+    resp.raise_for_status()
+    payload = _client.json_or_none(resp)
+    if not isinstance(payload, list):
+        raise ValueError(
+            "Resposta de turmas históricas deve conter códigos inteiros."
+        )
+
+    codigos: list[int] = []
+    codigos_incluidos: set[int] = set()
+    for item in payload:
+        codigo = item.get("codigo") if isinstance(item, dict) else item
+        if not isinstance(codigo, int) or isinstance(codigo, bool):
+            raise ValueError(
+                "Resposta de turmas históricas deve conter códigos inteiros."
+            )
+        if codigo not in codigos_incluidos:
+            codigos.append(codigo)
+            codigos_incluidos.add(codigo)
+    return codigos
 
 
 def get_professor(rf_professor: str) -> Any:

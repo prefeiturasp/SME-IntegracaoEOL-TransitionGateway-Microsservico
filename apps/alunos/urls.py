@@ -6,11 +6,21 @@ from apps.alunos.views import (
     AlunoAutocompleteAtivosView,
     AlunoInformacoesView,
     AlunoNecessidadesEspeciaisView,
+    AlunosAtivosDataAulaTicksView,
     AlunosListView,
     AlunoTurmasView,
     InformacoesAlunosTurmaView,
     ResponsavelResumidoView,
 )
+
+turma_urlpatterns = [
+    path(
+        "<str:codigo_turma>/alunos-ativos/"
+        "data-aula-ticks/<str:data_ticks>/",
+        AlunosAtivosDataAulaTicksView.as_view(),
+        name="alunos-ativos-data-aula-ticks",
+    ),
+]
 
 urlpatterns = [
     path("alunos", AlunosListView.as_view(), name="alunos-list"),

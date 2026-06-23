@@ -262,37 +262,65 @@ class GetTodasUnidadesTest(SimpleTestCase):
     def test_chama_path_correto(self, mock_client: MagicMock) -> None:
         """Monta o path de listagem de todas as unidades."""
         mock_client.get.return_value.raise_for_status = MagicMock()
-        mock_client.get.return_value.json.return_value = []
+        mock_client.get.return_value.json.return_value = {
+            "count": 0,
+            "results": [],
+        }
 
         result = services.get_todas_unidades()
 
         mock_client.get.assert_called_once_with(
-            f"{_BASE}/escolas/todas-unidades/"
+            f"{_BASE}/escolas/todas-unidades/",
+            params={"limite": 1000, "offset": 0},
         )
         self.assertEqual(result, [])
 
     @patch("apps.institucional.services._client")
     def test_retorna_lista_unidades(self, mock_client: MagicMock) -> None:
-        """Retorna payload paginado de unidades do sidecar."""
-        mock_unidade = {
-            "codigoEscola": "400496",
-            "nomeEscola": "13 DE MAIO",
-            "nomeDRE": "DIRETORIA REGIONAL DE EDUCACAO IPIRANGA",
-            "siglaDRE": "DRE - IP",
-            "codigoDRE": "108600",
-            "tipoEscola": "CENTRO DE EDUCACAO INFANTIL DIRETO",
-            "siglaTipoEscola": "CEI DIRET",
-        }
+        """Consolida todas as paginas em uma unica lista."""
         mock_client.get.return_value.raise_for_status = MagicMock()
-        mock_client.get.return_value.json.return_value = {
-            "count": 1,
-            "results": [mock_unidade],
-        }
+        mock_client.get.side_effect = [
+            MagicMock(
+                json=MagicMock(
+                    return_value={
+                        "count": 2,
+                        "results": [{"codigoEscola": "400496"}],
+                    }
+                ),
+                raise_for_status=MagicMock(),
+            ),
+            MagicMock(
+                json=MagicMock(
+                    return_value={
+                        "count": 2,
+                        "results": [{"codigoEscola": "400497"}],
+                    }
+                ),
+                raise_for_status=MagicMock(),
+            ),
+        ]
 
         result = services.get_todas_unidades()
 
-        self.assertEqual(result["count"], 1)
-        self.assertEqual(result["results"][0]["codigoEscola"], "400496")
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0]["codigoEscola"], "400496")
+        self.assertEqual(result[1]["codigoEscola"], "400497")
+        self.assertEqual(mock_client.get.call_count, 2)
+
+    @patch("apps.institucional.services._client")
+    def test_retorna_lista_quando_sidecar_ja_retorna_lista(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Retorna lista direta quando sidecar nao usa envelope."""
+        mock_client.get.return_value.raise_for_status = MagicMock()
+        mock_client.get.return_value.json.return_value = [
+            {"codigoEscola": "400496"}
+        ]
+
+        result = services.get_todas_unidades()
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["codigoEscola"], "400496")
 
 
 class GetTiposUnidadeEducacaoTest(SimpleTestCase):

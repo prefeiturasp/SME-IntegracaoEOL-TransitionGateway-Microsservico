@@ -128,6 +128,32 @@ def get_informacoes_alunos_turma(codigo_turma: str) -> Any:
     return _client.json_or_none(resp) or []
 
 
+def get_alunos_ativos_data_aula_ticks(
+    codigo_turma: str,
+    data_ticks: str,
+) -> Any:
+    """Retorna alunos ativos da turma na data informada em ticks.
+
+    Args:
+        codigo_turma: Código EOL da turma.
+        data_ticks: Data de referência em ticks de DateTime do .NET.
+
+    Returns:
+        Lista de alunos ativos, ou lista vazia quando não houver registros.
+
+    Raises:
+        httpx.HTTPStatusError: Se o serviço externo retornar status de erro.
+        httpx.RequestError: Se o serviço externo estiver inacessível.
+    """
+    path = (
+        f"{_BASE}/turmas/{codigo_turma}/alunos-ativos/"
+        f"data-aula-ticks/{data_ticks}/"
+    )
+    resp = _client.get(path)
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
 def get_turmas_aluno(codigo_aluno: str) -> Any:
     """Retorna turmas do aluno.
 

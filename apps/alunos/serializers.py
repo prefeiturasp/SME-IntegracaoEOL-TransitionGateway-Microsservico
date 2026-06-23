@@ -6,6 +6,7 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from apps.core.datetime import datetime_legado, parse_date
+from apps.core.serializers import DataHoraLegadoComZField, InteiroBooleanoField
 from apps.core.utils import get_first_value, string_or_none
 
 _DATA_PADRAO_LEGADO = "0001-01-01T00:00:00"
@@ -174,6 +175,91 @@ class InformacoesAlunoTurmaSerializer(serializers.Serializer):
     codigoRaca = serializers.IntegerField(
         source="codigo_raca", allow_null=True
     )  # NOSONAR
+
+
+class AlunoAtivoDataAulaSerializer(serializers.Serializer):
+    """Serializa dados de aluno ativo e sua matrícula."""
+
+    codigoComponenteCurricular = serializers.IntegerField(default=0)
+    codigoAluno = serializers.IntegerField(
+        source="codigo_aluno", allow_null=True
+    )
+    nomeAluno = serializers.CharField(source="nome_aluno", allow_null=True)
+    dataNascimento = DataHoraLegadoComZField(source="data_nascimento")
+    nomeSocialAluno = serializers.CharField(
+        source="nome_social_aluno", allow_null=True
+    )
+    codigoSituacaoMatricula = serializers.IntegerField(
+        source="codigo_situacao_matricula", allow_null=True
+    )
+    situacaoMatricula = serializers.CharField(
+        source="situacao_matricula", allow_null=True
+    )
+    dataSituacao = DataHoraLegadoComZField(source="data_situacao")
+    dataMatricula = DataHoraLegadoComZField(source="data_matricula")
+    numeroAlunoChamada = serializers.CharField(source="numero_aluno_chamada")
+    celularResponsavel = serializers.CharField(
+        source="celular_responsavel",
+        allow_blank=True,
+        allow_null=True,
+        default="",
+    )
+    possuiDeficiencia = InteiroBooleanoField(source="possui_deficiencia")
+    transferencia_Interna = serializers.BooleanField(default=False)
+    remanejado = serializers.BooleanField(default=False)
+    escolaTransferencia = serializers.CharField(allow_null=True, default=None)
+    turmaTransferencia = serializers.CharField(allow_null=True, default=None)
+    turmaRemanejamento = serializers.CharField(allow_null=True, default=None)
+    parecerConclusivo = serializers.CharField(allow_null=True, default=None)
+    nomeResponsavel = serializers.CharField(
+        source="nome_responsavel", allow_null=True
+    )
+    tipoResponsavel = serializers.IntegerField(
+        source="tipo_responsavel", allow_null=True
+    )
+    dataAtualizacaoContato = DataHoraLegadoComZField(
+        source="data_atualizacao_contato"
+    )
+    codigoMatricula = serializers.IntegerField(
+        source="codigo_matricula", allow_null=True
+    )
+    sequencia = serializers.IntegerField(allow_null=True)
+    tipoTurma = serializers.IntegerField(default=0)
+    codigoTurma = serializers.IntegerField(
+        source="codigo_turma", allow_null=True
+    )
+    codigoEscola = serializers.CharField(
+        source="codigo_escola", allow_null=True
+    )
+    ano = serializers.IntegerField(source="ano_letivo", allow_null=True)
+    codigoDre = serializers.CharField(source="codigo_dre", allow_null=True)
+    id = serializers.IntegerField(allow_null=True, default=None)
+
+    def to_representation(self, instance: Any) -> dict[str, Any]:
+        """Serializa os campos publicados para aluno e matrícula.
+
+        Args:
+            instance: Dados do aluno e da matrícula.
+
+        Returns:
+            Campos publicados com os valores esperados pelos consumidores.
+        """
+        data = cast(dict[str, Any], super().to_representation(instance))
+        data["codigoComponenteCurricular"] = 0
+        data["transferencia_Interna"] = False
+        data["remanejado"] = False
+        data["escolaTransferencia"] = None
+        data["turmaTransferencia"] = None
+        data["turmaRemanejamento"] = None
+        data["parecerConclusivo"] = None
+        data["tipoTurma"] = 0
+        data["id"] = None
+        if data.get("celularResponsavel") is None:
+            data["celularResponsavel"] = ""
+
+        if data.get("numeroAlunoChamada") is None:
+            data["numeroAlunoChamada"] = "000"
+        return data
 
 
 class NecessidadeEspecialSerializer(serializers.Serializer):
