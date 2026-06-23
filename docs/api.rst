@@ -68,6 +68,12 @@ Pedagógico
 
 .. autoclass:: apps.pedagogico.views.GradeComponentesCurricularesViewSet
 
+.. autoclass:: apps.pedagogico.views.AgrupamentosCorrelacionadosViewSet
+
+.. autoclass:: apps.pedagogico.views.AgrupamentosCorrelacionadosLoteViewSet
+
+.. autoclass:: apps.pedagogico.views.AgrupamentosTerritorioViewSet
+
 Professores
 -----------
 

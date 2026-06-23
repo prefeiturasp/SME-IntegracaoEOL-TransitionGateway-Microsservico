@@ -67,11 +67,13 @@ O gateway mapeia 17 rotas legadas para 15 endpoints canônicos do MS Pedagógico
 | L10 Componentes de turmas sem pós-processamento | EP-8 `GET /turmas/brutos` |
 | L11 Catálogo de componentes curriculares | EP-9 `GET /` |
 | L12 Dados de aula por turma (vigência de componentes) | EP-10 `GET /turmas/vigencia` |
-| L13 Agrupamentos correlacionados de Território do Saber | EP-13 `GET /{cod}/territorio-saber/agrupamentos-correlacionados` |
-| L14 Agrupamentos correlacionados em lote | EP-14 `POST /territorio-saber/agrupamentos-correlacionados` |
-| L15 Agrupamentos de Território do Saber por IDs | EP-15 `POST /territorio-saber/agrupamentos` |
+| L13 Agrupamentos correlacionados de Território do Saber por `cod_agrupamento` | EP-13 `GET /{cod}/territorio-saber/agrupamentos-correlacionados` |
+| L14 Agrupamentos correlacionados em lote por `cod_agrupamento` | EP-14 `POST /territorio-saber/agrupamentos-correlacionados` |
+| L15 Agrupamentos de Território do Saber por `cod_agrupamento` | EP-15 `POST /territorio-saber/agrupamentos` |
 | L16 Grade curricular por ano letivo | EP-11 `GET /grade-curricular/{anoLetivo}` |
 | L17 Componentes sem atribuição em uma turma | EP-12 `GET /turmas/{cod}/sem-atribuicao` |
+
+Nas rotas L13, L14 e L15, `{cod}`/body representam `cod_agrupamento`, não código de componente curricular do catálogo. O gateway chama o sidecar com barra final nessas rotas de POST para evitar redirect em chamadas com corpo.
 
 
 ## Domínio professores

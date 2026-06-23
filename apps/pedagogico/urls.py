@@ -3,6 +3,9 @@
 from django.urls import path
 
 from apps.pedagogico.views import (
+    AgrupamentosCorrelacionadosLoteViewSet,
+    AgrupamentosCorrelacionadosViewSet,
+    AgrupamentosTerritorioViewSet,
     ComponentesCurricularesViewSet,
     ComponentesFuncionarioViewSet,
     ComponentesPlanejamentoViewSet,
@@ -40,8 +43,7 @@ turma_urlpatterns = [
         name="itinerarios-ensino-medio",
     ),
     path(
-        "ue/<str:codigo_ue>/"
-        + "sincronizacoes-institucionais/anos-letivos/",
+        "ue/<str:codigo_ue>/" + "sincronizacoes-institucionais/anos-letivos/",
         SincronizacoesInstitucionaisAnosLetivosViewSet.as_view(),
         name="sincronizacoes-institucionais-anos-letivos",
     ),
@@ -98,8 +100,7 @@ urlpatterns = [
         ComponentesPlanejamentoViewSet.as_view(),
     ),
     path(
-        "turmas/<str:codigo_turma>/sem-atribuicao/"
-        + "<int:data_base_tick>/",
+        "turmas/<str:codigo_turma>/sem-atribuicao/" + "<int:data_base_tick>/",
         ComponentesSemAtribuicaoViewSet.as_view(),
     ),
     path(
@@ -126,6 +127,19 @@ urlpatterns = [
     path(
         "ano-turma/ano-letivo/<int:ano_letivo>/",
         GradeComponentesCurricularesViewSet.as_view(),
+    ),
+    path(
+        "territorio-saber/agrupamentos-correlacionados/",
+        AgrupamentosCorrelacionadosLoteViewSet.as_view(),
+    ),
+    path(
+        "territorio-saber/agrupamentos/",
+        AgrupamentosTerritorioViewSet.as_view(),
+    ),
+    path(
+        "<int:codigo_componente>/territorio-saber/"
+        + "agrupamentos-correlacionados/",
+        AgrupamentosCorrelacionadosViewSet.as_view(),
     ),
     path(
         "",
