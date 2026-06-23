@@ -19,8 +19,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "drf_spectacular",
-    "elasticapm.contrib.django",
-    "apps.core",
+    "apps.core.apps.CoreConfig",
     "apps.pedagogico",
     "apps.professores",
     "apps.programasedu",
@@ -30,10 +29,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    "elasticapm.contrib.django.middleware.TracingMiddleware",
+    "sme_sidecar_sdk.integrations.django.ObservabilityMiddleware",
     "django.middleware.security.SecurityMiddleware",
-    "apps.core.middleware.RequestIDMiddleware",
-    "apps.core.middleware.LoggingContextMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -142,100 +139,3 @@ SIDECAR_ALUNOS_API_KEY = os.getenv("SIDECAR_ALUNOS_API_KEY", "")
 SIDECAR_ALUNOS_API_KEY_HEADER = os.getenv(
     "SIDECAR_ALUNOS_API_KEY_HEADER", "X-API-Key"
 )
-
-GATEWAY_TIMEOUT_SECONDS = int(os.getenv("GATEWAY_TIMEOUT_SECONDS", "10"))
-
-ENABLE_RABBITMQ_LOGGING = os.getenv("ENABLE_RABBITMQ_LOGGING", "0") == "1"
-
-_logging_handlers: dict = {
-    "console": {
-        "class": "logging.StreamHandler",
-        "formatter": "json",
-        "filters": ["context"],
-    },
-}
-
-if ENABLE_RABBITMQ_LOGGING:
-    _logging_handlers["rabbitmq"] = {
-        "level": os.getenv("RABBITMQ_LOG_LEVEL", "INFO"),
-        "class": "apps.core.libs.rabbitmq_handler.RabbitMQHandler",
-        "host": os.getenv("RABBITMQ_HOST", ""),
-        "virtual_host": os.getenv("RABBITMQ_VIRTUAL_HOST", "/"),
-        "queue": os.getenv("RABBITMQ_LOG_QUEUE", ""),
-        "username": os.getenv("RABBITMQ_USERNAME", ""),
-        "password": os.getenv("RABBITMQ_PASSWORD", ""),
-        "filters": ["context"],
-    }
-
-_active_handlers = ["console"] + (
-    ["rabbitmq"] if ENABLE_RABBITMQ_LOGGING else []
-)
-
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "filters": {
-        "context": {"()": "apps.core.logging_context.ContextFilter"},
-    },
-    "formatters": {
-        "json": {
-            "()": "pythonjsonlogger.jsonlogger.JsonFormatter",
-            "fmt": (
-                "%(asctime)s %(levelname)s %(name)s %(message)s"
-                " %(request_id)s %(service)s"
-                " %(transaction_id)s %(trace_id)s"
-            ),
-            "rename_fields": {
-                "asctime": "timestamp",
-                "levelname": "level",
-                "name": "logger",
-            },
-        },
-    },
-    "handlers": _logging_handlers,
-    "root": {"handlers": _active_handlers, "level": "INFO"},
-    "loggers": {
-        "django": {
-            "handlers": _active_handlers,
-            "level": "WARNING",
-            "propagate": False,
-        },
-        "elasticapm": {
-            "handlers": ["console"],
-            "level": "WARNING",
-            "propagate": False,
-        },
-        "pika": {
-            "handlers": ["console"],
-            "level": "WARNING",
-            "propagate": False,
-        },
-    },
-}
-
-ELASTIC_APM = {
-    "SERVICE_NAME": os.getenv(
-        "ELASTIC_APM_SERVICE_NAME", "transition-gateway"
-    ),
-    "SERVER_URL": os.getenv("ELASTIC_APM_SERVER_URL", "http://localhost:8200"),
-    "SECRET_TOKEN": os.getenv("ELASTIC_APM_SECRET_TOKEN", ""),
-    "ENVIRONMENT": os.getenv("ELASTIC_APM_ENVIRONMENT", "local"),
-    "ENABLED": os.getenv("ELASTIC_APM_ENABLED", "1") == "1",
-    "DEBUG": os.getenv("ELASTIC_APM_DEBUG", "1" if DEBUG else "0") == "1",
-    "CAPTURE_HEADERS": os.getenv("ELASTIC_APM_CAPTURE_HEADERS", "1") == "1",
-    "TRANSACTION_SAMPLE_RATE": float(
-        os.getenv("ELASTIC_APM_TRANSACTION_SAMPLE_RATE", "0.3")
-    ),
-    "METRICS_INTERVAL": os.getenv("ELASTIC_APM_METRICS_INTERVAL", "10s"),
-    "FLUSH_INTERVAL": os.getenv("ELASTIC_APM_FLUSH_INTERVAL", "10s"),
-    "MAX_BATCH_EVENT_COUNT": int(
-        os.getenv("ELASTIC_APM_MAX_BATCH_EVENT_COUNT", "1000")
-    ),
-    "MAX_QUEUE_EVENT_COUNT": int(
-        os.getenv("ELASTIC_APM_MAX_QUEUE_EVENT_COUNT", "1000")
-    ),
-    "TRANSACTION_MAX_SPANS": int(
-        os.getenv("ELASTIC_APM_TRANSACTION_MAX_SPANS", "500")
-    ),
-    "LOG_LEVEL": os.getenv("ELASTIC_APM_LOG_LEVEL", "INFO"),
-}

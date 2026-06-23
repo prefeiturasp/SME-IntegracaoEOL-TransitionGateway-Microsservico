@@ -2,7 +2,11 @@
 
 from unittest.mock import MagicMock, patch
 
+import httpx
 from django.test import SimpleTestCase
+from sme_sidecar_sdk.config import get_settings
+from sme_sidecar_sdk.observability.context import correlation_context
+from sme_sidecar_sdk.resilience.timeout import build_sync_client
 
 from apps.core.http_client import ServiceClient
 
@@ -71,7 +75,7 @@ class JsonOrNoneTest(SimpleTestCase):
 class ServiceClientRequestTest(SimpleTestCase):
     """Valida chamadas HTTP executadas pelo ServiceClient."""
 
-    @patch("apps.core.http_client.httpx.Client")
+    @patch("apps.core.http_client.build_sync_client")
     def test_reaproveita_cliente_http_em_gets(
         self, mock_client: MagicMock
     ) -> None:
@@ -84,7 +88,7 @@ class ServiceClientRequestTest(SimpleTestCase):
         instance = mock_client.return_value
         self.assertEqual(instance.get.call_count, 2)
 
-    @patch("apps.core.http_client.httpx.Client")
+    @patch("apps.core.http_client.build_sync_client")
     def test_close_fecha_cliente_http(self, mock_client: MagicMock) -> None:
         svc = _make_client()
         svc.get("/a")
@@ -105,4 +109,26 @@ class ServiceClientRequestTest(SimpleTestCase):
             headers={"Accept": "application/json", "X-Request-ID": "-"},
             json={"ativo": True},
             params=None,
+        )
+
+    def test_propaga_request_id_pelo_cliente_do_sdk(self) -> None:
+        """Propaga o contexto de correlação para o serviço chamado."""
+        seen_headers: dict[str, str] = {}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            seen_headers.update(request.headers)
+            return httpx.Response(200)
+
+        svc = _make_client()
+        svc._client = build_sync_client(  # noqa: SLF001
+            get_settings(),
+            transport=httpx.MockTransport(handler),
+        )
+
+        with correlation_context(correlation_id="gateway-request-123"):
+            svc.get("/a")
+
+        self.assertEqual(
+            seen_headers["x-request-id"],
+            "gateway-request-123",
         )

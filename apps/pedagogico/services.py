@@ -177,7 +177,9 @@ def get_componentes_curriculares() -> Any:
         httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
         ValueError: Se a resposta não puder ser convertida para JSON.
     """
-    return _client.get(_BASE).json()
+    response = _client.get(f"{_BASE}/")
+    response.raise_for_status()
+    return response.json()
 
 
 def _codigos_turmas(payload: Any) -> list[str]:

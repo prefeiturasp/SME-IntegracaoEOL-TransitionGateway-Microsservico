@@ -5,9 +5,8 @@ from __future__ import annotations
 from typing import Any
 
 import httpx
-from django.conf import settings
-
-from apps.core.logging_context import get_request_id
+from sme_sidecar_sdk.config import get_settings
+from sme_sidecar_sdk.resilience.timeout import build_sync_client
 
 
 class ServiceClient:
@@ -40,8 +39,8 @@ class ServiceClient:
             Cliente HTTP configurado com timeout e keep-alive.
         """
         if self._client is None:
-            self._client = httpx.Client(
-                timeout=settings.GATEWAY_TIMEOUT_SECONDS,
+            self._client = build_sync_client(
+                get_settings(),
                 follow_redirects=True,
             )
         return self._client
@@ -53,9 +52,6 @@ class ServiceClient:
             Headers com Accept, X-Request-ID e API Key quando disponíveis.
         """
         headers = {"Accept": "application/json"}
-        request_id = get_request_id()
-        if request_id:
-            headers["X-Request-ID"] = request_id
         if self._api_key:
             headers[self._api_key_header] = self._api_key
         return headers
