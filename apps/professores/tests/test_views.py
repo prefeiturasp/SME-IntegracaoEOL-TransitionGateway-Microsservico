@@ -113,6 +113,42 @@ class ProfessoresUrlsTest(SimpleTestCase):
             {"codigo_rf": "000001", "disciplina_id": "5"},
         )
 
+    def test_preserva_codigo_rf_turmas(self) -> None:
+        """Valida que o código RF do professor é preservado na rota de turmas."""
+        match = resolve("/api/professores/000001/turmas/")
+
+        self.assertEqual(match.kwargs, {"codigo_rf": "000001"})
+
+    def test_preserva_codigo_rf_e_ano_buscar_por_rf_dre_ue(self) -> None:
+        """Valida que o código RF e o ano letivo são preservados na rota de busca."""
+        match = resolve("/api/professores/000001/BuscarPorRfDreUe/2026/")
+
+        self.assertEqual(
+            match.kwargs,
+            {"codigo_rf": "000001", "ano_letivo": 2026},
+        )
+
+    def test_preserva_ano_buscar_por_lista_rf(self) -> None:
+        """Valida que o ano letivo é preservado na rota de busca por lista de RF."""
+        match = resolve("/api/professores/2026/BuscarPorListaRF/")
+
+        self.assertEqual(match.kwargs, {"ano_letivo": 2026})
+
+    def test_preserva_codigo_rf_eh_emei(self) -> None:
+        """Valida que o código RF é preservado na rota de verificação de EMEI."""
+        match = resolve("/api/professores/000001/ehEmei/")
+
+        self.assertEqual(match.kwargs, {"codigo_rf": "000001"})
+
+    def test_preserva_ano_e_dre_autocomplete(self) -> None:
+        """Valida que o ano letivo e o ID da DRE são preservados na rota de autocomplete."""
+        match = resolve("/api/professores/2026/AutoComplete/1/")
+
+        self.assertEqual(
+            match.kwargs,
+            {"ano_letivo": 2026, "dre_id": "1"},
+        )
+
 
 class ProfessorViewTest(SimpleTestCase):
     """Valida a resposta da view de professor."""
@@ -1152,3 +1188,351 @@ class ProfessorDisciplinaTurmasViewTest(SimpleTestCase):
             resp.json(),
             {"detail": "É necessário informar a disciplina."},
         )
+
+
+class ProfessorTurmasViewTest(SimpleTestCase):
+    """Valida a busca de turmas atribuídas ao professor."""
+
+    @patch(
+        "apps.professores.views.services.montar_turmas_atribuidas_professor"
+    )
+    def test_200_retorna_turmas(self, mock_service: MagicMock) -> None:
+        """Testa retorno de turmas atribuídas ao professor."""
+        mock_service.return_value = [
+            {
+                "cod_escola": "019465",
+                "cod_turma": 3030050,
+                "tipo_turma": 1,
+                "ano": "1",
+                "ano_letivo": 2026,
+                "cod_modalidade": 5,
+                "cod_dre": "108100",
+                "dre": "DRE TESTE",
+                "dre_abrev": "DRE-T",
+                "modalidade": "Fundamental",
+                "nome_turma": "1A",
+                "semestre": 0,
+                "tipo_ue": "EMEF",
+                "cod_tipo_ue": 1,
+                "cod_ue": "019465",
+                "ue": "EMEF TESTE",
+                "ue_abrev": "EMEF T.",
+                "tipo_escola": "EMEF",
+                "cod_tipo_escola": 1,
+                "duracao_turno": 5,
+                "tipo_turno": 4,
+                "ensino_especial": False,
+                "serie_ensino": "1 ANO",
+                "data_inicio_turma": "2024-02-01T00:00:00",
+                "data_fim_turma": None,
+                "extinta": False,
+            },
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/professores/000001/turmas/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()[0]["codTurma"], 3030050)
+        self.assertEqual(resp.json()[0]["nomeTurma"], "1A")
+        self.assertEqual(resp.json()[0]["codTipoEscola"], 1)
+        mock_service.assert_called_once_with("000001")
+
+    @patch(
+        "apps.professores.views.services.montar_turmas_atribuidas_professor"
+    )
+    def test_204_quando_lista_vazia(self, mock_service: MagicMock) -> None:
+        """Testa 204 quando o sidecar retorna lista vazia para turmas do professor."""
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/professores/000001/turmas/")
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_400_quando_codigo_rf_e_somente_espacos(self) -> None:
+        """Testa 400 quando o código RF do professor é apenas espaços."""
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/professores/%20/turmas/")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "É necessário informar o codigoRF."},
+        )
+
+
+class ProfessorBuscarPorRfDreUeViewTest(SimpleTestCase):
+    """Valida a busca de professor por RF, DRE e UE."""
+
+    @patch("apps.professores.views.services.get_professor_por_rf_dre_ue")
+    def test_200_retorna_professor(self, mock_service: MagicMock) -> None:
+        """Testa retorno de professor por RF, DRE e UE."""
+        mock_service.return_value = {
+            "codigo_rf": "000001",
+            "nome": "NOME PROFESSOR",
+        }
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/professores/000001/BuscarPorRfDreUe/2026/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.json(),
+            {"codigoRF": "000001", "nome": "NOME PROFESSOR"},
+        )
+        mock_service.assert_called_once_with("000001", 2026, {})
+
+    @patch("apps.professores.views.services.get_professor_por_rf_dre_ue")
+    def test_200_repassa_filtros(self, mock_service: MagicMock) -> None:
+        """Testa que os filtros de DRE, UE e buscar_outros_cargos são repassados corretamente para o serviço."""
+        mock_service.return_value = {
+            "codigo_rf": "000001",
+            "nome": "NOME PROFESSOR",
+        }
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/professores/000001/BuscarPorRfDreUe/2026/"
+            "?dre_id=1&ue_id=019465&buscar_outros_cargos=true"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_service.assert_called_once_with(
+            "000001",
+            2026,
+            {
+                "dre_id": "1",
+                "ue_id": "019465",
+                "buscar_outros_cargos": "true",
+            },
+        )
+
+    @patch("apps.professores.views.services.get_professor_por_rf_dre_ue")
+    def test_204_quando_professor_ausente(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Testa 204 quando o sidecar retorna None para professor por RF, DRE e UE."""
+        mock_service.return_value = None
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/professores/000001/BuscarPorRfDreUe/2026/")
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_400_quando_codigo_rf_e_somente_espacos(self) -> None:
+        """Testa 400 quando o código RF do professor é apenas espaços."""
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/professores/%20/BuscarPorRfDreUe/2026/")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "É necessário informar o codigoRF."},
+        )
+
+
+class ProfessoresBuscarPorListaRfAnoViewTest(SimpleTestCase):
+    """Valida a busca de professores por lista de RF e ano."""
+
+    @patch("apps.professores.views.services.get_professores_por_lista_rf_ano")
+    def test_200_retorna_professores(self, mock_service: MagicMock) -> None:
+        """Testa retorno de professores por lista de RF e ano."""
+        mock_service.return_value = [
+            {"codigo_rf": "000001", "nome": "NOME PROFESSOR"},
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/professores/2026/BuscarPorListaRF/",
+            ["000001"],
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.json(),
+            [{"codigoRF": "000001", "nome": "NOME PROFESSOR"}],
+        )
+        mock_service.assert_called_once_with(2026, ["000001"])
+
+    @patch("apps.professores.views.services.get_professores_por_lista_rf_ano")
+    def test_204_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
+        """Testa 204 quando o sidecar retorna None para professores por lista de RF e ano."""
+        mock_service.return_value = None
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/professores/2026/BuscarPorListaRF/",
+            ["000001"],
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_400_quando_lista_vazia(self) -> None:
+        """Testa 400 quando a lista de RF está vazia."""
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/professores/2026/BuscarPorListaRF/",
+            [],
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class ProfessorEhEmeiViewTest(SimpleTestCase):
+    """Valida a verificação de vínculo do professor com EMEI."""
+
+    @patch("apps.professores.views.services.get_eh_emei")
+    def test_200_retorna_booleano(self, mock_service: MagicMock) -> None:
+        """Testa retorno de booleano indicando se o professor é vinculado a EMEI."""
+        mock_service.return_value = True
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/professores/000001/ehEmei/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertTrue(resp.json())
+        mock_service.assert_called_once_with("000001")
+
+    def test_400_quando_codigo_rf_e_somente_espacos(self) -> None:
+        """Testa 400 quando o código RF do professor é apenas espaços."""
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/professores/%20/ehEmei/")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "É necessário informar o codigoRF."},
+        )
+
+
+class ProfessorAutoCompleteViewTest(SimpleTestCase):
+    """Valida o autocomplete de professores por DRE e ano."""
+
+    @patch("apps.professores.views.services.get_autocomplete_professores")
+    def test_200_retorna_professores(self, mock_service: MagicMock) -> None:
+        """Testa retorno de professores para autocomplete por DRE e ano."""
+        mock_service.return_value = [
+            {"codigo_rf": "000001", "nome_servidor": "ANA SILVA"},
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/professores/2026/AutoComplete/1/" "?ue_id=019465&nome=ana"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.json(),
+            [{"codigoRF": "000001", "nome": "ANA SILVA"}],
+        )
+        mock_service.assert_called_once_with(
+            2026,
+            "1",
+            {"ue_id": "019465", "nome": "ana"},
+        )
+
+    @patch("apps.professores.views.services.get_autocomplete_professores")
+    def test_204_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
+        """Testa 204 quando o sidecar retorna None para autocomplete de professores."""
+        mock_service.return_value = None
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/professores/2026/AutoComplete/1/?ue_id=019465&nome=ana"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch("apps.professores.views.services.get_autocomplete_professores")
+    def test_204_quando_lista_vazia(self, mock_service: MagicMock) -> None:
+        """Testa 204 quando o sidecar retorna lista vazia para autocomplete."""
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/professores/2026/AutoComplete/1/?ue_id=019465&nome=ana"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch("apps.professores.views.services.get_autocomplete_professores")
+    def test_502_quando_sidecar_retorna_texto(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Testa 502 quando o sidecar retorna texto para autocomplete."""
+        mock_service.return_value = "erro de contrato"
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/professores/2026/AutoComplete/1/?ue_id=019465&nome=ana"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "Resposta inválida do sidecar de professores."},
+        )
+
+    def test_400_quando_dre_id_e_somente_espacos(self) -> None:
+        """Testa 400 quando o dreId é apenas espaços."""
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/professores/2026/AutoComplete/%20/?ue_id=019465&nome=ana"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "É necessário informar o dreId."},
+        )
+
+    @patch("apps.professores.views.services.get_autocomplete_professores")
+    def test_400_quando_ue_id_ausente(self, mock_service: MagicMock) -> None:
+        """Testa 400 quando o ueId não é informado."""
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/professores/2026/AutoComplete/1/?nome=ana")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "É necessário informar o ueId."},
+        )
+        mock_service.assert_not_called()
+
+    @patch("apps.professores.views.services.get_autocomplete_professores")
+    def test_400_quando_nome_ausente(self, mock_service: MagicMock) -> None:
+        """Testa 400 quando o nome não é informado."""
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/professores/2026/AutoComplete/1/?ue_id=019465")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "É necessário informar o nome."},
+        )
+        mock_service.assert_not_called()
+
+    @patch("apps.professores.views.services.get_autocomplete_professores")
+    def test_204_quando_nome_menor_que_dois_caracteres(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Testa 204 quando o nome informado tem menos de dois caracteres."""
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/professores/2026/AutoComplete/1/?ue_id=019465&nome=a"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        mock_service.assert_not_called()

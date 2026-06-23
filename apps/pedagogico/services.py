@@ -37,6 +37,29 @@ def listar_turmas(codigos: list[int]) -> Any:
     return _client.json_or_none(resp) or []
 
 
+def get_turmas_recorte_fund_medio_eja(
+    codigos: list[int],
+) -> list[dict[str, Any]]:
+    """Lista turmas no recorte de etapa (Fund/Médio/EJA).
+
+    Args:
+        codigos: Códigos das turmas a consultar.
+
+    Returns:
+        Turmas no recorte de etapa retornadas pelo sidecar.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+    """
+    if not codigos:
+        return []
+    resp = _client.post(
+        f"{_BASE_TURMAS}/recorte-fund-medio-eja/",
+        payload=[int(codigo) for codigo in codigos],
+    )
+    return _client.json_or_none(resp) or []
+
+
 def get_componentes_curriculares() -> Any:
     """Retorna o catálogo completo de componentes curriculares.
 

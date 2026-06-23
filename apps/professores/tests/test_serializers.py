@@ -9,7 +9,9 @@ from apps.professores.serializers import (
     FuncionarioCargoSerializer,
     FuncionarioFuncaoAtividadeSerializer,
     FuncionarioFuncaoExternaSerializer,
+    ProfessorAutoCompleteSerializer,
     TextoEstritoField,
+    TurmaAtribuidaProfessorSerializer,
 )
 
 
@@ -90,5 +92,89 @@ class FuncionarioFuncaoExternaSerializerTest(SimpleTestCase):
             {
                 "funcionarioCpf": "11610699840",
                 "funcaoExternaId": 5,
+            },
+        )
+
+
+class ProfessorAutoCompleteSerializerTest(SimpleTestCase):
+    """Valida serialização de professor para autocomplete."""
+
+    def test_serializa_nome_servidor_como_nome(self) -> None:
+        """ Valida serialização de professor para autocomplete."""
+        payload = {"codigo_rf": "000001", "nome_servidor": "ANA SILVA"}
+
+        data = ProfessorAutoCompleteSerializer(payload).data
+
+        self.assertEqual(
+            data,
+            {"codigoRF": "000001", "nome": "ANA SILVA"},
+        )
+
+
+class TurmaAtribuidaProfessorSerializerTest(SimpleTestCase):
+    """Valida serialização de turma atribuída ao professor."""
+
+    def test_serializa_campos_legados(self) -> None:
+        """ Valida serialização de turma atribuída ao professor."""
+        payload = {
+            "cod_escola": "019465",
+            "cod_turma": 3030050,
+            "tipo_turma": 1,
+            "ano": "1",
+            "ano_letivo": 2026,
+            "cod_modalidade": 5,
+            "cod_dre": "108100",
+            "dre": "DRE TESTE",
+            "dre_abrev": "DRE-T",
+            "modalidade": "Fundamental",
+            "nome_turma": "1A",
+            "semestre": 0,
+            "tipo_ue": "EMEF",
+            "cod_tipo_ue": 1,
+            "cod_ue": "019465",
+            "ue": "EMEF TESTE",
+            "ue_abrev": "EMEF T.",
+            "tipo_escola": "EMEF",
+            "cod_tipo_escola": 1,
+            "duracao_turno": 5,
+            "tipo_turno": 4,
+            "ensino_especial": False,
+            "serie_ensino": "1 ANO",
+            "data_inicio_turma": "2024-02-01T00:00:00",
+            "data_fim_turma": None,
+            "extinta": False,
+        }
+
+        data = TurmaAtribuidaProfessorSerializer(payload).data
+
+        self.assertEqual(
+            data,
+            {
+                "codEscola": "019465",
+                "codTurma": 3030050,
+                "tipoTurma": 1,
+                "ano": "1",
+                "anoLetivo": 2026,
+                "codModalidade": 5,
+                "codDre": "108100",
+                "dre": "DRE TESTE",
+                "dreAbrev": "DRE-T",
+                "modalidade": "Fundamental",
+                "nomeTurma": "1A",
+                "semestre": 0,
+                "tipoUE": "EMEF",
+                "codTipoUE": 1,
+                "codUe": "019465",
+                "ue": "EMEF TESTE",
+                "ueAbrev": "EMEF T.",
+                "tipoEscola": "EMEF",
+                "codTipoEscola": 1,
+                "duracaoTurno": 5,
+                "tipoTurno": 4,
+                "ensinoEspecial": False,
+                "serieEnsino": "1 ANO",
+                "dataInicioTurma": "2024-02-01T00:00:00",
+                "dataFimTurma": None,
+                "extinta": False,
             },
         )

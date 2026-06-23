@@ -128,6 +128,46 @@ class PostTurmasProgramaTest(SimpleTestCase):
         self.assertEqual(result, ["3133093", "3133096"])
 
 
+class GetTurmasRecorteFundMedioEjaTest(SimpleTestCase):
+    """Valida a consulta de turmas no recorte de etapa."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_chama_path_correto(self, mock_client: MagicMock) -> None:
+        """Monta o path e envia os codigos como inteiros."""
+        mock_client.json_or_none.return_value = [_TURMA_MS]
+
+        result = services.get_turmas_recorte_fund_medio_eja([3034092, 3014194])
+
+        mock_client.post.assert_called_once_with(
+            f"{_BASE_TURMAS}/recorte-fund-medio-eja/",
+            payload=[3034092, 3014194],
+        )
+        self.assertEqual(result, [_TURMA_MS])
+
+    @patch("apps.pedagogico.services._client")
+    def test_lista_vazia_nao_chama_sidecar(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        """ Valida que a lista vazia não chama o sidecar e retorna lista vazia."""
+        result = services.get_turmas_recorte_fund_medio_eja([])
+
+        mock_client.post.assert_not_called()
+        self.assertEqual(result, [])
+
+    @patch("apps.pedagogico.services._client")
+    def test_retorna_lista_vazia_quando_ms_responde_sem_corpo(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        """Valida que a lista vazia é retornada quando o sidecar responde sem corpo."""
+        mock_client.json_or_none.return_value = None
+
+        result = services.get_turmas_recorte_fund_medio_eja([3034092])
+
+        self.assertEqual(result, [])
+
+
 class PostListarTurmasTest(SimpleTestCase):
     """Valida a listagem de dados de turmas."""
 

@@ -15,8 +15,10 @@ from apps.professores.serializers import (
     FuncionarioFuncaoExternaSerializer,
     ListaStringSerializer,
     NomeServidorSerializer,
+    ProfessorAutoCompleteSerializer,
     ProfessorBuscarPorRfSerializer,
     ProfessorTurmaSerializer,
+    TurmaAtribuidaProfessorSerializer,
     TurmasIdsSerializer,
 )
 
@@ -36,6 +38,10 @@ _MSG_CODIGO_FUNCAO_ATIVIDADE_OBRIGATORIO = (
 _MSG_REGISTRO_FUNCIONAL_OBRIGATORIO = (
     "É necessário informar o registro funcional."
 )
+_MSG_DRE_ID_OBRIGATORIO = "É necessário informar o dreId."
+_MSG_UE_ID_OBRIGATORIO = "É necessário informar o ueId."
+_MSG_NOME_OBRIGATORIO = "É necessário informar o nome."
+_TAMANHO_MINIMO_NOME = 2
 _MSG_RESPOSTA_INVALIDA_SIDECAR = "Resposta inválida do sidecar de professores."
 _CAMPOS_TURMA = {
     "codigo_turma",
@@ -717,3 +723,227 @@ class ProfessorDisciplinaTurmasView(APIView):
         if not _is_lista_turmas(data):
             return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
         return Response(ProfessorTurmaSerializer(data, many=True).data)
+
+
+class ProfessorTurmasView(APIView):
+    """ Retorna turmas atribuídas ao professor."""
+
+    @extend_schema(
+        tags=_TAG_PROFESSOR,
+        description=("Retorna turmas atribuídas ao professor pelo RF."),
+        responses={
+            200: TurmaAtribuidaProfessorSerializer(many=True),
+            204: None,
+        },
+    )
+    def get(self, _request: Request, codigo_rf: str) -> Response:
+        """Retorna turmas atribuídas ao professor pelo RF.
+
+        Args:
+            codigo_rf: RF usado na consulta.
+
+        Returns:
+            Turmas atribuídas ao professor, ou ausência de conteúdo.
+
+        Raises:
+            httpx.HTTPError: Quando a chamada a um dos sidecares falha.
+        """
+        if not codigo_rf.strip():
+            return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
+        data = services.montar_turmas_atribuidas_professor(codigo_rf)
+        if not data:
+            return Response(status=204)
+        return Response(
+            TurmaAtribuidaProfessorSerializer(data, many=True).data
+        )
+
+
+class ProfessorBuscarPorRfDreUeView(APIView):
+    """Retorna dados resumidos de professor por RF, DRE e UE."""
+
+    @extend_schema(
+        tags=_TAG_PROFESSOR,
+        description=("Retorna professor por RF, DRE e UE no ano letivo."),
+        parameters=[
+            OpenApiParameter(
+                "dre_id",
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                required=False,
+            ),
+            OpenApiParameter(
+                "ue_id",
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                required=False,
+            ),
+            OpenApiParameter(
+                "buscar_outros_cargos",
+                OpenApiTypes.BOOL,
+                OpenApiParameter.QUERY,
+                required=False,
+            ),
+        ],
+        responses={200: ProfessorBuscarPorRfSerializer, 204: None},
+    )
+    def get(
+        self,
+        request: Request,
+        codigo_rf: str,
+        ano_letivo: int,
+    ) -> Response:
+        """Retorna professor por RF, DRE e UE no ano letivo.
+
+        Args:
+            request: Requisição com os filtros opcionais de DRE e UE.
+            codigo_rf: RF usado na consulta.
+            ano_letivo: Ano letivo de referência.
+
+        Returns:
+            Dados resumidos do professor, ou ausência de conteúdo.
+
+        Raises:
+            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
+        """
+        if not codigo_rf.strip():
+            return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
+        params = _query_params(
+            request,
+            set(),
+            {"dre_id", "ue_id", "buscar_outros_cargos"},
+        )
+        data = services.get_professor_por_rf_dre_ue(
+            codigo_rf,
+            ano_letivo,
+            params,
+        )
+        if data is None:
+            return Response(status=204)
+        return Response(ProfessorBuscarPorRfSerializer(data).data)
+
+
+class ProfessoresBuscarPorListaRfAnoView(APIView):
+    """Retorna professores pelos RFs informados no ano letivo."""
+
+    @extend_schema(
+        tags=_TAG_PROFESSOR,
+        description=("Retorna professores pelos RFs informados no ano."),
+        request=ListaStringSerializer,
+        responses={200: ProfessorBuscarPorRfSerializer(many=True), 204: None},
+    )
+    def post(self, request: Request, ano_letivo: int) -> Response:
+        """Retorna professores pelos RFs no ano letivo.
+
+        Args:
+            request: Requisição com a lista de RFs no corpo.
+            ano_letivo: Ano letivo de referência.
+
+        Returns:
+            Professores encontrados, ou ausência de conteúdo.
+
+        Raises:
+            ValidationError: Quando a lista de RFs informada é inválida.
+            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
+        """
+        serializer = ListaStringSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = services.get_professores_por_lista_rf_ano(
+            ano_letivo,
+            serializer.validated_data,
+        )
+        if data is None:
+            return Response(status=204)
+        return Response(ProfessorBuscarPorRfSerializer(data, many=True).data)
+
+
+class ProfessorEhEmeiView(APIView):
+    """Retorna indicação de vínculo do professor com EMEI."""
+
+    @extend_schema(
+        tags=_TAG_PROFESSOR,
+        description=("Retorna booleano indicando se o professor é EMEI."),
+        responses={200: OpenApiTypes.BOOL},
+    )
+    def get(self, _request: Request, codigo_rf: str) -> Response:
+        """Retorna booleano de vínculo do professor com EMEI.
+
+        Args:
+            codigo_rf: RF usado na consulta.
+
+        Returns:
+            Indicador booleano de vínculo com EMEI.
+
+        Raises:
+            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
+        """
+        if not codigo_rf.strip():
+            return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
+        data = services.get_eh_emei(codigo_rf)
+        return Response(data)
+
+
+class ProfessorAutoCompleteView(APIView):
+    """Lista professores para autocomplete por DRE e ano letivo."""
+
+    @extend_schema(
+        tags=_TAG_PROFESSOR,
+        description=("Lista professores para autocomplete por DRE e ano."),
+        parameters=[
+            OpenApiParameter(
+                "ue_id",
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                required=True,
+            ),
+            OpenApiParameter(
+                "nome",
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                required=True,
+            ),
+        ],
+        responses={
+            200: ProfessorAutoCompleteSerializer(many=True),
+            204: None,
+        },
+    )
+    def get(
+        self,
+        request: Request,
+        ano_letivo: int,
+        dre_id: str,
+    ) -> Response:
+        """Lista professores para autocomplete por DRE e ano letivo.
+
+        Args:
+            request: Requisição com os filtros obrigatórios de UE e nome.
+            ano_letivo: Ano letivo de referência.
+            dre_id: Identificador da DRE usado na consulta.
+
+        Returns:
+            Professores encontrados, ou ausência de conteúdo.
+
+        Raises:
+            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
+        """
+        if not dre_id.strip():
+            return detail_response(_MSG_DRE_ID_OBRIGATORIO)
+        ue_id = request.query_params.get("ue_id")
+        if not ue_id or not ue_id.strip():
+            return detail_response(_MSG_UE_ID_OBRIGATORIO)
+        nome = request.query_params.get("nome")
+        if not nome or not nome.strip():
+            return detail_response(_MSG_NOME_OBRIGATORIO)
+        if len(nome.strip()) < _TAMANHO_MINIMO_NOME:
+            return Response(status=204)
+        params = _query_params(request, set(), {"ue_id", "nome"})
+        data = services.get_autocomplete_professores(
+            ano_letivo,
+            dre_id,
+            params,
+        )
+        if not data:
+            return Response(status=204)
+        if not _is_lista_dicionarios(data):
+            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+        return Response(ProfessorAutoCompleteSerializer(data, many=True).data)

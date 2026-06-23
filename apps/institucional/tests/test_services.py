@@ -266,7 +266,9 @@ class GetTodasUnidadesTest(SimpleTestCase):
 
         result = services.get_todas_unidades()
 
-        mock_client.get.assert_called_once_with(f"{_BASE}/escolas/todas-unidades/")
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/escolas/todas-unidades/"
+        )
         self.assertEqual(result, [])
 
     @patch("apps.institucional.services._client")
@@ -320,3 +322,108 @@ class GetTiposUnidadeEducacaoTest(SimpleTestCase):
         result = services.get_tipos_unidade_educacao()
 
         self.assertEqual(result[0], "ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL")
+
+
+class GetUesRecorteFundMedioTest(SimpleTestCase):
+    """Valida a consulta de UEs no recorte de tipo de escola."""
+
+    @patch("apps.institucional.services._client")
+    def test_chama_post_com_codigos(self, mock_client: MagicMock) -> None:
+        """Envia os códigos via POST e retorna as UEs do recorte."""
+        mock_client.json_or_none.return_value = [
+            {"codigo": "000532", "codigoTipoEscola": 1}
+        ]
+
+        result = services.get_ues_recorte_fund_medio(["000532"])
+
+        mock_client.post.assert_called_once_with(
+            f"{_BASE}/escolas/recorte-fund-medio/",
+            payload=["000532"],
+        )
+        self.assertEqual(result[0]["codigo"], "000532")
+
+    @patch("apps.institucional.services._client")
+    def test_lista_vazia_nao_chama_sidecar(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Sem códigos não consulta o sidecar."""
+        result = services.get_ues_recorte_fund_medio([])
+
+        mock_client.post.assert_not_called()
+        self.assertEqual(result, [])
+
+    @patch("apps.institucional.services._client")
+    def test_retorna_lista_vazia_quando_ms_responde_sem_corpo(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Retorna lista vazia quando o sidecar não traz corpo."""
+        mock_client.json_or_none.return_value = None
+
+        result = services.get_ues_recorte_fund_medio(["000532"])
+
+        self.assertEqual(result, [])
+
+
+class GetCodigosUeEmeiTest(SimpleTestCase):
+    """Valida a consulta de códigos de UE no recorte EMEI."""
+
+    @patch("apps.institucional.services._client")
+    def test_chama_post_e_extrai_codigos(self, mock_client: MagicMock) -> None:
+        """Envia códigos via POST e devolve só os EMEI do corpo."""
+        mock_client.json_or_none.return_value = {"codigos_ue": ["000532"]}
+
+        result = services.get_codigos_ue_emei(["000532", "000999"])
+
+        mock_client.post.assert_called_once_with(
+            f"{_BASE}/escolas/recorte-emei/",
+            payload=["000532", "000999"],
+        )
+        self.assertEqual(result, ["000532"])
+
+    @patch("apps.institucional.services._client")
+    def test_lista_vazia_nao_chama_sidecar(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Sem códigos não consulta o sidecar."""
+        result = services.get_codigos_ue_emei([])
+
+        mock_client.post.assert_not_called()
+        self.assertEqual(result, [])
+
+    @patch("apps.institucional.services._client")
+    def test_retorna_vazio_quando_ms_responde_sem_corpo(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Retorna lista vazia quando o sidecar não traz corpo."""
+        mock_client.json_or_none.return_value = None
+
+        result = services.get_codigos_ue_emei(["000532"])
+
+        self.assertEqual(result, [])
+
+
+class GetCodigosUeTipoSgpTest(SimpleTestCase):
+    """Valida a consulta de códigos de UE no recorte tipo_escola_sgp."""
+
+    @patch("apps.institucional.services._client")
+    def test_chama_post_e_extrai_codigos(self, mock_client: MagicMock) -> None:
+        """Envia códigos via POST e devolve só os do recorte SGP."""
+        mock_client.json_or_none.return_value = {"codigos_ue": ["000532"]}
+
+        result = services.get_codigos_ue_tipo_sgp(["000532", "000999"])
+
+        mock_client.post.assert_called_once_with(
+            f"{_BASE}/escolas/recorte-tipo-sgp/",
+            payload=["000532", "000999"],
+        )
+        self.assertEqual(result, ["000532"])
+
+    @patch("apps.institucional.services._client")
+    def test_lista_vazia_nao_chama_sidecar(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Sem códigos não consulta o sidecar."""
+        result = services.get_codigos_ue_tipo_sgp([])
+
+        mock_client.post.assert_not_called()
+        self.assertEqual(result, [])

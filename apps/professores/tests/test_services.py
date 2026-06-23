@@ -725,6 +725,249 @@ class GetFuncionariosEscolaPorFuncaoAtividadeTest(SimpleTestCase):
         self.assertIsNone(result)
 
 
+class GetTurmasProfessorTest(SimpleTestCase):
+    """Valida a busca de turmas atribuídas ao professor."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_correto(self, mock_get: MagicMock) -> None:
+        """Verifica se o path é chamado corretamente."""
+        payload = [{"codigo_turma": 3030050, "nome_turma": "1A"}]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[{}]"
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_turmas_professor("000001")
+
+        mock_get.assert_called_once_with("/api/v1/professores/000001/turmas/")
+        self.assertEqual(result, payload)
+
+    @patch.object(services._client, "get")
+    def test_retorna_none_quando_204(self, mock_get: MagicMock) -> None:
+        """Verifica se retorna None quando o status code é 204."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 204
+        mock_resp.content = b""
+        mock_get.return_value = mock_resp
+
+        result = services.get_turmas_professor("000001")
+
+        self.assertIsNone(result)
+
+
+class GetProfessorPorRfDreUeTest(SimpleTestCase):
+    """Valida a busca de professor por RF, DRE e UE."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_sem_params(self, mock_get: MagicMock) -> None:
+        """Verifica se o path é chamado corretamente sem parâmetros adicionais."""
+        payload = {"codigo_rf": "000001", "nome": "NOME PROFESSOR"}
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b'{"codigo_rf":"000001","nome":"NOME"}'
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_professor_por_rf_dre_ue("000001", 2026)
+
+        mock_get.assert_called_once_with(
+            "/api/v1/professores/000001/BuscarPorRfDreUe/2026",
+            params=None,
+        )
+        self.assertEqual(result, payload)
+
+    @patch.object(services._client, "get")
+    def test_chama_path_com_params(self, mock_get: MagicMock) -> None:
+        """Verifica se o path é chamado corretamente com parâmetros adicionais."""
+        payload = {"codigo_rf": "000001", "nome": "NOME PROFESSOR"}
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b'{"codigo_rf":"000001","nome":"NOME"}'
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_professor_por_rf_dre_ue(
+            "000001",
+            2026,
+            {"dre_id": "1", "ue_id": "019465"},
+        )
+
+        mock_get.assert_called_once_with(
+            "/api/v1/professores/000001/BuscarPorRfDreUe/2026",
+            params={"dre_id": "1", "ue_id": "019465"},
+        )
+        self.assertEqual(result, payload)
+
+
+class GetProfessoresPorListaRfAnoTest(SimpleTestCase):
+    """Valida a orquestração de professores por lista de RF e ano."""
+
+    def _mock_candidatos(self, candidatos: list[dict]) -> MagicMock:
+        """Cria um mock de resposta para a chamada de candidatos."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[{}]"
+        mock_resp.json.return_value = candidatos
+        return mock_resp
+
+    @patch(
+        "apps.professores.services.institucional_services."
+        "get_codigos_ue_tipo_sgp"
+    )
+    @patch.object(services._client, "post")
+    def test_mantem_rf_com_ue_no_recorte(
+        self, mock_post: MagicMock, mock_sgp: MagicMock
+    ) -> None:
+        """Valida que apenas professores com UEs no recorte são retornados."""
+        mock_post.return_value = self._mock_candidatos(
+            [
+                {
+                    "codigo_rf": "000001",
+                    "nome": "NOME",
+                    "codigos_ue": ["000532", "000999"],
+                },
+                {"codigo_rf": "000002", "nome": "OUTRO", "codigos_ue": ["111"]},
+            ]
+        )
+        mock_sgp.return_value = ["000532"]
+
+        result = services.get_professores_por_lista_rf_ano(2026, ["000001"])
+
+        mock_post.assert_called_once_with(
+            "/api/v1/professores/2026/BuscarPorListaRF/",
+            payload=["000001"],
+        )
+        mock_sgp.assert_called_once_with(["000532", "000999", "111"])
+        self.assertEqual(result, [{"codigo_rf": "000001", "nome": "NOME"}])
+
+    @patch(
+        "apps.professores.services.institucional_services."
+        "get_codigos_ue_tipo_sgp"
+    )
+    @patch.object(services._client, "post")
+    def test_sem_candidatos_nao_chama_institucional(
+        self, mock_post: MagicMock, mock_sgp: MagicMock
+    ) -> None:
+        """Valida que quando não há candidatos, a função de institucional não é chamada."""
+        mock_post.return_value = self._mock_candidatos([])
+
+        result = services.get_professores_por_lista_rf_ano(2026, ["000001"])
+
+        self.assertEqual(result, [])
+        mock_sgp.assert_not_called()
+
+
+class GetEhEmeiTest(SimpleTestCase):
+    """Valida a orquestração de vínculo com EMEI (Professores × Institucional)."""
+
+    @patch("apps.professores.services.institucional_services.get_codigos_ue_emei")
+    @patch("apps.professores.services.get_unidades_atribuicao_professor")
+    def test_intersecao_nao_vazia_retorna_true(
+        self, mock_ues: MagicMock, mock_emei: MagicMock
+    ) -> None:
+        """Valida que quando há intersecção entre UEs do professor e UEs EMEI."""
+        mock_ues.return_value = ["000532", "000999"]
+        mock_emei.return_value = ["000532"]
+
+        result = services.get_eh_emei("000001")
+
+        mock_ues.assert_called_once_with("000001")
+        mock_emei.assert_called_once_with(["000532", "000999"])
+        self.assertTrue(result)
+
+    @patch("apps.professores.services.institucional_services.get_codigos_ue_emei")
+    @patch("apps.professores.services.get_unidades_atribuicao_professor")
+    def test_intersecao_vazia_retorna_false(
+        self, mock_ues: MagicMock, mock_emei: MagicMock
+    ) -> None:
+        """Valida que quando não há intersecção entre UEs do professor e UEs EMEI."""
+        mock_ues.return_value = ["000532"]
+        mock_emei.return_value = []
+
+        self.assertFalse(services.get_eh_emei("000001"))
+
+    @patch("apps.professores.services.institucional_services.get_codigos_ue_emei")
+    @patch("apps.professores.services.get_unidades_atribuicao_professor")
+    def test_sem_atribuicao_nao_chama_institucional(
+        self, mock_ues: MagicMock, mock_emei: MagicMock
+    ) -> None:
+        """Valida que quando não há atribuição de UEs, a função de institucional não é chamada."""
+        mock_ues.return_value = []
+
+        result = services.get_eh_emei("000001")
+
+        self.assertFalse(result)
+        mock_emei.assert_not_called()
+
+
+class GetUnidadesAtribuicaoProfessorTest(SimpleTestCase):
+    """Valida a coleta de UEs com atribuição válida do professor."""
+
+    @patch.object(services._client, "get")
+    def test_extrai_codigos_ue(self, mock_get: MagicMock) -> None:
+        """Valida que a função extrai corretamente os códigos de UEs do payload retornado."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"{}"
+        mock_resp.json.return_value = {
+            "codigo_rf": "000001",
+            "codigos_ue": ["000532"],
+        }
+        mock_get.return_value = mock_resp
+
+        result = services.get_unidades_atribuicao_professor("000001")
+
+        mock_get.assert_called_once_with(
+            "/api/v1/professores/000001/unidades-atribuicao/"
+        )
+        self.assertEqual(result, ["000532"])
+
+
+class GetAutoCompleteProfessoresTest(SimpleTestCase):
+    """Valida o autocomplete de professores por DRE e ano."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_sem_params(self, mock_get: MagicMock) -> None:
+        """Valida chamada do path correto sem parâmetros adicionais."""
+        payload = [{"codigo_rf": "000001", "nome_servidor": "NOME"}]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[{}]"
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_autocomplete_professores(2026, "1")
+
+        mock_get.assert_called_once_with(
+            "/api/v1/professores/2026/AutoComplete/1",
+            params=None,
+        )
+        self.assertEqual(result, payload)
+
+    @patch.object(services._client, "get")
+    def test_chama_path_com_params(self, mock_get: MagicMock) -> None:
+        """Valida chamada do path correto com parâmetros adicionais."""
+        payload = [{"codigo_rf": "000001", "nome_servidor": "NOME"}]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[{}]"
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_autocomplete_professores(
+            2026,
+            "1",
+            {"ue_id": "019465", "nome": "ana"},
+        )
+
+        mock_get.assert_called_once_with(
+            "/api/v1/professores/2026/AutoComplete/1",
+            params={"ue_id": "019465", "nome": "ana"},
+        )
+        self.assertEqual(result, payload)
+
+
 class GetTurmasProfessorDisciplinaTest(SimpleTestCase):
     """Valida a busca de turmas por professor e disciplina."""
 
@@ -754,3 +997,177 @@ class GetTurmasProfessorDisciplinaTest(SimpleTestCase):
             payload=["3030050"],
         )
         self.assertEqual(result, payload)
+
+
+class MontarTurmasAtribuidasProfessorTest(SimpleTestCase):
+    """Valida a orquestração das turmas atribuídas por recorte de etapa e tipo de UE."""
+
+    def _ancora(
+        self,
+        codigo_turma: int | None,
+        codigo_ue: str | None,
+    ) -> dict:
+        """Cria uma âncora de teste para simular a resposta da API."""
+        return {
+            "codigo_turma": codigo_turma,
+            "codigo_serie_grade": None,
+            "codigo_unidade_educacao": codigo_ue,
+            "data_atribuicao": "02/01/2024 00:00:00",
+            "data_disponibilizacao": None,
+        }
+
+    def _turma(self, codigo: int) -> dict:
+        """Cria uma turma de teste para simular a resposta da API."""
+        return {
+            "codigo": codigo,
+            "nome_turma": "1A",
+            "ano_letivo": 2024,
+            "ano": "1",
+            "tipo_turma": 1,
+            "ue_codigo": "000532",
+            "modalidade": "Fundamental",
+            "codigo_modalidade": 5,
+            "semestre": 0,
+            "ensino_especial": False,
+            "serie_ensino": "1 ANO",
+            "codigo_serie_ensino": 10,
+            "situacao": "A",
+            "extinta": False,
+            "data_inicio_turma": "2024-02-01",
+            "data_fim": None,
+            "duracao_turno": 5,
+            "tipo_turno": 4,
+            "codigo_etapa_ensino": 4,
+            "codigo_ciclo_ensino": 2,
+        }
+
+    def _ue(self, codigo: str) -> dict:
+        """Cria uma unidade de ensino de teste para simular a resposta da API."""
+        return {
+            "codigo": codigo,
+            "nome": "EMEF TESTE",
+            "nomeExibicao": "EMEF T.",
+            "tipoUnidade": "EMEF",
+            "codigoTipoUnidadeEducacao": 1,
+            "codigoTipoEscola": 1,
+            "siglaTipoEscola": "EMEF",
+            "codigoDRE": "108100",
+            "nomeDRE": "DRE TESTE",
+            "siglaDRE": "DRE-T",
+        }
+
+    @patch.object(
+        services.institucional_services, "get_ues_recorte_fund_medio"
+    )
+    @patch.object(
+        services.pedagogico_services, "get_turmas_recorte_fund_medio_eja"
+    )
+    @patch.object(services, "get_turmas_professor")
+    def test_interseccao_monta_contrato_legado(
+        self,
+        mock_ancora: MagicMock,
+        mock_ped: MagicMock,
+        mock_inst: MagicMock,
+    ) -> None:
+        """Mapeia campos quando turma e UE passam nos dois recortes."""
+        mock_ancora.return_value = [self._ancora(2112345, "000532")]
+        mock_ped.return_value = [self._turma(2112345)]
+        mock_inst.return_value = [self._ue("000532")]
+
+        result = services.montar_turmas_atribuidas_professor("000001")
+
+        mock_ped.assert_called_once_with([2112345])
+        mock_inst.assert_called_once_with(["000532"])
+        self.assertEqual(len(result), 1)
+        linha = result[0]
+        self.assertEqual(linha["cod_turma"], 2112345)
+        self.assertEqual(linha["cod_escola"], "000532")
+        self.assertEqual(linha["cod_ue"], "000532")
+        self.assertEqual(linha["modalidade"], "Fundamental")
+        self.assertEqual(linha["cod_modalidade"], 5)
+        self.assertEqual(linha["cod_dre"], "108100")
+        self.assertEqual(linha["dre_abrev"], "DRE-T")
+        self.assertEqual(linha["tipo_escola"], "EMEF")
+        self.assertEqual(linha["cod_tipo_escola"], 1)
+        self.assertEqual(linha["data_inicio_turma"], "2024-02-01T00:00:00")
+
+    @patch.object(
+        services.institucional_services, "get_ues_recorte_fund_medio"
+    )
+    @patch.object(
+        services.pedagogico_services, "get_turmas_recorte_fund_medio_eja"
+    )
+    @patch.object(services, "get_turmas_professor")
+    def test_exclui_turma_fora_do_recorte_de_etapa(
+        self,
+        mock_ancora: MagicMock,
+        mock_ped: MagicMock,
+        mock_inst: MagicMock,
+    ) -> None:
+        """Remove a âncora cuja turma não voltou do recorte pedagógico."""
+        mock_ancora.return_value = [
+            self._ancora(2112345, "000532"),
+            self._ancora(9999999, "000532"),
+        ]
+        mock_ped.return_value = [self._turma(2112345)]
+        mock_inst.return_value = [self._ue("000532")]
+
+        result = services.montar_turmas_atribuidas_professor("000001")
+
+        self.assertEqual([linha["cod_turma"] for linha in result], [2112345])
+
+    @patch.object(
+        services.institucional_services, "get_ues_recorte_fund_medio"
+    )
+    @patch.object(
+        services.pedagogico_services, "get_turmas_recorte_fund_medio_eja"
+    )
+    @patch.object(services, "get_turmas_professor")
+    def test_exclui_ue_fora_do_recorte_de_tipo(
+        self,
+        mock_ancora: MagicMock,
+        mock_ped: MagicMock,
+        mock_inst: MagicMock,
+    ) -> None:
+        """Remove a âncora cuja UE não voltou do recorte institucional."""
+        mock_ancora.return_value = [self._ancora(2112345, "000532")]
+        mock_ped.return_value = [self._turma(2112345)]
+        mock_inst.return_value = []
+
+        result = services.montar_turmas_atribuidas_professor("000001")
+
+        self.assertEqual(result, [])
+
+    @patch.object(
+        services.institucional_services, "get_ues_recorte_fund_medio"
+    )
+    @patch.object(
+        services.pedagogico_services, "get_turmas_recorte_fund_medio_eja"
+    )
+    @patch.object(services, "get_turmas_professor")
+    def test_ignora_ancora_de_programa_sem_codigo_turma(
+        self,
+        mock_ancora: MagicMock,
+        mock_ped: MagicMock,
+        mock_inst: MagicMock,
+    ) -> None:
+        """Âncora de programa (sem codigo_turma) não é consultada nem sai."""
+        mock_ancora.return_value = [self._ancora(None, "000532")]
+
+        result = services.montar_turmas_atribuidas_professor("000001")
+
+        self.assertEqual(result, [])
+        mock_ped.assert_not_called()
+        mock_inst.assert_not_called()
+
+    @patch.object(services, "get_turmas_professor")
+    def test_ancora_vazia_retorna_vazio(
+        self,
+        mock_ancora: MagicMock,
+    ) -> None:
+        """Sem âncora não há orquestração."""
+        mock_ancora.return_value = None
+
+        result = services.montar_turmas_atribuidas_professor("000001")
+
+        self.assertEqual(result, [])
