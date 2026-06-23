@@ -27,6 +27,10 @@ from apps.pedagogico.views import (
     ValidarComponentePapViewSet,
 )
 
+_TURMA_FUNCIONARIO_PREFIXO = (
+    "turmas/<str:codigo_turma>/funcionarios/<str:login>/"
+)
+
 turma_urlpatterns = [
     path(
         "anos-letivos/<int:ano_letivo>/professor/"
@@ -87,13 +91,13 @@ urlpatterns = [
         ComponentesRegenciaViewSet.as_view(),
     ),
     path(
-        "turmas/<str:codigo_turma>/funcionarios/<str:login>/"
+        _TURMA_FUNCIONARIO_PREFIXO
         + "perfis/<str:id_perfil>/agrupaComponenteCurricular/"
         + "<str:agrupa_componente_curricular>/",
         ComponentesTurmaFuncionarioViewSet.as_view(),
     ),
     path(
-        "turmas/<str:codigo_turma>/funcionarios/<str:login>/"
+        _TURMA_FUNCIONARIO_PREFIXO
         + "perfis/<str:id_perfil>/planejamento/",
         ComponentesPlanejamentoViewSet.as_view(),
     ),
@@ -103,7 +107,7 @@ urlpatterns = [
         ComponentesSemAtribuicaoViewSet.as_view(),
     ),
     path(
-        "turmas/<str:codigo_turma>/funcionarios/<str:login>/"
+        _TURMA_FUNCIONARIO_PREFIXO
         + "perfis/<str:id_perfil>/validar/pap/",
         ValidarComponentePapViewSet.as_view(),
     ),
