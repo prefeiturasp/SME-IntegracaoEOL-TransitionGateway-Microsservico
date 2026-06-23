@@ -1425,7 +1425,7 @@ class ProfessorAutoCompleteViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/2026/AutoComplete/1/" "?ue_id=019465&nome=ana"
+            "/api/professores/2026/AutoComplete/1/?ue_id=019465&nome=ana"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
