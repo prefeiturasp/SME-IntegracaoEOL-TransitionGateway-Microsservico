@@ -296,13 +296,40 @@ class TurmaHistoricaGeralSerializerTest(SimpleTestCase):
         )
 
         self.assertTrue(serializer.is_valid())
-        self.assertEqual(serializer.data["tipoTurma"], 2)
-        self.assertEqual(serializer.data["duracaoTurno"], 6)
-        self.assertEqual(serializer.data["dataFim"], "2025-12-20T00:00:00")
         self.assertIs(serializer.data["ehistorico"], True)
-        self.assertEqual(serializer.data["ueCodigo"], "012345")
 
-    def test_preserva_nulo_retornado_pelo_ms(self) -> None:
+    def test_fixa_campos_padrao_ignorando_valores_do_ms(self) -> None:
+        serializer = TurmaHistoricaGeralSerializer(
+            data={
+                "ano": "7",
+                "ano_letivo": 2025,
+                "codigo": 2825477,
+                "tipo_turma": 2,
+                "modalidade": "Infantil",
+                "codigo_modalidade": 1,
+                "nome_turma": "7A",
+                "semestre": 0,
+                "duracao_turno": 6,
+                "tipo_turno": 1,
+                "data_fim": "2025-12-20T00:00:00",
+                "serie_ensino": "7o Ano",
+                "data_inicio_turma": "2025-02-05T00:00:00",
+                "situacao": "E",
+                "ue_codigo": "012345",
+            }
+        )
+
+        self.assertTrue(serializer.is_valid())
+        self.assertIsNone(serializer.data["dataFim"])
+        self.assertIsNone(serializer.data["dataInicioTurma"])
+        self.assertEqual(serializer.data["duracaoTurno"], 0)
+        self.assertIsNone(serializer.data["serieEnsino"])
+        self.assertIsNone(serializer.data["situacao"])
+        self.assertEqual(serializer.data["tipoTurma"], 0)
+        self.assertEqual(serializer.data["tipoTurno"], 0)
+        self.assertIsNone(serializer.data["ueCodigo"])
+
+    def test_fixa_campos_padrao_com_nulo_retornado_pelo_ms(self) -> None:
         serializer = TurmaHistoricaGeralSerializer(
             data={
                 "ano": "7",
@@ -318,7 +345,7 @@ class TurmaHistoricaGeralSerializerTest(SimpleTestCase):
         )
 
         self.assertTrue(serializer.is_valid())
-        self.assertIsNone(serializer.data["tipoTurma"])
+        self.assertEqual(serializer.data["tipoTurma"], 0)
         self.assertIsNone(serializer.data["ehistorico"])
 
     def test_rejeita_campo_essencial_ausente(self) -> None:

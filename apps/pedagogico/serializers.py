@@ -200,6 +200,23 @@ class TurmaHistoricaGeralSerializer(serializers.Serializer):
             }
         return cast(dict[str, Any], super().to_internal_value(data))
 
+    def to_representation(self, instance: Any) -> dict[str, Any]:
+        """Fixa os campos sem dados do legado com valores padrão."""
+        representacao = super().to_representation(instance)
+        representacao.update(
+            {
+                "dataFim": None,
+                "dataInicioTurma": None,
+                "duracaoTurno": 0,
+                "serieEnsino": None,
+                "situacao": None,
+                "tipoTurma": 0,
+                "tipoTurno": 0,
+                "ueCodigo": None,
+            }
+        )
+        return representacao
+
 
 class DataHoraLegadoField(serializers.CharField):
     """Serializa data e hora no formato esperado pelo legado."""
