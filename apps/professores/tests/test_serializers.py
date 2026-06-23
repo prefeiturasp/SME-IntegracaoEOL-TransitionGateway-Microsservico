@@ -32,75 +32,44 @@ class TextoEstritoFieldTest(SimpleTestCase):
             field.to_internal_value("abc")
 
 
-class FuncionarioCargoSerializerTest(SimpleTestCase):
-    """Valida serialização de funcionário com cargo."""
+class FuncionarioSerializerTest(SimpleTestCase):
+    """Valida serialização dos contratos de funcionário."""
 
-    def test_serializa_campos_legados(self) -> None:
-        payload = {
-            "codigo_rf": "7730900",
-            "nome": None,
-            "cargo_id": 3239,
-        }
-
-        data = FuncionarioCargoSerializer(payload).data
-
-        self.assertEqual(
-            data,
-            {
-                "funcionarioRF": "7730900",
-                "funcionarioNome": None,
-                "cargoId": 3239,
-            },
-        )
-
-
-class FuncionarioFuncaoAtividadeSerializerTest(SimpleTestCase):
-    """Valida serialização de funcionário com função atividade."""
-
-    def test_serializa_campos_legados(self) -> None:
-        payload = {
-            "codigo_rf": "7795246",
-            "nome": None,
-            "codigo_funcao_atividade": 30,
-        }
-
-        data = FuncionarioFuncaoAtividadeSerializer(payload).data
-
-        self.assertEqual(
-            data,
-            {
-                "funcionarioRF": "7795246",
-                "funcionarioNome": None,
-                "funcaoAtividadeId": 30,
-            },
-        )
-
-
-class FuncionarioFuncaoExternaSerializerTest(SimpleTestCase):
-    """Valida serialização de funcionário com função externa."""
-
-    def test_serializa_campos_legados(self) -> None:
-        payload = {
-            "cpf": "11610699840",
-            "funcao_externo": 5,
-        }
-
-        data = FuncionarioFuncaoExternaSerializer(payload).data
-
-        self.assertEqual(
-            data,
-            {
-                "funcionarioCpf": "11610699840",
-                "funcaoExternaId": 5,
-            },
-        )
+    def test_serializa_campos(self) -> None:
+        casos = [
+            (
+                FuncionarioCargoSerializer,
+                {"codigo_rf": "7730900", "nome": None, "cargo_id": 3239},
+                {"funcionarioRF": "7730900", "funcionarioNome": None, "cargoId": 3239},
+            ),
+            (
+                FuncionarioFuncaoAtividadeSerializer,
+                {
+                    "codigo_rf": "7795246",
+                    "nome": None,
+                    "codigo_funcao_atividade": 30,
+                },
+                {
+                    "funcionarioRF": "7795246",
+                    "funcionarioNome": None,
+                    "funcaoAtividadeId": 30,
+                },
+            ),
+            (
+                FuncionarioFuncaoExternaSerializer,
+                {"cpf": "11610699840", "funcao_externo": 5},
+                {"funcionarioCpf": "11610699840", "funcaoExternaId": 5},
+            ),
+        ]
+        for serializer_cls, payload, esperado in casos:
+            with self.subTest(serializer=serializer_cls.__name__):
+                self.assertEqual(serializer_cls(payload).data, esperado)
 
 
 class ProfessorAutoCompleteSerializerTest(SimpleTestCase):
     """Valida serialização de professor para autocomplete."""
 
     def test_serializa_nome_servidor_como_nome(self) -> None:
-        """ Valida serialização de professor para autocomplete."""
         payload = {"codigo_rf": "000001", "nome_servidor": "ANA SILVA"}
 
         data = ProfessorAutoCompleteSerializer(payload).data
@@ -114,8 +83,7 @@ class ProfessorAutoCompleteSerializerTest(SimpleTestCase):
 class TurmaAtribuidaProfessorSerializerTest(SimpleTestCase):
     """Valida serialização de turma atribuída ao professor."""
 
-    def test_serializa_campos_legados(self) -> None:
-        """ Valida serialização de turma atribuída ao professor."""
+    def test_serializa_campos(self) -> None:
         payload = {
             "cod_escola": "019465",
             "cod_turma": 3030050,
