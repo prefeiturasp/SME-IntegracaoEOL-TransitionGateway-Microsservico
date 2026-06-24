@@ -451,7 +451,7 @@ class AlunosAtivosDataAulaTicksView(APIView):
             Lista de alunos ativos no formato publicado.
         """
         if not _inteiro_positivo(codigo_turma):
-            return detail_response(_MSG_CODIGO_TURMA_OBRIGATORIO)
+            return Response([])
         if not _inteiro_positivo(data_ticks):
             return detail_response(_MSG_DATA_TICKS_OBRIGATORIA)
         try:
