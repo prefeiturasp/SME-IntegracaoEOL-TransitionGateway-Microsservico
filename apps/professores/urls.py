@@ -14,8 +14,13 @@ from apps.professores.views import (
     FuncionariosBuscarPorListaRfView,
     NomeServidorView,
     NomeUsuarioEolView,
+    ProfessorAutoCompleteView,
+    ProfessorBuscarPorRfDreUeView,
     ProfessorBuscarPorRfView,
     ProfessorDisciplinaTurmasView,
+    ProfessorEhEmeiView,
+    ProfessoresBuscarPorListaRfAnoView,
+    ProfessorTurmasView,
     ProfessorView,
     ValidadeProfessorView,
 )
@@ -24,6 +29,26 @@ urlpatterns = [
     path(
         "professores/<str:codigo_rf>/BuscarPorRf/<int:ano_letivo>/",
         ProfessorBuscarPorRfView.as_view(),
+    ),
+    path(
+        "professores/<str:codigo_rf>/BuscarPorRfDreUe/<int:ano_letivo>/",
+        ProfessorBuscarPorRfDreUeView.as_view(),
+    ),
+    path(
+        "professores/<int:ano_letivo>/BuscarPorListaRF/",
+        ProfessoresBuscarPorListaRfAnoView.as_view(),
+    ),
+    path(
+        "professores/<int:ano_letivo>/AutoComplete/<str:dre_id>/",
+        ProfessorAutoCompleteView.as_view(),
+    ),
+    path(
+        "professores/<str:codigo_rf>/ehEmei/",
+        ProfessorEhEmeiView.as_view(),
+    ),
+    path(
+        "professores/<str:codigo_rf>/turmas/",
+        ProfessorTurmasView.as_view(),
     ),
     path(
         "professores/<str:codigo_rf>/disciplina/<str:disciplina_id>/turmas/",

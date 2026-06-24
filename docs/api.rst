@@ -89,9 +89,41 @@ Professores
 
 .. autoclass:: apps.professores.views.ValidadeProfessorView
 
+.. autoclass:: apps.professores.views.ProfessorBuscarPorRfView
+
+.. autoclass:: apps.professores.views.ProfessorBuscarPorRfDreUeView
+
+.. autoclass:: apps.professores.views.ProfessoresBuscarPorListaRfAnoView
+
+.. autoclass:: apps.professores.views.ProfessorAutoCompleteView
+
+.. autoclass:: apps.professores.views.ProfessorEhEmeiView
+
+.. autoclass:: apps.professores.views.ProfessorTurmasView
+
+.. autoclass:: apps.professores.views.ProfessorDisciplinaTurmasView
+
 .. autoclass:: apps.professores.views.FuncionarioAtivoView
 
 .. autoclass:: apps.professores.views.NomeServidorView
+
+.. autoclass:: apps.professores.views.NomeUsuarioEolView
+
+.. autoclass:: apps.professores.views.FuncionariosBuscarPorListaRfView
+
+.. autoclass:: apps.professores.views.EscolaFuncionariosView
+
+.. autoclass:: apps.professores.views.EscolaFuncionariosCargosView
+
+.. autoclass:: apps.professores.views.EscolaFuncionariosCargoView
+
+.. autoclass:: apps.professores.views.EscolaFuncionariosFuncoesAtividadesView
+
+.. autoclass:: apps.professores.views.EscolaFuncionariosFuncaoAtividadeView
+
+.. autoclass:: apps.professores.views.EscolaFuncionariosFuncoesExternasView
+
+.. autoclass:: apps.professores.views.EscolaFuncionariosFuncaoExternaView
 
 Programas educacionais
 ----------------------

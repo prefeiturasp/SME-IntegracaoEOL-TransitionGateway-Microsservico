@@ -227,6 +227,64 @@ def get_equipamentos(
     return resp.json()
 
 
+def get_ues_recorte_fund_medio(
+    codigos: list[str],
+) -> list[dict[str, Any]]:
+    """Lista UEs no recorte de tipo de escola (1, 3, 4, 16).
+
+    Args:
+        codigos: Códigos EOL das unidades educacionais a consultar.
+
+    Returns:
+        UEs no recorte de tipo de escola retornadas pelo sidecar.
+    """
+    if not codigos:
+        return []
+    resp = _client.post(
+        f"{_BASE}/escolas/recorte-fund-medio/",
+        payload=[str(codigo) for codigo in codigos],
+    )
+    return _client.json_or_none(resp) or []
+
+
+def get_codigos_ue_emei(codigos: list[str]) -> list[str]:
+    """Lista, dentre os códigos, os de unidade EMEI (tp_escola 2, 17).
+
+    Args:
+        codigos: Códigos EOL das unidades educacionais a consultar.
+
+    Returns:
+        Subconjunto dos códigos informados cujo tipo de escola é EMEI.
+    """
+    if not codigos:
+        return []
+    resp = _client.post(
+        f"{_BASE}/escolas/recorte-emei/",
+        payload=[str(codigo) for codigo in codigos],
+    )
+    data = _client.json_or_none(resp) or {}
+    return data.get("codigos_ue", []) if isinstance(data, dict) else []
+
+
+def get_codigos_ue_tipo_sgp(codigos: list[str]) -> list[str]:
+    """Lista, dentre os códigos, os do recorte ``tipo_escola_sgp``.
+
+    Args:
+        codigos: Códigos EOL das unidades educacionais a consultar.
+
+    Returns:
+        Subconjunto dos códigos informados no recorte do perfil de professor.
+    """
+    if not codigos:
+        return []
+    resp = _client.post(
+        f"{_BASE}/escolas/recorte-tipo-sgp/",
+        payload=[str(codigo) for codigo in codigos],
+    )
+    data = _client.json_or_none(resp) or {}
+    return data.get("codigos_ue", []) if isinstance(data, dict) else []
+
+
 def get_todas_unidades() -> Any:
     """Lista todas as unidades educacionais.
 

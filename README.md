@@ -78,14 +78,47 @@ Nas rotas L13, L14 e L15, `{cod}`/body representam `cod_agrupamento`, não códi
 
 ## Domínio professores
 
-O gateway mapeia 4 rotas legadas cobertas pelo MS-Professores:
+O gateway mapeia 20 rotas legadas cobertas pelo MS-Professores. Os paths canônicos são relativos ao sidecar de professores (`/api/v1/professores`). Endpoints marcados com *(orquestra)* chamam mais de um domínio antes de responder.
+
+### Professor
 
 | Legado | Endpoint canônico |
 |---|---|
-| L1 Retorna booleano indicando se o funcionário está ativo | EP-1 `GET /acessos/funcionario-ativo/{registro_funcional}/` |
-| L2 Retorna nome e CPF do servidor | EP-2 `GET /funcionarios/nome-servidor/{registro_funcional}/` |
-| L3 Retorna booleano indicando se o professor é válido | EP-3 `GET /professores/{codigo_rf}/validade/` |
-| L4 Retorna o nome do professor correspondente ao RF informado | EP-4 `GET /professores/{rf_professor}/` |
+| L1 Retorna o nome do professor pelo RF | EP-1 `GET /{rf_professor}` |
+| L2 Retorna booleano indicando se o professor é válido | EP-2 `GET /{codigo_rf}/validade` |
+| L3 Retorna professor por RF e ano letivo | EP-3 `GET /{codigo_rf}/BuscarPorRf/{ano_letivo}` |
+| L4 Retorna professor por RF, DRE e UE no ano letivo | EP-4 `GET /{codigo_rf}/BuscarPorRfDreUe/{ano_letivo}` |
+| L5 Retorna professores pelos RFs no ano letivo *(orquestra Professores + Institucional)* | EP-5 `POST /{ano_letivo}/BuscarPorListaRF/` |
+| L6 Lista professores para autocomplete por DRE, UE e nome | EP-6 `GET /{ano_letivo}/AutoComplete/{dre_id}` |
+| L7 Retorna booleano indicando se o professor é EMEI *(orquestra Professores + Institucional)* | EP-7 `GET /{codigo_rf}/unidades-atribuicao/` |
+| L8 Retorna turmas atribuídas ao professor *(orquestra Professores + Pedagógico + Institucional)* | EP-8 `GET /{codigo_rf}/turmas/` |
+| L9 Retorna turmas do professor para a disciplina | EP-9 `POST /{codigo_rf}/disciplina/{disciplina_id}/turmas/` |
+
+### Acessos
+
+| Legado | Endpoint canônico |
+|---|---|
+| L10 Retorna booleano indicando se o funcionário está ativo | EP-10 `GET /acessos/funcionario-ativo/{registro_funcional}` |
+
+### Funcionário
+
+| Legado | Endpoint canônico |
+|---|---|
+| L11 Retorna nome e CPF do servidor | EP-11 `GET /funcionarios/nome-servidor/{registro_funcional}` |
+| L12 Retorna o nome de usuário EOL do funcionário | EP-12 `GET /funcionarios/nome-usuario-eol/{registro_funcional}` |
+| L13 Retorna professores pelos RFs informados | EP-13 `POST /funcionarios/BuscarPorListaRF/` |
+
+### Escola
+
+| Legado | Endpoint canônico |
+|---|---|
+| L14 Retorna funcionários vinculados à escola | EP-14 `GET /escolas/{codigo_ue}/funcionarios/` |
+| L15 Retorna funcionários da escola filtrados por cargos | EP-15 `GET /escolas/{codigo_ue}/funcionarios/?cargos={cargo}` (um GET por cargo) |
+| L16 Retorna funcionários da escola filtrados por cargo específico | EP-16 `GET /escolas/{codigo_ue}/funcionarios/?cargos={codigo_cargo}` |
+| L17 Retorna funcionários da escola por funções atividades | EP-17 `GET /escolas/{codigo_ue}/funcionarios/?funcoes_atividades={cod}` (um GET por função) |
+| L18 Retorna funcionários da escola por função atividade específica | EP-18 `GET /escolas/{codigo_ue}/funcionarios/?funcoes_atividades={codigo_funcao_atividade}` |
+| L19 Retorna funcionários da escola por funções externas | EP-19 `GET /escolas/{codigo_ue}/funcionarios/?funcoes_externas={cod}` (um GET por função) |
+| L20 Retorna funcionários da escola por função externa específica | EP-20 `GET /escolas/{codigo_ue}/funcionarios/?funcoes_externas={codigo_funcao_externa}` |
 
 ## Domínio programas educacionais
 
