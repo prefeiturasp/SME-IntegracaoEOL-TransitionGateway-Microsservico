@@ -14,6 +14,7 @@ from apps.core.responses import detail_response
 from apps.pedagogico import services
 from apps.pedagogico.serializers import (
     AnosLetivosVigentesQuerySerializer,
+    CodigoComponenteListSerializer,
     CodigoTurmaInteiroListSerializer,
     CodigoTurmaListSerializer,
     ComponenteBaseSerializer,
@@ -42,6 +43,31 @@ _TURMA_REQUEST_SCHEMA = {
         "codigos de turmas."
     ),
 }
+_IDS_REQUEST_SCHEMA = {
+    "type": "array",
+    "items": {"type": "integer"},
+    "description": "Lista JSON de `cod_agrupamento` de Território do Saber.",
+}
+
+
+def _obter_data_base_tick(request: Request) -> int | None:
+    """Obtém o parâmetro de query `dataBaseTick` como inteiro.
+
+    Args:
+        request: Requisição HTTP recebida.
+
+    Returns:
+        Valor inteiro dos ticks do .NET, ou None quando ausente.
+
+    Raises:
+        ValueError: Quando `dataBaseTick` não for um inteiro válido.
+    """
+    bruto = request.query_params.get(
+        "dataBaseTick", request.query_params.get("data_base_tick")
+    )
+    if bruto is None or bruto == "":
+        return None
+    return int(bruto)
 
 
 def _inteiro_positivo(value: str) -> bool:
@@ -1115,3 +1141,136 @@ class GradeComponentesCurricularesViewSet(APIView):
         """
         data = services.get_grade_curricular(ano_letivo)
         return Response(GradeCurricularSerializer(data, many=True).data)
+
+
+class AgrupamentosCorrelacionadosViewSet(APIView):
+    """Lista agrupamentos de Território do Saber correlacionados."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Agrupamentos correlacionados por cod_agrupamento",
+        description=(
+            "Retorna os agrupamentos de Território do Saber correlacionados "
+            "ao `cod_agrupamento` informado. A data base é recebida em "
+            "ticks de DateTime do .NET via query `dataBaseTick`."
+        ),
+        operation_id="agrupamentos_correlacionados",
+        parameters=[
+            OpenApiParameter(
+                "dataBaseTick",
+                OpenApiTypes.INT64,
+                OpenApiParameter.QUERY,
+                required=False,
+                description="Data base em ticks do .NET.",
+            ),
+        ],
+        responses={200: ComponenteCurricularSerializer(many=True)},
+    )
+    def get(self, request: Request, codigo_componente: int) -> Response:
+        """Retorna agrupamentos correlacionados por `cod_agrupamento`.
+
+        Args:
+            request: Requisição HTTP recebida.
+            codigo_componente: `cod_agrupamento` de origem.
+
+        Returns:
+            Resposta HTTP com os agrupamentos correlacionados.
+
+        Raises:
+            httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+            OverflowError: Se os ticks excederem o limite do datetime.
+            ValueError: Se a resposta do serviço não for JSON válido.
+        """
+        data = services.get_agrupamentos_correlacionados(
+            codigo_componente=codigo_componente,
+            data_base_tick=_obter_data_base_tick(request),
+        )
+        return Response(ComponenteCurricularSerializer(data, many=True).data)
+
+
+class AgrupamentosCorrelacionadosLoteViewSet(APIView):
+    """Lista agrupamentos de Território do Saber correlacionados em lote."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Agrupamentos correlacionados em lote",
+        description=(
+            "Retorna os agrupamentos de Território do Saber correlacionados "
+            "aos `cod_agrupamento` informados no corpo. A data base é "
+            "recebida em ticks de DateTime do .NET via query `dataBaseTick`."
+        ),
+        operation_id="agrupamentos_correlacionados_lote",
+        request={"application/json": _IDS_REQUEST_SCHEMA},
+        parameters=[
+            OpenApiParameter(
+                "dataBaseTick",
+                OpenApiTypes.INT64,
+                OpenApiParameter.QUERY,
+                required=False,
+                description="Data base em ticks do .NET.",
+            ),
+        ],
+        responses={200: ComponenteCurricularSerializer(many=True)},
+    )
+    def post(self, request: Request) -> Response:
+        """Retorna agrupamentos correlacionados em lote.
+
+        Args:
+            request: Requisição HTTP com a lista de `cod_agrupamento` no corpo.
+
+        Returns:
+            Resposta HTTP com os agrupamentos correlacionados.
+
+        Raises:
+            httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+            OverflowError: Se os ticks excederem o limite do datetime.
+            ValueError: Se a resposta do serviço não for JSON válido.
+        """
+        serializer = CodigoComponenteListSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if not serializer.validated_data:
+            return Response([])
+
+        data = services.post_agrupamentos_correlacionados(
+            ids=serializer.validated_data,
+            data_base_tick=_obter_data_base_tick(request),
+        )
+        return Response(ComponenteCurricularSerializer(data, many=True).data)
+
+
+class AgrupamentosTerritorioViewSet(APIView):
+    """Lista agrupamentos de Território do Saber por IDs."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Agrupamentos de Território do Saber por cod_agrupamento",
+        description=(
+            "Retorna os agrupamentos de Território do Saber correspondentes "
+            "aos `cod_agrupamento` informados no corpo da requisição."
+        ),
+        operation_id="agrupamentos_territorio",
+        request={"application/json": _IDS_REQUEST_SCHEMA},
+        responses={200: ComponenteCurricularSerializer(many=True)},
+    )
+    def post(self, request: Request) -> Response:
+        """Retorna agrupamentos de Território do Saber por `cod_agrupamento`.
+
+        Args:
+            request: Requisição HTTP com a lista de `cod_agrupamento` no corpo.
+
+        Returns:
+            Resposta HTTP com os agrupamentos de Território do Saber.
+
+        Raises:
+            httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+            ValueError: Se a resposta do serviço não for JSON válido.
+        """
+        serializer = CodigoComponenteListSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if not serializer.validated_data:
+            return Response([])
+
+        data = services.post_agrupamentos_territorio(
+            ids=serializer.validated_data,
+        )
+        return Response(ComponenteCurricularSerializer(data, many=True).data)

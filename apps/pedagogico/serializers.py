@@ -50,6 +50,15 @@ class CodigoTurmaInteiroListSerializer(serializers.ListSerializer):
         super().__init__(*args, **kwargs)
 
 
+class CodigoComponenteListSerializer(serializers.ListSerializer):
+    """Serializa uma lista de IDs de agrupamento."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        kwargs.setdefault("child", serializers.IntegerField())
+        kwargs.setdefault("allow_empty", True)
+        super().__init__(*args, **kwargs)
+
+
 class ItinerarioEnsinoMedioSerializer(serializers.Serializer):
     """Serializa um itinerário do ensino médio."""
 

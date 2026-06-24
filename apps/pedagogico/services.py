@@ -712,3 +712,78 @@ def get_grade_curricular(ano_letivo: int) -> Any:
         ValueError: Se a resposta não puder ser convertida para JSON.
     """
     return _client.get(f"{_BASE}/grade-curricular/{ano_letivo}").json()
+
+
+def get_agrupamentos_correlacionados(
+    codigo_componente: int,
+    data_base_tick: int | None,
+) -> Any:
+    """Retorna agrupamentos de Território do Saber correlacionados.
+
+    Args:
+        codigo_componente: `cod_agrupamento` de origem.
+        data_base_tick: Data base em ticks do .NET; None para sem filtro.
+
+    Returns:
+        Agrupamentos correlacionados ao `cod_agrupamento` informado.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        OverflowError: Se os ticks excederem o limite do datetime.
+        ValueError: Se a resposta não puder ser convertida para JSON.
+    """
+    params: dict[str, Any] = {}
+    if data_base_tick is not None:
+        params["data_base"] = _ticks_dotnet_para_data(data_base_tick)
+    return _client.get(
+        f"{_BASE}/{codigo_componente}/territorio-saber"
+        "/agrupamentos-correlacionados/",
+        params=params,
+    ).json()
+
+
+def post_agrupamentos_correlacionados(
+    ids: list[int],
+    data_base_tick: int | None,
+) -> Any:
+    """Retorna agrupamentos de Território do Saber correlacionados em lote.
+
+    Args:
+        ids: Lista de `cod_agrupamento` de origem.
+        data_base_tick: Data base em ticks do .NET; None para sem filtro.
+
+    Returns:
+        Agrupamentos correlacionados sem duplicatas.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        OverflowError: Se os ticks excederem o limite do datetime.
+        ValueError: Se a resposta não puder ser convertida para JSON.
+    """
+    params: dict[str, Any] = {}
+    if data_base_tick is not None:
+        params["data_base"] = _ticks_dotnet_para_data(data_base_tick)
+    return _client.post(
+        f"{_BASE}/territorio-saber/agrupamentos-correlacionados/",
+        payload=ids,
+        params=params,
+    ).json()
+
+
+def post_agrupamentos_territorio(ids: list[int]) -> Any:
+    """Retorna agrupamentos de Território do Saber por IDs.
+
+    Args:
+        ids: IDs dos agrupamentos a consultar.
+
+    Returns:
+        Agrupamentos de Território do Saber encontrados.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        ValueError: Se a resposta não puder ser convertida para JSON.
+    """
+    return _client.post(
+        f"{_BASE}/territorio-saber/agrupamentos/",
+        payload=ids,
+    ).json()

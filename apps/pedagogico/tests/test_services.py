@@ -73,6 +73,62 @@ class ListarTurmasTest(SimpleTestCase):
         self.assertEqual(result, [])
 
 
+class AgrupamentosTerritorioServiceTest(SimpleTestCase):
+    """Valida chamadas de agrupamentos para o sidecar pedagógico."""
+
+    @patch.object(services._client, "get")
+    def test_get_correlacionados_usa_path_com_barra_final(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        response = MagicMock()
+        response.json.return_value = []
+        mock_get.return_value = response
+
+        result = services.get_agrupamentos_correlacionados(815274, None)
+
+        self.assertEqual(result, [])
+        mock_get.assert_called_once_with(
+            f"{_BASE}/815274/territorio-saber/agrupamentos-correlacionados/",
+            params={},
+        )
+
+    @patch.object(services._client, "post")
+    def test_post_correlacionados_usa_path_com_barra_final(
+        self,
+        mock_post: MagicMock,
+    ) -> None:
+        response = MagicMock()
+        response.json.return_value = []
+        mock_post.return_value = response
+
+        result = services.post_agrupamentos_correlacionados([815274], None)
+
+        self.assertEqual(result, [])
+        mock_post.assert_called_once_with(
+            f"{_BASE}/territorio-saber/agrupamentos-correlacionados/",
+            payload=[815274],
+            params={},
+        )
+
+    @patch.object(services._client, "post")
+    def test_post_agrupamentos_usa_path_com_barra_final(
+        self,
+        mock_post: MagicMock,
+    ) -> None:
+        response = MagicMock()
+        response.json.return_value = []
+        mock_post.return_value = response
+
+        result = services.post_agrupamentos_territorio([815274])
+
+        self.assertEqual(result, [])
+        mock_post.assert_called_once_with(
+            f"{_BASE}/territorio-saber/agrupamentos/",
+            payload=[815274],
+        )
+
+
 class PostTurmasRegularesTest(SimpleTestCase):
     """Valida a consulta de turmas regulares."""
 

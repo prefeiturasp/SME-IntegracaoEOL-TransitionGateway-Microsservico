@@ -883,9 +883,7 @@ class SincronizacoesInstitucionaisAnosLetivosViewSetTest(SimpleTestCase):
 class ItinerariosEnsinoMedioViewSetTest(SimpleTestCase):
     """Valida a listagem de itinerários do ensino médio."""
 
-    @patch(
-        "apps.pedagogico.views.services.get_itinerarios_ensino_medio"
-    )
+    @patch("apps.pedagogico.views.services.get_itinerarios_ensino_medio")
     def test_200_converte_serie_e_preserva_ordem_e_duplicidades(
         self,
         mock_svc: MagicMock,
@@ -893,9 +891,7 @@ class ItinerariosEnsinoMedioViewSetTest(SimpleTestCase):
         mock_svc.return_value = _ITINERARIOS_ENSINO_MEDIO
         client = _cliente_autenticado()
 
-        resp = client.get(
-            f"{_PREFIX_TURMAS}/itinerario/ensino-medio/"
-        )
+        resp = client.get(f"{_PREFIX_TURMAS}/itinerario/ensino-medio/")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(
@@ -915,9 +911,7 @@ class ItinerariosEnsinoMedioViewSetTest(SimpleTestCase):
         )
         mock_svc.assert_called_once_with()
 
-    @patch(
-        "apps.pedagogico.views.services.get_itinerarios_ensino_medio"
-    )
+    @patch("apps.pedagogico.views.services.get_itinerarios_ensino_medio")
     def test_200_retorna_lista_vazia(
         self,
         mock_svc: MagicMock,
@@ -925,9 +919,7 @@ class ItinerariosEnsinoMedioViewSetTest(SimpleTestCase):
         mock_svc.return_value = []
         client = _cliente_autenticado()
 
-        resp = client.get(
-            f"{_PREFIX_TURMAS}/itinerario/ensino-medio/"
-        )
+        resp = client.get(f"{_PREFIX_TURMAS}/itinerario/ensino-medio/")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.data, [])
@@ -935,15 +927,11 @@ class ItinerariosEnsinoMedioViewSetTest(SimpleTestCase):
     def test_403_sem_autenticacao(self) -> None:
         client = APIClient()
 
-        resp = client.get(
-            f"{_PREFIX_TURMAS}/itinerario/ensino-medio/"
-        )
+        resp = client.get(f"{_PREFIX_TURMAS}/itinerario/ensino-medio/")
 
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
-    @patch(
-        "apps.pedagogico.views.services.get_itinerarios_ensino_medio"
-    )
+    @patch("apps.pedagogico.views.services.get_itinerarios_ensino_medio")
     def test_preserva_erro_http_do_sidecar(
         self,
         mock_svc: MagicMock,
@@ -961,9 +949,7 @@ class ItinerariosEnsinoMedioViewSetTest(SimpleTestCase):
         )
         client = _cliente_autenticado()
 
-        resp = client.get(
-            f"{_PREFIX_TURMAS}/itinerario/ensino-medio/"
-        )
+        resp = client.get(f"{_PREFIX_TURMAS}/itinerario/ensino-medio/")
 
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(
@@ -971,9 +957,7 @@ class ItinerariosEnsinoMedioViewSetTest(SimpleTestCase):
             {"detail": "Itinerários não encontrados."},
         )
 
-    @patch(
-        "apps.pedagogico.views.services.get_itinerarios_ensino_medio"
-    )
+    @patch("apps.pedagogico.views.services.get_itinerarios_ensino_medio")
     def test_preserva_erro_http_sem_json(
         self,
         mock_svc: MagicMock,
@@ -991,9 +975,7 @@ class ItinerariosEnsinoMedioViewSetTest(SimpleTestCase):
         )
         client = _cliente_autenticado()
 
-        resp = client.get(
-            f"{_PREFIX_TURMAS}/itinerario/ensino-medio/"
-        )
+        resp = client.get(f"{_PREFIX_TURMAS}/itinerario/ensino-medio/")
 
         self.assertEqual(
             resp.status_code,
@@ -1001,9 +983,7 @@ class ItinerariosEnsinoMedioViewSetTest(SimpleTestCase):
         )
         self.assertEqual(resp.data, {"detail": "Falha nos itinerários"})
 
-    @patch(
-        "apps.pedagogico.views.services.get_itinerarios_ensino_medio"
-    )
+    @patch("apps.pedagogico.views.services.get_itinerarios_ensino_medio")
     def test_503_quando_sidecar_indisponivel(
         self,
         mock_svc: MagicMock,
@@ -1015,9 +995,7 @@ class ItinerariosEnsinoMedioViewSetTest(SimpleTestCase):
         )
         client = _cliente_autenticado()
 
-        resp = client.get(
-            f"{_PREFIX_TURMAS}/itinerario/ensino-medio/"
-        )
+        resp = client.get(f"{_PREFIX_TURMAS}/itinerario/ensino-medio/")
 
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertEqual(
@@ -1025,9 +1003,7 @@ class ItinerariosEnsinoMedioViewSetTest(SimpleTestCase):
             {"detail": "Servico pedagogico indisponivel."},
         )
 
-    @patch(
-        "apps.pedagogico.views.services.get_itinerarios_ensino_medio"
-    )
+    @patch("apps.pedagogico.views.services.get_itinerarios_ensino_medio")
     def test_502_quando_contrato_canonico_for_invalido(
         self,
         mock_svc: MagicMock,
@@ -1037,9 +1013,7 @@ class ItinerariosEnsinoMedioViewSetTest(SimpleTestCase):
         ]
         client = _cliente_autenticado()
 
-        resp = client.get(
-            f"{_PREFIX_TURMAS}/itinerario/ensino-medio/"
-        )
+        resp = client.get(f"{_PREFIX_TURMAS}/itinerario/ensino-medio/")
 
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(
@@ -1047,9 +1021,7 @@ class ItinerariosEnsinoMedioViewSetTest(SimpleTestCase):
             {"detail": "Resposta do servico pedagogico invalida."},
         )
 
-    @patch(
-        "apps.pedagogico.views.services.get_itinerarios_ensino_medio"
-    )
+    @patch("apps.pedagogico.views.services.get_itinerarios_ensino_medio")
     def test_502_quando_service_rejeita_estrutura(
         self,
         mock_svc: MagicMock,
@@ -1059,9 +1031,7 @@ class ItinerariosEnsinoMedioViewSetTest(SimpleTestCase):
         )
         client = _cliente_autenticado()
 
-        resp = client.get(
-            f"{_PREFIX_TURMAS}/itinerario/ensino-medio/"
-        )
+        resp = client.get(f"{_PREFIX_TURMAS}/itinerario/ensino-medio/")
 
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
 
@@ -1118,9 +1088,7 @@ class TurmasSchemaTest(SimpleTestCase):
         self.assertFalse(query.get("required", False))
         self.assertEqual(query["schema"]["type"], "array")
         self.assertEqual(query["schema"]["items"]["type"], "integer")
-        itinerarios_path = (
-            "/api/turmas/itinerario/ensino-medio/"
-        )
+        itinerarios_path = "/api/turmas/itinerario/ensino-medio/"
         itinerarios = schema["paths"][itinerarios_path]["get"]
         self.assertEqual(itinerarios["tags"], ["Turma"])
         response_schema = itinerarios["responses"]["200"]["content"][
@@ -1622,3 +1590,181 @@ class ComponentesTurmaProgramaViewSetTest(SimpleTestCase):
             modalidade=5,
             ano_letivo=2024,
         )
+
+
+# Agrupamento de Território do Saber retornado pelo sidecar.
+_AGRUPAMENTO: dict[str, Any] = {
+    "codigo": 9001,
+    "codigo_componente_territorio_saber": 1214,
+    "codigo_componente_curricular_pai": None,
+    "descricao": "TERRIT SABER / EXP PEDAG 1",
+    "regencia": False,
+    "planejamento_regencia": False,
+    "territorio_saber": True,
+    "turma_codigo": "2524172",
+    "exibir_componente_eol": True,
+    "professor": "6232191",
+    "codigos_territorios_agrupamento": [1214],
+}
+
+
+class AgrupamentosCorrelacionadosViewSetTest(SimpleTestCase):
+    """Valida a view de agrupamentos correlacionados por cod_agrupamento."""
+
+    @patch("apps.pedagogico.views.services.get_agrupamentos_correlacionados")
+    def test_200_sem_data_base_tick(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = [_AGRUPAMENTO]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX}/1214/territorio-saber/agrupamentos-correlacionados/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data[0]["codigo"], 9001)
+        self.assertEqual(resp.data[0]["territorioSaber"], True)
+        self.assertEqual(resp.data[0]["codigosTerritoriosAgrupamento"], [1214])
+        mock_svc.assert_called_once_with(
+            codigo_componente=1214,
+            data_base_tick=None,
+        )
+
+    @patch("apps.pedagogico.views.services.get_agrupamentos_correlacionados")
+    def test_200_com_data_base_tick(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = [_AGRUPAMENTO]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX}/1214/territorio-saber/"
+            "agrupamentos-correlacionados/?dataBaseTick=638527968000000000"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_svc.assert_called_once_with(
+            codigo_componente=1214,
+            data_base_tick=638527968000000000,
+        )
+
+
+class AgrupamentosCorrelacionadosLoteViewSetTest(SimpleTestCase):
+    """Valida a view de agrupamentos correlacionados em lote."""
+
+    @patch("apps.pedagogico.views.services.post_agrupamentos_correlacionados")
+    def test_200_repassa_ids(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = [_AGRUPAMENTO]
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            f"{_PREFIX}/territorio-saber/agrupamentos-correlacionados/",
+            [1214, 1236],
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_svc.assert_called_once_with(
+            ids=[1214, 1236],
+            data_base_tick=None,
+        )
+
+    @patch("apps.pedagogico.views.services.post_agrupamentos_correlacionados")
+    def test_200_com_data_base_tick(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = [_AGRUPAMENTO]
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            f"{_PREFIX}/territorio-saber/"
+            "agrupamentos-correlacionados/?dataBaseTick=638527968000000000",
+            [1214],
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_svc.assert_called_once_with(
+            ids=[1214],
+            data_base_tick=638527968000000000,
+        )
+
+    @patch("apps.pedagogico.views.services.post_agrupamentos_correlacionados")
+    def test_200_lista_vazia_sem_chamar_service(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            f"{_PREFIX}/territorio-saber/agrupamentos-correlacionados/",
+            [],
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data, [])
+        mock_svc.assert_not_called()
+
+    @patch("apps.pedagogico.views.services.post_agrupamentos_correlacionados")
+    def test_400_quando_payload_invalido(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            f"{_PREFIX}/territorio-saber/agrupamentos-correlacionados/",
+            [1214, "abc"],
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_svc.assert_not_called()
+
+
+class AgrupamentosTerritorioViewSetTest(SimpleTestCase):
+    """Valida a view de agrupamentos de Território do Saber por IDs."""
+
+    @patch("apps.pedagogico.views.services.post_agrupamentos_territorio")
+    def test_200_repassa_ids(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = [_AGRUPAMENTO]
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            f"{_PREFIX}/territorio-saber/agrupamentos/",
+            [1214, 1236],
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data[0]["codigo"], 9001)
+        mock_svc.assert_called_once_with(ids=[1214, 1236])
+
+    @patch("apps.pedagogico.views.services.post_agrupamentos_territorio")
+    def test_200_lista_vazia_sem_chamar_service(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            f"{_PREFIX}/territorio-saber/agrupamentos/",
+            [],
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data, [])
+        mock_svc.assert_not_called()
+
+    @patch("apps.pedagogico.views.services.post_agrupamentos_territorio")
+    def test_400_quando_payload_invalido(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            f"{_PREFIX}/territorio-saber/agrupamentos/",
+            ["abc"],
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_svc.assert_not_called()
