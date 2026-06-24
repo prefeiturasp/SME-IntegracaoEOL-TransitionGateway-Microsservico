@@ -845,6 +845,8 @@ class ProfessoresBuscarPorListaRfAnoView(APIView):
             ValidationError: Quando a lista de RFs informada é inválida.
             httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
         """
+        if isinstance(request.data, list) and not request.data:
+            return detail_response("É necessário informar ao menos um RF.")
         serializer = ListaStringSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = services.get_professores_por_lista_rf_ano(
