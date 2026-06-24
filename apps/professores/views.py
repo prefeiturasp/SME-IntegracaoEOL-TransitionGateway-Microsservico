@@ -846,7 +846,7 @@ class ProfessoresBuscarPorListaRfAnoView(APIView):
             httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
         """
         if isinstance(request.data, list) and not request.data:
-            return Response([])
+            return detail_response("É necessário informar ao menos um RF.")
         serializer = ListaStringSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = services.get_professores_por_lista_rf_ano(
@@ -945,7 +945,7 @@ class ProfessorAutoCompleteView(APIView):
             params,
         )
         if not data:
-            return Response([])
+            return Response(status=204)
         if not _is_lista_dicionarios(data):
             return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
         return Response(ProfessorAutoCompleteSerializer(data, many=True).data)
