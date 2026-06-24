@@ -33,6 +33,7 @@ _SERVICO_PEDAGOGICO_INDISPONIVEL = "Servico pedagogico indisponivel."
 _RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA = (
     "Resposta do servico pedagogico invalida."
 )
+_MSG_CODIGO_TURMA_UE_OBRIGATORIOS = "O código da turma e Ue são obrigatórios"
 _TURMA_REQUEST_SCHEMA = {
     "type": "array",
     "items": {"type": "string"},
@@ -41,6 +42,14 @@ _TURMA_REQUEST_SCHEMA = {
         "codigos de turmas."
     ),
 }
+
+
+def _inteiro_positivo(value: str) -> bool:
+    """Verifica se o valor representa um inteiro positivo."""
+    try:
+        return int(value) > 0
+    except (TypeError, ValueError):
+        return False
 
 
 def _obter_lista_query(request: Request, nome: str) -> list[str]:
@@ -283,6 +292,9 @@ class SincronizacaoInstitucionalTurmaViewSet(APIView):
         Returns:
             Resposta HTTP com os dados institucionais da turma.
         """
+        if not codigo_ue.strip() or not _inteiro_positivo(codigo_turma):
+            return detail_response(_MSG_CODIGO_TURMA_UE_OBRIGATORIOS)
+
         try:
             data = services.get_sincronizacao_institucional_turma(
                 codigo_ue=codigo_ue,

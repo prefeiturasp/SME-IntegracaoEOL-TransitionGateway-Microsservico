@@ -16,9 +16,7 @@ _BASE_TURMAS = "/api/v1/pedagogico/turmas"
 _ETAPAS_TURMAS_HISTORICAS = frozenset(
     {1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 17}
 )
-_TIPOS_ESCOLA_TURMAS_HISTORICAS = frozenset(
-    {1, 2, 3, 4, 16, 28, 31}
-)
+_TIPOS_ESCOLA_TURMAS_HISTORICAS = frozenset({1, 2, 3, 4, 16, 28, 31})
 
 _client = ServiceClient(
     base_url=settings.SIDECAR_PEDAGOGICO_URL,
@@ -236,10 +234,7 @@ def get_turmas_historicas_gerais_professor(
             raise ValueError(
                 "Resposta de turmas históricas deve conter código inteiro."
             )
-        if (
-            codigo in codigos_permitidos
-            and _turma_historica_elegivel(turma)
-        ):
+        if codigo in codigos_permitidos and _turma_historica_elegivel(turma):
             turmas.append(turma)
     return turmas
 

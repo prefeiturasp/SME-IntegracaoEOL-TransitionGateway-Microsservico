@@ -11,6 +11,7 @@ from rest_framework.test import APIClient
 
 _PREFIX = "/api/v1/componentes-curriculares"
 _PREFIX_TURMAS = "/api/turmas"
+_PREFIX_UES = "/api/ues"
 
 
 # Componente curricular completo retornado pelo sidecar.
@@ -531,7 +532,7 @@ class SincronizacaoInstitucionalTurmaViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            f"{_PREFIX_TURMAS}/ues/091120/turmas/3010807/"
+            f"{_PREFIX_UES}/091120/turmas/3010807/"
             "sincronizacoes-institucionais/"
         )
 
@@ -552,11 +553,55 @@ class SincronizacaoInstitucionalTurmaViewSetTest(SimpleTestCase):
         client = APIClient()
 
         resp = client.get(
-            f"{_PREFIX_TURMAS}/ues/091120/turmas/3010807/"
+            f"{_PREFIX_UES}/091120/turmas/3010807/"
             "sincronizacoes-institucionais/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_sincronizacao_institucional_turma"
+    )
+    def test_400_quando_codigo_turma_invalido(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_UES}/091120/turmas/abc/"
+            "sincronizacoes-institucionais/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.data,
+            {"detail": "O código da turma e Ue são obrigatórios"},
+        )
+        mock_svc.assert_not_called()
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_sincronizacao_institucional_turma"
+    )
+    def test_400_quando_codigo_turma_zero(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_UES}/091120/turmas/0/"
+            "sincronizacoes-institucionais/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.data,
+            {"detail": "O código da turma e Ue são obrigatórios"},
+        )
+        mock_svc.assert_not_called()
 
     @patch(
         "apps.pedagogico.views.services."
@@ -580,7 +625,7 @@ class SincronizacaoInstitucionalTurmaViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            f"{_PREFIX_TURMAS}/ues/091120/turmas/3010807/"
+            f"{_PREFIX_UES}/091120/turmas/3010807/"
             "sincronizacoes-institucionais/"
         )
 
@@ -609,7 +654,7 @@ class SincronizacaoInstitucionalTurmaViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            f"{_PREFIX_TURMAS}/ues/091120/turmas/3010807/"
+            f"{_PREFIX_UES}/091120/turmas/3010807/"
             "sincronizacoes-institucionais/"
         )
 
@@ -635,7 +680,7 @@ class SincronizacaoInstitucionalTurmaViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            f"{_PREFIX_TURMAS}/ues/091120/turmas/3010807/"
+            f"{_PREFIX_UES}/091120/turmas/3010807/"
             "sincronizacoes-institucionais/"
         )
 
@@ -1050,10 +1095,15 @@ class TurmasSchemaTest(SimpleTestCase):
             ["Turma"],
         )
         path = (
-            "/api/turmas/ues/{codigo_ue}/turmas/{codigo_turma}/"
+            "/api/ues/{codigo_ue}/turmas/{codigo_turma}/"
             "sincronizacoes-institucionais/"
         )
         self.assertEqual(schema["paths"][path]["get"]["tags"], ["Turma"])
+        self.assertNotIn(
+            "/api/turmas/ues/{codigo_ue}/turmas/{codigo_turma}/"
+            "sincronizacoes-institucionais/",
+            schema["paths"],
+        )
         anos_path = (
             "/api/turmas/ue/{codigo_ue}/"
             "sincronizacoes-institucionais/anos-letivos/"

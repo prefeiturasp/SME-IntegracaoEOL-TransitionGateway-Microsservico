@@ -672,7 +672,7 @@ class AlunosAtivosDataAulaTicksViewTest(SimpleTestCase):
         )
 
     @patch("apps.alunos.views.services.get_alunos_ativos_data_aula_ticks")
-    def test_400_quando_codigo_turma_invalido(
+    def test_200_vazio_quando_codigo_turma_invalido(
         self, mock_service: MagicMock
     ) -> None:
         client = _cliente_autenticado()
@@ -682,7 +682,23 @@ class AlunosAtivosDataAulaTicksViewTest(SimpleTestCase):
             "data-aula-ticks/639031104000000000/"
         )
 
-        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+        mock_service.assert_not_called()
+
+    @patch("apps.alunos.views.services.get_alunos_ativos_data_aula_ticks")
+    def test_200_vazio_quando_codigo_turma_zero(
+        self, mock_service: MagicMock
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/turmas/0/alunos-ativos/"
+            "data-aula-ticks/639031104000000000/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
         mock_service.assert_not_called()
 
     @patch("apps.alunos.views.services.get_alunos_ativos_data_aula_ticks")
