@@ -6,6 +6,9 @@ from apps.pedagogico.views import (
     AgrupamentosCorrelacionadosLoteViewSet,
     AgrupamentosCorrelacionadosViewSet,
     AgrupamentosTerritorioViewSet,
+    AlunosAtivosTurmaRedisMultplexViewSet,
+    AlunosAtivosTurmaSemRedisViewSet,
+    AlunosTurmaConsideraInativosViewSet,
     ComponentesCurricularesViewSet,
     ComponentesFuncionarioViewSet,
     ComponentesPlanejamentoViewSet,
@@ -62,6 +65,21 @@ turma_urlpatterns = [
     path(
         "listar-turmas/",
         ListarTurmasViewSet.as_view(),
+    ),
+    path(
+        "<str:codigo_turma>/sem-redis/",
+        AlunosAtivosTurmaSemRedisViewSet.as_view(),
+        name="alunos-ativos-turma-sem-redis",
+    ),
+    path(
+        "<str:codigo_turma>/redis-Multplex/",
+        AlunosAtivosTurmaRedisMultplexViewSet.as_view(),
+        name="alunos-ativos-turma-redis-multplex",
+    ),
+    path(
+        "<str:codigo_turma>/considera-inativos/<str:considera_inativos>/",
+        AlunosTurmaConsideraInativosViewSet.as_view(),
+        name="alunos-turma-considera_inativos",
     ),
     path(
         "<str:codigo_turma>/dados/",

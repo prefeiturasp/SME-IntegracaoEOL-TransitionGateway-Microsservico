@@ -16,9 +16,9 @@ from rest_framework.views import APIView
 
 from apps.alunos import services
 from apps.alunos.serializers import (
-    AlunoAtivoDataAulaSerializer,
     AlunoAutocompleteSerializer,
     AlunoInformacoesSerializer,
+    AlunoMatriculaTurmaSerializer,
     AlunoPorCodigoSerializer,
     InformacoesAlunoTurmaSerializer,
     NecessidadeEspecialSerializer,
@@ -35,7 +35,9 @@ _MSG_CODIGOS_ALUNOS_OBRIGATORIOS = "Os códigos dos Alunos são obrigatórios."
 _MSG_NOME_ALUNO_MINIMO = "O Nome deve conter no mínimo 3 caracteres."
 _MSG_CPF_RESPONSAVEL_INVALIDO = "CPF do responsável inválido."
 _MSG_CODIGO_TURMA_LEGADO = "O código da turma é obrigatório."
-_MSG_DATA_TICKS_OBRIGATORIA = "É necessário informar a data em ticks."
+_MSG_DATA_TICKS_OBRIGATORIA = (
+    "O código da turma e data da aula são obrigatórios"
+)
 _MSG_SIDECAR_INDISPONIVEL = "Servico de alunos indisponivel."
 _MSG_LEGADO_ERRO_INESPERADO = (
     "Houve um comportamento inesperado do sistema. Por favor, contate a SME."
@@ -209,6 +211,16 @@ def _query_datetime_alias(
         raise ValueError(
             f"Parâmetro '{names[0]}' deve ser uma data ISO 8601 válida."
         ) from exc
+
+
+def _path_bool(value: str) -> bool | None:
+    """Normaliza booleano recebido no path."""
+    normalized = value.lower()
+    if normalized == "true":
+        return True
+    if normalized == "false":
+        return False
+    return None
 
 
 class AlunoAutocompleteAtivosView(APIView):
@@ -419,7 +431,10 @@ class AlunosAtivosDataAulaTicksView(APIView):
 
     @extend_schema(
         tags=["Turma"],
-        description="Retorna alunos ativos da turma no contrato legado.",
+        description=(
+            "Retorna os alunos da turma na data da aula informada (ticks "
+            "de DateTime do .NET no path)."
+        ),
         parameters=[
             OpenApiParameter(
                 "codigo_turma",
@@ -432,7 +447,7 @@ class AlunosAtivosDataAulaTicksView(APIView):
                 OpenApiParameter.PATH,
             ),
         ],
-        responses={200: AlunoAtivoDataAulaSerializer(many=True)},
+        responses={200: AlunoMatriculaTurmaSerializer(many=True)},
     )
     def get(
         self,
@@ -440,15 +455,17 @@ class AlunosAtivosDataAulaTicksView(APIView):
         codigo_turma: str,
         data_ticks: str,
     ) -> Response:
-        """Retorna alunos ativos da turma na data informada.
+        """Retorna os alunos da turma na data da aula informada.
 
         Args:
             _request: Requisição HTTP recebida.
             codigo_turma: Código EOL da turma.
-            data_ticks: Data de referência representada em ticks.
+            data_ticks: Data de referência em ticks de DateTime do .NET.
 
         Returns:
-            Lista de alunos ativos no formato publicado.
+            Lista de alunos no contrato legado. Retorna lista vazia quando o
+            código da turma não for positivo e erro 400 quando os ticks
+            forem inválidos.
         """
         if not _inteiro_positivo(codigo_turma):
             return Response([])
@@ -463,8 +480,130 @@ class AlunosAtivosDataAulaTicksView(APIView):
             return _sidecar_error_response(exc)
         except httpx.RequestError as exc:
             return _sidecar_unavailable_response(exc)
-        serializer = AlunoAtivoDataAulaSerializer(data, many=True)
+        data = [{**aluno, "numero_aluno_chamada": "000"} for aluno in data]
+        serializer = AlunoMatriculaTurmaSerializer(data, many=True)
         return Response(serializer.data)
+
+
+class AlunosDataMatriculaTicksView(APIView):
+    """Lista alunos de uma turma por data de matricula."""
+
+    @extend_schema(
+        tags=["Turma"],
+        description=(
+            "Retorna os alunos da turma na data de matricula informada "
+            "(ticks de DateTime do .NET no path)."
+        ),
+        parameters=[
+            OpenApiParameter(
+                "codigo_turma",
+                int,
+                OpenApiParameter.PATH,
+            ),
+            OpenApiParameter(
+                "data_matricula_ticks",
+                int,
+                OpenApiParameter.PATH,
+            ),
+        ],
+        responses={200: AlunoMatriculaTurmaSerializer(many=True)},
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_turma: str,
+        data_matricula_ticks: str,
+    ) -> Response:
+        """Lista alunos de uma turma por data de matricula."""
+        if not _inteiro_positivo(codigo_turma):
+            return Response([])
+        if not _inteiro_positivo(data_matricula_ticks):
+            return detail_response(_MSG_DATA_TICKS_OBRIGATORIA)
+
+        try:
+            data = services.get_alunos_data_matricula_ticks(
+                codigo_turma=codigo_turma,
+                data_matricula_ticks=data_matricula_ticks,
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+
+        serializer = AlunoMatriculaTurmaSerializer(
+            data,
+            many=True,
+            campos_parciais=True,
+            datetime_z=False,
+        )
+        return Response(serializer.data)
+
+
+class AlunoTurmaConsideraInativosView(APIView):
+    """Retorna dados de um aluno em uma turma."""
+
+    @extend_schema(
+        tags=["Turma"],
+        description=(
+            "Retorna dados de aluno e matricula da turma, considerando "
+            "matriculas inativas conforme indicador informado."
+        ),
+        parameters=[
+            OpenApiParameter(
+                "codigo_turma",
+                int,
+                OpenApiParameter.PATH,
+            ),
+            OpenApiParameter(
+                "codigo_aluno",
+                int,
+                OpenApiParameter.PATH,
+            ),
+            OpenApiParameter(
+                "considera_inativos",
+                bool,
+                OpenApiParameter.PATH,
+            ),
+        ],
+        responses={200: AlunoMatriculaTurmaSerializer, 204: None},
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_turma: str,
+        codigo_aluno: str,
+        considera_inativos: str,
+    ) -> Response:
+        """Retorna dados de um aluno em uma turma."""
+        try:
+            codigo_turma_int = int(codigo_turma)
+            int(codigo_aluno)
+        except (TypeError, ValueError):
+            return _legacy_string_response(_MSG_LEGADO_ERRO_INESPERADO, 400)
+
+        if codigo_turma_int <= 0:
+            return Response(status=204)
+
+        considera_inativos_bool = _path_bool(considera_inativos)
+        if considera_inativos_bool is None:
+            return detail_response(
+                "Parametro 'considera_inativos' deve ser true ou false."
+            )
+
+        try:
+            data = services.get_alunos_por_turma(
+                codigo_turma,
+                considerar_inativos=considera_inativos_bool,
+                codigo_aluno=codigo_aluno,
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+
+        if not data:
+            return Response(status=204)
+        return Response(AlunoMatriculaTurmaSerializer(data[0]).data)
 
 
 class AlunoNecessidadesEspeciaisView(APIView):

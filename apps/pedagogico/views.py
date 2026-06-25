@@ -10,6 +10,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.alunos.serializers import AlunoMatriculaTurmaSerializer
 from apps.core.responses import detail_response
 from apps.pedagogico import services
 from apps.pedagogico.serializers import (
@@ -76,6 +77,32 @@ def _inteiro_positivo(value: str) -> bool:
         return int(value) > 0
     except (TypeError, ValueError):
         return False
+
+
+def _ordem_numero_chamada(aluno: dict[str, Any]) -> tuple[int, int]:
+    """Chave de ordenação ascendente por número de chamada do aluno.
+
+    Args:
+        aluno: Registro de aluno retornado pelo sidecar.
+
+    Returns:
+        Tupla em que registros sem número de chamada válido vêm primeiro e
+        os números válidos são ordenados de forma ascendente pelo valor.
+    """
+    try:
+        return (1, int(aluno["numero_aluno_chamada"]))
+    except (KeyError, TypeError, ValueError):
+        return (0, 0)
+
+
+def _sidecar_error_response(exc: httpx.HTTPStatusError) -> Response:
+    """Monta resposta de erro a partir da exceção HTTP recebida."""
+    try:
+        body = exc.response.json()
+    except ValueError:
+        detail = exc.response.text.strip() or exc.response.reason_phrase
+        body = {"detail": detail}
+    return Response(body, status=exc.response.status_code)
 
 
 def _obter_lista_query(request: Request, nome: str) -> list[str]:
@@ -228,6 +255,162 @@ class DadosTurmaViewSet(APIView):
         """
         data = services.get_dados_turma(codigo_turma)
         return Response(TurmaDadosSerializer(data).data)
+
+
+class AlunosAtivosTurmaSemRedisViewSet(APIView):
+    """Lista alunos da turma reproduzindo o contrato legado sem Redis."""
+
+    @extend_schema(
+        tags=_TAG_TURMA,
+        description=(
+            "Retorna os alunos da turma alunos"
+            "(somente ativos, primeira sequência)."
+        ),
+        parameters=[
+            OpenApiParameter(
+                "codigo_turma",
+                int,
+                OpenApiParameter.PATH,
+            ),
+        ],
+        responses={200: AlunoMatriculaTurmaSerializer(many=True)},
+    )
+    def get(self, _request: Request, codigo_turma: str) -> Response:
+        """Retorna os alunos da turma no contrato legado sem Redis.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            codigo_turma: Código EOL da turma.
+
+        Returns:
+            Lista de alunos no contrato legado, ou 204 quando o código da
+            turma não for um inteiro positivo ou não houver alunos.
+        """
+        if not _inteiro_positivo(codigo_turma):
+            return Response(status=204)
+        try:
+            data = services.get_alunos_ativos_turma_sem_redis(
+                codigo_turma=codigo_turma,
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError:
+            return detail_response(_SERVICO_PEDAGOGICO_INDISPONIVEL, 503)
+        if not data:
+            return Response(status=204)
+        data = sorted(data, key=_ordem_numero_chamada)
+        serializer = AlunoMatriculaTurmaSerializer(
+            data, many=True, campos_parciais=True, datetime_z=False
+        )
+        return Response(serializer.data)
+
+
+class AlunosAtivosTurmaRedisMultplexViewSet(APIView):
+    """Lista alunos da turma no contrato legado Redis Multplex."""
+
+    @extend_schema(
+        tags=_TAG_TURMA,
+        description=(
+            "Retorna os alunos da turma a partir do "
+            "legado `ObterAlunosPorTurmaMultiplexConnetionAsync`."
+        ),
+        parameters=[
+            OpenApiParameter(
+                "codigo_turma",
+                int,
+                OpenApiParameter.PATH,
+            ),
+        ],
+        responses={200: AlunoMatriculaTurmaSerializer(many=True)},
+    )
+    def get(self, _request: Request, codigo_turma: str) -> Response:
+        """Retorna os alunos da turma no contrato legado Redis Multplex.
+
+        Consome ``get_alunos_ativos_turma_redis_multplex``, que consulta o
+        endpoint canônico do microsserviço de alunos sem ``data_aula_ticks``
+        nem ``sequencia``, e serializa publicando todos os campos.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            codigo_turma: Código EOL da turma.
+
+        Returns:
+            Lista de alunos no contrato legado, ou 204 quando o código da
+            turma não for um inteiro positivo.
+        """
+        if not _inteiro_positivo(codigo_turma):
+            return Response(status=204)
+        try:
+            data = services.get_alunos_ativos_turma_redis_multplex(
+                codigo_turma=codigo_turma,
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError:
+            return detail_response(_SERVICO_PEDAGOGICO_INDISPONIVEL, 503)
+        data = sorted(data, key=_ordem_numero_chamada)
+        serializer = AlunoMatriculaTurmaSerializer(data, many=True)
+        return Response(serializer.data)
+
+
+class AlunosTurmaConsideraInativosViewSet(APIView):
+    """Lista alunos ativos de uma turma considerando ativos ou inativos."""
+
+    @extend_schema(
+        tags=_TAG_TURMA,
+        description=(
+            "Retorna alunos considerando ativos ou inativos da turma "
+            "no contrato legado."
+        ),
+        parameters=[
+            OpenApiParameter(
+                "codigo_turma",
+                int,
+                OpenApiParameter.PATH,
+            ),
+            OpenApiParameter(
+                "considera_inativos",
+                bool,
+                OpenApiParameter.PATH,
+            ),
+        ],
+        responses={200: AlunoMatriculaTurmaSerializer(many=True)},
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_turma: str,
+        considera_inativos: bool | None,
+    ) -> Response:
+        """Retorna os alunos da turma conforme o filtro de inatividade.
+
+        Consome ``get_alunos_turma_considera_inativos``, que consulta o
+        endpoint canônico do microsserviço de alunos repassando
+        ``considerar_inativos`` e a primeira sequência. Serializa publicando
+        todos os campos.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            codigo_turma: Código EOL da turma.
+            considera_inativos: Inclui alunos inativos quando verdadeiro.
+
+        Returns:
+            Lista de alunos no contrato legado, ou 204 quando o código da
+            turma não for um inteiro positivo.
+        """
+        if not _inteiro_positivo(codigo_turma):
+            return Response(status=204)
+        try:
+            data = services.get_alunos_turma_considera_inativos(
+                codigo_turma=codigo_turma,
+                considera_inativos=considera_inativos,
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError:
+            return detail_response(_SERVICO_PEDAGOGICO_INDISPONIVEL, 503)
+        serializer = AlunoMatriculaTurmaSerializer(data, many=True)
+        return Response(serializer.data)
 
 
 class TurmasHistoricasGeraisProfessorViewSet(APIView):

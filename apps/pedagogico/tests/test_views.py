@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 import httpx
 from django.contrib.auth.models import User
 from django.test import SimpleTestCase
+from django.urls import resolve
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -140,6 +141,29 @@ _ITINERARIOS_ENSINO_MEDIO = [
         "serie": "2",
     },
 ]
+
+_ALUNO_ATIVO = {
+    "codigo_aluno": 7730117,
+    "nome_aluno": "Aluno Teste",
+    "nome_social_aluno": None,
+    "data_nascimento": "2020-07-10",
+    "codigo_situacao_matricula": 1,
+    "situacao_matricula": "Ativo",
+    "data_situacao": "2025-12-08T11:42:14.66-03:00",
+    "numero_aluno_chamada": None,
+    "possui_deficiencia": False,
+    "codigo_matricula": 43790514,
+    "codigo_turma": 3010807,
+    "codigo_escola": "091120",
+    "ano_letivo": 2026,
+    "data_matricula": "2025-11-04T08:16:14.26-03:00",
+    "nome_responsavel": "Responsavel",
+    "tipo_responsavel": 1,
+    "celular_responsavel": None,
+    "data_atualizacao_contato": None,
+    "sequencia": 1,
+    "codigo_dre": "109300",
+}
 
 
 def _cliente_autenticado() -> APIClient:
@@ -321,6 +345,434 @@ class DadosTurmaViewSetTest(SimpleTestCase):
         self.assertEqual(resp.data["codigo"], 3034092)
         self.assertEqual(resp.data["ueCodigo"], "092622")
         mock_svc.assert_called_once_with("3034092")
+
+
+class AlunosAtivosTurmaSemRedisViewSetTest(SimpleTestCase):
+    """Valida a consulta de alunos ativos sem Redis."""
+
+    @patch("apps.pedagogico.views.services.get_alunos_ativos_turma_sem_redis")
+    def test_200_retorna_contrato_legado(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        mock_svc.return_value = [_ALUNO_ATIVO]
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PREFIX_TURMAS}/3010807/sem-redis/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data[0]["codigoAluno"], 7730117)
+        self.assertEqual(resp.data[0]["codigoComponenteCurricular"], 0)
+        self.assertIsNone(resp.data[0]["numeroAlunoChamada"])
+        self.assertEqual(resp.data[0]["transferencia_Interna"], False)
+        self.assertEqual(resp.data[0]["ano"], 0)
+        self.assertIsNone(resp.data[0]["codigoDre"])
+        self.assertIsNone(resp.data[0]["codigoEscola"])
+        self.assertEqual(resp.data[0]["codigoTurma"], 0)
+        self.assertEqual(resp.data[0]["dataNascimento"], "2020-07-10T00:00:00")
+        self.assertEqual(
+            resp.data[0]["dataSituacao"], "2025-12-08T11:42:14.66"
+        )
+        mock_svc.assert_called_once_with(codigo_turma="3010807")
+
+    @patch("apps.pedagogico.views.services.get_alunos_ativos_turma_sem_redis")
+    def test_200_ordena_por_numero_chamada_asc(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        mock_svc.return_value = [
+            {**_ALUNO_ATIVO, "codigo_aluno": 1, "numero_aluno_chamada": "10"},
+            {**_ALUNO_ATIVO, "codigo_aluno": 2, "numero_aluno_chamada": None},
+            {**_ALUNO_ATIVO, "codigo_aluno": 3, "numero_aluno_chamada": "2"},
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PREFIX_TURMAS}/3010807/sem-redis/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            [aluno["codigoAluno"] for aluno in resp.data],
+            [2, 3, 1],
+        )
+
+    def test_preserva_codigo_turma_na_rota(self) -> None:
+        match = resolve(f"{_PREFIX_TURMAS}/3010807/sem-redis/")
+
+        self.assertEqual(match.kwargs, {"codigo_turma": "3010807"})
+
+    @patch("apps.pedagogico.views.services.get_alunos_ativos_turma_sem_redis")
+    def test_204_quando_codigo_turma_invalido(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PREFIX_TURMAS}/abc/sem-redis/")
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertIsNone(resp.data)
+        mock_svc.assert_not_called()
+
+    @patch("apps.pedagogico.views.services.get_alunos_ativos_turma_sem_redis")
+    def test_204_quando_codigo_turma_zero(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PREFIX_TURMAS}/0/sem-redis/")
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertIsNone(resp.data)
+        mock_svc.assert_not_called()
+
+    @patch("apps.pedagogico.views.services.get_alunos_ativos_turma_sem_redis")
+    def test_204_quando_turma_valida_sem_alunos(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        mock_svc.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PREFIX_TURMAS}/3010807/sem-redis/")
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertIsNone(resp.data)
+        mock_svc.assert_called_once_with(codigo_turma="3010807")
+
+    @patch("apps.pedagogico.views.services.get_alunos_ativos_turma_sem_redis")
+    def test_preserva_erro_http_do_sidecar(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        request = httpx.Request("GET", "https://sidecar.local/test")
+        response = httpx.Response(
+            404,
+            request=request,
+            json={"detail": "Turma nÃ£o encontrada."},
+        )
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "Erro no sidecar",
+            request=request,
+            response=response,
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PREFIX_TURMAS}/3010807/sem-redis/")
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(resp.data, {"detail": "Turma nÃ£o encontrada."})
+
+    @patch("apps.pedagogico.views.services.get_alunos_ativos_turma_sem_redis")
+    def test_503_quando_sidecar_indisponivel(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        request = httpx.Request("GET", "https://sidecar.local/test")
+        mock_svc.side_effect = httpx.ConnectError(
+            "Sidecar indisponÃ­vel",
+            request=request,
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PREFIX_TURMAS}/3010807/sem-redis/")
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(
+            resp.data,
+            {"detail": "Servico pedagogico indisponivel."},
+        )
+
+    def test_403_sem_autenticacao(self) -> None:
+        client = APIClient()
+
+        resp = client.get(f"{_PREFIX_TURMAS}/3010807/sem-redis/")
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class AlunosAtivosTurmaRedisMultplexViewSetTest(SimpleTestCase):
+    """Valida a consulta de alunos ativos por Redis Multplex."""
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_alunos_ativos_turma_redis_multplex"
+    )
+    def test_200_retorna_contrato_legado(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        mock_svc.return_value = [_ALUNO_ATIVO]
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PREFIX_TURMAS}/2822152/redis-Multplex/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data[0]["codigoAluno"], 7730117)
+        self.assertEqual(resp.data[0]["codigoComponenteCurricular"], 0)
+        self.assertEqual(resp.data[0]["numeroAlunoChamada"], "000")
+        self.assertEqual(resp.data[0]["transferencia_Interna"], False)
+        self.assertEqual(resp.data[0]["ano"], 2026)
+        self.assertEqual(resp.data[0]["codigoDre"], "109300")
+        self.assertEqual(resp.data[0]["codigoEscola"], "091120")
+        self.assertEqual(resp.data[0]["codigoTurma"], 3010807)
+        mock_svc.assert_called_once_with(codigo_turma="2822152")
+
+    def test_preserva_codigo_turma_na_rota(self) -> None:
+        match = resolve(f"{_PREFIX_TURMAS}/2822152/redis-Multplex/")
+
+        self.assertEqual(match.kwargs, {"codigo_turma": "2822152"})
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_alunos_ativos_turma_redis_multplex"
+    )
+    def test_204_quando_codigo_turma_invalido(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PREFIX_TURMAS}/abc/redis-Multplex/")
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertIsNone(resp.data)
+        mock_svc.assert_not_called()
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_alunos_ativos_turma_redis_multplex"
+    )
+    def test_204_quando_codigo_turma_zero(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PREFIX_TURMAS}/0/redis-Multplex/")
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertIsNone(resp.data)
+        mock_svc.assert_not_called()
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_alunos_ativos_turma_redis_multplex"
+    )
+    def test_preserva_erro_http_do_sidecar(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        request = httpx.Request("GET", "https://sidecar.local/test")
+        response = httpx.Response(
+            404,
+            request=request,
+            json={"detail": "Turma não encontrada."},
+        )
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "Erro no sidecar",
+            request=request,
+            response=response,
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PREFIX_TURMAS}/2822152/redis-Multplex/")
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(resp.data, {"detail": "Turma não encontrada."})
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_alunos_ativos_turma_redis_multplex"
+    )
+    def test_503_quando_sidecar_indisponivel(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        request = httpx.Request("GET", "https://sidecar.local/test")
+        mock_svc.side_effect = httpx.ConnectError(
+            "Sidecar indisponível",
+            request=request,
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PREFIX_TURMAS}/2822152/redis-Multplex/")
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(
+            resp.data,
+            {"detail": "Servico pedagogico indisponivel."},
+        )
+
+    def test_403_sem_autenticacao(self) -> None:
+        client = APIClient()
+
+        resp = client.get(f"{_PREFIX_TURMAS}/2822152/redis-Multplex/")
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class AlunosTurmaConsideraInativosViewSetTest(SimpleTestCase):
+    """Valida a consulta de alunos considerando ativos ou inativos."""
+
+    @patch(
+        "apps.pedagogico.views.services.get_alunos_turma_considera_inativos"
+    )
+    def test_200_retorna_contrato_legado(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        mock_svc.return_value = [_ALUNO_ATIVO]
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PREFIX_TURMAS}/2822152/considera-inativos/true/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data[0]["codigoAluno"], 7730117)
+        self.assertEqual(resp.data[0]["codigoTurma"], 3010807)
+        mock_svc.assert_called_once_with(
+            codigo_turma="2822152",
+            considera_inativos="true",
+        )
+
+    @patch(
+        "apps.pedagogico.views.services.get_alunos_turma_considera_inativos"
+    )
+    def test_200_turma_valida_sem_alunos_retorna_lista_vazia(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        mock_svc.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_TURMAS}/2822152/considera-inativos/false/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data, [])
+        mock_svc.assert_called_once_with(
+            codigo_turma="2822152",
+            considera_inativos="false",
+        )
+
+    def test_preserva_kwargs_na_rota(self) -> None:
+        match = resolve(f"{_PREFIX_TURMAS}/2822152/considera-inativos/true/")
+
+        self.assertEqual(
+            match.kwargs,
+            {"codigo_turma": "2822152", "considera_inativos": "true"},
+        )
+
+    @patch(
+        "apps.pedagogico.views.services.get_alunos_turma_considera_inativos"
+    )
+    def test_204_quando_codigo_turma_invalido(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PREFIX_TURMAS}/abc/considera-inativos/true/")
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertIsNone(resp.data)
+        mock_svc.assert_not_called()
+
+    @patch(
+        "apps.pedagogico.views.services.get_alunos_turma_considera_inativos"
+    )
+    def test_204_quando_codigo_turma_zero(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PREFIX_TURMAS}/0/considera-inativos/true/")
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertIsNone(resp.data)
+        mock_svc.assert_not_called()
+
+    @patch(
+        "apps.pedagogico.views.services.get_alunos_turma_considera_inativos"
+    )
+    def test_preserva_erro_http_do_sidecar(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        request = httpx.Request("GET", "https://sidecar.local/test")
+        response = httpx.Response(
+            404,
+            request=request,
+            json={"detail": "Turma não encontrada."},
+        )
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "Erro no sidecar",
+            request=request,
+            response=response,
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PREFIX_TURMAS}/2822152/considera-inativos/true/")
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(resp.data, {"detail": "Turma não encontrada."})
+
+    @patch(
+        "apps.pedagogico.views.services.get_alunos_turma_considera_inativos"
+    )
+    def test_erro_http_sem_corpo_json_usa_texto(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        """Monta o detalhe a partir do texto quando o corpo não é JSON."""
+        request = httpx.Request("GET", "https://sidecar.local/test")
+        response = httpx.Response(
+            502,
+            request=request,
+            text="Bad Gateway",
+        )
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "Erro no sidecar",
+            request=request,
+            response=response,
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PREFIX_TURMAS}/2822152/considera-inativos/true/")
+
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+        self.assertEqual(resp.data, {"detail": "Bad Gateway"})
+
+    @patch(
+        "apps.pedagogico.views.services.get_alunos_turma_considera_inativos"
+    )
+    def test_503_quando_sidecar_indisponivel(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        request = httpx.Request("GET", "https://sidecar.local/test")
+        mock_svc.side_effect = httpx.ConnectError(
+            "Sidecar indisponível",
+            request=request,
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PREFIX_TURMAS}/2822152/considera-inativos/true/")
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(
+            resp.data,
+            {"detail": "Servico pedagogico indisponivel."},
+        )
+
+    def test_403_sem_autenticacao(self) -> None:
+        client = APIClient()
+
+        resp = client.get(f"{_PREFIX_TURMAS}/2822152/considera-inativos/true/")
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class TurmasHistoricasGeraisProfessorViewSetTest(SimpleTestCase):
@@ -592,8 +1044,7 @@ class SincronizacaoInstitucionalTurmaViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            f"{_PREFIX_UES}/091120/turmas/0/"
-            "sincronizacoes-institucionais/"
+            f"{_PREFIX_UES}/091120/turmas/0/sincronizacoes-institucionais/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -1107,6 +1558,32 @@ class TurmasSchemaTest(SimpleTestCase):
             ]["schema"]["type"],
             "array",
         )
+        sem_redis_path = "/api/turmas/{codigo_turma}/sem-redis/"
+        sem_redis = schema["paths"][sem_redis_path]["get"]
+        self.assertEqual(sem_redis["tags"], ["Turma"])
+        self.assertEqual(
+            {item["name"] for item in sem_redis["parameters"]},
+            {"codigo_turma"},
+        )
+        self.assertEqual(
+            sem_redis["responses"]["200"]["content"]["application/json"][
+                "schema"
+            ]["type"],
+            "array",
+        )
+        redis_multplex_path = "/api/turmas/{codigo_turma}/redis-Multplex/"
+        redis_multplex = schema["paths"][redis_multplex_path]["get"]
+        self.assertEqual(redis_multplex["tags"], ["Turma"])
+        self.assertEqual(
+            {item["name"] for item in redis_multplex["parameters"]},
+            {"codigo_turma"},
+        )
+        self.assertEqual(
+            redis_multplex["responses"]["200"]["content"]["application/json"][
+                "schema"
+            ]["type"],
+            "array",
+        )
 
     def test_body_nao_obrigatorio_e_descreve_codigos_turmas(self) -> None:
         client = _cliente_autenticado()
@@ -1532,7 +2009,7 @@ class ComponentesSemAtribuicaoViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            f"{_PREFIX}/turmas/T001/sem-atribuicao/" "638396640000000000/"
+            f"{_PREFIX}/turmas/T001/sem-atribuicao/638396640000000000/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
