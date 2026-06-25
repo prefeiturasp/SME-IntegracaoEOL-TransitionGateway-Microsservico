@@ -159,7 +159,18 @@ def get_escola(codigo_escola: str) -> Any:
 
 
 def get_unidade_eol(codigo_eol: str) -> Any:
-    """Retorna dados resumidos de uma unidade pelo código EOL."""
+    """Retorna dados resumidos de uma unidade pelo código EOL.
+
+    Args:
+        codigo_eol: Código EOL da unidade educacional.
+
+    Returns:
+        Dados resumidos da unidade educacional.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status
+            HTTP de erro.
+    """
 
     resp = _client.get(f"{_BASE}/escolas/unidade-eol/{codigo_eol}/")
     resp.raise_for_status()
@@ -181,7 +192,18 @@ def get_dados_escola(codigo_escola: str) -> Any:
 
 
 def get_sincronizacoes_institucionais(codigo_ue: str) -> Any:
-    """Retorna a sincronização institucional de uma UE."""
+    """Retorna a sincronização institucional de uma UE.
+
+    Args:
+        codigo_ue: Código EOL da unidade educacional.
+
+    Returns:
+        Dados de sincronização institucional da unidade.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status
+            HTTP de erro.
+    """
 
     resp = _client.get(
         f"{_BASE}/escolas/{codigo_ue}/sincronizacoes-institucionais/"
@@ -202,7 +224,18 @@ def get_tipos_escolas() -> Any:
 
 
 def post_unidades_parceiras(codigos: list[str]) -> Any:
-    """Retorna unidades parceiras pelos códigos informados."""
+    """Retorna unidades parceiras pelos códigos informados.
+
+    Args:
+        codigos: Lista de códigos EOL das unidades para consulta.
+
+    Returns:
+        Lista de unidades parceiras encontradas.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status
+            HTTP de erro.
+    """
 
     resp = _client.post(f"{_BASE}/escolas/unidades-parceiras/", codigos)
     resp.raise_for_status()
