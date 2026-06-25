@@ -27,6 +27,7 @@ from apps.institucional.serializers import (
 
 _TAG_DRE = ["DiretoriaRegionalEducacao"]
 _TAG_ESCOLA = ["Escola"]
+_SIDECAR_INDISPONIVEL_DETAIL = "Serviço institucional indisponível"
 
 _ESCOLA_RESUMO_CAMPOS = {
     "codigoEscola",
@@ -426,7 +427,7 @@ def _sidecar_unavailable_response() -> Response:
     """Resposta padrão quando o sidecar institucional não responde."""
 
     return Response(
-        {"detail": "Serviço institucional indisponível"},
+        {"detail": _SIDECAR_INDISPONIVEL_DETAIL},
         status=status.HTTP_502_BAD_GATEWAY,
     )
 
@@ -667,7 +668,7 @@ class TodasUnidadesView(APIView):
             data = services.get_todas_unidades()
         except httpx.RequestError:
             return Response(
-                {"detail": "Serviço institucional indisponível"},
+                {"detail": _SIDECAR_INDISPONIVEL_DETAIL},
                 status=status.HTTP_502_BAD_GATEWAY,
             )
         resultados = data.get("results") if isinstance(data, dict) else data
@@ -694,7 +695,7 @@ class TiposUnidadeEducacaoView(APIView):
             data = services.get_tipos_unidade_educacao()
         except httpx.RequestError:
             return Response(
-                {"detail": "Serviço institucional indisponível"},
+                {"detail": _SIDECAR_INDISPONIVEL_DETAIL},
                 status=status.HTTP_502_BAD_GATEWAY,
             )
         return Response(data)
