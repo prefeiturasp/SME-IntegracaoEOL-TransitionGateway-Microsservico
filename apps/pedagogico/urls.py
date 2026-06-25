@@ -3,12 +3,12 @@
 from django.urls import path
 
 from apps.pedagogico.views import (
-    AlunosAtivosTurmaRedisMultplexViewSet,
-    AlunosAtivosTurmaSemRedisViewSet,
-    AlunosTurmaConsideraInativosViewSet,
     AgrupamentosCorrelacionadosLoteViewSet,
     AgrupamentosCorrelacionadosViewSet,
     AgrupamentosTerritorioViewSet,
+    AlunosAtivosTurmaRedisMultplexViewSet,
+    AlunosAtivosTurmaSemRedisViewSet,
+    AlunosTurmaConsideraInativosViewSet,
     ComponentesCurricularesViewSet,
     ComponentesFuncionarioViewSet,
     ComponentesPlanejamentoViewSet,

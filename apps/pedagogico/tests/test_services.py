@@ -112,6 +112,47 @@ class AgrupamentosTerritorioServiceTest(SimpleTestCase):
             params={},
         )
 
+    @patch.object(services._client, "get")
+    def test_get_correlacionados_converte_data_base_tick(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        """Converte os ticks recebidos em ``data_base`` ISO no filtro."""
+        response = MagicMock()
+        response.json.return_value = []
+        mock_get.return_value = response
+
+        services.get_agrupamentos_correlacionados(
+            815274,
+            638527968000000000,
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/815274/territorio-saber/agrupamentos-correlacionados/",
+            params={"data_base": "2024-06-01"},
+        )
+
+    @patch.object(services._client, "post")
+    def test_post_correlacionados_converte_data_base_tick(
+        self,
+        mock_post: MagicMock,
+    ) -> None:
+        """Converte os ticks recebidos em ``data_base`` ISO no filtro."""
+        response = MagicMock()
+        response.json.return_value = []
+        mock_post.return_value = response
+
+        services.post_agrupamentos_correlacionados(
+            [815274],
+            638527968000000000,
+        )
+
+        mock_post.assert_called_once_with(
+            f"{_BASE}/territorio-saber/agrupamentos-correlacionados/",
+            payload=[815274],
+            params={"data_base": "2024-06-01"},
+        )
+
     @patch.object(services._client, "post")
     def test_post_agrupamentos_usa_path_com_barra_final(
         self,
@@ -441,6 +482,50 @@ class GetAlunosAtivosTurmaRedisMultplexTest(SimpleTestCase):
         self.assertEqual(result, [])
 
 
+class GetAlunosTurmaConsideraInativosTest(SimpleTestCase):
+    """Valida a consulta de alunos considerando ativos ou inativos."""
+
+    @patch.object(alunos_services, "get_alunos_por_turma")
+    def test_encaminha_filtro_e_primeira_sequencia(
+        self,
+        mock_get_alunos: MagicMock,
+    ) -> None:
+        """Repassa ``considerar_inativos`` e fixa a sequência em 1."""
+        payload = [{"codigo_aluno": 7730117}]
+        mock_get_alunos.return_value = payload
+
+        result = services.get_alunos_turma_considera_inativos(
+            "2822152",
+            considera_inativos=True,
+        )
+
+        mock_get_alunos.assert_called_once_with(
+            "2822152",
+            considerar_inativos=True,
+            sequencia=1,
+        )
+        self.assertEqual(result, payload)
+
+    @patch.object(alunos_services, "get_alunos_por_turma")
+    def test_normaliza_considera_inativos_nulo_para_falso(
+        self,
+        mock_get_alunos: MagicMock,
+    ) -> None:
+        """Converte ``None`` em ``False`` antes de encaminhar ao sidecar."""
+        mock_get_alunos.return_value = []
+
+        services.get_alunos_turma_considera_inativos(
+            "2822152",
+            considera_inativos=None,
+        )
+
+        mock_get_alunos.assert_called_once_with(
+            "2822152",
+            considerar_inativos=False,
+            sequencia=1,
+        )
+
+
 class GetTurmasHistoricasGeraisProfessorTest(SimpleTestCase):
     """Valida a composição de turmas históricas gerais do professor."""
 
@@ -629,6 +714,31 @@ class GetTurmasHistoricasGeraisProfessorTest(SimpleTestCase):
         with self.assertRaisesMessage(
             ValueError,
             "Resposta de turmas históricas deve ser uma lista de objetos.",
+        ):
+            services.get_turmas_historicas_gerais_professor(
+                ano_letivo=2025,
+                professor_rf="7483147",
+            )
+
+    @patch.object(services, "professores_services")
+    @patch.object(services._client, "post")
+    def test_rejeita_codigo_que_nao_seja_inteiro(
+        self,
+        mock_post: MagicMock,
+        mock_professores: MagicMock,
+    ) -> None:
+        """Erra quando uma turma não traz código inteiro."""
+        obter_codigos = (
+            mock_professores.get_codigos_turmas_historicas_professor
+        )
+        obter_codigos.return_value = [2822488]
+        mock_response = MagicMock()
+        mock_response.json.return_value = [{"codigo": "2822488"}]
+        mock_post.return_value = mock_response
+
+        with self.assertRaisesMessage(
+            ValueError,
+            "Resposta de turmas históricas deve conter código inteiro.",
         ):
             services.get_turmas_historicas_gerais_professor(
                 ano_letivo=2025,

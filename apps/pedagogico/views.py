@@ -79,14 +79,6 @@ def _inteiro_positivo(value: str) -> bool:
         return False
 
 
-def _inteiro_positivo(value: str) -> bool:
-    """Verifica se o valor representa um inteiro positivo."""
-    try:
-        return int(value) > 0
-    except (TypeError, ValueError):
-        return False
-
-
 def _ordem_numero_chamada(aluno: dict[str, Any]) -> tuple[int, int]:
     """Chave de ordenação ascendente por número de chamada do aluno.
 
@@ -98,8 +90,8 @@ def _ordem_numero_chamada(aluno: dict[str, Any]) -> tuple[int, int]:
         os números válidos são ordenados de forma ascendente pelo valor.
     """
     try:
-        return (1, int(aluno.get("numero_aluno_chamada")))
-    except (TypeError, ValueError):
+        return (1, int(aluno["numero_aluno_chamada"]))
+    except (KeyError, TypeError, ValueError):
         return (0, 0)
 
 
@@ -271,7 +263,8 @@ class AlunosAtivosTurmaSemRedisViewSet(APIView):
     @extend_schema(
         tags=_TAG_TURMA,
         description=(
-            "Retorna os alunos da turma alunos (somente ativos, primeira sequência)."
+            "Retorna os alunos da turma alunos"
+            "(somente ativos, primeira sequência)."
         ),
         parameters=[
             OpenApiParameter(
@@ -365,7 +358,10 @@ class AlunosTurmaConsideraInativosViewSet(APIView):
 
     @extend_schema(
         tags=_TAG_TURMA,
-        description="Retorna alunos considerando ativos ou inativos da turma no contrato legado.",
+        description=(
+            "Retorna alunos considerando ativos ou inativos da turma "
+            "no contrato legado."
+        ),
         parameters=[
             OpenApiParameter(
                 "codigo_turma",

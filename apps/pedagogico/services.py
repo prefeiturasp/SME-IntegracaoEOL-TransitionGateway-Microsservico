@@ -249,7 +249,9 @@ def get_alunos_ativos_turma_redis_multplex(codigo_turma: str) -> Any:
     )
 
 
-def get_alunos_turma_considera_inativos(codigo_turma: str, considera_inativos: bool | None) -> Any:
+def get_alunos_turma_considera_inativos(
+    codigo_turma: str, considera_inativos: bool | None
+) -> Any:
     """Retorna alunos na turma considerando ativos ou inativos.
 
     Args:
@@ -265,7 +267,7 @@ def get_alunos_turma_considera_inativos(codigo_turma: str, considera_inativos: b
     """
     return alunos_services.get_alunos_por_turma(
         codigo_turma,
-        considerar_inativos=considera_inativos,
+        considerar_inativos=bool(considera_inativos),
         sequencia=1,
     )
 

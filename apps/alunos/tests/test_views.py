@@ -113,7 +113,7 @@ class AlunosUrlsTest(SimpleTestCase):
 
     def test_preserva_parametros_data_matricula_ticks(self) -> None:
         match = resolve(
-            "/api/turmas/3015603/" "data-matricula-ticks/639059616000000000/"
+            "/api/turmas/3015603/data-matricula-ticks/639059616000000000/"
         )
 
         self.assertEqual(
@@ -126,7 +126,7 @@ class AlunosUrlsTest(SimpleTestCase):
 
     def test_preserva_parametros_aluno_considera_inativos(self) -> None:
         match = resolve(
-            "/api/turmas/3123349/aluno/7345634/" "considera-inativos/true/"
+            "/api/turmas/3123349/aluno/7345634/considera-inativos/true/"
         )
 
         self.assertEqual(
@@ -867,7 +867,7 @@ class AlunosAtivosDataAulaTicksViewTest(SimpleTestCase):
 class AlunosDataMatriculaTicksViewTest(SimpleTestCase):
     """Valida a resposta de alunos por data de matricula."""
 
-    _PATH = "/api/turmas/3015603/" "data-matricula-ticks/639059616000000000/"
+    _PATH = "/api/turmas/3015603/data-matricula-ticks/639059616000000000/"
 
     @patch("apps.alunos.views.services.get_alunos_data_matricula_ticks")
     def test_200_retorna_contrato_legado(
@@ -925,7 +925,7 @@ class AlunosDataMatriculaTicksViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/turmas/abc/" "data-matricula-ticks/639059616000000000/"
+            "/api/turmas/abc/data-matricula-ticks/639059616000000000/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -1014,7 +1014,7 @@ class AlunosDataMatriculaTicksViewTest(SimpleTestCase):
 class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
     """Valida a consulta de aluno da turma considerando inativos."""
 
-    _PATH = "/api/turmas/3123349/aluno/7345634/" "considera-inativos/true/"
+    _PATH = "/api/turmas/3123349/aluno/7345634/considera-inativos/true/"
 
     @patch("apps.alunos.views.services.get_alunos_por_turma")
     def test_200_retorna_objeto_legado(self, mock_service: MagicMock) -> None:
@@ -1125,7 +1125,7 @@ class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/turmas/3123349/aluno/7345634/" "considera-inativos/talvez/"
+            "/api/turmas/3123349/aluno/7345634/considera-inativos/talvez/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
