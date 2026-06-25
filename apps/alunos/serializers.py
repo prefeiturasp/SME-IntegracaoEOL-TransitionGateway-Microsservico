@@ -51,11 +51,7 @@ class StringOrNoneField(serializers.Field):
 
 
 class ConstanteLegadoField(serializers.Field):
-    """Retorna sempre um valor constante.
-
-    Replica campos que o contrato legado expõe com valor default fixo
-    (não preenchidos pela consulta de origem).
-    """
+    """Serializa um valor constante."""
 
     def __init__(self, valor: Any, **kwargs: Any) -> None:
         self._valor = valor
@@ -506,12 +502,7 @@ class AlunoPorCodigoSerializer(AlunoLegadoBaseSerializer):
 
 
 class AlunoAtivoTurmaSerializer(serializers.Serializer):
-    """Serializa aluno ativo em turma no contrato legado.
-
-    Replica o DTO ``AlunoNaTurmaDTO`` do legado (herdado de
-    ``DocumentoElasticTurma``): os campos não preenchidos pela consulta de
-    origem são expostos com o mesmo valor default fixo do legado.
-    """
+    """Serializa dados de aluno ativo em turma."""
 
     codigoComponenteCurricular = ConstanteLegadoField(0)  # NOSONAR
     codigoAluno = serializers.IntegerField(
