@@ -149,3 +149,40 @@ Programas educacionais
 .. autoclass:: apps.programasedu.views.ObterDadosSrmPaeeAlunoView
 
 .. autoclass:: apps.programasedu.views.ObterTurmaSrmERegularDoAlunoView
+
+Alunos
+------
+
+.. automodule:: apps.alunos.serializers
+   :members:
+
+.. automodule:: apps.alunos.services
+   :members:
+
+.. automodule:: apps.alunos.views
+
+.. autoclass:: apps.alunos.views.AlunoAutocompleteAtivosView
+
+.. autoclass:: apps.alunos.views.AlunoInformacoesView
+
+.. autoclass:: apps.alunos.views.ResponsavelResumidoView
+
+.. autoclass:: apps.alunos.views.FiliacaoAlunoView
+
+.. autoclass:: apps.alunos.views.InformacoesAlunosTurmaView
+
+.. autoclass:: apps.alunos.views.AlunoNecessidadesEspeciaisView
+
+.. autoclass:: apps.alunos.views.AlunoTurmasView
+
+.. autoclass:: apps.alunos.views.AlunosDaUeView
+
+.. autoclass:: apps.alunos.views.AlunoTurmasPorSituacaoView
+
+.. autoclass:: apps.alunos.views.AlunosAtivosTurmaView
+
+.. autoclass:: apps.alunos.views.AlunosAtivosPeriodoTurmaView
+
+.. autoclass:: apps.alunos.views.TotalAlunosAtivosPeriodoView
+
+.. autoclass:: apps.alunos.views.AlunosListView
