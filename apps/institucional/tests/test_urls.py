@@ -69,3 +69,21 @@ class URLsInstitucionalTest(SimpleTestCase):
     def test_tipos_unidade_educacao_resolve(self) -> None:
         match = resolve("/api/escolas/tipos_unidade_educacao/")
         self.assertEqual(match.view_name, "escola-tipos-unidade-educacao")
+
+    def test_unidade_eol_resolve(self) -> None:
+        match = resolve("/api/escolas/unidade-eol/019308/")
+        self.assertEqual(match.view_name, "escola-unidade-eol")
+        self.assertEqual(match.kwargs["codigo_eol"], "019308")
+
+    def test_sincronizacoes_institucionais_resolve(self) -> None:
+        match = resolve(
+            "/api/escolas/019308/sincronizacoes-institucionais/"
+        )
+        self.assertEqual(
+            match.view_name, "escola-sincronizacoes-institucionais"
+        )
+        self.assertEqual(match.kwargs["ue_codigo"], "019308")
+
+    def test_unidades_parceiras_resolve(self) -> None:
+        match = resolve("/api/escolas/unidades-parceiras/")
+        self.assertEqual(match.view_name, "escola-unidades-parceiras")

@@ -1,6 +1,6 @@
 """Views do domínio institucional."""
 
-from typing import cast
+from typing import Any, cast
 
 import httpx
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -17,9 +17,12 @@ from apps.institucional.serializers import (
     EscolaPorDreETipoSerializer,
     EscolaResumoSerializer,
     EscolaSerializer,
+    SincronizacaoInstitucionalSerializer,
     SubprefeiturasSerializer,
     TipoEscolaSerializer,
     UnidadeEducacionalSerializer,
+    UnidadeEolSerializer,
+    UnidadeParceiraSerializer,
 )
 
 _TAG_DRE = ["DiretoriaRegionalEducacao"]
@@ -93,6 +96,14 @@ _TODA_UNIDADE_CAMPOS = {
     "siglaTipoEscola",
 }
 
+_SINCRONIZACAO_INSTITUCIONAL_CAMPOS = {
+    "ueCodigo",
+    "dataAtualizacao",
+    "dreCodigo",
+    "ueNome",
+    "tipoEscolaCodigo",
+}
+
 
 def _filtrar_escola_resumo(item: dict) -> dict:
     return {k: v for k, v in item.items() if k in _ESCOLA_RESUMO_CAMPOS}
@@ -112,6 +123,14 @@ def _filtrar_dados_escola(item: dict) -> dict:
 
 def _filtrar_toda_unidade(item: dict) -> dict:
     return {k: v for k, v in item.items() if k in _TODA_UNIDADE_CAMPOS}
+
+
+def _filtrar_sincronizacao_institucional(item: dict) -> dict:
+    return {
+        k: v
+        for k, v in item.items()
+        if k in _SINCRONIZACAO_INSTITUCIONAL_CAMPOS
+    }
 
 
 class DREListView(APIView):
@@ -392,6 +411,26 @@ class DadosEscolaView(APIView):
         return Response(item)
 
 
+def _sidecar_error_response(exc: httpx.HTTPStatusError) -> Response:
+    """Converte erro HTTP do sidecar em resposta do gateway."""
+
+    try:
+        body: Any = exc.response.json()
+    except ValueError:
+        detail = exc.response.text.strip() or exc.response.reason_phrase
+        body = {"detail": detail}
+    return Response(body, status=exc.response.status_code)
+
+
+def _sidecar_unavailable_response() -> Response:
+    """Resposta padrão quando o sidecar institucional não responde."""
+
+    return Response(
+        {"detail": "Serviço institucional indisponível"},
+        status=status.HTTP_502_BAD_GATEWAY,
+    )
+
+
 class TiposEscolasView(APIView):
     """Lista tipos de escola cadastrados."""
 
@@ -415,9 +454,7 @@ class EscolaDetalheView(APIView):
         tags=_TAG_ESCOLA,
         summary="Detalhe de uma escola",
         description=(
-            "Retorna dados da unidade educacional identificada "
-            "pelo `codigoEscolaEol`.\n\n"
-            "Contrato E02: `GET /api/escolas/{codigoEscolaEol}`."
+            "Retorna dados da unidade educacional identificada pelo `codigoEscolaEol`."
         ),
         parameters=[
             OpenApiParameter(
@@ -442,6 +479,108 @@ class EscolaDetalheView(APIView):
         if not item:
             return Response(status=status.HTTP_404_NOT_FOUND)
         return Response(_filtrar_escola_detalhe(item))
+
+
+class UnidadeEolView(APIView):
+    """Retorna dados resumidos de uma unidade pelo código EOL."""
+
+    @extend_schema(
+        tags=_TAG_ESCOLA,
+        summary="Unidade por código EOL",
+        description=(
+            "Retorna os dados resumidos da unidade educacional identificada pelo `codigoEol`"
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="codigo_eol",
+                location=OpenApiParameter.PATH,
+                description="Código EOL da unidade educacional",
+                required=True,
+                type=str,
+            )
+        ],
+        responses={200: UnidadeEolSerializer, 404: None},
+    )
+    def get(self, _request: Request, codigo_eol: str) -> Response:
+        """Retorna dados resumidos da unidade por código EOL."""
+
+        try:
+            data = services.get_unidade_eol(codigo_eol)
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError:
+            return _sidecar_unavailable_response()
+
+        if not data:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response(data)
+
+
+class SincronizacoesInstitucionaisView(APIView):
+    """Retorna a sincronização institucional de uma UE."""
+
+    @extend_schema(
+        tags=_TAG_ESCOLA,
+        summary="Sincronizações institucionais da escola",
+        description=(
+            "Retorna os dados de sincronização institucional da unidade "
+            "educacional identificada pelo `ueCodigo`.\n\n"
+            "Contrato E23: "
+            "`GET /api/escolas/{ueCodigo}/sincronizacoes-institucionais/`."
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="ue_codigo",
+                location=OpenApiParameter.PATH,
+                description="Código EOL da unidade educacional",
+                required=True,
+                type=str,
+            )
+        ],
+        responses={200: SincronizacaoInstitucionalSerializer, 404: None},
+    )
+    def get(self, _request: Request, ue_codigo: str) -> Response:
+        """Retorna sincronização institucional da unidade informada."""
+
+        try:
+            data = services.get_sincronizacoes_institucionais(ue_codigo)
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError:
+            return _sidecar_unavailable_response()
+
+        if not data:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        if isinstance(data, dict):
+            return Response(_filtrar_sincronizacao_institucional(data))
+        return Response(data)
+
+
+class UnidadesParceirasView(APIView):
+    """Retorna unidades parceiras pelos códigos informados."""
+
+    @extend_schema(
+        tags=_TAG_ESCOLA,
+        summary="Unidades parceiras",
+        description=(
+            "Retorna a lista de unidades parceiras informadas no corpo da requisição."
+        ),
+        request={
+            "application/json": {"type": "array", "items": {"type": "string"}}
+        },
+        responses={200: UnidadeParceiraSerializer(many=True), 400: None},
+    )
+    def post(self, request: Request) -> Response:
+        """Retorna unidades parceiras pelos códigos informados."""
+
+        try:
+            data = services.post_unidades_parceiras(request.data)
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError:
+            return _sidecar_unavailable_response()
+
+        return Response(data or [])
 
 
 _EQUIPAMENTOS_PARAMS = [
