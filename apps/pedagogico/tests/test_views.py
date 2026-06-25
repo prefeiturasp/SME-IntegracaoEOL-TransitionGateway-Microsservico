@@ -616,8 +616,7 @@ class AlunosTurmaConsideraInativosViewSetTest(SimpleTestCase):
     """Valida a consulta de alunos considerando ativos ou inativos."""
 
     @patch(
-        "apps.pedagogico.views.services."
-        "get_alunos_turma_considera_inativos"
+        "apps.pedagogico.views.services." "get_alunos_turma_considera_inativos"
     )
     def test_200_retorna_contrato_legado(
         self,
@@ -626,9 +625,7 @@ class AlunosTurmaConsideraInativosViewSetTest(SimpleTestCase):
         mock_svc.return_value = [_ALUNO_ATIVO]
         client = _cliente_autenticado()
 
-        resp = client.get(
-            f"{_PREFIX_TURMAS}/2822152/considera-inativos/true/"
-        )
+        resp = client.get(f"{_PREFIX_TURMAS}/2822152/considera-inativos/true/")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.data[0]["codigoAluno"], 7730117)
@@ -639,8 +636,7 @@ class AlunosTurmaConsideraInativosViewSetTest(SimpleTestCase):
         )
 
     @patch(
-        "apps.pedagogico.views.services."
-        "get_alunos_turma_considera_inativos"
+        "apps.pedagogico.views.services." "get_alunos_turma_considera_inativos"
     )
     def test_200_turma_valida_sem_alunos_retorna_lista_vazia(
         self,
@@ -661,9 +657,7 @@ class AlunosTurmaConsideraInativosViewSetTest(SimpleTestCase):
         )
 
     def test_preserva_kwargs_na_rota(self) -> None:
-        match = resolve(
-            f"{_PREFIX_TURMAS}/2822152/considera-inativos/true/"
-        )
+        match = resolve(f"{_PREFIX_TURMAS}/2822152/considera-inativos/true/")
 
         self.assertEqual(
             match.kwargs,
@@ -671,8 +665,7 @@ class AlunosTurmaConsideraInativosViewSetTest(SimpleTestCase):
         )
 
     @patch(
-        "apps.pedagogico.views.services."
-        "get_alunos_turma_considera_inativos"
+        "apps.pedagogico.views.services." "get_alunos_turma_considera_inativos"
     )
     def test_204_quando_codigo_turma_invalido(
         self,
@@ -680,17 +673,14 @@ class AlunosTurmaConsideraInativosViewSetTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get(
-            f"{_PREFIX_TURMAS}/abc/considera-inativos/true/"
-        )
+        resp = client.get(f"{_PREFIX_TURMAS}/abc/considera-inativos/true/")
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
         self.assertIsNone(resp.data)
         mock_svc.assert_not_called()
 
     @patch(
-        "apps.pedagogico.views.services."
-        "get_alunos_turma_considera_inativos"
+        "apps.pedagogico.views.services." "get_alunos_turma_considera_inativos"
     )
     def test_204_quando_codigo_turma_zero(
         self,
@@ -698,17 +688,14 @@ class AlunosTurmaConsideraInativosViewSetTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get(
-            f"{_PREFIX_TURMAS}/0/considera-inativos/true/"
-        )
+        resp = client.get(f"{_PREFIX_TURMAS}/0/considera-inativos/true/")
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
         self.assertIsNone(resp.data)
         mock_svc.assert_not_called()
 
     @patch(
-        "apps.pedagogico.views.services."
-        "get_alunos_turma_considera_inativos"
+        "apps.pedagogico.views.services." "get_alunos_turma_considera_inativos"
     )
     def test_preserva_erro_http_do_sidecar(
         self,
@@ -727,16 +714,13 @@ class AlunosTurmaConsideraInativosViewSetTest(SimpleTestCase):
         )
         client = _cliente_autenticado()
 
-        resp = client.get(
-            f"{_PREFIX_TURMAS}/2822152/considera-inativos/true/"
-        )
+        resp = client.get(f"{_PREFIX_TURMAS}/2822152/considera-inativos/true/")
 
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(resp.data, {"detail": "Turma não encontrada."})
 
     @patch(
-        "apps.pedagogico.views.services."
-        "get_alunos_turma_considera_inativos"
+        "apps.pedagogico.views.services." "get_alunos_turma_considera_inativos"
     )
     def test_erro_http_sem_corpo_json_usa_texto(
         self,
@@ -756,16 +740,13 @@ class AlunosTurmaConsideraInativosViewSetTest(SimpleTestCase):
         )
         client = _cliente_autenticado()
 
-        resp = client.get(
-            f"{_PREFIX_TURMAS}/2822152/considera-inativos/true/"
-        )
+        resp = client.get(f"{_PREFIX_TURMAS}/2822152/considera-inativos/true/")
 
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(resp.data, {"detail": "Bad Gateway"})
 
     @patch(
-        "apps.pedagogico.views.services."
-        "get_alunos_turma_considera_inativos"
+        "apps.pedagogico.views.services." "get_alunos_turma_considera_inativos"
     )
     def test_503_quando_sidecar_indisponivel(
         self,
@@ -778,9 +759,7 @@ class AlunosTurmaConsideraInativosViewSetTest(SimpleTestCase):
         )
         client = _cliente_autenticado()
 
-        resp = client.get(
-            f"{_PREFIX_TURMAS}/2822152/considera-inativos/true/"
-        )
+        resp = client.get(f"{_PREFIX_TURMAS}/2822152/considera-inativos/true/")
 
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertEqual(
@@ -791,9 +770,7 @@ class AlunosTurmaConsideraInativosViewSetTest(SimpleTestCase):
     def test_403_sem_autenticacao(self) -> None:
         client = APIClient()
 
-        resp = client.get(
-            f"{_PREFIX_TURMAS}/2822152/considera-inativos/true/"
-        )
+        resp = client.get(f"{_PREFIX_TURMAS}/2822152/considera-inativos/true/")
 
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 

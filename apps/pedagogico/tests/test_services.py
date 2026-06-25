@@ -289,7 +289,7 @@ class GetTurmasRecorteFundMedioEjaTest(SimpleTestCase):
         self,
         mock_client: MagicMock,
     ) -> None:
-        """ Valida que a lista vazia não chama o sidecar e retorna lista vazia."""
+        """Valida que a lista vazia não chama o sidecar."""
         result = services.get_turmas_recorte_fund_medio_eja([])
 
         mock_client.post.assert_not_called()
@@ -300,7 +300,7 @@ class GetTurmasRecorteFundMedioEjaTest(SimpleTestCase):
         self,
         mock_client: MagicMock,
     ) -> None:
-        """Valida que a lista vazia é retornada quando o sidecar responde sem corpo."""
+        """Retorna lista vazia quando o sidecar responde sem corpo."""
         mock_client.json_or_none.return_value = None
 
         result = services.get_turmas_recorte_fund_medio_eja([3034092])
