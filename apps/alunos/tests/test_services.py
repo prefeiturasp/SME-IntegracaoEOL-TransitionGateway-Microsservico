@@ -184,6 +184,97 @@ class GetInformacoesAlunosTurmaTest(SimpleTestCase):
         self.assertEqual(result, [])
 
 
+class GetAlunosPorTurmaTest(SimpleTestCase):
+    """Valida a fonte única de consulta de alunos por turma."""
+
+    @patch.object(services._client, "get")
+    def test_omite_data_aula_ticks_quando_zero(
+        self, mock_get: MagicMock
+    ) -> None:
+        """``data_aula_ticks`` igual a 0 não é enviado ao microsserviço."""
+        mock_resp = MagicMock()
+        mock_resp.content = b"[]"
+        mock_resp.json.return_value = []
+        mock_get.return_value = mock_resp
+
+        services.get_alunos_por_turma(
+            "3012185",
+            considerar_inativos=False,
+            data_aula_ticks="0",
+            sequencia=1,
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/turmas/3012185/",
+            params={"considerar_inativos": False, "sequencia": 1},
+        )
+
+    @patch.object(services._client, "get")
+    def test_envia_apenas_considerar_inativos_quando_minimo(
+        self, mock_get: MagicMock
+    ) -> None:
+        """Sem ticks e sem sequência, envia apenas ``considerar_inativos``."""
+        mock_resp = MagicMock()
+        mock_resp.content = b"[]"
+        mock_resp.json.return_value = []
+        mock_get.return_value = mock_resp
+
+        services.get_alunos_por_turma("3012185", considerar_inativos=True)
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/turmas/3012185/",
+            params={"considerar_inativos": True},
+        )
+
+    @patch.object(services._client, "get")
+    def test_envia_codigo_aluno_quando_informado(
+        self, mock_get: MagicMock
+    ) -> None:
+        mock_resp = MagicMock()
+        mock_resp.content = b"[]"
+        mock_resp.json.return_value = []
+        mock_get.return_value = mock_resp
+
+        services.get_alunos_por_turma(
+            "3123349",
+            considerar_inativos=True,
+            codigo_aluno="7345634",
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/turmas/3123349/",
+            params={
+                "considerar_inativos": True,
+                "codigo_aluno": "7345634",
+            },
+        )
+
+    @patch.object(services._client, "get")
+    def test_envia_data_matricula_ticks_quando_informada(
+        self, mock_get: MagicMock
+    ) -> None:
+        mock_resp = MagicMock()
+        mock_resp.content = b"[]"
+        mock_resp.json.return_value = []
+        mock_get.return_value = mock_resp
+
+        services.get_alunos_por_turma(
+            "3015603",
+            considerar_inativos=True,
+            data_matricula_ticks="639059616000000000",
+            sequencia=1,
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/turmas/3015603/",
+            params={
+                "considerar_inativos": True,
+                "data_matricula_ticks": "639059616000000000",
+                "sequencia": 1,
+            },
+        )
+
+
 class GetAlunosAtivosDataAulaTicksTest(SimpleTestCase):
     """Valida a integração da consulta de alunos ativos."""
 
@@ -202,8 +293,11 @@ class GetAlunosAtivosDataAulaTicksTest(SimpleTestCase):
         )
 
         mock_get.assert_called_once_with(
-            f"{_BASE}/turmas/3012185/alunos-ativos/"
-            "data-aula-ticks/639031104000000000/"
+            f"{_BASE}/turmas/3012185/",
+            params={
+                "considerar_inativos": True,
+                "data_aula_ticks": "639031104000000000",
+            },
         )
         mock_resp.raise_for_status.assert_called_once_with()
         self.assertEqual(result, payload)
@@ -224,6 +318,37 @@ class GetAlunosAtivosDataAulaTicksTest(SimpleTestCase):
 
         mock_resp.raise_for_status.assert_called_once_with()
         self.assertEqual(result, [])
+
+
+class GetAlunosDataMatriculaTicksTest(SimpleTestCase):
+    """Valida a consulta de alunos por data de matricula."""
+
+    @patch.object(services._client, "get")
+    def test_chama_endpoint_canonico_com_filtros(
+        self, mock_get: MagicMock
+    ) -> None:
+        payload = [{"codigo_aluno": 7614272}]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[]"
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_alunos_data_matricula_ticks(
+            codigo_turma="3015603",
+            data_matricula_ticks="639059616000000000",
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/turmas/3015603/",
+            params={
+                "considerar_inativos": True,
+                "data_matricula_ticks": "639059616000000000",
+                "sequencia": 1,
+            },
+        )
+        mock_resp.raise_for_status.assert_called_once_with()
+        self.assertEqual(result, payload)
 
 
 class GetTurmasAlunoTest(SimpleTestCase):

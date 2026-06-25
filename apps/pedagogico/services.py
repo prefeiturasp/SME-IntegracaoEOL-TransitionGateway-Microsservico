@@ -5,6 +5,7 @@ from typing import Any, cast
 
 from django.conf import settings
 
+from apps.alunos import services as alunos_services
 from apps.core.datetime import formatar_datetime_legado
 from apps.core.http_client import ServiceClient
 from apps.professores import services as professores_services
@@ -207,6 +208,66 @@ def get_dados_turma(codigo_turma: str) -> dict[str, Any]:
     """
     response = _client.get(f"{_BASE_TURMAS}/{codigo_turma}/dados/")
     return _turma_legado(response.json())
+
+
+def get_alunos_ativos_turma_sem_redis(codigo_turma: str) -> Any:
+    """Retorna alunos ativos de uma turma sem consulta a cache.
+
+    Args:
+        codigo_turma: Código da turma recebida no contrato legado.
+
+    Returns:
+        Lista de alunos ativos retornada pelo sidecar pedagógico.
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+    """
+    return alunos_services.get_alunos_por_turma(
+        codigo_turma,
+        considerar_inativos=False,
+        sequencia=1,
+    )
+
+
+def get_alunos_ativos_turma_redis_multplex(codigo_turma: str) -> Any:
+    """Retorna alunos ativos de uma turma pelo contrato Redis Multplex.
+
+    Args:
+        codigo_turma: Código da turma recebida no contrato legado.
+
+    Returns:
+        Lista de alunos ativos retornada pelo sidecar pedagógico.
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+    """
+    return alunos_services.get_alunos_por_turma(
+        codigo_turma,
+        considerar_inativos=True,
+    )
+
+
+def get_alunos_turma_considera_inativos(codigo_turma: str, considera_inativos: bool | None) -> Any:
+    """Retorna alunos na turma considerando ativos ou inativos.
+
+    Args:
+        codigo_turma: Código da turma recebida no contrato legado.
+        considera_inativos: Considera ativos ou inativos na turma.
+
+    Returns:
+        Lista de alunos ativos ou inativos retornada pelo sidecar pedagógico.
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+    """
+    return alunos_services.get_alunos_por_turma(
+        codigo_turma,
+        considerar_inativos=considera_inativos,
+        sequencia=1,
+    )
 
 
 def get_turmas_historicas_gerais_professor(

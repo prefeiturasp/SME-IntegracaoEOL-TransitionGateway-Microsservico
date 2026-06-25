@@ -177,8 +177,8 @@ class InformacoesAlunoTurmaSerializer(serializers.Serializer):
     )  # NOSONAR
 
 
-class AlunoAtivoDataAulaSerializer(serializers.Serializer):
-    """Serializa dados de aluno ativo e sua matrícula."""
+class AlunoMatriculaTurmaSerializer(serializers.Serializer):
+    """Serializa dados de aluno e sua matrícula na turma."""
 
     codigoComponenteCurricular = serializers.IntegerField(default=0)
     codigoAluno = serializers.IntegerField(
@@ -197,7 +197,9 @@ class AlunoAtivoDataAulaSerializer(serializers.Serializer):
     )
     dataSituacao = DataHoraLegadoComZField(source="data_situacao")
     dataMatricula = DataHoraLegadoComZField(source="data_matricula")
-    numeroAlunoChamada = serializers.CharField(source="numero_aluno_chamada")
+    numeroAlunoChamada = serializers.CharField(
+        source="numero_aluno_chamada", allow_null=True
+    )
     celularResponsavel = serializers.CharField(
         source="celular_responsavel",
         allow_blank=True,
@@ -235,6 +237,33 @@ class AlunoAtivoDataAulaSerializer(serializers.Serializer):
     codigoDre = serializers.CharField(source="codigo_dre", allow_null=True)
     id = serializers.IntegerField(allow_null=True, default=None)
 
+    _CAMPOS_DATA = {
+        "dataNascimento": "data_nascimento",
+        "dataSituacao": "data_situacao",
+        "dataMatricula": "data_matricula",
+        "dataAtualizacaoContato": "data_atualizacao_contato",
+    }
+
+    def __init__(
+        self,
+        *args: Any,
+        campos_parciais: bool = False,
+        datetime_z: bool = True,
+        **kwargs: Any,
+    ) -> None:
+        """Inicializa o serializer com o modo de campos.
+
+        Args:
+            campos_parciais: Quando ``True``, zera/anula os campos de
+                localização da turma (``ano``, ``codigoDre``,
+                ``codigoEscola`` e ``codigoTurma``).
+            datetime_z: Quando ``False``, publica as datas sem o sufixo
+                ``Z``, usando o formato ISO legado.
+        """
+        self.campos_parciais = campos_parciais
+        self.datetime_z = datetime_z
+        super().__init__(*args, **kwargs)
+
     def to_representation(self, instance: Any) -> dict[str, Any]:
         """Serializa os campos publicados para aluno e matrícula.
 
@@ -254,10 +283,23 @@ class AlunoAtivoDataAulaSerializer(serializers.Serializer):
         data["parecerConclusivo"] = None
         data["tipoTurma"] = 0
         data["id"] = None
+
+        if not self.datetime_z:
+            campo = DatetimeLegadoField()
+            for saida, origem in self._CAMPOS_DATA.items():
+                data[saida] = campo.to_representation(
+                    get_first_value(instance, origem)
+                )
+
         if data.get("celularResponsavel") is None:
             data["celularResponsavel"] = ""
 
-        if data.get("numeroAlunoChamada") is None:
+        if self.campos_parciais:
+            data["ano"] = 0
+            data["codigoDre"] = None
+            data["codigoEscola"] = None
+            data["codigoTurma"] = 0
+        elif data.get("numeroAlunoChamada") in (None, ""):
             data["numeroAlunoChamada"] = "000"
         return data
 

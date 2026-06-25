@@ -128,6 +128,47 @@ def get_informacoes_alunos_turma(codigo_turma: str) -> Any:
     return _client.json_or_none(resp) or []
 
 
+def get_alunos_por_turma(
+    codigo_turma: str,
+    *,
+    considerar_inativos: bool,
+    codigo_aluno: str | None = None,
+    data_aula_ticks: str | int | None = None,
+    data_matricula_ticks: str | int | None = None,
+    sequencia: int | None = None,
+) -> Any:
+    """Retorna os alunos de uma turma consultando o endpoint canônico.
+
+    Args:
+        codigo_turma: Código EOL da turma.
+        considerar_inativos: Inclui alunos inativos quando ``True``.
+        codigo_aluno: Codigo EOL do aluno usado no filtro.
+        data_aula_ticks: Data de referência em ticks de DateTime do .NET.
+            Omitido quando ``None`` ou ``0``.
+        sequencia: Sequência da matrícula a filtrar, quando aplicável.
+
+    Returns:
+        Lista de alunos, ou lista vazia quando não houver registros.
+
+    Raises:
+        httpx.HTTPStatusError: Se o serviço externo retornar status de erro.
+        httpx.RequestError: Se o serviço externo estiver inacessível.
+    """
+    params: dict[str, Any] = {"considerar_inativos": considerar_inativos}
+    if codigo_aluno is not None:
+        params["codigo_aluno"] = codigo_aluno
+    if data_aula_ticks is not None and int(data_aula_ticks) != 0:
+        params["data_aula_ticks"] = data_aula_ticks
+    if data_matricula_ticks is not None:
+        params["data_matricula_ticks"] = data_matricula_ticks
+    if sequencia is not None:
+        params["sequencia"] = sequencia
+
+    resp = _client.get(f"{_BASE}/turmas/{codigo_turma}/", params=params)
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
 def get_alunos_ativos_data_aula_ticks(
     codigo_turma: str,
     data_ticks: str,
@@ -145,13 +186,22 @@ def get_alunos_ativos_data_aula_ticks(
         httpx.HTTPStatusError: Se o serviço externo retornar status de erro.
         httpx.RequestError: Se o serviço externo estiver inacessível.
     """
-    path = (
-        f"{_BASE}/turmas/{codigo_turma}/alunos-ativos/"
-        f"data-aula-ticks/{data_ticks}/"
+    return get_alunos_por_turma(
+        codigo_turma, considerar_inativos=True, data_aula_ticks=data_ticks
     )
-    resp = _client.get(path)
-    resp.raise_for_status()
-    return _client.json_or_none(resp) or []
+
+
+def get_alunos_data_matricula_ticks(
+    codigo_turma: str,
+    data_matricula_ticks: str,
+) -> Any:
+    """Retorna alunos da turma por data de matricula."""
+    return get_alunos_por_turma(
+        codigo_turma,
+        considerar_inativos=True,
+        data_matricula_ticks=data_matricula_ticks,
+        sequencia=1,
+    )
 
 
 def get_turmas_aluno(codigo_aluno: str) -> Any:

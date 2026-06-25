@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 import httpx
 from django.test import SimpleTestCase
 
+from apps.alunos import services as alunos_services
 from apps.pedagogico import services
 
 _BASE = "/api/v1/pedagogico/componentes-curriculares"
@@ -337,6 +338,107 @@ class GetDadosTurmaTest(SimpleTestCase):
         self.assertEqual(result["situacao"], None)
         self.assertEqual(result["ehistorico"], False)
         self.assertEqual(result["etapaEJA"], 0)
+
+
+class GetAlunosAtivosTurmaSemRedisTest(SimpleTestCase):
+    """Valida a consulta de alunos ativos sem Redis."""
+
+    @patch.object(alunos_services._client, "get")
+    def test_chama_path_canonico_com_params_fixos(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        payload = [{"codigo_aluno": 7730117}]
+        response = MagicMock()
+        response.content = b"[]"
+        response.json.return_value = payload
+        mock_get.return_value = response
+
+        with patch.object(
+            alunos_services._client,
+            "json_or_none",
+            return_value=payload,
+        ) as mock_json_or_none:
+            result = services.get_alunos_ativos_turma_sem_redis("3010807")
+
+        mock_get.assert_called_once_with(
+            "/api/v1/alunos/turmas/3010807/",
+            params={
+                "considerar_inativos": False,
+                "sequencia": 1,
+            },
+        )
+        response.raise_for_status.assert_called_once_with()
+        mock_json_or_none.assert_called_once_with(response)
+        self.assertEqual(result, payload)
+
+    @patch.object(alunos_services._client, "get")
+    def test_retorna_lista_vazia_quando_sem_corpo(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        response = MagicMock()
+        mock_get.return_value = response
+
+        with patch.object(
+            alunos_services._client,
+            "json_or_none",
+            return_value=None,
+        ):
+            result = services.get_alunos_ativos_turma_sem_redis("3010807")
+
+        response.raise_for_status.assert_called_once_with()
+        self.assertEqual(result, [])
+
+
+class GetAlunosAtivosTurmaRedisMultplexTest(SimpleTestCase):
+    """Valida a consulta de alunos ativos por Redis Multplex."""
+
+    @patch.object(alunos_services._client, "get")
+    def test_chama_path_canonico_sem_params(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        payload = [{"codigo_aluno": 7730117}]
+        response = MagicMock()
+        mock_get.return_value = response
+
+        with patch.object(
+            alunos_services._client,
+            "json_or_none",
+            return_value=payload,
+        ) as mock_json_or_none:
+            result = services.get_alunos_ativos_turma_redis_multplex(
+                "2822152",
+            )
+
+        mock_get.assert_called_once_with(
+            "/api/v1/alunos/turmas/2822152/",
+            params={"considerar_inativos": True},
+        )
+        response.raise_for_status.assert_called_once_with()
+        mock_json_or_none.assert_called_once_with(response)
+        self.assertEqual(result, payload)
+
+    @patch.object(alunos_services._client, "get")
+    def test_retorna_lista_vazia_quando_sem_corpo(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        response = MagicMock()
+        mock_get.return_value = response
+
+        with patch.object(
+            alunos_services._client,
+            "json_or_none",
+            return_value=None,
+        ):
+            result = services.get_alunos_ativos_turma_redis_multplex(
+                "2822152",
+            )
+
+        response.raise_for_status.assert_called_once_with()
+        self.assertEqual(result, [])
 
 
 class GetTurmasHistoricasGeraisProfessorTest(SimpleTestCase):

@@ -7,7 +7,9 @@ from apps.alunos.views import (
     AlunoInformacoesView,
     AlunoNecessidadesEspeciaisView,
     AlunosAtivosDataAulaTicksView,
+    AlunosDataMatriculaTicksView,
     AlunosListView,
+    AlunoTurmaConsideraInativosView,
     AlunoTurmasView,
     InformacoesAlunosTurmaView,
     ResponsavelResumidoView,
@@ -19,6 +21,18 @@ turma_urlpatterns = [
         "data-aula-ticks/<str:data_ticks>/",
         AlunosAtivosDataAulaTicksView.as_view(),
         name="alunos-ativos-data-aula-ticks",
+    ),
+    path(
+        "<str:codigo_turma>/data-matricula-ticks/"
+        "<str:data_matricula_ticks>/",
+        AlunosDataMatriculaTicksView.as_view(),
+        name="alunos-data-matricula-ticks",
+    ),
+    path(
+        "<str:codigo_turma>/aluno/<str:codigo_aluno>/"
+        "considera-inativos/<str:considera_inativos>/",
+        AlunoTurmaConsideraInativosView.as_view(),
+        name="aluno-turma-considera-inativos",
     ),
 ]
 
