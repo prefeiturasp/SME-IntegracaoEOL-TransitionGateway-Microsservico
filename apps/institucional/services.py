@@ -158,6 +158,25 @@ def get_escola(codigo_escola: str) -> Any:
     return resp.json()
 
 
+def get_unidade_eol(codigo_eol: str) -> Any:
+    """Retorna dados resumidos de uma unidade pelo código EOL.
+
+    Args:
+        codigo_eol: Código EOL da unidade educacional.
+
+    Returns:
+        Dados resumidos da unidade educacional.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status
+            HTTP de erro.
+    """
+
+    resp = _client.get(f"{_BASE}/escolas/unidade-eol/{codigo_eol}/")
+    resp.raise_for_status()
+    return resp.json()
+
+
 def get_dados_escola(codigo_escola: str) -> Any:
     """Retorna dados completos de uma escola.
 
@@ -172,6 +191,27 @@ def get_dados_escola(codigo_escola: str) -> Any:
     return _client.json_or_none(resp)
 
 
+def get_sincronizacoes_institucionais(codigo_ue: str) -> Any:
+    """Retorna a sincronização institucional de uma UE.
+
+    Args:
+        codigo_ue: Código EOL da unidade educacional.
+
+    Returns:
+        Dados de sincronização institucional da unidade.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status
+            HTTP de erro.
+    """
+
+    resp = _client.get(
+        f"{_BASE}/escolas/{codigo_ue}/sincronizacoes-institucionais/"
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
 def get_tipos_escolas() -> Any:
     """Lista tipos de escola cadastrados.
 
@@ -179,6 +219,25 @@ def get_tipos_escolas() -> Any:
         Tipos de escola cadastrados no sidecar institucional.
     """
     resp = _client.get(f"{_BASE}/escolas/tiposEscolas/")
+    resp.raise_for_status()
+    return resp.json()
+
+
+def post_unidades_parceiras(codigos: list[str]) -> Any:
+    """Retorna unidades parceiras pelos códigos informados.
+
+    Args:
+        codigos: Lista de códigos EOL das unidades para consulta.
+
+    Returns:
+        Lista de unidades parceiras encontradas.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status
+            HTTP de erro.
+    """
+
+    resp = _client.post(f"{_BASE}/escolas/unidades-parceiras/", codigos)
     resp.raise_for_status()
     return resp.json()
 

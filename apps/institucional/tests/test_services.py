@@ -152,6 +152,26 @@ class GetEscolaTest(SimpleTestCase):
         self.assertEqual(result["codigoEscola"], "019308")
 
 
+class GetUnidadeEolTest(SimpleTestCase):
+    """Valida a consulta de unidade EOL."""
+
+    @patch("apps.institucional.services._client")
+    def test_chama_path_com_codigo_eol(self, mock_client: MagicMock) -> None:
+        """Monta o path da unidade EOL com o código informado."""
+        mock_client.get.return_value.raise_for_status = MagicMock()
+        mock_client.get.return_value.json.return_value = {
+            "codigo": "019251",
+            "nomeUnidade": "EMEF EXEMPLO",
+        }
+
+        result = services.get_unidade_eol("019251")
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/escolas/unidade-eol/019251/"
+        )
+        self.assertEqual(result["codigo"], "019251")
+
+
 class GetDadosEscolaTest(SimpleTestCase):
     """Valida a consulta de dados completos de uma escola."""
 
@@ -184,6 +204,26 @@ class GetDadosEscolaTest(SimpleTestCase):
         self.assertIsNone(result)
 
 
+class GetSincronizacoesInstitucionaisTest(SimpleTestCase):
+    """Valida a consulta de sincronizações institucionais."""
+
+    @patch("apps.institucional.services._client")
+    def test_chama_path_com_codigo_ue(self, mock_client: MagicMock) -> None:
+        """Monta o path da sincronização institucional com a UE."""
+        mock_client.get.return_value.raise_for_status = MagicMock()
+        mock_client.get.return_value.json.return_value = {
+            "ueCodigo": "019251",
+            "ueNome": "EMEF EXEMPLO",
+        }
+
+        result = services.get_sincronizacoes_institucionais("019251")
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/escolas/019251/sincronizacoes-institucionais/"
+        )
+        self.assertEqual(result["ueCodigo"], "019251")
+
+
 class GetTiposEscolasTest(SimpleTestCase):
     """Valida a consulta de tipos de escola."""
 
@@ -205,6 +245,27 @@ class GetTiposEscolasTest(SimpleTestCase):
             f"{_BASE}/escolas/tiposEscolas/"
         )
         self.assertEqual(result[0]["descricaoSigla"], "EMEF")
+
+
+class PostUnidadesParceirasTest(SimpleTestCase):
+    """Valida a consulta de unidades parceiras."""
+
+    @patch("apps.institucional.services._client")
+    def test_chama_post_com_lista_de_codigos(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Envia os códigos via POST e retorna as unidades parceiras."""
+        mock_client.post.return_value.raise_for_status = MagicMock()
+        mock_client.post.return_value.json.return_value = [
+            {"codigo": "019251", "nome": "UE PARCEIRA"}
+        ]
+
+        result = services.post_unidades_parceiras(["019251"])
+
+        mock_client.post.assert_called_once_with(
+            f"{_BASE}/escolas/unidades-parceiras/", ["019251"]
+        )
+        self.assertEqual(result[0]["codigo"], "019251")
 
 
 class GetEquipamentosTest(SimpleTestCase):
