@@ -826,8 +826,14 @@ class GetProfessoresPorListaRfAnoTest(SimpleTestCase):
                     "codigo_rf": "000001",
                     "nome": "NOME",
                     "codigos_ue": ["000532", "000999"],
+                    "atribuicoes_ue": {"000532": 1},
                 },
-                {"codigo_rf": "000002", "nome": "OUTRO", "codigos_ue": ["111"]},
+                {
+                    "codigo_rf": "000002",
+                    "nome": "OUTRO",
+                    "codigos_ue": ["111"],
+                    "atribuicoes_ue": {},
+                },
             ]
         )
         mock_sgp.return_value = ["000532"]

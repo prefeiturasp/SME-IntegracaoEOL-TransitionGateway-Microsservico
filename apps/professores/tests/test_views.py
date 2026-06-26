@@ -1241,14 +1241,15 @@ class ProfessorTurmasViewTest(SimpleTestCase):
     @patch(
         "apps.professores.views.services.montar_turmas_atribuidas_professor"
     )
-    def test_204_quando_lista_vazia(self, mock_service: MagicMock) -> None:
-        """Testa 204 quando o sidecar retorna lista vazia para turmas do professor."""
+    def test_200_quando_lista_vazia(self, mock_service: MagicMock) -> None:
+        """Testa 200 com lista vazia quando o sidecar não retorna turmas."""
         mock_service.return_value = []
         client = _cliente_autenticado()
 
         resp = client.get("/api/professores/000001/turmas/")
 
-        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
 
     def test_400_quando_codigo_rf_e_somente_espacos(self) -> None:
         """Testa 400 quando o código RF do professor é apenas espaços."""
