@@ -621,14 +621,24 @@ class UnidadeEolViewTest(SimpleTestCase):
         mock_svc.assert_called_once_with("019308")
 
     @patch("apps.institucional.views.services.get_unidade_eol")
-    def test_404_quando_sidecar_retorna_404(self, mock_svc: MagicMock) -> None:
-        """Retorna 404 quando o sidecar responde com 404."""
+    def test_204_quando_sidecar_nao_retorna_conteudo(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna 204 quando o sidecar não encontra a unidade."""
+        mock_svc.return_value = None
+        resp = _cliente_autenticado().get("/api/escolas/unidade-eol/000000/")
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch("apps.institucional.views.services.get_unidade_eol")
+    def test_204_quando_sidecar_retorna_404(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna 204 quando o sidecar responde 404 para unidade ausente."""
         mock_svc.side_effect = _httpx_status_error(
-            404, {"detail": "Unidade não encontrada."}
+            404, {"detail": "Unidade EOL não encontrada."}
         )
         resp = _cliente_autenticado().get("/api/escolas/unidade-eol/000000/")
-        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertEqual(resp.json(), {"detail": "Unidade não encontrada."})
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
 
 class SincronizacoesInstitucionaisViewTest(SimpleTestCase):
@@ -662,15 +672,28 @@ class SincronizacoesInstitucionaisViewTest(SimpleTestCase):
         mock_svc.assert_called_once_with("019308")
 
     @patch("apps.institucional.views.services.get_sincronizacoes_institucionais")
-    def test_404_quando_sidecar_retorna_404(self, mock_svc: MagicMock) -> None:
-        """Retorna 404 quando o sidecar responde com 404."""
+    def test_204_quando_sidecar_nao_retorna_conteudo(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna 204 quando o sidecar não encontra a sincronização."""
+        mock_svc.return_value = None
+        resp = _cliente_autenticado().get(
+            "/api/escolas/000000/sincronizacoes-institucionais/"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch("apps.institucional.views.services.get_sincronizacoes_institucionais")
+    def test_204_quando_sidecar_retorna_404(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna 204 quando o sidecar responde 404 para sincronização ausente."""
         mock_svc.side_effect = _httpx_status_error(
             404, {"detail": "Unidade não encontrada."}
         )
         resp = _cliente_autenticado().get(
             "/api/escolas/000000/sincronizacoes-institucionais/"
         )
-        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
 
 class UnidadesParceirasViewTest(SimpleTestCase):
@@ -687,6 +710,38 @@ class UnidadesParceirasViewTest(SimpleTestCase):
         )
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         mock_svc.assert_called_once_with(["019308"])
+
+    @patch("apps.institucional.views.services.get_dados_escola")
+    @patch("apps.institucional.views.services.post_unidades_parceiras")
+    def test_200_complementa_retorno_quando_sidecar_retorna_vazio(
+        self, mock_post: MagicMock, mock_dados: MagicMock
+    ) -> None:
+        """Retorna dados da UE quando a lista de parceiras vem vazia."""
+        mock_post.return_value = []
+        mock_dados.return_value = {
+            "codigo": "092797",
+            "siglaTipoEscola": "EMEF",
+            "nome": "JULIO MESQUITA",
+            "email": "emefjmesquita@sme.prefeitura.sp.gov.br",
+        }
+
+        resp = _cliente_autenticado().post(
+            "/api/escolas/unidades-parceiras/", ["092797"], format="json"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.json(),
+            [
+                {
+                    "codigo": "092797",
+                    "nome": "EMEF JULIO MESQUITA",
+                    "email": "emefjmesquita@sme.prefeitura.sp.gov.br",
+                }
+            ],
+        )
+        mock_post.assert_called_once_with(["092797"])
+        mock_dados.assert_called_once_with("092797")
 
     @patch("apps.institucional.views.services.post_unidades_parceiras")
     def test_400_quando_sidecar_retorna_400(self, mock_svc: MagicMock) -> None:

@@ -174,7 +174,7 @@ def get_unidade_eol(codigo_eol: str) -> Any:
 
     resp = _client.get(f"{_BASE}/escolas/unidade-eol/{codigo_eol}/")
     resp.raise_for_status()
-    return resp.json()
+    return _client.json_or_none(resp)
 
 
 def get_dados_escola(codigo_escola: str) -> Any:
@@ -198,7 +198,8 @@ def get_sincronizacoes_institucionais(codigo_ue: str) -> Any:
         codigo_ue: Código EOL da unidade educacional.
 
     Returns:
-        Dados de sincronização institucional da unidade.
+        Dados de sincronização institucional da unidade ou `None` quando a
+        resposta não possuir conteúdo.
 
     Raises:
         httpx.HTTPStatusError: Quando o serviço externo retorna status
@@ -209,7 +210,7 @@ def get_sincronizacoes_institucionais(codigo_ue: str) -> Any:
         f"{_BASE}/escolas/{codigo_ue}/sincronizacoes-institucionais/"
     )
     resp.raise_for_status()
-    return resp.json()
+    return _client.json_or_none(resp)
 
 
 def get_tipos_escolas() -> Any:
@@ -233,8 +234,7 @@ def post_unidades_parceiras(codigos: list[str]) -> Any:
         Lista de unidades parceiras encontradas.
 
     Raises:
-        httpx.HTTPStatusError: Quando o serviço externo retorna status
-            HTTP de erro.
+        httpx.HTTPStatusError: Quando o serviço externo retorna status HTTP de erro.
     """
 
     resp = _client.post(f"{_BASE}/escolas/unidades-parceiras/", codigos)
