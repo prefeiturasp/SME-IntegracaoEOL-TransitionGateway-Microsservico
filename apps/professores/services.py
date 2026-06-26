@@ -580,48 +580,23 @@ def get_professores_por_lista_rf_ano(
     ano_letivo: int,
     codigos_rf: list[str],
 ) -> list[dict[str, Any]]:
-    """Retorna professores pelos RFs no ano, no recorte de tipo de escola.
-
-    Orquestra Professores e Institucional.
-    o domínio Professores entrega os RFs com atribuição vigente no ano e as
-    UEs dessas atribuições; o Institucional informa quais UEs estão no recorte
-    do perfil de professor; o professor entra quando ao menos uma de suas UEs
-    está no recorte (interseção).
+    """Retorna professores pelos RFs no ano, um item por turma atribuída.
 
     Args:
         ano_letivo: Ano letivo de referência.
         codigos_rf: RFs usados na consulta.
 
     Returns:
-        Lista de ``{codigo_rf, nome}`` no recorte, ou lista vazia.
+        Lista de ``{codigo_rf, nome}`` com um item por turma, ou lista vazia.
     """
     resp = _client.post(
         f"{_BASE}/{ano_letivo}/BuscarPorListaRF/",
         payload=codigos_rf,
     )
-    candidatos = _client.json_or_none(resp) or []
-    if not isinstance(candidatos, list) or not candidatos:
+    resultado = _client.json_or_none(resp)
+    if not isinstance(resultado, list):
         return []
-
-    todas_ues = sorted(
-        {
-            ue
-            for cand in candidatos
-            if isinstance(cand, dict)
-            for ue in cand.get("codigos_ue", [])
-        }
-    )
-    if not todas_ues:
-        return []
-    ues_recorte = set(
-        institucional_services.get_codigos_ue_tipo_sgp(todas_ues)
-    )
-    return [
-        {"codigo_rf": cand["codigo_rf"], "nome": cand["nome"]}
-        for cand in candidatos
-        if isinstance(cand, dict)
-        and any(ue in ues_recorte for ue in cand.get("codigos_ue", []))
-    ]
+    return resultado
 
 
 def get_unidades_atribuicao_professor(codigo_rf: str) -> list[str]:
