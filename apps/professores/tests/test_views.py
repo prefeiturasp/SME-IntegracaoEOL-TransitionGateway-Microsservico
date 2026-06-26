@@ -1440,8 +1440,8 @@ class ProfessorAutoCompleteViewTest(SimpleTestCase):
         )
 
     @patch("apps.professores.views.services.get_autocomplete_professores")
-    def test_204_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
-        """Testa 204 quando o sidecar retorna None para autocomplete de professores."""
+    def test_200_lista_vazia_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
+        """Testa 200 [] quando o sidecar retorna None para autocomplete de professores."""
         mock_service.return_value = None
         client = _cliente_autenticado()
 
@@ -1449,11 +1449,12 @@ class ProfessorAutoCompleteViewTest(SimpleTestCase):
             "/api/professores/2026/AutoComplete/1/?ue_id=019465&nome=ana"
         )
 
-        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
 
     @patch("apps.professores.views.services.get_autocomplete_professores")
-    def test_204_quando_lista_vazia(self, mock_service: MagicMock) -> None:
-        """Testa 204 quando o sidecar retorna lista vazia para autocomplete."""
+    def test_200_lista_vazia_quando_lista_vazia(self, mock_service: MagicMock) -> None:
+        """Testa 200 [] quando o sidecar retorna lista vazia para autocomplete."""
         mock_service.return_value = []
         client = _cliente_autenticado()
 
@@ -1461,7 +1462,8 @@ class ProfessorAutoCompleteViewTest(SimpleTestCase):
             "/api/professores/2026/AutoComplete/1/?ue_id=019465&nome=ana"
         )
 
-        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
 
     @patch("apps.professores.views.services.get_autocomplete_professores")
     def test_502_quando_sidecar_retorna_texto(

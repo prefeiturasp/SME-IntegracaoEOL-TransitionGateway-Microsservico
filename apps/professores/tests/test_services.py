@@ -801,36 +801,23 @@ class GetProfessorPorRfDreUeTest(SimpleTestCase):
 
 
 class GetProfessoresPorListaRfAnoTest(SimpleTestCase):
-    """Valida a orquestração de professores por lista de RF e ano."""
+    """Valida a busca de professores por lista de RF e ano."""
 
-    def _mock_candidatos(self, candidatos: list[dict]) -> MagicMock:
-        """Cria um mock de resposta para a chamada de candidatos."""
+    def _mock_sidecar(self, dados: list[dict]) -> MagicMock:
         mock_resp = MagicMock()
         mock_resp.status_code = 200
         mock_resp.content = b"[{}]"
-        mock_resp.json.return_value = candidatos
+        mock_resp.json.return_value = dados
         return mock_resp
 
-    @patch(
-        "apps.professores.services.institucional_services."
-        "get_codigos_ue_tipo_sgp"
-    )
     @patch.object(services._client, "post")
-    def test_mantem_rf_com_ue_no_recorte(
-        self, mock_post: MagicMock, mock_sgp: MagicMock
-    ) -> None:
-        """Valida que apenas professores com UEs no recorte são retornados."""
-        mock_post.return_value = self._mock_candidatos(
-            [
-                {
-                    "codigo_rf": "000001",
-                    "nome": "NOME",
-                    "codigos_ue": ["000532", "000999"],
-                },
-                {"codigo_rf": "000002", "nome": "OUTRO", "codigos_ue": ["111"]},
-            ]
-        )
-        mock_sgp.return_value = ["000532"]
+    def test_retorna_lista_do_sidecar(self, mock_post: MagicMock) -> None:
+        """Repassa diretamente o retorno do sidecar (um item por turma)."""
+        payload = [
+            {"codigo_rf": "000001", "nome": "NOME"},
+            {"codigo_rf": "000001", "nome": "NOME"},
+        ]
+        mock_post.return_value = self._mock_sidecar(payload)
 
         result = services.get_professores_por_lista_rf_ano(2026, ["000001"])
 
@@ -838,24 +825,16 @@ class GetProfessoresPorListaRfAnoTest(SimpleTestCase):
             "/api/v1/professores/2026/BuscarPorListaRF/",
             payload=["000001"],
         )
-        mock_sgp.assert_called_once_with(["000532", "000999", "111"])
-        self.assertEqual(result, [{"codigo_rf": "000001", "nome": "NOME"}])
+        self.assertEqual(result, payload)
 
-    @patch(
-        "apps.professores.services.institucional_services."
-        "get_codigos_ue_tipo_sgp"
-    )
     @patch.object(services._client, "post")
-    def test_sem_candidatos_nao_chama_institucional(
-        self, mock_post: MagicMock, mock_sgp: MagicMock
-    ) -> None:
-        """Valida que quando não há candidatos, a função de institucional não é chamada."""
-        mock_post.return_value = self._mock_candidatos([])
+    def test_sem_resultados_retorna_vazio(self, mock_post: MagicMock) -> None:
+        """Retorna lista vazia quando o sidecar não encontra professores."""
+        mock_post.return_value = self._mock_sidecar([])
 
         result = services.get_professores_por_lista_rf_ano(2026, ["000001"])
 
         self.assertEqual(result, [])
-        mock_sgp.assert_not_called()
 
 
 class GetEhEmeiTest(SimpleTestCase):

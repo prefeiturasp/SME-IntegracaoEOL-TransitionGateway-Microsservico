@@ -945,7 +945,7 @@ class ProfessorAutoCompleteView(APIView):
             params,
         )
         if not data:
-            return Response(status=204)
+            return Response([])
         if not _is_lista_dicionarios(data):
             return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
         return Response(ProfessorAutoCompleteSerializer(data, many=True).data)
