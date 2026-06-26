@@ -731,10 +731,7 @@ class ProfessorTurmasView(APIView):
     @extend_schema(
         tags=_TAG_PROFESSOR,
         description=("Retorna turmas atribuídas ao professor pelo RF."),
-        responses={
-            200: TurmaAtribuidaProfessorSerializer(many=True),
-            204: None,
-        },
+        responses={200: TurmaAtribuidaProfessorSerializer(many=True)},
     )
     def get(self, _request: Request, codigo_rf: str) -> Response:
         """Retorna turmas atribuídas ao professor pelo RF.
@@ -743,7 +740,7 @@ class ProfessorTurmasView(APIView):
             codigo_rf: RF usado na consulta.
 
         Returns:
-            Turmas atribuídas ao professor, ou ausência de conteúdo.
+            Turmas atribuídas ao professor, ou lista vazia.
 
         Raises:
             httpx.HTTPError: Quando a chamada a um dos sidecares falha.
@@ -751,10 +748,8 @@ class ProfessorTurmasView(APIView):
         if not codigo_rf.strip():
             return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
         data = services.montar_turmas_atribuidas_professor(codigo_rf)
-        if not data:
-            return Response(status=204)
         return Response(
-            TurmaAtribuidaProfessorSerializer(data, many=True).data
+            TurmaAtribuidaProfessorSerializer(data or [], many=True).data
         )
 
 

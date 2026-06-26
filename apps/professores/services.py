@@ -616,12 +616,21 @@ def get_professores_por_lista_rf_ano(
     ues_recorte = set(
         institucional_services.get_codigos_ue_tipo_sgp(todas_ues)
     )
-    return [
-        {"codigo_rf": cand["codigo_rf"], "nome": cand["nome"]}
-        for cand in candidatos
-        if isinstance(cand, dict)
-        and any(ue in ues_recorte for ue in cand.get("codigos_ue", []))
-    ]
+    resultado: list[dict[str, Any]] = []
+    for cand in candidatos:
+        if not isinstance(cand, dict):
+            continue
+        atribuicoes_ue = cand.get("atribuicoes_ue", {})
+        total = sum(
+            atribuicoes_ue.get(ue, 0)
+            for ue in cand.get("codigos_ue", [])
+            if ue in ues_recorte
+        )
+        resultado.extend(
+            {"codigo_rf": cand["codigo_rf"], "nome": cand["nome"]}
+            for _ in range(total)
+        )
+    return resultado
 
 
 def get_unidades_atribuicao_professor(codigo_rf: str) -> list[str]:
