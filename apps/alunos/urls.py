@@ -7,12 +7,18 @@ from apps.alunos.views import (
     AlunoInformacoesView,
     AlunoNecessidadesEspeciaisView,
     AlunosAtivosDataAulaTicksView,
+    AlunosAtivosPeriodoTurmaView,
+    AlunosAtivosTurmaView,
     AlunosDataMatriculaTicksView,
+    AlunosDaUeView,
     AlunosListView,
+    AlunoTurmasPorSituacaoView,
     AlunoTurmaConsideraInativosView,
     AlunoTurmasView,
+    FiliacaoAlunoView,
     InformacoesAlunosTurmaView,
     ResponsavelResumidoView,
+    TotalAlunosAtivosPeriodoView,
 )
 
 turma_urlpatterns = [
@@ -44,9 +50,19 @@ urlpatterns = [
         name="aluno-autocomplete-ativos",
     ),
     path(
+        "ues/<str:codigo_ue>/anosLetivos/<str:ano_letivo>",
+        AlunosDaUeView.as_view(),
+        name="alunos-da-ue",
+    ),
+    path(
         "responsaveis/<str:cpf_responsavel>/resumido",
         ResponsavelResumidoView.as_view(),
         name="aluno-responsavel-resumido",
+    ),
+    path(
+        "<str:codigo_aluno>/responsaveis/filiacao",
+        FiliacaoAlunoView.as_view(),
+        name="aluno-filiacao",
     ),
     path(
         "<str:codigo_turma>/turma/informacoes",
@@ -72,5 +88,28 @@ urlpatterns = [
         "<str:codigo_aluno>/turmas/",
         AlunoTurmasView.as_view(),
         name="aluno-turmas-com-barra",
+    ),
+    path(
+        "<str:codigo_aluno>/turmas/anosLetivos/<str:ano_letivo>/"
+        "matriculaTurma/<str:filtrar_situacao_matricula>/"
+        "tipoTurma/<str:tipo_turma>",
+        AlunoTurmasPorSituacaoView.as_view(),
+        name="aluno-turmas-por-situacao",
+    ),
+    path(
+        "turmas/<str:codigo_turma>/ativos/<str:data_referencia_fim>",
+        AlunosAtivosPeriodoTurmaView.as_view(),
+        name="alunos-ativos-periodo-turma",
+    ),
+    path(
+        "turmas/<str:codigo_turma>/ativos",
+        AlunosAtivosTurmaView.as_view(),
+        name="alunos-ativos-turma",
+    ),
+    path(
+        "ativos/anos/<str:ano_turma>/anos-letivos/<str:ano_letivo>/"
+        "inicio/<str:data_inicio>/fim/<str:data_fim>",
+        TotalAlunosAtivosPeriodoView.as_view(),
+        name="total-alunos-ativos-periodo",
     ),
 ]

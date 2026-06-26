@@ -50,6 +50,19 @@ class StringOrNoneField(serializers.Field):
         return string_or_none(value)
 
 
+class ConstanteLegadoField(serializers.Field):
+    """Serializa um valor constante."""
+
+    def __init__(self, valor: Any, **kwargs: Any) -> None:
+        self._valor = valor
+        kwargs["source"] = "*"
+        kwargs["read_only"] = True
+        super().__init__(**kwargs)
+
+    def to_representation(self, _value: Any) -> Any:
+        return self._valor
+
+
 def _idade(value: Any) -> int | None:
     """Calcula idade em anos completos.
 
@@ -106,6 +119,45 @@ class EnderecoLegadoSerializer(serializers.Serializer):
         source="tipo_logradouro", allow_null=True
     )  # NOSONAR
     logradouro = serializers.CharField(allow_null=True)
+
+
+class FiliacaoResponsavelSerializer(serializers.Serializer):
+    """Serializa dados de filiação do responsável."""
+
+    codigoAluno = serializers.SerializerMethodField(
+        method_name="get_codigo_aluno"
+    )  # NOSONAR
+    nomeResponsavel = serializers.CharField(
+        source="nome_responsavel", allow_null=True
+    )  # NOSONAR
+    cpf = serializers.CharField(allow_null=True)
+    email = serializers.CharField(allow_null=True)
+    dddCelular = serializers.CharField(
+        source="ddd_celular", allow_null=True
+    )  # NOSONAR
+    numeroCelular = serializers.CharField(
+        source="numero_celular", allow_null=True
+    )  # NOSONAR
+    dddResidencial = serializers.CharField(
+        source="ddd_residencial", allow_null=True
+    )  # NOSONAR
+    numeroResidencial = serializers.CharField(
+        source="numero_residencial", allow_null=True
+    )  # NOSONAR
+    dddComercial = serializers.CharField(
+        source="ddd_comercial", allow_null=True
+    )  # NOSONAR
+    numeroComercial = serializers.CharField(
+        source="numero_comercial", allow_null=True
+    )  # NOSONAR
+    tipoResponsavel = serializers.IntegerField(
+        source="tipo_responsavel", allow_null=True
+    )  # NOSONAR
+    endereco = EnderecoLegadoSerializer(allow_null=True)
+
+    def get_codigo_aluno(self, _instance: Any) -> None:
+        """Replica o contrato legado, que retorna codigoAluno nulo."""
+        return None
 
 
 class AlunoInformacoesSerializer(serializers.Serializer):
@@ -435,10 +487,10 @@ class AlunoPorCodigoSerializer(AlunoLegadoBaseSerializer):
     turmaNome = serializers.CharField(
         source="turma_nome", allow_null=True
     )  # NOSONAR
-    etapaEnsino = serializers.CharField(
+    etapaEnsino = serializers.IntegerField(
         source="etapa_ensino", allow_null=True
     )  # NOSONAR
-    cicloEnsino = serializers.CharField(
+    cicloEnsino = serializers.IntegerField(
         source="ciclo_ensino", allow_null=True
     )  # NOSONAR
     descEtapaEnsino = serializers.CharField(
@@ -447,6 +499,52 @@ class AlunoPorCodigoSerializer(AlunoLegadoBaseSerializer):
     descCicloEnsino = serializers.CharField(
         source="desc_ciclo_ensino", allow_null=True
     )  # NOSONAR
+
+
+class AlunoAtivoTurmaSerializer(serializers.Serializer):
+    """Serializa dados de aluno ativo em turma."""
+
+    codigoComponenteCurricular = ConstanteLegadoField(0)  # NOSONAR
+    codigoAluno = serializers.IntegerField(
+        source="codigo_aluno", allow_null=True
+    )  # NOSONAR
+    nomeAluno = serializers.CharField(
+        source="nome_aluno", allow_null=True
+    )  # NOSONAR
+    dataNascimento = DatetimeLegadoField(source="data_nascimento")  # NOSONAR
+    nomeSocialAluno = serializers.CharField(
+        source="nome_social_aluno", allow_null=True
+    )  # NOSONAR
+    codigoSituacaoMatricula = serializers.IntegerField(
+        source="codigo_situacao_matricula", allow_null=True
+    )  # NOSONAR
+    situacaoMatricula = serializers.CharField(
+        source="situacao_matricula", allow_null=True
+    )  # NOSONAR
+    dataSituacao = DatetimeLegadoField(source="data_situacao")  # NOSONAR
+    dataMatricula = ConstanteLegadoField(_DATA_PADRAO_LEGADO)  # NOSONAR
+    numeroAlunoChamada = serializers.CharField(
+        source="numero_aluno_chamada", allow_null=True
+    )  # NOSONAR
+    possuiDeficiencia = ConstanteLegadoField(0)  # NOSONAR
+    transferencia_Interna = ConstanteLegadoField(False)  # NOSONAR
+    remanejado = ConstanteLegadoField(False)
+    escolaTransferencia = ConstanteLegadoField(None)  # NOSONAR
+    turmaTransferencia = ConstanteLegadoField(None)  # NOSONAR
+    turmaRemanejamento = ConstanteLegadoField(None)  # NOSONAR
+    parecerConclusivo = ConstanteLegadoField(None)  # NOSONAR
+    nomeResponsavel = ConstanteLegadoField(None)  # NOSONAR
+    tipoResponsavel = ConstanteLegadoField(None)  # NOSONAR
+    celularResponsavel = ConstanteLegadoField(None)  # NOSONAR
+    dataAtualizacaoContato = ConstanteLegadoField(None)  # NOSONAR
+    codigoMatricula = ConstanteLegadoField(0)  # NOSONAR
+    sequencia = ConstanteLegadoField(0)
+    tipoTurma = ConstanteLegadoField(0)  # NOSONAR
+    codigoTurma = ConstanteLegadoField(0)  # NOSONAR
+    codigoEscola = ConstanteLegadoField(None)  # NOSONAR
+    ano = ConstanteLegadoField(0)
+    codigoDre = ConstanteLegadoField(None)  # NOSONAR
+    id = ConstanteLegadoField(None)
 
 
 class ResponsavelResumidoSerializer(serializers.Serializer):
