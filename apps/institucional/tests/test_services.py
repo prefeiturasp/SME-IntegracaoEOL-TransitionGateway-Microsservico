@@ -159,7 +159,7 @@ class GetUnidadeEolTest(SimpleTestCase):
     def test_chama_path_com_codigo_eol(self, mock_client: MagicMock) -> None:
         """Monta o path da unidade EOL com o código informado."""
         mock_client.get.return_value.raise_for_status = MagicMock()
-        mock_client.get.return_value.json.return_value = {
+        mock_client.json_or_none.return_value = {
             "codigo": "019251",
             "nomeUnidade": "EMEF EXEMPLO",
         }
@@ -170,6 +170,21 @@ class GetUnidadeEolTest(SimpleTestCase):
             f"{_BASE}/escolas/unidade-eol/019251/"
         )
         self.assertEqual(result["codigo"], "019251")
+
+    @patch("apps.institucional.services._client")
+    def test_retorna_none_quando_sidecar_responde_204(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Propaga ausência de conteúdo do sidecar."""
+        mock_client.get.return_value.raise_for_status = MagicMock()
+        mock_client.json_or_none.return_value = None
+
+        result = services.get_unidade_eol("000000")
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/escolas/unidade-eol/000000/"
+        )
+        self.assertIsNone(result)
 
 
 class GetDadosEscolaTest(SimpleTestCase):
@@ -211,7 +226,7 @@ class GetSincronizacoesInstitucionaisTest(SimpleTestCase):
     def test_chama_path_com_codigo_ue(self, mock_client: MagicMock) -> None:
         """Monta o path da sincronização institucional com a UE."""
         mock_client.get.return_value.raise_for_status = MagicMock()
-        mock_client.get.return_value.json.return_value = {
+        mock_client.json_or_none.return_value = {
             "ueCodigo": "019251",
             "ueNome": "EMEF EXEMPLO",
         }
@@ -222,6 +237,21 @@ class GetSincronizacoesInstitucionaisTest(SimpleTestCase):
             f"{_BASE}/escolas/019251/sincronizacoes-institucionais/"
         )
         self.assertEqual(result["ueCodigo"], "019251")
+
+    @patch("apps.institucional.services._client")
+    def test_retorna_none_quando_sidecar_responde_204(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Propaga ausência de conteúdo do sidecar."""
+        mock_client.get.return_value.raise_for_status = MagicMock()
+        mock_client.json_or_none.return_value = None
+
+        result = services.get_sincronizacoes_institucionais("000000")
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/escolas/000000/sincronizacoes-institucionais/"
+        )
+        self.assertIsNone(result)
 
 
 class GetTiposEscolasTest(SimpleTestCase):

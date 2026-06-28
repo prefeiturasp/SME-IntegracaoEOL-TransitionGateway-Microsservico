@@ -106,6 +106,61 @@ _SINCRONIZACAO_INSTITUCIONAL_CAMPOS = {
 }
 
 
+def _nome_unidade_parceira(item: dict) -> Any:
+    """Monta o nome legado da unidade com a sigla do tipo escola."""
+
+    nome = item.get("nome") or item.get("nomeEscola") or item.get("nomeUnidade")
+    sigla = item.get("siglaTipoEscola") or item.get("tipoEscola")
+    if isinstance(nome, str) and isinstance(sigla, str) and sigla:
+        if not nome.upper().startswith(sigla.upper()):
+            return f"{sigla} {nome}"
+    return nome
+
+
+def _mapear_unidade_parceira(item: dict) -> dict:
+    """Normaliza diferentes contratos de UE para o formato legado."""
+
+    return {
+        "codigo": (
+            item.get("codigo")
+            or item.get("codigoEscola")
+            or item.get("codigoReferencia")
+        ),
+        "nome": _nome_unidade_parceira(item),
+        "email": item.get("email"),
+    }
+
+
+def _complementar_unidades_parceiras(
+    codigos: list[str], unidades: list[Any]
+) -> list[dict]:
+    """Busca dados das UEs faltantes para manter compatibilidade legada."""
+
+    resultado = [
+        _mapear_unidade_parceira(item)
+        for item in unidades
+        if isinstance(item, dict)
+    ]
+    codigos_encontrados = {
+        item["codigo"] for item in resultado if item.get("codigo")
+    }
+
+    for codigo in codigos:
+        if codigo in codigos_encontrados:
+            continue
+        try:
+            dados = services.get_dados_escola(codigo)
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == status.HTTP_404_NOT_FOUND:
+                continue
+            raise
+        if isinstance(dados, dict):
+            resultado.append(_mapear_unidade_parceira(dados))
+            codigos_encontrados.add(codigo)
+
+    return resultado
+
+
 def _filtrar_escola_resumo(item: dict) -> dict:
     return {k: v for k, v in item.items() if k in _ESCOLA_RESUMO_CAMPOS}
 
@@ -500,7 +555,7 @@ class UnidadeEolView(APIView):
                 type=str,
             )
         ],
-        responses={200: UnidadeEolSerializer, 404: None},
+        responses={200: UnidadeEolSerializer, 204: None},
     )
     def get(self, _request: Request, codigo_eol: str) -> Response:
         """Retorna dados resumidos da unidade por código EOL."""
@@ -508,12 +563,14 @@ class UnidadeEolView(APIView):
         try:
             data = services.get_unidade_eol(codigo_eol)
         except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == status.HTTP_404_NOT_FOUND:
+                return Response(status=status.HTTP_204_NO_CONTENT)
             return _sidecar_error_response(exc)
         except httpx.RequestError:
             return _sidecar_unavailable_response()
 
         if not data:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(data)
 
 
@@ -538,20 +595,22 @@ class SincronizacoesInstitucionaisView(APIView):
                 type=str,
             )
         ],
-        responses={200: SincronizacaoInstitucionalSerializer, 404: None},
+        responses={200: SincronizacaoInstitucionalSerializer, 204: None},
     )
     def get(self, _request: Request, ue_codigo: str) -> Response:
-        """Retorna sincronização institucional da unidade informada."""
+        """Retorna sincronização institucional ou 204 quando ausente."""
 
         try:
             data = services.get_sincronizacoes_institucionais(ue_codigo)
         except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == status.HTTP_404_NOT_FOUND:
+                return Response(status=status.HTTP_204_NO_CONTENT)
             return _sidecar_error_response(exc)
         except httpx.RequestError:
             return _sidecar_unavailable_response()
 
         if not data:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            return Response(status=status.HTTP_204_NO_CONTENT)
         if isinstance(data, dict):
             return Response(_filtrar_sincronizacao_institucional(data))
         return Response(data)
@@ -572,10 +631,12 @@ class UnidadesParceirasView(APIView):
         responses={200: UnidadeParceiraSerializer(many=True), 400: None},
     )
     def post(self, request: Request) -> Response:
-        """Retorna unidades parceiras pelos códigos informados."""
+        """Retorna unidades parceiras e complementa UEs faltantes."""
 
         try:
             data = services.post_unidades_parceiras(request.data)
+            if isinstance(request.data, list):
+                data = _complementar_unidades_parceiras(request.data, data or [])
         except httpx.HTTPStatusError as exc:
             return _sidecar_error_response(exc)
         except httpx.RequestError:
