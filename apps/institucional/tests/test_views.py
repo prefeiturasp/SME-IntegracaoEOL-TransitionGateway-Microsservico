@@ -716,7 +716,7 @@ class UnidadesParceirasViewTest(SimpleTestCase):
     def test_200_complementa_retorno_quando_sidecar_retorna_vazio(
         self, mock_post: MagicMock, mock_dados: MagicMock
     ) -> None:
-        """Retorna dados da UE quando a lista de parceiras vem vazia."""
+        """Complementa a UE quando consulta unitária vem vazia."""
         mock_post.return_value = []
         mock_dados.return_value = {
             "codigo": "092797",
@@ -727,6 +727,40 @@ class UnidadesParceirasViewTest(SimpleTestCase):
 
         resp = _cliente_autenticado().post(
             "/api/escolas/unidades-parceiras/", ["092797"], format="json"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.json(),
+            [
+                {
+                    "codigo": "092797",
+                    "nome": "EMEF JULIO MESQUITA",
+                    "email": "emefjmesquita@sme.prefeitura.sp.gov.br",
+                }
+            ],
+        )
+        mock_post.assert_called_once_with(["092797"])
+        mock_dados.assert_called_once_with("092797")
+
+    @patch("apps.institucional.views.services.get_dados_escola")
+    @patch("apps.institucional.views.services.post_unidades_parceiras")
+    def test_200_lista_multipla_prioriza_primeiro_codigo(
+        self, mock_post: MagicMock, mock_dados: MagicMock
+    ) -> None:
+        """Consulta o primeiro código e complementa quando o sidecar vem vazio."""
+        mock_post.return_value = []
+        mock_dados.return_value = {
+            "codigo": "092797",
+            "siglaTipoEscola": "EMEF",
+            "nome": "JULIO MESQUITA",
+            "email": "emefjmesquita@sme.prefeitura.sp.gov.br",
+        }
+
+        resp = _cliente_autenticado().post(
+            "/api/escolas/unidades-parceiras/",
+            ["092797", "019748", "400825"],
+            format="json",
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
