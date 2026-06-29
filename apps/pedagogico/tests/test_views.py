@@ -559,6 +559,23 @@ class AlunosAtivosTurmaRedisMultplexViewSetTest(SimpleTestCase):
         "apps.pedagogico.views.services."
         "get_alunos_ativos_turma_redis_multplex"
     )
+    def test_204_quando_nao_houver_alunos(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        mock_svc.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PREFIX_TURMAS}/2822152/redis-Multplex/")
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertIsNone(resp.data)
+        mock_svc.assert_called_once_with(codigo_turma="2822152")
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_alunos_ativos_turma_redis_multplex"
+    )
     def test_preserva_erro_http_do_sidecar(
         self,
         mock_svc: MagicMock,

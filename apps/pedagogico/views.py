@@ -336,7 +336,7 @@ class AlunosAtivosTurmaRedisMultplexViewSet(APIView):
 
         Returns:
             Lista de alunos no contrato legado, ou 204 quando o código da
-            turma não for um inteiro positivo.
+            turma não for um inteiro positivo ou não houver alunos.
         """
         if not _inteiro_positivo(codigo_turma):
             return Response(status=204)
@@ -348,6 +348,8 @@ class AlunosAtivosTurmaRedisMultplexViewSet(APIView):
             return _sidecar_error_response(exc)
         except httpx.RequestError:
             return detail_response(_SERVICO_PEDAGOGICO_INDISPONIVEL, 503)
+        if not data:
+            return Response(status=204)
         data = sorted(data, key=_ordem_numero_chamada)
         serializer = AlunoMatriculaTurmaSerializer(data, many=True)
         return Response(serializer.data)
