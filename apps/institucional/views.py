@@ -131,10 +131,17 @@ def _mapear_unidade_parceira(item: dict) -> dict:
     }
 
 
+def _tem_email_unidade_parceira(item: dict) -> bool:
+    """Indica se a unidade possui e-mail cadastrado no contrato legado."""
+
+    email = item.get("email")
+    return isinstance(email, str) and bool(email.strip())
+
+
 def _complementar_unidades_parceiras(
     codigos: list[str], unidades: list[Any]
 ) -> list[dict]:
-    """Complementa consulta unitária quando o sidecar não retorna resultado."""
+    """Complementa unidades ausentes quando há e-mail cadastral."""
 
     resultado = [
         _mapear_unidade_parceira(item)
@@ -154,7 +161,7 @@ def _complementar_unidades_parceiras(
             if exc.response.status_code == status.HTTP_404_NOT_FOUND:
                 continue
             raise
-        if isinstance(dados, dict):
+        if isinstance(dados, dict) and _tem_email_unidade_parceira(dados):
             resultado.append(_mapear_unidade_parceira(dados))
             codigos_encontrados.add(codigo)
 
@@ -631,20 +638,12 @@ class UnidadesParceirasView(APIView):
         responses={200: UnidadeParceiraSerializer(many=True), 400: None},
     )
     def post(self, request: Request) -> Response:
-        """Retorna unidades parceiras com prioridade do primeiro código."""
+        """Retorna unidades parceiras compatíveis com o legado."""
 
         try:
             codigos = cast(list[str], request.data)
-            codigos_consulta = codigos[:1] if codigos else codigos
-            data = services.post_unidades_parceiras(codigos_consulta)
-            if (
-                isinstance(codigos_consulta, list)
-                and len(codigos_consulta) == 1
-                and not data
-            ):
-                data = _complementar_unidades_parceiras(
-                    codigos_consulta, data or []
-                )
+            data = services.post_unidades_parceiras(codigos)
+            data = _complementar_unidades_parceiras(codigos, data or [])
         except httpx.HTTPStatusError as exc:
             return _sidecar_error_response(exc)
         except httpx.RequestError:
