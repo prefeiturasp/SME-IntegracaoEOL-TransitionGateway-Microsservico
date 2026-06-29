@@ -45,3 +45,30 @@ class InteiroBooleanoField(serializers.Field):
             Um para valor verdadeiro ou zero para valor falso.
         """
         return int(bool(value))
+
+
+class ConstanteLegadoField(serializers.Field):
+    """Serializa um valor constante do contrato legado."""
+
+    def __init__(self, valor: Any, **kwargs: Any) -> None:
+        """Fixa o valor constante a ser serializado.
+
+        Args:
+            valor: Valor constante retornado na serialização.
+            **kwargs: Opções repassadas ao campo do DRF.
+        """
+        self._valor = valor
+        kwargs["source"] = "*"
+        kwargs["read_only"] = True
+        super().__init__(**kwargs)
+
+    def to_representation(self, _value: Any) -> Any:
+        """Retorna o valor constante configurado.
+
+        Args:
+            _value: Valor de entrada, ignorado.
+
+        Returns:
+            O valor constante fixado na construção.
+        """
+        return self._valor

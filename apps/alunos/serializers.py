@@ -6,7 +6,11 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from apps.core.datetime import datetime_legado, parse_date
-from apps.core.serializers import DataHoraLegadoComZField, InteiroBooleanoField
+from apps.core.serializers import (
+    ConstanteLegadoField,
+    DataHoraLegadoComZField,
+    InteiroBooleanoField,
+)
 from apps.core.utils import get_first_value, string_or_none
 
 _DATA_PADRAO_LEGADO = "0001-01-01T00:00:00"
@@ -48,19 +52,6 @@ class StringOrNoneField(serializers.Field):
 
     def to_representation(self, value: Any) -> str | None:
         return string_or_none(value)
-
-
-class ConstanteLegadoField(serializers.Field):
-    """Serializa um valor constante."""
-
-    def __init__(self, valor: Any, **kwargs: Any) -> None:
-        self._valor = valor
-        kwargs["source"] = "*"
-        kwargs["read_only"] = True
-        super().__init__(**kwargs)
-
-    def to_representation(self, _value: Any) -> Any:
-        return self._valor
 
 
 def _idade(value: Any) -> int | None:
