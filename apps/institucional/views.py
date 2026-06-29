@@ -134,7 +134,7 @@ def _mapear_unidade_parceira(item: dict) -> dict:
 def _complementar_unidades_parceiras(
     codigos: list[str], unidades: list[Any]
 ) -> list[dict]:
-    """Busca dados das UEs faltantes para manter compatibilidade legada."""
+    """Complementa consulta unitária quando o sidecar não retorna resultado."""
 
     resultado = [
         _mapear_unidade_parceira(item)
@@ -631,12 +631,20 @@ class UnidadesParceirasView(APIView):
         responses={200: UnidadeParceiraSerializer(many=True), 400: None},
     )
     def post(self, request: Request) -> Response:
-        """Retorna unidades parceiras e complementa UEs faltantes."""
+        """Retorna unidades parceiras com prioridade do primeiro código."""
 
         try:
-            data = services.post_unidades_parceiras(request.data)
-            if isinstance(request.data, list):
-                data = _complementar_unidades_parceiras(request.data, data or [])
+            codigos = cast(list[str], request.data)
+            codigos_consulta = codigos[:1] if codigos else codigos
+            data = services.post_unidades_parceiras(codigos_consulta)
+            if (
+                isinstance(codigos_consulta, list)
+                and len(codigos_consulta) == 1
+                and not data
+            ):
+                data = _complementar_unidades_parceiras(
+                    codigos_consulta, data or []
+                )
         except httpx.HTTPStatusError as exc:
             return _sidecar_error_response(exc)
         except httpx.RequestError:
