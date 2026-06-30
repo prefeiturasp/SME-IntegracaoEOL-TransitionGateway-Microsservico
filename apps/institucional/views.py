@@ -106,68 +106,6 @@ _SINCRONIZACAO_INSTITUCIONAL_CAMPOS = {
 }
 
 
-def _nome_unidade_parceira(item: dict) -> Any:
-    """Monta o nome legado da unidade com a sigla do tipo escola."""
-
-    nome = item.get("nome") or item.get("nomeEscola") or item.get("nomeUnidade")
-    sigla = item.get("siglaTipoEscola") or item.get("tipoEscola")
-    if isinstance(nome, str) and isinstance(sigla, str) and sigla:
-        if not nome.upper().startswith(sigla.upper()):
-            return f"{sigla} {nome}"
-    return nome
-
-
-def _mapear_unidade_parceira(item: dict) -> dict:
-    """Normaliza diferentes contratos de UE para o formato legado."""
-
-    return {
-        "codigo": (
-            item.get("codigo")
-            or item.get("codigoEscola")
-            or item.get("codigoReferencia")
-        ),
-        "nome": _nome_unidade_parceira(item),
-        "email": item.get("email"),
-    }
-
-
-def _tem_email_unidade_parceira(item: dict) -> bool:
-    """Indica se a unidade possui e-mail cadastrado no contrato legado."""
-
-    email = item.get("email")
-    return isinstance(email, str) and bool(email.strip())
-
-
-def _complementar_unidades_parceiras(
-    codigos: list[str], unidades: list[Any]
-) -> list[dict]:
-    """Complementa unidades ausentes quando há e-mail cadastral."""
-
-    resultado = [
-        _mapear_unidade_parceira(item)
-        for item in unidades
-        if isinstance(item, dict)
-    ]
-    codigos_encontrados = {
-        item["codigo"] for item in resultado if item.get("codigo")
-    }
-
-    for codigo in codigos:
-        if codigo in codigos_encontrados:
-            continue
-        try:
-            dados = services.get_dados_escola(codigo)
-        except httpx.HTTPStatusError as exc:
-            if exc.response.status_code == status.HTTP_404_NOT_FOUND:
-                continue
-            raise
-        if isinstance(dados, dict) and _tem_email_unidade_parceira(dados):
-            resultado.append(_mapear_unidade_parceira(dados))
-            codigos_encontrados.add(codigo)
-
-    return resultado
-
-
 def _filtrar_escola_resumo(item: dict) -> dict:
     return {k: v for k, v in item.items() if k in _ESCOLA_RESUMO_CAMPOS}
 
@@ -643,7 +581,6 @@ class UnidadesParceirasView(APIView):
         try:
             codigos = cast(list[str], request.data)
             data = services.post_unidades_parceiras(codigos)
-            data = _complementar_unidades_parceiras(codigos, data or [])
         except httpx.HTTPStatusError as exc:
             return _sidecar_error_response(exc)
         except httpx.RequestError:
