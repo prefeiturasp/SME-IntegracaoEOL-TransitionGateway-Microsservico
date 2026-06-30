@@ -17,7 +17,7 @@ sidecar_<domínio>       ← retry, circuit breaker, propagação de X-Request-I
 MS de domínio           ← microserviço proprietário do domínio
 ```
 
-O Gateway expõe os contratos legados (L1–L17) e os mapeia para os endpoints canônicos
+O Gateway expõe os contratos legados (L1–L17) e os mapeia para os endpoints canônicos 
 dos microserviços de domínio. Ele não contém regra de negócio nem lógica de resiliência:
 essas responsabilidades pertencem ao sidecar de cada domínio.
 
