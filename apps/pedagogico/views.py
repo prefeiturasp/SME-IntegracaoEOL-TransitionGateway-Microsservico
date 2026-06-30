@@ -1,26 +1,41 @@
 """Views do domínio pedagógico."""
 
 import json
+from typing import Any, cast
 
+import httpx
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.alunos.serializers import AlunoMatriculaTurmaSerializer
+from apps.core.responses import detail_response
 from apps.pedagogico import services
 from apps.pedagogico.serializers import (
+    AnosLetivosVigentesQuerySerializer,
+    CodigoComponenteListSerializer,
+    CodigoTurmaInteiroListSerializer,
     CodigoTurmaListSerializer,
     ComponenteBaseSerializer,
     ComponenteCurricularSerializer,
     ComponenteRegenciaSerializer,
     DadosAulaTurmaSerializer,
     GradeCurricularSerializer,
+    ItinerarioEnsinoMedioSerializer,
+    SincronizacaoInstitucionalTurmaSerializer,
     TurmaDadosSerializer,
+    TurmaHistoricaGeralSerializer,
 )
 
 _TAG = ["ComponenteCurricular"]
 _TAG_TURMA = ["Turma"]
+_SERVICO_PEDAGOGICO_INDISPONIVEL = "Servico pedagogico indisponivel."
+_RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA = (
+    "Resposta do servico pedagogico invalida."
+)
+_MSG_CODIGO_TURMA_UE_OBRIGATORIOS = "O código da turma e Ue são obrigatórios"
 _TURMA_REQUEST_SCHEMA = {
     "type": "array",
     "items": {"type": "string"},
@@ -29,6 +44,65 @@ _TURMA_REQUEST_SCHEMA = {
         "codigos de turmas."
     ),
 }
+_IDS_REQUEST_SCHEMA = {
+    "type": "array",
+    "items": {"type": "integer"},
+    "description": "Lista JSON de `cod_agrupamento` de Território do Saber.",
+}
+
+
+def _obter_data_base_tick(request: Request) -> int | None:
+    """Obtém o parâmetro de query `dataBaseTick` como inteiro.
+
+    Args:
+        request: Requisição HTTP recebida.
+
+    Returns:
+        Valor inteiro dos ticks do .NET, ou None quando ausente.
+
+    Raises:
+        ValueError: Quando `dataBaseTick` não for um inteiro válido.
+    """
+    bruto = request.query_params.get(
+        "dataBaseTick", request.query_params.get("data_base_tick")
+    )
+    if bruto is None or bruto == "":
+        return None
+    return int(bruto)
+
+
+def _inteiro_positivo(value: str) -> bool:
+    """Verifica se o valor representa um inteiro positivo."""
+    try:
+        return int(value) > 0
+    except (TypeError, ValueError):
+        return False
+
+
+def _ordem_numero_chamada(aluno: dict[str, Any]) -> tuple[int, int]:
+    """Chave de ordenação ascendente por número de chamada do aluno.
+
+    Args:
+        aluno: Registro de aluno retornado pelo sidecar.
+
+    Returns:
+        Tupla em que registros sem número de chamada válido vêm primeiro e
+        os números válidos são ordenados de forma ascendente pelo valor.
+    """
+    try:
+        return (1, int(aluno["numero_aluno_chamada"]))
+    except (KeyError, TypeError, ValueError):
+        return (0, 0)
+
+
+def _sidecar_error_response(exc: httpx.HTTPStatusError) -> Response:
+    """Monta resposta de erro a partir da exceção HTTP recebida."""
+    try:
+        body = exc.response.json()
+    except ValueError:
+        detail = exc.response.text.strip() or exc.response.reason_phrase
+        body = {"detail": detail}
+    return Response(body, status=exc.response.status_code)
 
 
 def _obter_lista_query(request: Request, nome: str) -> list[str]:
@@ -44,12 +118,12 @@ def _obter_lista_query(request: Request, nome: str) -> list[str]:
     Returns:
         Valores normalizados como lista de strings.
     """
-    valores = request.query_params.getlist(nome)
+    valores = cast(list[str], request.query_params.getlist(nome))
     if len(valores) != 1:
         return valores
 
     try:
-        valor_json = json.loads(valores[0])
+        valor_json: Any = json.loads(valores[0])
     except (json.JSONDecodeError, TypeError):
         return valores
 
@@ -181,6 +255,396 @@ class DadosTurmaViewSet(APIView):
         """
         data = services.get_dados_turma(codigo_turma)
         return Response(TurmaDadosSerializer(data).data)
+
+
+class AlunosAtivosTurmaSemRedisViewSet(APIView):
+    """Lista alunos da turma reproduzindo o contrato legado sem Redis."""
+
+    @extend_schema(
+        tags=_TAG_TURMA,
+        description=(
+            "Retorna os alunos da turma alunos"
+            "(somente ativos, primeira sequência)."
+        ),
+        parameters=[
+            OpenApiParameter(
+                "codigo_turma",
+                int,
+                OpenApiParameter.PATH,
+            ),
+        ],
+        responses={200: AlunoMatriculaTurmaSerializer(many=True)},
+    )
+    def get(self, _request: Request, codigo_turma: str) -> Response:
+        """Retorna os alunos da turma no contrato legado sem Redis.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            codigo_turma: Código EOL da turma.
+
+        Returns:
+            Lista de alunos no contrato legado, ou 204 quando o código da
+            turma não for um inteiro positivo ou não houver alunos.
+        """
+        if not _inteiro_positivo(codigo_turma):
+            return Response(status=204)
+        try:
+            data = services.get_alunos_ativos_turma_sem_redis(
+                codigo_turma=codigo_turma,
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError:
+            return detail_response(_SERVICO_PEDAGOGICO_INDISPONIVEL, 503)
+        if not data:
+            return Response(status=204)
+        data = sorted(data, key=_ordem_numero_chamada)
+        serializer = AlunoMatriculaTurmaSerializer(
+            data, many=True, campos_parciais=True, datetime_z=False
+        )
+        return Response(serializer.data)
+
+
+class AlunosAtivosTurmaRedisMultplexViewSet(APIView):
+    """Lista alunos da turma no contrato legado Redis Multplex."""
+
+    @extend_schema(
+        tags=_TAG_TURMA,
+        description=(
+            "Retorna os alunos da turma a partir do "
+            "legado `ObterAlunosPorTurmaMultiplexConnetionAsync`."
+        ),
+        parameters=[
+            OpenApiParameter(
+                "codigo_turma",
+                int,
+                OpenApiParameter.PATH,
+            ),
+        ],
+        responses={200: AlunoMatriculaTurmaSerializer(many=True)},
+    )
+    def get(self, _request: Request, codigo_turma: str) -> Response:
+        """Retorna os alunos da turma no contrato legado Redis Multplex.
+
+        Consome ``get_alunos_ativos_turma_redis_multplex``, que consulta o
+        endpoint canônico do microsserviço de alunos sem ``data_aula_ticks``
+        nem ``sequencia``, e serializa publicando todos os campos.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            codigo_turma: Código EOL da turma.
+
+        Returns:
+            Lista de alunos no contrato legado, ou 204 quando o código da
+            turma não for um inteiro positivo ou não houver alunos.
+        """
+        if not _inteiro_positivo(codigo_turma):
+            return Response(status=204)
+        try:
+            data = services.get_alunos_ativos_turma_redis_multplex(
+                codigo_turma=codigo_turma,
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError:
+            return detail_response(_SERVICO_PEDAGOGICO_INDISPONIVEL, 503)
+        if not data:
+            return Response(status=204)
+        data = sorted(data, key=_ordem_numero_chamada)
+        serializer = AlunoMatriculaTurmaSerializer(data, many=True)
+        return Response(serializer.data)
+
+
+class AlunosTurmaConsideraInativosViewSet(APIView):
+    """Lista alunos ativos de uma turma considerando ativos ou inativos."""
+
+    @extend_schema(
+        tags=_TAG_TURMA,
+        description=(
+            "Retorna alunos considerando ativos ou inativos da turma "
+            "no contrato legado."
+        ),
+        parameters=[
+            OpenApiParameter(
+                "codigo_turma",
+                int,
+                OpenApiParameter.PATH,
+            ),
+            OpenApiParameter(
+                "considera_inativos",
+                bool,
+                OpenApiParameter.PATH,
+            ),
+        ],
+        responses={200: AlunoMatriculaTurmaSerializer(many=True)},
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_turma: str,
+        considera_inativos: bool | None,
+    ) -> Response:
+        """Retorna os alunos da turma conforme o filtro de inatividade.
+
+        Consome ``get_alunos_turma_considera_inativos``, que consulta o
+        endpoint canônico do microsserviço de alunos repassando
+        ``considerar_inativos`` e a primeira sequência. Serializa publicando
+        todos os campos.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            codigo_turma: Código EOL da turma.
+            considera_inativos: Inclui alunos inativos quando verdadeiro.
+
+        Returns:
+            Lista de alunos no contrato legado, ou 204 quando o código da
+            turma não for um inteiro positivo.
+        """
+        if not _inteiro_positivo(codigo_turma):
+            return Response(status=204)
+        try:
+            data = services.get_alunos_turma_considera_inativos(
+                codigo_turma=codigo_turma,
+                considera_inativos=considera_inativos,
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError:
+            return detail_response(_SERVICO_PEDAGOGICO_INDISPONIVEL, 503)
+        serializer = AlunoMatriculaTurmaSerializer(data, many=True)
+        return Response(serializer.data)
+
+
+class TurmasHistoricasGeraisProfessorViewSet(APIView):
+    """Lista turmas históricas gerais de um professor."""
+
+    @extend_schema(
+        tags=_TAG_TURMA,
+        description=(
+            "Retorna as turmas históricas gerais do professor no ano "
+            "letivo informado."
+        ),
+        responses={200: TurmaHistoricaGeralSerializer(many=True)},
+    )
+    def get(
+        self,
+        _request: Request,
+        ano_letivo: int,
+        professor_rf: str,
+    ) -> Response:
+        """Retorna turmas históricas gerais do professor.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            ano_letivo: Ano letivo usado na consulta.
+            professor_rf: Registro funcional do professor.
+
+        Returns:
+            Resposta HTTP com as turmas históricas encontradas.
+        """
+        try:
+            data = services.get_turmas_historicas_gerais_professor(
+                ano_letivo=ano_letivo,
+                professor_rf=professor_rf,
+            )
+        except httpx.HTTPStatusError as exc:
+            try:
+                body = exc.response.json()
+            except ValueError:
+                detail = (
+                    exc.response.text.strip() or exc.response.reason_phrase
+                )
+                body = {"detail": detail}
+            return Response(body, status=exc.response.status_code)
+        except httpx.RequestError:
+            return detail_response(
+                _SERVICO_PEDAGOGICO_INDISPONIVEL,
+                503,
+            )
+        except ValueError:
+            return detail_response(
+                _RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA,
+                502,
+            )
+
+        serializer = TurmaHistoricaGeralSerializer(
+            data=data,
+            many=True,
+        )
+        if not serializer.is_valid():
+            return detail_response(
+                _RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA,
+                502,
+            )
+        return Response(serializer.data)
+
+
+class SincronizacaoInstitucionalTurmaViewSet(APIView):
+    """Retorna os dados institucionais de uma turma."""
+
+    @extend_schema(
+        tags=_TAG_TURMA,
+        description="Retorna os dados institucionais sincronizados da turma.",
+        responses={200: SincronizacaoInstitucionalTurmaSerializer},
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_ue: str,
+        codigo_turma: str,
+    ) -> Response:
+        """Retorna os dados institucionais da turma.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            codigo_ue: Código da unidade educacional.
+            codigo_turma: Código da turma.
+
+        Returns:
+            Resposta HTTP com os dados institucionais da turma.
+        """
+        if not codigo_ue.strip() or not _inteiro_positivo(codigo_turma):
+            return detail_response(_MSG_CODIGO_TURMA_UE_OBRIGATORIOS)
+
+        try:
+            data = services.get_sincronizacao_institucional_turma(
+                codigo_ue=codigo_ue,
+                codigo_turma=codigo_turma,
+            )
+        except httpx.HTTPStatusError as exc:
+            try:
+                body = exc.response.json()
+            except ValueError:
+                detail = (
+                    exc.response.text.strip() or exc.response.reason_phrase
+                )
+                body = {"detail": detail}
+            return Response(body, status=exc.response.status_code)
+        except httpx.RequestError:
+            return Response(
+                {"detail": _SERVICO_PEDAGOGICO_INDISPONIVEL},
+                status=503,
+            )
+        return Response(SincronizacaoInstitucionalTurmaSerializer(data).data)
+
+
+class SincronizacoesInstitucionaisAnosLetivosViewSet(APIView):
+    """Lista turmas institucionais da UE por anos letivos."""
+
+    @extend_schema(
+        tags=_TAG_TURMA,
+        description=(
+            "Retorna os códigos das turmas vinculadas às sincronizações "
+            "institucionais da UE."
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="anos_letivos_vigente",
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                many=True,
+            ),
+        ],
+        responses={200: CodigoTurmaInteiroListSerializer},
+    )
+    def get(
+        self,
+        request: Request,
+        codigo_ue: str,
+    ) -> Response:
+        """Lista códigos de turmas da UE.
+
+        Args:
+            request: Requisição HTTP recebida.
+            codigo_ue: Código da unidade educacional.
+
+        Returns:
+            Resposta HTTP com os códigos das turmas encontradas.
+        """
+        query_serializer = AnosLetivosVigentesQuerySerializer(
+            data={
+                "anos_letivos_vigente": _obter_lista_query(
+                    request,
+                    "anos_letivos_vigente",
+                )
+            }
+        )
+        query_serializer.is_valid(raise_exception=True)
+        anos = query_serializer.validated_data.get("anos_letivos_vigente")
+
+        try:
+            data = services.get_sincronizacoes_institucionais_anos_letivos(
+                codigo_ue=codigo_ue,
+                anos_letivos_vigente=anos or None,
+            )
+        except httpx.HTTPStatusError as exc:
+            try:
+                body = exc.response.json()
+            except ValueError:
+                detail = (
+                    exc.response.text.strip() or exc.response.reason_phrase
+                )
+                body = {"detail": detail}
+            return Response(body, status=exc.response.status_code)
+        except httpx.RequestError:
+            return Response(
+                {"detail": _SERVICO_PEDAGOGICO_INDISPONIVEL},
+                status=503,
+            )
+
+        return Response(CodigoTurmaInteiroListSerializer(data).data)
+
+
+class ItinerariosEnsinoMedioViewSet(APIView):
+    """Lista os itinerários do ensino médio."""
+
+    @extend_schema(
+        tags=_TAG_TURMA,
+        description="Retorna os itinerários disponíveis no ensino médio.",
+        responses={200: ItinerarioEnsinoMedioSerializer(many=True)},
+    )
+    def get(self, _request: Request) -> Response:
+        """Retorna os itinerários do ensino médio.
+
+        Args:
+            _request: Requisição HTTP recebida.
+
+        Returns:
+            Resposta HTTP com os itinerários encontrados.
+        """
+        try:
+            data = services.get_itinerarios_ensino_medio()
+        except httpx.HTTPStatusError as exc:
+            try:
+                body = exc.response.json()
+            except ValueError:
+                detail = (
+                    exc.response.text.strip() or exc.response.reason_phrase
+                )
+                body = {"detail": detail}
+            return Response(body, status=exc.response.status_code)
+        except httpx.RequestError:
+            return detail_response(
+                _SERVICO_PEDAGOGICO_INDISPONIVEL,
+                503,
+            )
+        except ValueError:
+            return detail_response(
+                _RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA,
+                502,
+            )
+
+        serializer = ItinerarioEnsinoMedioSerializer(
+            data=data,
+            many=True,
+        )
+        if not serializer.is_valid():
+            return detail_response(
+                _RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA,
+                502,
+            )
+        return Response(serializer.validated_data)
 
 
 class ComponentesCurricularesViewSet(APIView):
@@ -862,3 +1326,136 @@ class GradeComponentesCurricularesViewSet(APIView):
         """
         data = services.get_grade_curricular(ano_letivo)
         return Response(GradeCurricularSerializer(data, many=True).data)
+
+
+class AgrupamentosCorrelacionadosViewSet(APIView):
+    """Lista agrupamentos de Território do Saber correlacionados."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Agrupamentos correlacionados por cod_agrupamento",
+        description=(
+            "Retorna os agrupamentos de Território do Saber correlacionados "
+            "ao `cod_agrupamento` informado. A data base é recebida em "
+            "ticks de DateTime do .NET via query `dataBaseTick`."
+        ),
+        operation_id="agrupamentos_correlacionados",
+        parameters=[
+            OpenApiParameter(
+                "dataBaseTick",
+                OpenApiTypes.INT64,
+                OpenApiParameter.QUERY,
+                required=False,
+                description="Data base em ticks do .NET.",
+            ),
+        ],
+        responses={200: ComponenteCurricularSerializer(many=True)},
+    )
+    def get(self, request: Request, codigo_componente: int) -> Response:
+        """Retorna agrupamentos correlacionados por `cod_agrupamento`.
+
+        Args:
+            request: Requisição HTTP recebida.
+            codigo_componente: `cod_agrupamento` de origem.
+
+        Returns:
+            Resposta HTTP com os agrupamentos correlacionados.
+
+        Raises:
+            httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+            OverflowError: Se os ticks excederem o limite do datetime.
+            ValueError: Se a resposta do serviço não for JSON válido.
+        """
+        data = services.get_agrupamentos_correlacionados(
+            codigo_componente=codigo_componente,
+            data_base_tick=_obter_data_base_tick(request),
+        )
+        return Response(ComponenteCurricularSerializer(data, many=True).data)
+
+
+class AgrupamentosCorrelacionadosLoteViewSet(APIView):
+    """Lista agrupamentos de Território do Saber correlacionados em lote."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Agrupamentos correlacionados em lote",
+        description=(
+            "Retorna os agrupamentos de Território do Saber correlacionados "
+            "aos `cod_agrupamento` informados no corpo. A data base é "
+            "recebida em ticks de DateTime do .NET via query `dataBaseTick`."
+        ),
+        operation_id="agrupamentos_correlacionados_lote",
+        request={"application/json": _IDS_REQUEST_SCHEMA},
+        parameters=[
+            OpenApiParameter(
+                "dataBaseTick",
+                OpenApiTypes.INT64,
+                OpenApiParameter.QUERY,
+                required=False,
+                description="Data base em ticks do .NET.",
+            ),
+        ],
+        responses={200: ComponenteCurricularSerializer(many=True)},
+    )
+    def post(self, request: Request) -> Response:
+        """Retorna agrupamentos correlacionados em lote.
+
+        Args:
+            request: Requisição HTTP com a lista de `cod_agrupamento` no corpo.
+
+        Returns:
+            Resposta HTTP com os agrupamentos correlacionados.
+
+        Raises:
+            httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+            OverflowError: Se os ticks excederem o limite do datetime.
+            ValueError: Se a resposta do serviço não for JSON válido.
+        """
+        serializer = CodigoComponenteListSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if not serializer.validated_data:
+            return Response([])
+
+        data = services.post_agrupamentos_correlacionados(
+            ids=serializer.validated_data,
+            data_base_tick=_obter_data_base_tick(request),
+        )
+        return Response(ComponenteCurricularSerializer(data, many=True).data)
+
+
+class AgrupamentosTerritorioViewSet(APIView):
+    """Lista agrupamentos de Território do Saber por IDs."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Agrupamentos de Território do Saber por cod_agrupamento",
+        description=(
+            "Retorna os agrupamentos de Território do Saber correspondentes "
+            "aos `cod_agrupamento` informados no corpo da requisição."
+        ),
+        operation_id="agrupamentos_territorio",
+        request={"application/json": _IDS_REQUEST_SCHEMA},
+        responses={200: ComponenteCurricularSerializer(many=True)},
+    )
+    def post(self, request: Request) -> Response:
+        """Retorna agrupamentos de Território do Saber por `cod_agrupamento`.
+
+        Args:
+            request: Requisição HTTP com a lista de `cod_agrupamento` no corpo.
+
+        Returns:
+            Resposta HTTP com os agrupamentos de Território do Saber.
+
+        Raises:
+            httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+            ValueError: Se a resposta do serviço não for JSON válido.
+        """
+        serializer = CodigoComponenteListSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if not serializer.validated_data:
+            return Response([])
+
+        data = services.post_agrupamentos_territorio(
+            ids=serializer.validated_data,
+        )
+        return Response(ComponenteCurricularSerializer(data, many=True).data)

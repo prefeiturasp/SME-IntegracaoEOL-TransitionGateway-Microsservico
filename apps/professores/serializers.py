@@ -144,3 +144,53 @@ class ProfessorTurmaSerializer(serializers.Serializer):
         source="data_disponibilizacao_aulas"
     )
     dataAtribuicaoAula = serializers.CharField(source="data_atribuicao_aula")
+
+
+class ProfessorAutoCompleteSerializer(serializers.Serializer):
+    """Serializa dados resumidos de professor para autocomplete."""
+
+    codigoRF = serializers.CharField(source="codigo_rf")
+    nome = serializers.CharField(source="nome_servidor")
+
+
+class TurmaAtribuidaProfessorSerializer(serializers.Serializer):
+    """Serializa turma atribuída ao professor."""
+
+    codEscola = serializers.CharField(source="cod_escola", allow_null=True)
+    codTurma = serializers.IntegerField(source="cod_turma", allow_null=True)
+    tipoTurma = serializers.IntegerField(source="tipo_turma", allow_null=True)
+    ano = serializers.CharField(allow_null=True)
+    anoLetivo = serializers.IntegerField(source="ano_letivo", allow_null=True)
+    codModalidade = serializers.IntegerField(
+        source="cod_modalidade", allow_null=True
+    )
+    codDre = serializers.CharField(source="cod_dre", allow_null=True)
+    dre = serializers.CharField(allow_null=True)
+    dreAbrev = serializers.CharField(source="dre_abrev", allow_null=True)
+    modalidade = serializers.CharField(allow_null=True)
+    nomeTurma = serializers.CharField(source="nome_turma", allow_null=True)
+    semestre = serializers.IntegerField(allow_null=True)
+    tipoUE = serializers.CharField(source="tipo_ue", allow_null=True)
+    codTipoUE = serializers.IntegerField(source="cod_tipo_ue", allow_null=True)
+    codUe = serializers.CharField(source="cod_ue", allow_null=True)
+    ue = serializers.CharField(allow_null=True)
+    ueAbrev = serializers.CharField(source="ue_abrev", allow_null=True)
+    tipoEscola = serializers.CharField(source="tipo_escola", allow_null=True)
+    codTipoEscola = serializers.IntegerField(
+        source="cod_tipo_escola", allow_null=True
+    )
+    duracaoTurno = serializers.IntegerField(
+        source="duracao_turno", allow_null=True
+    )
+    tipoTurno = serializers.IntegerField(source="tipo_turno", allow_null=True)
+    ensinoEspecial = serializers.BooleanField(
+        source="ensino_especial", allow_null=True
+    )
+    serieEnsino = serializers.CharField(source="serie_ensino", allow_null=True)
+    dataInicioTurma = serializers.CharField(
+        source="data_inicio_turma", allow_null=True
+    )
+    dataFimTurma = serializers.CharField(
+        source="data_fim_turma", allow_null=True
+    )
+    extinta = serializers.BooleanField(allow_null=True)

@@ -5,11 +5,19 @@ from typing import Any, cast
 
 from django.conf import settings
 
+from apps.alunos import services as alunos_services
 from apps.core.datetime import formatar_datetime_legado
 from apps.core.http_client import ServiceClient
+from apps.professores import services as professores_services
 
 _BASE = "/api/v1/pedagogico/componentes-curriculares"
 _BASE_TURMAS = "/api/v1/pedagogico/turmas"
+
+# Elegibilidade das turmas históricas do professor (contrato legado).
+_ETAPAS_TURMAS_HISTORICAS = frozenset(
+    {1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 17}
+)
+_TIPOS_ESCOLA_TURMAS_HISTORICAS = frozenset({1, 2, 3, 4, 16, 28, 31})
 
 _client = ServiceClient(
     base_url=settings.SIDECAR_PEDAGOGICO_URL,
@@ -34,6 +42,29 @@ def listar_turmas(codigos: list[int]) -> Any:
     """
     resp = _client.post(f"{_BASE_TURMAS}/listar-turmas/", payload=codigos)
     resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
+def get_turmas_recorte_fund_medio_eja(
+    codigos: list[int],
+) -> list[dict[str, Any]]:
+    """Lista turmas no recorte de etapa (Fund/Médio/EJA).
+
+    Args:
+        codigos: Códigos das turmas a consultar.
+
+    Returns:
+        Turmas no recorte de etapa retornadas pelo sidecar.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+    """
+    if not codigos:
+        return []
+    resp = _client.post(
+        f"{_BASE_TURMAS}/recorte-fund-medio-eja/",
+        payload=[int(codigo) for codigo in codigos],
+    )
     return _client.json_or_none(resp) or []
 
 
@@ -177,6 +208,226 @@ def get_dados_turma(codigo_turma: str) -> dict[str, Any]:
     """
     response = _client.get(f"{_BASE_TURMAS}/{codigo_turma}/dados/")
     return _turma_legado(response.json())
+
+
+def get_alunos_ativos_turma_sem_redis(codigo_turma: str) -> Any:
+    """Retorna alunos ativos de uma turma sem consulta a cache.
+
+    Args:
+        codigo_turma: Código da turma recebida no contrato legado.
+
+    Returns:
+        Lista de alunos ativos retornada pelo sidecar pedagógico.
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+    """
+    return alunos_services.get_alunos_por_turma(
+        codigo_turma,
+        considerar_inativos=False,
+        sequencia=1,
+    )
+
+
+def get_alunos_ativos_turma_redis_multplex(codigo_turma: str) -> Any:
+    """Retorna alunos ativos de uma turma pelo contrato Redis Multplex.
+
+    Args:
+        codigo_turma: Código da turma recebida no contrato legado.
+
+    Returns:
+        Lista de alunos ativos retornada pelo sidecar pedagógico.
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+    """
+    return alunos_services.get_alunos_por_turma(
+        codigo_turma,
+        considerar_inativos=True,
+    )
+
+
+def get_alunos_turma_considera_inativos(
+    codigo_turma: str, considera_inativos: bool | None
+) -> Any:
+    """Retorna alunos na turma considerando ativos ou inativos.
+
+    Args:
+        codigo_turma: Código da turma recebida no contrato legado.
+        considera_inativos: Considera ativos ou inativos na turma.
+
+    Returns:
+        Lista de alunos ativos ou inativos retornada pelo sidecar pedagógico.
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+    """
+    return alunos_services.get_alunos_por_turma(
+        codigo_turma,
+        considerar_inativos=bool(considera_inativos),
+        sequencia=1,
+    )
+
+
+def get_turmas_historicas_gerais_professor(
+    ano_letivo: int,
+    professor_rf: str,
+) -> list[dict[str, Any]]:
+    """Lista turmas históricas gerais de um professor.
+
+    Os códigos de turma vêm do domínio professores (cadeia de grade) e os
+    atributos de cada turma são obtidos no domínio pedagógico.
+
+    Args:
+        ano_letivo: Ano letivo usado na consulta.
+        professor_rf: Registro funcional do professor.
+
+    Returns:
+        Turmas históricas com os atributos do domínio pedagógico.
+
+    Raises:
+        httpx.HTTPStatusError: Se algum sidecar retornar status de erro.
+        httpx.RequestError: Se algum sidecar estiver inacessível.
+        ValueError: Se alguma resposta não tiver o formato esperado.
+    """
+    codigos = professores_services.get_codigos_turmas_historicas_professor(
+        ano_letivo,
+        professor_rf,
+    )
+    if not codigos:
+        return []
+
+    response = _client.post(
+        f"{_BASE_TURMAS}/listar-turmas/",
+        payload=codigos,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, list) or any(
+        not isinstance(item, dict) for item in payload
+    ):
+        raise ValueError(
+            "Resposta de turmas históricas deve ser uma lista de objetos."
+        )
+    codigos_permitidos = set(codigos)
+    turmas: list[dict[str, Any]] = []
+    for turma in payload:
+        codigo = turma.get("codigo")
+        if not isinstance(codigo, int) or isinstance(codigo, bool):
+            raise ValueError(
+                "Resposta de turmas históricas deve conter código inteiro."
+            )
+        if codigo in codigos_permitidos and _turma_historica_elegivel(turma):
+            turmas.append(turma)
+    return turmas
+
+
+def _turma_historica_elegivel(turma: dict[str, Any]) -> bool:
+    """Verifica se a turma atende às etapas e escolas do contrato legado.
+
+    A etapa de ensino é obrigatória; o tipo de escola só restringe quando
+    presente no payload.
+    """
+    if turma.get("codigo_etapa_ensino") not in _ETAPAS_TURMAS_HISTORICAS:
+        return False
+    tipo_escola = turma.get("tipo_escola")
+    if tipo_escola is None:
+        return True
+    return tipo_escola in _TIPOS_ESCOLA_TURMAS_HISTORICAS
+
+
+def get_sincronizacao_institucional_turma(
+    codigo_ue: str,
+    codigo_turma: str,
+) -> dict[str, Any]:
+    """Retorna os dados institucionais sincronizados de uma turma.
+
+    Args:
+        codigo_ue: Código da unidade educacional.
+        codigo_turma: Código da turma.
+
+    Returns:
+        Dados institucionais da turma.
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+        ValueError: Se a resposta não representar um objeto.
+    """
+    response = _client.get(
+        f"{_BASE_TURMAS}/ues/{codigo_ue}/turmas/{codigo_turma}/"
+        "sincronizacoes-institucionais/"
+    )
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, dict):
+        raise ValueError("Resposta institucional da turma deve ser um objeto.")
+    return payload
+
+
+def get_sincronizacoes_institucionais_anos_letivos(
+    codigo_ue: str,
+    anos_letivos_vigente: list[int] | None = None,
+) -> list[int]:
+    """Lista turmas institucionais da UE por anos letivos.
+
+    Args:
+        codigo_ue: Código da unidade educacional.
+        anos_letivos_vigente: Anos letivos usados no filtro.
+
+    Returns:
+        Códigos das turmas encontradas.
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+        ValueError: Se a resposta não for uma lista de inteiros.
+    """
+    params = None
+    if anos_letivos_vigente:
+        params = {"anos_letivos_vigente": anos_letivos_vigente}
+
+    response = _client.get(
+        f"{_BASE_TURMAS}/ue/{codigo_ue}/"
+        "sincronizacoes-institucionais/anos-letivos/",
+        params=params,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, list) or any(
+        not isinstance(codigo, int) or isinstance(codigo, bool)
+        for codigo in payload
+    ):
+        raise ValueError(
+            "Resposta de anos letivos deve ser uma lista de inteiros."
+        )
+    return payload
+
+
+def get_itinerarios_ensino_medio() -> list[dict[str, Any]]:
+    """Lista os itinerários do ensino médio.
+
+    Returns:
+        Itinerários retornados pelo serviço pedagógico.
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+        ValueError: Se a resposta não for uma lista de objetos.
+    """
+    response = _client.get(f"{_BASE_TURMAS}/itinerario/ensino-medio/")
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, list) or any(
+        not isinstance(item, dict) for item in payload
+    ):
+        raise ValueError(
+            "Resposta de itinerários deve ser uma lista de objetos."
+        )
+    return payload
 
 
 def get_componentes_por_turmas_ue(
@@ -547,3 +798,78 @@ def get_grade_curricular(ano_letivo: int) -> Any:
         ValueError: Se a resposta não puder ser convertida para JSON.
     """
     return _client.get(f"{_BASE}/grade-curricular/{ano_letivo}").json()
+
+
+def get_agrupamentos_correlacionados(
+    codigo_componente: int,
+    data_base_tick: int | None,
+) -> Any:
+    """Retorna agrupamentos de Território do Saber correlacionados.
+
+    Args:
+        codigo_componente: `cod_agrupamento` de origem.
+        data_base_tick: Data base em ticks do .NET; None para sem filtro.
+
+    Returns:
+        Agrupamentos correlacionados ao `cod_agrupamento` informado.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        OverflowError: Se os ticks excederem o limite do datetime.
+        ValueError: Se a resposta não puder ser convertida para JSON.
+    """
+    params: dict[str, Any] = {}
+    if data_base_tick is not None:
+        params["data_base"] = _ticks_dotnet_para_data(data_base_tick)
+    return _client.get(
+        f"{_BASE}/{codigo_componente}/territorio-saber"
+        "/agrupamentos-correlacionados/",
+        params=params,
+    ).json()
+
+
+def post_agrupamentos_correlacionados(
+    ids: list[int],
+    data_base_tick: int | None,
+) -> Any:
+    """Retorna agrupamentos de Território do Saber correlacionados em lote.
+
+    Args:
+        ids: Lista de `cod_agrupamento` de origem.
+        data_base_tick: Data base em ticks do .NET; None para sem filtro.
+
+    Returns:
+        Agrupamentos correlacionados sem duplicatas.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        OverflowError: Se os ticks excederem o limite do datetime.
+        ValueError: Se a resposta não puder ser convertida para JSON.
+    """
+    params: dict[str, Any] = {}
+    if data_base_tick is not None:
+        params["data_base"] = _ticks_dotnet_para_data(data_base_tick)
+    return _client.post(
+        f"{_BASE}/territorio-saber/agrupamentos-correlacionados/",
+        payload=ids,
+        params=params,
+    ).json()
+
+
+def post_agrupamentos_territorio(ids: list[int]) -> Any:
+    """Retorna agrupamentos de Território do Saber por IDs.
+
+    Args:
+        ids: IDs dos agrupamentos a consultar.
+
+    Returns:
+        Agrupamentos de Território do Saber encontrados.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        ValueError: Se a resposta não puder ser convertida para JSON.
+    """
+    return _client.post(
+        f"{_BASE}/territorio-saber/agrupamentos/",
+        payload=ids,
+    ).json()

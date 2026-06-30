@@ -68,6 +68,36 @@ class DadosEscolaSerializer(serializers.Serializer):
     codigo = serializers.CharField()
 
 
+class UnidadeEolSerializer(serializers.Serializer):
+    """Serializa dados resumidos de unidade EOL."""
+
+    codigo = serializers.CharField()
+    sigla = serializers.CharField(allow_null=True, required=False)
+    nomeUnidade = serializers.CharField()
+    tipo = serializers.IntegerField(allow_null=True, required=False)
+    codigoReferencia = serializers.CharField()
+
+
+class SincronizacaoInstitucionalSerializer(serializers.Serializer):
+    """Serializa a sincronização institucional de uma UE."""
+
+    ueCodigo = serializers.CharField()
+    dataAtualizacao = serializers.CharField(allow_null=True, required=False)
+    dreCodigo = serializers.IntegerField(allow_null=True, required=False)
+    ueNome = serializers.CharField()
+    tipoEscolaCodigo = serializers.IntegerField(
+        allow_null=True, required=False
+    )
+
+
+class UnidadeParceiraSerializer(serializers.Serializer):
+    """Serializa unidade educacional parceira."""
+
+    codigo = serializers.CharField()
+    nome = serializers.CharField()
+    email = serializers.CharField(allow_null=True, required=False)
+
+
 class TipoEscolaSerializer(serializers.Serializer):
     """Serializa tipo de escola."""
 
@@ -99,3 +129,23 @@ class EquipamentoSerializer(serializers.Serializer):
     codigoSubprefeitura = serializers.CharField(allow_null=True)
     nomeSubprefeitura = serializers.CharField(allow_null=True)
     ehCeu = serializers.BooleanField()
+
+
+class UnidadeEducacionalSerializer(serializers.Serializer):
+    """Serializa unidade educacional."""
+
+    codigoEscola = serializers.CharField()
+    nomeEscola = serializers.CharField()
+    codigoDRE = serializers.CharField()
+    nomeDRE = serializers.CharField()
+    siglaDRE = serializers.CharField()
+    tipoEscola = serializers.CharField()
+    siglaTipoEscola = serializers.CharField()
+
+
+class TipoUnidadeEducacaoSerializer(serializers.Serializer):
+    """Serializa tipo de unidade educacional."""
+
+    codigo = serializers.IntegerField()
+    descricao = serializers.CharField()
+    sigla = serializers.CharField()

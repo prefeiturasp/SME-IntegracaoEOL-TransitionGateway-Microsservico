@@ -4,7 +4,8 @@ from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.permissions import AllowAny
 
-from apps.pedagogico.urls import turma_urlpatterns
+from apps.alunos.urls import turma_urlpatterns as alunos_turma_urlpatterns
+from apps.pedagogico.urls import turma_urlpatterns, ue_urlpatterns
 from config import settings
 
 API_PREFIX = "api/v1/"
@@ -41,7 +42,12 @@ urlpatterns = [
         f"{API_PREFIX}componentes-curriculares/",
         include("apps.pedagogico.urls"),
     ),
+    path(
+        "api/turmas/",
+        include((alunos_turma_urlpatterns, "alunos-turmas")),
+    ),
     path("api/turmas/", include((turma_urlpatterns, "turmas"))),
+    path("api/", include((ue_urlpatterns, "ues"))),
     path("api/", include("apps.professores.urls")),
     path("api/", include("apps.institucional.urls")),
     path("api/", include("apps.programasedu.urls")),

@@ -72,6 +72,8 @@ export default defineConfig({
 
     env: {
       allure: true,
+      // IGNORA TAGS @ignore
+      TAGS: "not @ignore",
     },
 
     async setupNodeEvents(on, config) {

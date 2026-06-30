@@ -105,6 +105,19 @@ def _httpx_404() -> httpx.HTTPStatusError:
     )
 
 
+def _httpx_status_error(status_code: int, body: dict) -> httpx.HTTPStatusError:
+    """Cria um HTTPStatusError com corpo JSON parametrizável."""
+
+    mock_response = MagicMock()
+    mock_response.status_code = status_code
+    mock_response.json.return_value = body
+    mock_response.text = body.get("detail", "")
+    mock_response.reason_phrase = body.get("detail", "Erro")
+    return httpx.HTTPStatusError(
+        str(status_code), request=MagicMock(), response=mock_response
+    )
+
+
 class DREListViewTest(SimpleTestCase):
     """Valida a view de listagem de DREs."""
 
@@ -505,3 +518,301 @@ class EquipamentosViewTest(SimpleTestCase):
         resp = _cliente_autenticado().get("/api/escolas/equipamentos/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
+
+
+class TodasUnidadesViewTest(SimpleTestCase):
+    """Valida a view de todas as unidades educacionais."""
+
+    @patch("apps.institucional.views.services.get_todas_unidades")
+    def test_200_retorna_lista_unidades(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 com lista de todas as unidades."""
+        mock_unidade = {
+            "codigoEscola": "400496",
+            "nomeEscola": "13 DE MAIO",
+            "nomeDRE": "DIRETORIA REGIONAL DE EDUCACAO IPIRANGA",
+            "siglaDRE": "DRE - IP",
+            "codigoDRE": "BT",
+            "tipoEscola": "CENTRO DE EDUCACAO INFANTIL DIRETO",
+            "siglaTipoEscola": "CEI DIRET",
+            "codigoTipoEscola": 10,
+            "tipoEscolaId": 10,
+        }
+        mock_svc.return_value = [mock_unidade]
+        resp = _cliente_autenticado().get("/api/escolas/todas-unidades/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(resp.json()), 1)
+        self.assertEqual(resp.json()[0], {
+            "codigoEscola": "400496",
+            "nomeEscola": "13 DE MAIO",
+            "nomeDRE": "DIRETORIA REGIONAL DE EDUCACAO IPIRANGA",
+            "siglaDRE": "DRE - IP",
+            "codigoDRE": "BT",
+            "tipoEscola": "CENTRO DE EDUCACAO INFANTIL DIRETO",
+            "siglaTipoEscola": "CEI DIRET",
+        })
+        mock_svc.assert_called_once_with()
+
+    @patch("apps.institucional.views.services.get_todas_unidades")
+    def test_200_lista_vazia(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 com lista vazia quando não há unidades."""
+        mock_svc.return_value = []
+        resp = _cliente_autenticado().get("/api/escolas/todas-unidades/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+
+    @patch("apps.institucional.views.services.get_todas_unidades")
+    def test_502_quando_servico_institucional_indisponivel(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna 502 quando o serviço institucional é indisponível."""
+        mock_svc.side_effect = httpx.RequestError("Connection error")
+        resp = _cliente_autenticado().get("/api/escolas/todas-unidades/")
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+        self.assertIn("indisponível", resp.json()["detail"])
+
+
+class TiposUnidadeEducacaoViewTest(SimpleTestCase):
+    """Valida a view de tipos de unidade educacional."""
+
+    @patch("apps.institucional.views.services.get_tipos_unidade_educacao")
+    def test_200_retorna_lista_tipos(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 com lista de tipos de unidade educacional."""
+        mock_svc.return_value = ["ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL"]
+        resp = _cliente_autenticado().get("/api/escolas/tipos_unidade_educacao/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(resp.json()), 1)
+        self.assertEqual(resp.json()[0], "ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL")
+        mock_svc.assert_called_once_with()
+
+    @patch("apps.institucional.views.services.get_tipos_unidade_educacao")
+    def test_200_lista_vazia(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 com lista vazia quando não há tipos."""
+        mock_svc.return_value = []
+        resp = _cliente_autenticado().get("/api/escolas/tipos_unidade_educacao/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+
+    @patch("apps.institucional.views.services.get_tipos_unidade_educacao")
+    def test_502_quando_servico_institucional_indisponivel(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna 502 quando o serviço institucional é indisponível."""
+        mock_svc.side_effect = httpx.RequestError("Connection error")
+        resp = _cliente_autenticado().get("/api/escolas/tipos_unidade_educacao/")
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+        self.assertIn("indisponível", resp.json()["detail"])
+
+
+class UnidadeEolViewTest(SimpleTestCase):
+    """Valida a view de unidade EOL."""
+
+    @patch("apps.institucional.views.services.get_unidade_eol")
+    def test_200_retorna_unidade(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 com os dados resumidos da unidade."""
+        mock_svc.return_value = {
+            "codigo": "019308",
+            "sigla": "EMEF",
+            "nomeUnidade": "EMEF TESTE",
+            "tipo": 1,
+            "codigoReferencia": "019308",
+        }
+        resp = _cliente_autenticado().get("/api/escolas/unidade-eol/019308/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_svc.assert_called_once_with("019308")
+
+    @patch("apps.institucional.views.services.get_unidade_eol")
+    def test_204_quando_sidecar_nao_retorna_conteudo(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna 204 quando o sidecar não encontra a unidade."""
+        mock_svc.return_value = None
+        resp = _cliente_autenticado().get("/api/escolas/unidade-eol/000000/")
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch("apps.institucional.views.services.get_unidade_eol")
+    def test_204_quando_sidecar_retorna_404(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna 204 quando o sidecar responde 404 para unidade ausente."""
+        mock_svc.side_effect = _httpx_status_error(
+            404, {"detail": "Unidade EOL não encontrada."}
+        )
+        resp = _cliente_autenticado().get("/api/escolas/unidade-eol/000000/")
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+
+class SincronizacoesInstitucionaisViewTest(SimpleTestCase):
+    """Valida a view de sincronizações institucionais."""
+
+    @patch("apps.institucional.views.services.get_sincronizacoes_institucionais")
+    def test_200_retorna_sincronizacao(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 com os dados da sincronização institucional."""
+        mock_svc.return_value = {
+            "ueCodigo": "019308",
+            "dataAtualizacao": "2019-05-06T14:42:12.843",
+            "ueNome": "EMEF TESTE",
+            "dreCodigo": 108100,
+            "tipoEscolaCodigo": 1,
+            "dreId": "108100",
+        }
+        resp = _cliente_autenticado().get(
+            "/api/escolas/019308/sincronizacoes-institucionais/"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.json(),
+            {
+                "ueCodigo": "019308",
+                "dataAtualizacao": "2019-05-06T14:42:12.843",
+                "dreCodigo": 108100,
+                "ueNome": "EMEF TESTE",
+                "tipoEscolaCodigo": 1,
+            },
+        )
+        mock_svc.assert_called_once_with("019308")
+
+    @patch("apps.institucional.views.services.get_sincronizacoes_institucionais")
+    def test_204_quando_sidecar_nao_retorna_conteudo(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna 204 quando o sidecar não encontra a sincronização."""
+        mock_svc.return_value = None
+        resp = _cliente_autenticado().get(
+            "/api/escolas/000000/sincronizacoes-institucionais/"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch("apps.institucional.views.services.get_sincronizacoes_institucionais")
+    def test_204_quando_sidecar_retorna_404(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna 204 quando o sidecar responde 404 para sincronização ausente."""
+        mock_svc.side_effect = _httpx_status_error(
+            404, {"detail": "Unidade não encontrada."}
+        )
+        resp = _cliente_autenticado().get(
+            "/api/escolas/000000/sincronizacoes-institucionais/"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+
+class UnidadesParceirasViewTest(SimpleTestCase):
+    """Valida a view de unidades parceiras."""
+
+    @patch("apps.institucional.views.services.post_unidades_parceiras")
+    def test_200_retorna_lista_parceiras(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 com a lista de unidades parceiras."""
+        mock_svc.return_value = [
+            {"codigo": "019308", "nome": "UE PARCEIRA", "email": None}
+        ]
+        resp = _cliente_autenticado().post(
+            "/api/escolas/unidades-parceiras/", ["019308"], format="json"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), mock_svc.return_value)
+        mock_svc.assert_called_once_with(["019308"])
+
+    @patch("apps.institucional.views.services.get_dados_escola")
+    @patch("apps.institucional.views.services.post_unidades_parceiras")
+    def test_200_nao_complementa_codigos_ausentes(
+        self, mock_post: MagicMock, mock_dados: MagicMock
+    ) -> None:
+        """Mantém apenas as unidades retornadas pelo serviço institucional."""
+        mock_post.return_value = [
+            {
+                "codigo": "092797",
+                "nome": "EMEF JULIO MESQUITA",
+                "email": "emefjmesquita@sme.prefeitura.sp.gov.br",
+            }
+        ]
+
+        resp = _cliente_autenticado().post(
+            "/api/escolas/unidades-parceiras/",
+            ["092797", "019748", "400825"],
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.json(),
+            [
+                {
+                    "codigo": "092797",
+                    "nome": "EMEF JULIO MESQUITA",
+                    "email": "emefjmesquita@sme.prefeitura.sp.gov.br",
+                }
+            ],
+        )
+        mock_post.assert_called_once_with(["092797", "019748", "400825"])
+        mock_dados.assert_not_called()
+
+    @patch("apps.institucional.views.services.get_dados_escola")
+    @patch("apps.institucional.views.services.post_unidades_parceiras")
+    def test_200_retorna_vazio_sem_consulta_complementar(
+        self, mock_post: MagicMock, mock_dados: MagicMock
+    ) -> None:
+        """Retorna lista vazia quando não há parceiras no institucional."""
+        mock_post.return_value = []
+
+        resp = _cliente_autenticado().post(
+            "/api/escolas/unidades-parceiras/", ["400825"], format="json"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+        mock_post.assert_called_once_with(["400825"])
+        mock_dados.assert_not_called()
+
+    @patch("apps.institucional.views.services.post_unidades_parceiras")
+    def test_200_preserva_resposta_do_institucional(
+        self, mock_post: MagicMock
+    ) -> None:
+        """Preserva a lista retornada pelo serviço institucional."""
+        mock_post.return_value = [
+            {
+                "codigo": "400825",
+                "nome": "CEI INDIR PICOLO",
+                "email": "ceipicolo@gmail.com",
+            }
+        ]
+
+        resp = _cliente_autenticado().post(
+            "/api/escolas/unidades-parceiras/",
+            ["400825"],
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), mock_post.return_value)
+        mock_post.assert_called_once_with(["400825"])
+
+    @patch("apps.institucional.views.services.post_unidades_parceiras")
+    def test_502_quando_sidecar_falha_por_transporte(
+        self, mock_post: MagicMock
+    ) -> None:
+        """Retorna 502 quando o serviço institucional está indisponível."""
+        mock_post.side_effect = httpx.ConnectError("timeout")
+
+        resp = _cliente_autenticado().post(
+            "/api/escolas/unidades-parceiras/", ["092797"], format="json"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+        self.assertEqual(
+            resp.json(), {"detail": "Serviço institucional indisponível"}
+        )
+        mock_post.assert_called_once_with(["092797"])
+
+    @patch("apps.institucional.views.services.post_unidades_parceiras")
+    def test_400_quando_sidecar_retorna_400(self, mock_svc: MagicMock) -> None:
+        """Retorna 400 quando o sidecar valida a lista como inválida."""
+        mock_svc.side_effect = _httpx_status_error(
+            400, {"detail": "Lista de códigos é obrigatória."}
+        )
+        resp = _cliente_autenticado().post(
+            "/api/escolas/unidades-parceiras/", [], format="json"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(), {"detail": "Lista de códigos é obrigatória."}
+        )

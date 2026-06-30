@@ -9,6 +9,9 @@ from apps.institucional.serializers import (
     EscolaPorDreETipoSerializer,
     EscolaResumoSerializer,
     EscolaSerializer,
+    SincronizacaoInstitucionalSerializer,
+    UnidadeEolSerializer,
+    UnidadeParceiraSerializer,
     SubprefeiturasSerializer,
     TipoEscolaSerializer,
 )
@@ -187,6 +190,48 @@ class DadosEscolaSerializerTest(SimpleTestCase):
         s = DadosEscolaSerializer(data=payload)
         self.assertFalse(s.is_valid())
         self.assertIn("codigo", s.errors)
+
+
+class UnidadeEolSerializerTest(SimpleTestCase):
+    """Valida o serializer de unidade EOL."""
+
+    def test_payload_valido(self) -> None:
+        """Aceita payload completo do contrato E03."""
+        data = {
+            "codigo": "019251",
+            "sigla": "EMEF",
+            "nomeUnidade": "EMEF EXEMPLO",
+            "tipo": 1,
+            "codigoReferencia": "019251",
+        }
+        serializer = UnidadeEolSerializer(data=data)
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+
+
+class SincronizacaoInstitucionalSerializerTest(SimpleTestCase):
+    """Valida o serializer de sincronização institucional."""
+
+    def test_payload_valido(self) -> None:
+        """Aceita payload completo do contrato E23."""
+        data = {
+            "ueCodigo": "019251",
+            "dataAtualizacao": None,
+            "dreCodigo": 108100,
+            "ueNome": "EMEF EXEMPLO",
+            "tipoEscolaCodigo": 1,
+        }
+        serializer = SincronizacaoInstitucionalSerializer(data=data)
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+
+
+class UnidadeParceiraSerializerTest(SimpleTestCase):
+    """Valida o serializer de unidade parceira."""
+
+    def test_payload_valido(self) -> None:
+        """Aceita payload do contrato E26."""
+        data = {"codigo": "019251", "nome": "UE PARCEIRA", "email": None}
+        serializer = UnidadeParceiraSerializer(data=data)
+        self.assertTrue(serializer.is_valid(), serializer.errors)
 
 
 class TipoEscolaSerializerTest(SimpleTestCase):

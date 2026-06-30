@@ -9,6 +9,7 @@ from django.http import HttpResponse
 from drf_spectacular.utils import (
     OpenApiParameter,
     OpenApiResponse,
+    OpenApiTypes,
     extend_schema,
 )
 from rest_framework.request import Request
@@ -16,9 +17,12 @@ from rest_framework.views import APIView
 
 from apps.alunos import services
 from apps.alunos.serializers import (
+    AlunoAtivoTurmaSerializer,
     AlunoAutocompleteSerializer,
     AlunoInformacoesSerializer,
+    AlunoMatriculaTurmaSerializer,
     AlunoPorCodigoSerializer,
+    FiliacaoResponsavelSerializer,
     InformacoesAlunoTurmaSerializer,
     NecessidadeEspecialSerializer,
     ResponsavelResumidoSerializer,
@@ -26,7 +30,7 @@ from apps.alunos.serializers import (
 )
 from apps.core.responses import Response, detail_response
 
-_TAG = ["Alunos"]
+_TAG = ["Aluno"]
 _MSG_CODIGO_OBRIGATORIO = "É necessário informar o codigo do aluno."
 _MSG_CODIGO_TURMA_OBRIGATORIO = "É necessário informar o codigo da turma."
 _MSG_CODIGO_UE_OBRIGATORIO = "É necessário informar o codigo da UE."
@@ -34,6 +38,9 @@ _MSG_CODIGOS_ALUNOS_OBRIGATORIOS = "Os códigos dos Alunos são obrigatórios."
 _MSG_NOME_ALUNO_MINIMO = "O Nome deve conter no mínimo 3 caracteres."
 _MSG_CPF_RESPONSAVEL_INVALIDO = "CPF do responsável inválido."
 _MSG_CODIGO_TURMA_LEGADO = "O código da turma é obrigatório."
+_MSG_DATA_TICKS_OBRIGATORIA = (
+    "O código da turma e data da aula são obrigatórios"
+)
 _MSG_SIDECAR_INDISPONIVEL = "Servico de alunos indisponivel."
 _MSG_LEGADO_ERRO_INESPERADO = (
     "Houve um comportamento inesperado do sistema. Por favor, contate a SME."
@@ -75,6 +82,21 @@ def _sidecar_unavailable_response(_exc: httpx.RequestError) -> Response:
 def _is_not_found(exc: httpx.HTTPStatusError) -> bool:
     """Verifica se a exceção representa recurso não encontrado."""
     return exc.response.status_code == 404
+
+
+def _inteiro_positivo(value: str) -> bool:
+    """Verifica se o valor representa um inteiro positivo.
+
+    Args:
+        value: Texto que será validado.
+
+    Returns:
+        `True` quando o valor representar um inteiro positivo.
+    """
+    try:
+        return int(value) > 0
+    except (TypeError, ValueError):
+        return False
 
 
 def _legacy_string_response(message: str, status_code: int) -> Response:
@@ -194,6 +216,16 @@ def _query_datetime_alias(
         ) from exc
 
 
+def _path_bool(value: str) -> bool | None:
+    """Normaliza booleano recebido no path."""
+    normalized = value.lower()
+    if normalized == "true":
+        return True
+    if normalized == "false":
+        return False
+    return None
+
+
 class AlunoAutocompleteAtivosView(APIView):
     """Lista alunos ativos para autocomplete."""
 
@@ -206,7 +238,12 @@ class AlunoAutocompleteAtivosView(APIView):
             OpenApiParameter("aluno_nome", str, OpenApiParameter.QUERY),
             OpenApiParameter("data_referencia", str, OpenApiParameter.QUERY),
             OpenApiParameter("aluno_codigo", int, OpenApiParameter.QUERY),
-            OpenApiParameter("limite", int, OpenApiParameter.QUERY),
+            OpenApiParameter(
+                "limite",
+                int,
+                OpenApiParameter.QUERY,
+                default=10,
+            ),
         ],
         responses={200: OpenApiResponse(description="Success")},
     )
@@ -344,6 +381,40 @@ class ResponsavelResumidoView(APIView):
         return Response(ResponsavelResumidoSerializer(data).data)
 
 
+class FiliacaoAlunoView(APIView):
+    """Lista os dados de filiação do aluno."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Filiação do aluno",
+        description="Retorna os responsáveis de filiação do aluno.",
+        parameters=[
+            OpenApiParameter("codigo_aluno", int, OpenApiParameter.PATH),
+        ],
+        responses={200: OpenApiResponse(description="Success")},
+    )
+    def get(self, _request: Request, codigo_aluno: str) -> Response:
+        """Busca os dados de filiação do aluno.
+
+        Args:
+            codigo_aluno: Código EOL do aluno.
+
+        Returns:
+            Lista de responsáveis de filiação do aluno.
+        """
+        try:
+            int(codigo_aluno)
+        except (TypeError, ValueError):
+            return detail_response(_MSG_CODIGO_OBRIGATORIO)
+        try:
+            data = services.get_filiacao_aluno(codigo_aluno)
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+        return Response(FiliacaoResponsavelSerializer(data, many=True).data)
+
+
 class InformacoesAlunosTurmaView(APIView):
     """Lista informações dos alunos de uma turma."""
 
@@ -390,6 +461,186 @@ class InformacoesAlunosTurmaView(APIView):
         except httpx.RequestError as exc:
             return _sidecar_unavailable_response(exc)
         return Response(InformacoesAlunoTurmaSerializer(data, many=True).data)
+
+
+class AlunosAtivosDataAulaTicksView(APIView):
+    """Lista alunos ativos de uma turma na data da aula."""
+
+    @extend_schema(
+        tags=["Turma"],
+        description=(
+            "Retorna os alunos da turma na data da aula informada (ticks "
+            "de DateTime do .NET no path)."
+        ),
+        parameters=[
+            OpenApiParameter(
+                "codigo_turma",
+                int,
+                OpenApiParameter.PATH,
+            ),
+            OpenApiParameter(
+                "data_ticks",
+                int,
+                OpenApiParameter.PATH,
+            ),
+        ],
+        responses={200: AlunoMatriculaTurmaSerializer(many=True)},
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_turma: str,
+        data_ticks: str,
+    ) -> Response:
+        """Retorna os alunos da turma na data da aula informada.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            codigo_turma: Código EOL da turma.
+            data_ticks: Data de referência em ticks de DateTime do .NET.
+
+        Returns:
+            Lista de alunos no contrato legado. Retorna lista vazia quando o
+            código da turma não for positivo e erro 400 quando os ticks
+            forem inválidos.
+        """
+        if not _inteiro_positivo(codigo_turma):
+            return Response([])
+        if not _inteiro_positivo(data_ticks):
+            return detail_response(_MSG_DATA_TICKS_OBRIGATORIA)
+        try:
+            data = services.get_alunos_ativos_data_aula_ticks(
+                codigo_turma=codigo_turma,
+                data_ticks=data_ticks,
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+        data = [{**aluno, "numero_aluno_chamada": "000"} for aluno in data]
+        serializer = AlunoMatriculaTurmaSerializer(data, many=True)
+        return Response(serializer.data)
+
+
+class AlunosDataMatriculaTicksView(APIView):
+    """Lista alunos de uma turma por data de matricula."""
+
+    @extend_schema(
+        tags=["Turma"],
+        description=(
+            "Retorna os alunos da turma na data de matricula informada "
+            "(ticks de DateTime do .NET no path)."
+        ),
+        parameters=[
+            OpenApiParameter(
+                "codigo_turma",
+                int,
+                OpenApiParameter.PATH,
+            ),
+            OpenApiParameter(
+                "data_matricula_ticks",
+                int,
+                OpenApiParameter.PATH,
+            ),
+        ],
+        responses={200: AlunoMatriculaTurmaSerializer(many=True)},
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_turma: str,
+        data_matricula_ticks: str,
+    ) -> Response:
+        """Lista alunos de uma turma por data de matricula."""
+        if not _inteiro_positivo(codigo_turma):
+            return Response([])
+        if not _inteiro_positivo(data_matricula_ticks):
+            return detail_response(_MSG_DATA_TICKS_OBRIGATORIA)
+
+        try:
+            data = services.get_alunos_data_matricula_ticks(
+                codigo_turma=codigo_turma,
+                data_matricula_ticks=data_matricula_ticks,
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+
+        serializer = AlunoMatriculaTurmaSerializer(
+            data,
+            many=True,
+            campos_parciais=True,
+            datetime_z=False,
+        )
+        return Response(serializer.data)
+
+
+class AlunoTurmaConsideraInativosView(APIView):
+    """Retorna dados de um aluno em uma turma."""
+
+    @extend_schema(
+        tags=["Turma"],
+        description=(
+            "Retorna dados de aluno e matricula da turma, considerando "
+            "matriculas inativas conforme indicador informado."
+        ),
+        parameters=[
+            OpenApiParameter(
+                "codigo_turma",
+                int,
+                OpenApiParameter.PATH,
+            ),
+            OpenApiParameter(
+                "codigo_aluno",
+                int,
+                OpenApiParameter.PATH,
+            ),
+            OpenApiParameter(
+                "considera_inativos",
+                bool,
+                OpenApiParameter.PATH,
+            ),
+        ],
+        responses={200: AlunoMatriculaTurmaSerializer, 204: None},
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_turma: str,
+        codigo_aluno: str,
+        considera_inativos: str,
+    ) -> Response:
+        """Retorna dados de um aluno em uma turma."""
+        try:
+            codigo_turma_int = int(codigo_turma)
+            int(codigo_aluno)
+        except (TypeError, ValueError):
+            return _legacy_string_response(_MSG_LEGADO_ERRO_INESPERADO, 400)
+
+        if codigo_turma_int <= 0:
+            return Response(status=204)
+
+        considera_inativos_bool = _path_bool(considera_inativos)
+        if considera_inativos_bool is None:
+            return detail_response(
+                "Parametro 'considera_inativos' deve ser true ou false."
+            )
+
+        try:
+            data = services.get_alunos_por_turma(
+                codigo_turma,
+                considerar_inativos=considera_inativos_bool,
+                codigo_aluno=codigo_aluno,
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+
+        if not data:
+            return Response(status=204)
+        return Response(AlunoMatriculaTurmaSerializer(data[0]).data)
 
 
 class AlunoNecessidadesEspeciaisView(APIView):
@@ -451,6 +702,250 @@ class AlunoTurmasView(APIView):
         except httpx.RequestError as exc:
             return _sidecar_unavailable_response(exc)
         return Response(TurmaDoAlunoSerializer(data, many=True).data)
+
+
+class AlunosDaUeView(APIView):
+    """Lista alunos matriculados em uma unidade educacional."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Alunos da UE por ano letivo",
+        description="Retorna os alunos matriculados em uma UE no ano letivo.",
+        parameters=[
+            OpenApiParameter("codigo_ue", str, OpenApiParameter.PATH),
+            OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
+            OpenApiParameter("nome_aluno", str, OpenApiParameter.QUERY),
+            OpenApiParameter("codigo_eol", str, OpenApiParameter.QUERY),
+        ],
+        responses={200: OpenApiResponse(description="Success")},
+    )
+    def get(
+        self,
+        request: Request,
+        codigo_ue: str,
+        ano_letivo: str,
+    ) -> Response:
+        """Busca alunos matriculados em uma unidade educacional.
+
+        Args:
+            request: Requisição com filtros opcionais de aluno.
+            codigo_ue: Código EOL da unidade educacional.
+            ano_letivo: Ano letivo consultado.
+
+        Returns:
+            Lista de alunos da unidade educacional.
+        """
+        if not codigo_ue.strip() or not ano_letivo.strip():
+            return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
+        try:
+            data = services.get_alunos_da_ue(
+                codigo_ue,
+                ano_letivo,
+                _query_value(request, "nome_aluno"),
+                _query_value(request, "codigo_eol"),
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+        return Response(AlunoPorCodigoSerializer(data, many=True).data)
+
+
+class AlunoTurmasPorSituacaoView(APIView):
+    """Lista turmas do aluno filtradas por situação de matrícula e tipo."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Turmas do aluno por situação de matrícula e tipo de turma",
+        description=(
+            "Retorna as turmas do aluno no ano letivo, filtrando por "
+            "situação de matrícula e tipo de turma."
+        ),
+        parameters=[
+            OpenApiParameter("codigo_aluno", int, OpenApiParameter.PATH),
+            OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
+            OpenApiParameter(
+                "filtrar_situacao_matricula", bool, OpenApiParameter.PATH
+            ),
+            OpenApiParameter("tipo_turma", bool, OpenApiParameter.PATH),
+        ],
+        responses={200: OpenApiResponse(description="Success")},
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_aluno: str,
+        ano_letivo: str,
+        filtrar_situacao_matricula: str,
+        tipo_turma: str,
+    ) -> Response:
+        """Busca turmas do aluno filtradas por situação e tipo de turma.
+
+        Args:
+            codigo_aluno: Código EOL do aluno.
+            ano_letivo: Ano letivo consultado.
+            filtrar_situacao_matricula: Indicador booleano de filtro.
+            tipo_turma: Indicador booleano de tipo de turma.
+
+        Returns:
+            Lista de turmas do aluno conforme os filtros.
+        """
+        if not codigo_aluno.strip():
+            return detail_response(_MSG_CODIGO_OBRIGATORIO)
+        try:
+            data = services.get_turmas_aluno_por_situacao(
+                codigo_aluno,
+                ano_letivo,
+                filtrar_situacao_matricula,
+                tipo_turma,
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+        return Response(TurmaDoAlunoSerializer(data, many=True).data)
+
+
+class AlunosAtivosTurmaView(APIView):
+    """Lista alunos ativos de uma turma."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Alunos ativos da turma",
+        description="Retorna os alunos ativos de uma turma.",
+        parameters=[
+            OpenApiParameter("codigo_turma", int, OpenApiParameter.PATH),
+        ],
+        responses={200: OpenApiResponse(description="Success")},
+    )
+    def get(self, _request: Request, codigo_turma: str) -> Response:
+        """Busca os alunos ativos de uma turma.
+
+        Args:
+            codigo_turma: Código EOL da turma.
+
+        Returns:
+            Lista de alunos ativos da turma.
+        """
+        if not codigo_turma.strip():
+            return detail_response(_MSG_CODIGO_TURMA_OBRIGATORIO)
+        try:
+            data = services.get_alunos_ativos_turma(codigo_turma)
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+        return Response(AlunoAtivoTurmaSerializer(data, many=True).data)
+
+
+class AlunosAtivosPeriodoTurmaView(APIView):
+    """Lista alunos ativos de uma turma em um período."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Alunos ativos da turma por período",
+        description="Retorna os alunos ativos da turma no período informado.",
+        parameters=[
+            OpenApiParameter("codigo_turma", int, OpenApiParameter.PATH),
+            OpenApiParameter(
+                "data_referencia_fim", str, OpenApiParameter.PATH
+            ),
+            OpenApiParameter(
+                "data_referencia_inicio", str, OpenApiParameter.QUERY
+            ),
+        ],
+        responses={200: OpenApiResponse(description="Success")},
+    )
+    def get(
+        self,
+        request: Request,
+        codigo_turma: str,
+        data_referencia_fim: str,
+    ) -> Response:
+        """Busca alunos ativos da turma no período informado.
+
+        Args:
+            request: Requisição com a data inicial opcional.
+            codigo_turma: Código EOL da turma.
+            data_referencia_fim: Data final usada na consulta.
+
+        Returns:
+            Lista de alunos ativos da turma.
+        """
+        if not codigo_turma.strip():
+            return detail_response(_MSG_CODIGO_TURMA_OBRIGATORIO)
+        if not data_referencia_fim.strip():
+            return detail_response(
+                "É necessário informar a data de referência."
+            )
+        try:
+            data = services.get_alunos_ativos_turma_periodo(
+                codigo_turma,
+                data_referencia_fim,
+                _query_value(request, "data_referencia_inicio"),
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+        return Response(AlunoAtivoTurmaSerializer(data, many=True).data)
+
+
+class TotalAlunosAtivosPeriodoView(APIView):
+    """Retorna o total de alunos ativos em um período."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Total de alunos ativos por período",
+        description="Retorna a quantidade de alunos ativos no período.",
+        parameters=[
+            OpenApiParameter("ano_turma", str, OpenApiParameter.PATH),
+            OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
+            OpenApiParameter("data_inicio", str, OpenApiParameter.PATH),
+            OpenApiParameter("data_fim", str, OpenApiParameter.PATH),
+            OpenApiParameter("ue_id", str, OpenApiParameter.QUERY),
+            OpenApiParameter("dre_id", str, OpenApiParameter.QUERY),
+            OpenApiParameter(
+                "modalidades", int, OpenApiParameter.QUERY, many=True
+            ),
+        ],
+        responses={200: OpenApiTypes.INT},
+    )
+    def get(
+        self,
+        request: Request,
+        ano_turma: str,
+        ano_letivo: str,
+        data_inicio: str,
+        data_fim: str,
+    ) -> Response:
+        """Busca o total de alunos ativos no período informado.
+
+        Args:
+            request: Requisição com filtros opcionais de abrangência.
+            ano_turma: Ano escolar usado no filtro.
+            ano_letivo: Ano letivo consultado.
+            data_inicio: Data inicial do período.
+            data_fim: Data final do período.
+
+        Returns:
+            Quantidade de alunos ativos no período.
+        """
+        try:
+            data = services.get_total_alunos_ativos_periodo(
+                ano_turma=ano_turma,
+                ano_letivo=ano_letivo,
+                data_inicio=data_inicio,
+                data_fim=data_fim,
+                ue_id=_query_value(request, "ue_id"),
+                dre_id=_query_value(request, "dre_id"),
+                modalidades=request.query_params.getlist("modalidades"),
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+        return Response(data["quantidade"])
 
 
 class AlunosListView(APIView):
