@@ -709,89 +709,21 @@ class UnidadesParceirasViewTest(SimpleTestCase):
             "/api/escolas/unidades-parceiras/", ["019308"], format="json"
         )
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), mock_svc.return_value)
         mock_svc.assert_called_once_with(["019308"])
 
     @patch("apps.institucional.views.services.get_dados_escola")
     @patch("apps.institucional.views.services.post_unidades_parceiras")
-    def test_200_complementa_codigo_ausente_quando_dados_tem_email(
+    def test_200_nao_complementa_codigos_ausentes(
         self, mock_post: MagicMock, mock_dados: MagicMock
     ) -> None:
-        """Complementa UE ausente quando há e-mail cadastral."""
-        mock_post.return_value = []
-        mock_dados.return_value = {
-            "codigo": "092797",
-            "siglaTipoEscola": "EMEF",
-            "nome": "JULIO MESQUITA",
-            "email": "emefjmesquita@sme.prefeitura.sp.gov.br",
-        }
-
-        resp = _cliente_autenticado().post(
-            "/api/escolas/unidades-parceiras/", ["092797"], format="json"
-        )
-
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            resp.json(),
-            [
-                {
-                    "codigo": "092797",
-                    "nome": "EMEF JULIO MESQUITA",
-                    "email": "emefjmesquita@sme.prefeitura.sp.gov.br",
-                }
-            ],
-        )
-        mock_post.assert_called_once_with(["092797"])
-        mock_dados.assert_called_once_with("092797")
-
-    @patch("apps.institucional.views.services.get_dados_escola")
-    @patch("apps.institucional.views.services.post_unidades_parceiras")
-    def test_200_nao_complementa_codigo_sem_email(
-        self, mock_post: MagicMock, mock_dados: MagicMock
-    ) -> None:
-        """Não complementa UE quando os dados cadastrais não possuem e-mail."""
-        mock_post.return_value = []
-        mock_dados.return_value = {
-            "codigo": "019748",
-            "siglaTipoEscola": "EMEF",
-            "nome": "ARTHUR GUIMARAES",
-            "email": None,
-        }
-
-        resp = _cliente_autenticado().post(
-            "/api/escolas/unidades-parceiras/", ["019748"], format="json"
-        )
-
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.json(), [])
-        mock_post.assert_called_once_with(["019748"])
-        mock_dados.assert_called_once_with("019748")
-
-    @patch("apps.institucional.views.services.get_dados_escola")
-    @patch("apps.institucional.views.services.post_unidades_parceiras")
-    def test_200_lista_multipla_complementa_ausentes(
-        self, mock_post: MagicMock, mock_dados: MagicMock
-    ) -> None:
-        """Complementa ausentes sem descartar dados retornados pelo sidecar."""
+        """Mantém apenas as unidades retornadas pelo serviço institucional."""
         mock_post.return_value = [
             {
-                "codigo": "400825",
-                "nome": "CEI INDIR PICOLO",
-                "email": "ceipicolo@gmail.com",
-            }
-        ]
-        mock_dados.side_effect = [
-            {
                 "codigo": "092797",
-                "siglaTipoEscola": "EMEF",
-                "nome": "JULIO MESQUITA",
+                "nome": "EMEF JULIO MESQUITA",
                 "email": "emefjmesquita@sme.prefeitura.sp.gov.br",
-            },
-            {
-                "codigo": "019748",
-                "siglaTipoEscola": "EMEF",
-                "nome": "ARTHUR GUIMARAES",
-                "email": None,
-            },
+            }
         ]
 
         resp = _cliente_autenticado().post(
@@ -805,27 +737,37 @@ class UnidadesParceirasViewTest(SimpleTestCase):
             resp.json(),
             [
                 {
-                    "codigo": "400825",
-                    "nome": "CEI INDIR PICOLO",
-                    "email": "ceipicolo@gmail.com",
-                },
-                {
                     "codigo": "092797",
                     "nome": "EMEF JULIO MESQUITA",
                     "email": "emefjmesquita@sme.prefeitura.sp.gov.br",
-                },
+                }
             ],
         )
         mock_post.assert_called_once_with(["092797", "019748", "400825"])
-        self.assertEqual(mock_dados.call_args_list[0].args, ("092797",))
-        self.assertEqual(mock_dados.call_args_list[1].args, ("019748",))
+        mock_dados.assert_not_called()
 
     @patch("apps.institucional.views.services.get_dados_escola")
     @patch("apps.institucional.views.services.post_unidades_parceiras")
-    def test_200_nao_busca_dados_de_codigo_ja_retornado(
+    def test_200_retorna_vazio_sem_consulta_complementar(
         self, mock_post: MagicMock, mock_dados: MagicMock
     ) -> None:
-        """Não consulta complemento para código já retornado pelo sidecar."""
+        """Retorna lista vazia quando não há parceiras no institucional."""
+        mock_post.return_value = []
+
+        resp = _cliente_autenticado().post(
+            "/api/escolas/unidades-parceiras/", ["400825"], format="json"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+        mock_post.assert_called_once_with(["400825"])
+        mock_dados.assert_not_called()
+
+    @patch("apps.institucional.views.services.post_unidades_parceiras")
+    def test_200_preserva_resposta_do_institucional(
+        self, mock_post: MagicMock
+    ) -> None:
+        """Preserva a lista retornada pelo serviço institucional."""
         mock_post.return_value = [
             {
                 "codigo": "400825",
@@ -835,51 +777,21 @@ class UnidadesParceirasViewTest(SimpleTestCase):
         ]
 
         resp = _cliente_autenticado().post(
-            "/api/escolas/unidades-parceiras/", ["400825"], format="json"
+            "/api/escolas/unidades-parceiras/",
+            ["400825"],
+            format="json",
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            resp.json(),
-            [
-                {
-                    "codigo": "400825",
-                    "nome": "CEI INDIR PICOLO",
-                    "email": "ceipicolo@gmail.com",
-                }
-            ],
-        )
+        self.assertEqual(resp.json(), mock_post.return_value)
         mock_post.assert_called_once_with(["400825"])
-        mock_dados.assert_not_called()
 
-    @patch("apps.institucional.views.services.get_dados_escola")
     @patch("apps.institucional.views.services.post_unidades_parceiras")
-    def test_200_ignora_complemento_quando_dados_retorna_404(
-        self, mock_post: MagicMock, mock_dados: MagicMock
+    def test_502_quando_sidecar_falha_por_transporte(
+        self, mock_post: MagicMock
     ) -> None:
-        """Ignora código ausente quando dados cadastrais retorna 404."""
-        mock_post.return_value = []
-        mock_dados.side_effect = _httpx_status_error(
-            404, {"detail": "Escola não encontrada."}
-        )
-
-        resp = _cliente_autenticado().post(
-            "/api/escolas/unidades-parceiras/", ["000000"], format="json"
-        )
-
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.json(), [])
-        mock_post.assert_called_once_with(["000000"])
-        mock_dados.assert_called_once_with("000000")
-
-    @patch("apps.institucional.views.services.get_dados_escola")
-    @patch("apps.institucional.views.services.post_unidades_parceiras")
-    def test_502_quando_complemento_falha_por_transporte(
-        self, mock_post: MagicMock, mock_dados: MagicMock
-    ) -> None:
-        """Retorna 502 quando o complemento cadastral está indisponível."""
-        mock_post.return_value = []
-        mock_dados.side_effect = httpx.ConnectError("timeout")
+        """Retorna 502 quando o serviço institucional está indisponível."""
+        mock_post.side_effect = httpx.ConnectError("timeout")
 
         resp = _cliente_autenticado().post(
             "/api/escolas/unidades-parceiras/", ["092797"], format="json"
@@ -890,7 +802,6 @@ class UnidadesParceirasViewTest(SimpleTestCase):
             resp.json(), {"detail": "Serviço institucional indisponível"}
         )
         mock_post.assert_called_once_with(["092797"])
-        mock_dados.assert_called_once_with("092797")
 
     @patch("apps.institucional.views.services.post_unidades_parceiras")
     def test_400_quando_sidecar_retorna_400(self, mock_svc: MagicMock) -> None:
