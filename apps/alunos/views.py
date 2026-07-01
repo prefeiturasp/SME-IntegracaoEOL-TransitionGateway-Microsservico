@@ -643,6 +643,102 @@ class AlunoTurmaConsideraInativosView(APIView):
         return Response(AlunoMatriculaTurmaSerializer(data[0]).data)
 
 
+class AlunoMatriculasTurmaView(APIView):
+    """Lista as matrículas de um aluno em uma turma."""
+
+    @extend_schema(
+        tags=["Turma"],
+        description=(
+            "Retorna as matrículas do aluno na turma informada, "
+            "considerando também matrículas inativas."
+        ),
+        parameters=[
+            OpenApiParameter("codigo_turma", int, OpenApiParameter.PATH),
+            OpenApiParameter("codigo_aluno", int, OpenApiParameter.PATH),
+        ],
+        responses={200: AlunoMatriculaTurmaSerializer(many=True)},
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_turma: str,
+        codigo_aluno: str,
+    ) -> Response:
+        """Lista as matrículas do aluno na turma informada.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            codigo_turma: Código EOL da turma.
+            codigo_aluno: Código EOL do aluno.
+
+        Returns:
+            Lista de matrículas do aluno na turma, ou lista vazia quando
+            não houver correspondência.
+        """
+        try:
+            int(codigo_turma)
+            int(codigo_aluno)
+        except (TypeError, ValueError):
+            return _legacy_string_response(_MSG_LEGADO_ERRO_INESPERADO, 400)
+
+        try:
+            data = services.get_alunos_por_turma(
+                codigo_turma,
+                considerar_inativos=True,
+                codigo_aluno=codigo_aluno,
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+
+        return Response(AlunoMatriculaTurmaSerializer(data, many=True).data)
+
+
+class AlunosCalculoFrequenciaTurmaView(APIView):
+    """Lista os códigos de aluno de uma turma para cálculo de frequência."""
+
+    @extend_schema(
+        tags=["Turma"],
+        description=(
+            "Retorna os códigos dos alunos vinculados à turma (vigentes e "
+            "históricos), usados como base para o cálculo de frequência."
+        ),
+        parameters=[
+            OpenApiParameter("codigo_turma", int, OpenApiParameter.PATH),
+        ],
+        responses={200: OpenApiResponse(description="Success")},
+    )
+    def get(self, _request: Request, codigo_turma: str) -> Response:
+        """Lista os códigos de aluno da turma para cálculo de frequência.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            codigo_turma: Código EOL da turma.
+
+        Returns:
+            Lista de códigos de aluno (string, contrato legado), ou lista
+            vazia quando a turma não tiver alunos.
+
+        Nota:
+            O legado une matrícula vigente e histórica com uma condição
+            extra (`nr_chamada_aluno` nulo + `dt_situacao_aluno` anterior
+            ao início da turma) que este endpoint não reproduz ainda — ver
+            151517-endpoints-turmas.md.
+        """
+        if not codigo_turma.strip():
+            return detail_response(_MSG_CODIGO_TURMA_OBRIGATORIO)
+        try:
+            data = services.get_alunos_por_turma(
+                codigo_turma, considerar_inativos=True
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+        return Response([str(aluno["codigo_aluno"]) for aluno in data])
+
+
 class AlunoNecessidadesEspeciaisView(APIView):
     """Retorna necessidades especiais do aluno."""
 

@@ -1340,6 +1340,190 @@ class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
 
+class AlunoMatriculasTurmaViewTest(SimpleTestCase):
+    """Valida a listagem de matrículas de um aluno em uma turma."""
+
+    _PATH = "/api/turmas/3123349/aluno/7345634/matriculas/"
+
+    @patch("apps.alunos.views.services.get_alunos_por_turma")
+    def test_200_retorna_lista_legado(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [
+            {
+                "codigo_aluno": 7345634,
+                "nome_aluno": "HELENA SILVA DOS SANTOS",
+                "nome_social_aluno": None,
+                "data_nascimento": "2018-06-21",
+                "codigo_situacao_matricula": 1,
+                "situacao_matricula": "Ativo",
+                "data_situacao": "2025-12-16T12:32:50.857000-03:00",
+                "numero_aluno_chamada": "15",
+                "possui_deficiencia": True,
+                "codigo_matricula": 44267709,
+                "codigo_turma": 3123349,
+                "codigo_escola": "019370",
+                "ano_letivo": 2025,
+                "data_matricula": "2025-12-16T12:10:53.233000-03:00",
+                "nome_responsavel": "LEIDY SILVA DOS SANTOS",
+                "tipo_responsavel": 1,
+                "celular_responsavel": None,
+                "data_atualizacao_contato": (
+                    "2025-02-10T17:40:53.043000-03:00"
+                ),
+                "sequencia": 1,
+                "codigo_dre": "108200",
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        data = resp.json()
+        self.assertIsInstance(data, list)
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["codigoAluno"], 7345634)
+        self.assertEqual(data[0]["codigoTurma"], 3123349)
+        mock_service.assert_called_once_with(
+            "3123349",
+            considerar_inativos=True,
+            codigo_aluno="7345634",
+        )
+
+    @patch("apps.alunos.views.services.get_alunos_por_turma")
+    def test_200_lista_vazia_quando_sem_resultado(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+
+    @patch("apps.alunos.views.services.get_alunos_por_turma")
+    def test_400_quando_turma_nao_numerica(
+        self, mock_service: MagicMock
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/turmas/abc/aluno/7345634/matriculas/")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_service.assert_not_called()
+
+    @patch("apps.alunos.views.services.get_alunos_por_turma")
+    def test_400_quando_aluno_nao_numerico(
+        self, mock_service: MagicMock
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/turmas/3123349/aluno/abc/matriculas/")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_service.assert_not_called()
+
+    @patch("apps.alunos.views.services.get_alunos_por_turma")
+    def test_503_quando_sidecar_indisponivel(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.side_effect = _request_error()
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    @patch("apps.alunos.views.services.get_alunos_por_turma")
+    def test_preserva_erro_http_do_sidecar(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.side_effect = _http_status_error(
+            status.HTTP_404_NOT_FOUND,
+            {"detail": "Aluno nÃ£o encontrado."},
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_403_sem_autenticacao(self) -> None:
+        client = APIClient()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class AlunosCalculoFrequenciaTurmaViewTest(SimpleTestCase):
+    """Valida a listagem de códigos de aluno para cálculo de frequência."""
+
+    _PATH = "/api/turmas/3123349/calculo-frequencia/"
+
+    @patch("apps.alunos.views.services.get_alunos_por_turma")
+    def test_200_retorna_codigos_de_aluno(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = [
+            {"codigo_aluno": 7345634},
+            {"codigo_aluno": 7345635},
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), ["7345634", "7345635"])
+        mock_service.assert_called_once_with(
+            "3123349", considerar_inativos=True
+        )
+
+    @patch("apps.alunos.views.services.get_alunos_por_turma")
+    def test_200_lista_vazia_quando_sem_resultado(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+
+    @patch("apps.alunos.views.services.get_alunos_por_turma")
+    def test_503_quando_sidecar_indisponivel(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.side_effect = _request_error()
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    @patch("apps.alunos.views.services.get_alunos_por_turma")
+    def test_preserva_erro_http_do_sidecar(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.side_effect = _http_status_error(
+            status.HTTP_404_NOT_FOUND,
+            {"detail": "Turma nÃ£o encontrada."},
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_403_sem_autenticacao(self) -> None:
+        client = APIClient()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
 class AlunoNecessidadesEspeciaisViewTest(SimpleTestCase):
     """Valida a view de necessidades especiais do aluno."""
 

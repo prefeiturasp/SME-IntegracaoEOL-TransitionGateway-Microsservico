@@ -5,10 +5,12 @@ from django.urls import path
 from apps.alunos.views import (
     AlunoAutocompleteAtivosView,
     AlunoInformacoesView,
+    AlunoMatriculasTurmaView,
     AlunoNecessidadesEspeciaisView,
     AlunosAtivosDataAulaTicksView,
     AlunosAtivosPeriodoTurmaView,
     AlunosAtivosTurmaView,
+    AlunosCalculoFrequenciaTurmaView,
     AlunosDataMatriculaTicksView,
     AlunosDaUeView,
     AlunosListView,
@@ -39,6 +41,16 @@ turma_urlpatterns = [
         "considera-inativos/<str:considera_inativos>/",
         AlunoTurmaConsideraInativosView.as_view(),
         name="aluno-turma-considera-inativos",
+    ),
+    path(
+        "<str:codigo_turma>/aluno/<str:codigo_aluno>/matriculas/",
+        AlunoMatriculasTurmaView.as_view(),
+        name="aluno-matriculas-turma",
+    ),
+    path(
+        "<str:codigo_turma>/calculo-frequencia/",
+        AlunosCalculoFrequenciaTurmaView.as_view(),
+        name="alunos-calculo-frequencia-turma",
     ),
 ]
 
