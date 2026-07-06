@@ -44,6 +44,23 @@ def _valores_param(
     return []
 
 
+def _codigos_ue(data: Any) -> list[str]:
+    """Extrai códigos de UE de um payload do sidecar.
+
+    Args:
+        data: Payload retornado pelo sidecar de professores.
+
+    Returns:
+        Códigos EOL das unidades educacionais.
+    """
+    if not isinstance(data, dict):
+        return []
+    codigos = data.get("codigos_ue")
+    if not isinstance(codigos, list):
+        return []
+    return [codigo for codigo in codigos if isinstance(codigo, str)]
+
+
 def _params_com_valor(
     params: dict[str, str | list[str]],
     nome: str,
@@ -504,7 +521,7 @@ def _montar_turma_atribuida(
 
 
 def montar_turmas_atribuidas_professor(codigo_rf: str) -> list[dict[str, Any]]:
-    """Compõe as turmas atribuídas ao professor no recorte de etapa e tipo de UE.
+    """Compõe turmas atribuídas no recorte de etapa e tipo de UE.
 
     Args:
         codigo_rf: Registro funcional do professor.
@@ -609,8 +626,7 @@ def get_unidades_atribuicao_professor(codigo_rf: str) -> list[str]:
         Códigos EOL das unidades com atribuição válida.
     """
     resp = _client.get(f"{_BASE}/{codigo_rf}/unidades-atribuicao/")
-    data = _client.json_or_none(resp) or {}
-    return data.get("codigos_ue", []) if isinstance(data, dict) else []
+    return _codigos_ue(_client.json_or_none(resp))
 
 
 def get_eh_emei(codigo_rf: str) -> bool:
@@ -672,3 +688,135 @@ def get_turmas_professor_disciplina(
         payload=codigos_turma,
     )
     return _client.json_or_none(resp)
+
+
+def get_turmas_atribuidas_professor_escola(
+    codigo_rf: str,
+    codigo_eol_escola: str,
+    ano_letivo: int,
+) -> Any:
+    """Retorna turmas atribuídas ao professor na escola.
+
+    Args:
+        codigo_rf: RF usado na consulta.
+        codigo_eol_escola: Código EOL da escola usada na consulta.
+        ano_letivo: Ano letivo de referência.
+
+    Returns:
+        Lista de turmas atribuídas ou ausência de conteúdo.
+    """
+    resp = _client.get(
+        f"{_BASE}/{codigo_rf}/escolas/{codigo_eol_escola}/"
+        f"turmas/anos_letivos/{ano_letivo}/"
+    )
+    turmas = _client.json_or_none(resp)
+    if not isinstance(turmas, list):
+        return []
+
+    saida: list[dict[str, Any]] = []
+
+    for turma in turmas:
+        saida.append(_montar_turma_atribuida_professor_escola(turma))
+
+    return saida
+
+
+def get_turmas_atribuidas_professores_escola(
+    codigo_eol_escola: str,
+    ano_letivo: int,
+) -> Any:
+    """Retorna turmas atribuídas aos professores na escola.
+
+    Args:
+        codigo_eol_escola: Código EOL da escola usada na consulta.
+        ano_letivo: Ano letivo de referência.
+
+    Returns:
+        Lista de turmas atribuídas ou ausência de conteúdo.
+    """
+    resp = _client.get(
+        f"{_BASE}/escolas/{codigo_eol_escola}/"
+        f"turmas/anos_letivos/{ano_letivo}/"
+    )
+    turmas = _client.json_or_none(resp)
+    if not isinstance(turmas, list):
+        return []
+
+    saida: list[dict[str, Any]] = []
+
+    for turma in turmas:
+        saida.append(_montar_turma_atribuida_professor_escola(turma))
+
+    return saida
+
+
+def get_turmas_atribuidas_professor(
+    codigo_rf: str,
+    ano_letivo: int,
+) -> Any:
+    """Retorna turmas atribuídas ao professor no ano letivo.
+
+    Args:
+        codigo_rf: RF usado na consulta.
+        ano_letivo: Ano letivo de referência.
+
+    Returns:
+        Lista de turmas atribuídas ou ausência de conteúdo.
+    """
+    resp = _client.get(
+        f"{_BASE}/{codigo_rf}/turmas/anos_letivos/{ano_letivo}/"
+    )
+    turmas = _client.json_or_none(resp)
+    if not isinstance(turmas, list):
+        return []
+
+    saida: list[dict[str, Any]] = []
+
+    for turma in turmas:
+        saida.append(_montar_turma_atribuida_professor(turma))
+
+    return saida
+
+
+def _montar_turma_atribuida_professor_escola(
+    turma: dict[str, Any],
+) -> dict[str, Any]:
+    """Monta uma linha de turma atribuída simplificada a partir da turma.
+
+    Args:
+        turma: Dados da turma no recorte de etapa.
+
+    Returns:
+        Dicionário em snake_case pronto para serialização.
+    """
+    return {
+        "codigoTurma": turma.get("codigo_turma"),
+        "nomeTurma": turma.get("nome_turma"),
+        "componenteCurricular": turma.get("componente_curricular"),
+        "dataInicioAtribuicao": turma.get("data_inicio_turma"),
+        "dataFimAtribuicao": turma.get("data_fim_atribuicao"),
+        "ano": turma.get("ano"),
+        "etapaEnsino": turma.get("etapa_ensino"),
+    }
+
+
+def _montar_turma_atribuida_professor(
+    turma: dict[str, Any],
+) -> dict[str, Any]:
+    """Monta uma linha de turma atribuída simplificada a partir da turma.
+
+    Args:
+        turma: Dados da turma no recorte de etapa.
+
+    Returns:
+        Dicionário em snake_case pronto para serialização.
+    """
+    return {
+        "codigoTurma": turma.get("codigo_turma"),
+        "nomeTurma": turma.get("nome_turma"),
+        "componenteCurricular": turma.get("componente_curricular"),
+        "dataInicioAtribuicao": turma.get("data_inicio_turma"),
+        "dataFimAtribuicao": turma.get("data_disponibilizacao"),
+        "ano": turma.get("ano"),
+        "etapaEnsino": turma.get("etapa_ensino"),
+    }

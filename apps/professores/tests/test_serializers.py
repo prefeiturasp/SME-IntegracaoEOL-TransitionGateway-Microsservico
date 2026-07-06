@@ -10,6 +10,7 @@ from apps.professores.serializers import (
     FuncionarioFuncaoAtividadeSerializer,
     FuncionarioFuncaoExternaSerializer,
     ProfessorAutoCompleteSerializer,
+    ProfessorTurmaAtribuidaSimplificadaSerializer,
     TextoEstritoField,
     TurmaAtribuidaProfessorSerializer,
 )
@@ -78,6 +79,25 @@ class ProfessorAutoCompleteSerializerTest(SimpleTestCase):
             data,
             {"codigoRF": "000001", "nome": "ANA SILVA"},
         )
+
+
+class ProfessorTurmaAtribuidaSimplificadaSerializerTest(SimpleTestCase):
+    """Valida serialização simplificada de turma atribuída ao professor."""
+
+    def test_serializa_campos(self) -> None:
+        payload = {
+            "codigoTurma": 3030050,
+            "nomeTurma": "1A",
+            "componenteCurricular": "Matemática",
+            "dataInicioAtribuicao": "2026-02-03",
+            "dataFimAtribuicao": None,
+            "ano": "1",
+            "etapaEnsino": 1,
+        }
+
+        data = ProfessorTurmaAtribuidaSimplificadaSerializer(payload).data
+
+        self.assertEqual(data, payload)
 
 
 class TurmaAtribuidaProfessorSerializerTest(SimpleTestCase):

@@ -17,6 +17,7 @@ from apps.professores.serializers import (
     NomeServidorSerializer,
     ProfessorAutoCompleteSerializer,
     ProfessorBuscarPorRfSerializer,
+    ProfessorTurmaAtribuidaSimplificadaSerializer,
     ProfessorTurmaSerializer,
     TurmaAtribuidaProfessorSerializer,
     TurmasIdsSerializer,
@@ -726,7 +727,7 @@ class ProfessorDisciplinaTurmasView(APIView):
 
 
 class ProfessorTurmasView(APIView):
-    """ Retorna turmas atribuídas ao professor."""
+    """Retorna turmas atribuídas ao professor."""
 
     @extend_schema(
         tags=_TAG_PROFESSOR,
@@ -949,3 +950,134 @@ class ProfessorAutoCompleteView(APIView):
         if not _is_lista_dicionarios(data):
             return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
         return Response(ProfessorAutoCompleteSerializer(data, many=True).data)
+
+
+class ProfessorBuscaTurmasAtribuidasEscolaView(APIView):
+    """Retorna turmas atribuídas ao professor na escola."""
+
+    @extend_schema(
+        tags=_TAG_PROFESSOR,
+        description=(
+            "Retorna turmas atribuídas ao professor na escola no ano letivo."
+        ),
+        responses={
+            200: ProfessorTurmaAtribuidaSimplificadaSerializer(many=True),
+            204: None,
+        },
+    )
+    def get(
+        self,
+        request: Request,
+        codigo_eol_escola: str,
+        ano_letivo: int,
+        codigo_rf: str | None = None,
+    ) -> Response:
+        """Retorna turmas atribuídas ao professor na escola.
+
+        Args:
+            request: Requisição com os filtros opcionais de RF.
+            codigo_eol_escola: Código EOL da escola usada na consulta.
+            ano_letivo: Ano letivo de referência.
+            codigo_rf: RF usado na consulta (opcional).
+
+        Returns:
+            Turmas atribuídas ao professor na escola, ou ausência de conteúdo.
+
+        Raises:
+            httpx.HTTPError: Quando a chamada a um dos sidecares falha.
+        """
+        if not codigo_rf or not codigo_rf.strip():
+            return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
+        if not codigo_eol_escola.strip():
+            return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
+        data = services.get_turmas_atribuidas_professor_escola(
+            codigo_rf, codigo_eol_escola, ano_letivo
+        )
+        if not data:
+            return Response(status=204)
+        return Response(
+            ProfessorTurmaAtribuidaSimplificadaSerializer(data, many=True).data
+        )
+
+
+class BuscaTurmasAtribuidasProfessoresEscolaView(APIView):
+    """Retorna turmas atribuídas a professores na escola."""
+
+    @extend_schema(
+        tags=_TAG_PROFESSOR,
+        description=(
+            "Retorna turmas atribuídas a professores na escola no ano letivo."
+        ),
+        responses={
+            200: ProfessorTurmaAtribuidaSimplificadaSerializer(many=True),
+            204: None,
+        },
+    )
+    def get(
+        self, request: Request, codigo_eol_escola: str, ano_letivo: int
+    ) -> Response:
+        """Retorna turmas atribuídas a professores na escola.
+
+        Args:
+            request: Requisição com os filtros opcionais de RF.
+            codigo_eol_escola: Código EOL da escola usada na consulta.
+            ano_letivo: Ano letivo de referência.
+            codigo_rf: RF usado na consulta (opcional).
+
+        Returns:
+            Turmas atribuídas a professores na escola, ou ausência de conteúdo.
+
+        Raises:
+            httpx.HTTPError: Quando a chamada a um dos sidecares falha.
+        """
+        if not codigo_eol_escola.strip():
+            return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
+        data = services.get_turmas_atribuidas_professores_escola(
+            codigo_eol_escola,
+            ano_letivo,
+        )
+        if not data:
+            return Response(status=204)
+        return Response(
+            ProfessorTurmaAtribuidaSimplificadaSerializer(data, many=True).data
+        )
+
+
+class ProfessorBuscarTurmasAtribuidasView(APIView):
+    """Retorna turmas atribuídas ao professor."""
+
+    @extend_schema(
+        tags=_TAG_PROFESSOR,
+        description=("Retorna turmas atribuídas ao professor no ano letivo."),
+        responses={
+            200: ProfessorTurmaAtribuidaSimplificadaSerializer(many=True),
+            204: None,
+        },
+    )
+    def get(
+        self,
+        request: Request,
+        codigo_rf: str,
+        ano_letivo: int,
+    ) -> Response:
+        """Retorna turmas atribuídas ao professor.
+
+        Args:
+            request: Requisição com os filtros opcionais de RF.
+            codigo_rf: RF usado na consulta.
+            ano_letivo: Ano letivo de referência.
+
+        Returns:
+            Turmas atribuídas ao professor, ou ausência de conteúdo.
+
+        Raises:
+            httpx.HTTPError: Quando a chamada a um dos sidecares falha.
+        """
+        if not codigo_rf.strip():
+            return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
+        data = services.get_turmas_atribuidas_professor(codigo_rf, ano_letivo)
+        if not data:
+            return Response(status=204)
+        return Response(
+            ProfessorTurmaAtribuidaSimplificadaSerializer(data, many=True).data
+        )

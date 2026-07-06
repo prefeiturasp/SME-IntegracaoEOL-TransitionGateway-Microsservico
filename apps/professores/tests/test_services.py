@@ -1272,3 +1272,175 @@ class GetCodigosTurmasHistoricasProfessorTest(SimpleTestCase):
                 2025,
                 "7483147",
             )
+
+
+class GetTurmasAtribuidasProfessorEscolaTest(SimpleTestCase):
+    """Valida turmas atribuídas ao professor na escola."""
+
+    @patch("apps.professores.services._client")
+    def test_chama_path_e_mapeia_retorno(
+        self, mock_client: MagicMock
+    ) -> None:
+        mock_resp = MagicMock()
+        mock_client.get.return_value = mock_resp
+        mock_client.json_or_none.return_value = [
+            {
+                "codigo_turma": 3030050,
+                "nome_turma": "1A",
+                "componente_curricular": "Matemática",
+                "data_inicio_turma": "2026-02-03",
+                "data_fim_atribuicao": None,
+                "ano": "1",
+                "etapa_ensino": 1,
+            },
+        ]
+
+        result = services.get_turmas_atribuidas_professor_escola(
+            "000001",
+            "019465",
+            2026,
+        )
+
+        mock_client.get.assert_called_once_with(
+            "/api/v1/professores/000001/escolas/019465/"
+            "turmas/anos_letivos/2026/"
+        )
+        self.assertEqual(
+            result,
+            [
+                {
+                    "codigoTurma": 3030050,
+                    "nomeTurma": "1A",
+                    "componenteCurricular": "Matemática",
+                    "dataInicioAtribuicao": "2026-02-03",
+                    "dataFimAtribuicao": None,
+                    "ano": "1",
+                    "etapaEnsino": 1,
+                },
+            ],
+        )
+
+    @patch("apps.professores.services._client")
+    def test_retorna_lista_vazia_quando_sidecar_nao_retorna_lista(
+        self, mock_client: MagicMock
+    ) -> None:
+        mock_client.json_or_none.return_value = {"erro": "contrato"}
+
+        result = services.get_turmas_atribuidas_professor_escola(
+            "000001",
+            "019465",
+            2026,
+        )
+
+        self.assertEqual(result, [])
+
+
+class GetTurmasAtribuidasProfessoresEscolaTest(SimpleTestCase):
+    """Valida turmas atribuídas aos professores na escola."""
+
+    @patch("apps.professores.services._client")
+    def test_chama_path_e_mapeia_retorno(
+        self, mock_client: MagicMock
+    ) -> None:
+        mock_resp = MagicMock()
+        mock_client.get.return_value = mock_resp
+        mock_client.json_or_none.return_value = [
+            {
+                "codigo_turma": 3030050,
+                "nome_turma": "1A",
+                "componente_curricular": "Matemática",
+                "data_inicio_turma": "2026-02-03",
+                "data_fim_atribuicao": None,
+                "ano": "1",
+                "etapa_ensino": 1,
+            },
+        ]
+
+        result = services.get_turmas_atribuidas_professores_escola(
+            "019465",
+            2026,
+        )
+
+        mock_client.get.assert_called_once_with(
+            "/api/v1/professores/escolas/019465/"
+            "turmas/anos_letivos/2026/"
+        )
+        self.assertEqual(
+            result,
+            [
+                {
+                    "codigoTurma": 3030050,
+                    "nomeTurma": "1A",
+                    "componenteCurricular": "Matemática",
+                    "dataInicioAtribuicao": "2026-02-03",
+                    "dataFimAtribuicao": None,
+                    "ano": "1",
+                    "etapaEnsino": 1,
+                },
+            ],
+        )
+
+    @patch("apps.professores.services._client")
+    def test_retorna_lista_vazia_quando_sidecar_nao_retorna_lista(
+        self, mock_client: MagicMock
+    ) -> None:
+        mock_client.json_or_none.return_value = None
+
+        result = services.get_turmas_atribuidas_professores_escola(
+            "019465",
+            2026,
+        )
+
+        self.assertEqual(result, [])
+
+
+class GetTurmasAtribuidasProfessorTest(SimpleTestCase):
+    """Valida turmas atribuídas ao professor por ano letivo."""
+
+    @patch("apps.professores.services._client")
+    def test_chama_path_e_mapeia_retorno(
+        self, mock_client: MagicMock
+    ) -> None:
+        mock_resp = MagicMock()
+        mock_client.get.return_value = mock_resp
+        mock_client.json_or_none.return_value = [
+            {
+                "codigo_turma": 3030050,
+                "nome_turma": "1A",
+                "componente_curricular": "Matemática",
+                "data_inicio_turma": "2026-02-03",
+                "data_disponibilizacao": None,
+                "ano": "1",
+                "etapa_ensino": 1,
+            },
+        ]
+
+        result = services.get_turmas_atribuidas_professor("000001", 2026)
+
+        mock_client.get.assert_called_once_with(
+            "/api/v1/professores/000001/turmas/anos_letivos/2026/"
+        )
+        self.assertEqual(
+            result,
+            [
+                {
+                    "codigoTurma": 3030050,
+                    "nomeTurma": "1A",
+                    "componenteCurricular": "Matemática",
+                    "dataInicioAtribuicao": "2026-02-03",
+                    "dataFimAtribuicao": None,
+                    "ano": "1",
+                    "etapaEnsino": 1,
+                },
+            ],
+        )
+
+    @patch("apps.professores.services._client")
+    def test_retorna_lista_vazia_quando_sidecar_nao_retorna_lista(
+        self, mock_client: MagicMock
+    ) -> None:
+        mock_client.json_or_none.return_value = {"erro": "contrato"}
+
+        result = services.get_turmas_atribuidas_professor("000001", 2026)
+
+        self.assertEqual(result, [])

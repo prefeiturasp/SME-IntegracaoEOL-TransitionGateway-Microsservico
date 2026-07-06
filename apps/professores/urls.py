@@ -3,6 +3,7 @@
 from django.urls import path
 
 from apps.professores.views import (
+    BuscaTurmasAtribuidasProfessoresEscolaView,
     EscolaFuncionariosCargosView,
     EscolaFuncionariosCargoView,
     EscolaFuncionariosFuncaoAtividadeView,
@@ -17,6 +18,8 @@ from apps.professores.views import (
     ProfessorAutoCompleteView,
     ProfessorBuscarPorRfDreUeView,
     ProfessorBuscarPorRfView,
+    ProfessorBuscarTurmasAtribuidasView,
+    ProfessorBuscaTurmasAtribuidasEscolaView,
     ProfessorDisciplinaTurmasView,
     ProfessorEhEmeiView,
     ProfessoresBuscarPorListaRfAnoView,
@@ -107,5 +110,17 @@ urlpatterns = [
     path(
         "escolas/<str:codigo_ue>/funcionarios/",
         EscolaFuncionariosView.as_view(),
+    ),
+    path(
+        "professores/<str:codigo_rf>/escolas/<str:codigo_eol_escola>/turmas/ano_letivo/<int:ano_letivo>/",
+        ProfessorBuscaTurmasAtribuidasEscolaView.as_view(),
+    ),
+    path(
+        "professores/escolas/<str:codigo_eol_escola>/turmas/ano_letivo/<int:ano_letivo>/",
+        BuscaTurmasAtribuidasProfessoresEscolaView.as_view(),
+    ),
+    path(
+        "professores/<str:codigo_rf>/turmas/ano_letivo/<int:ano_letivo>/",
+        ProfessorBuscarTurmasAtribuidasView.as_view(),
     ),
 ]
