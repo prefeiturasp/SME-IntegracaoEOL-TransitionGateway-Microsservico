@@ -194,3 +194,15 @@ class TurmaAtribuidaProfessorSerializer(serializers.Serializer):
         source="data_fim_turma", allow_null=True
     )
     extinta = serializers.BooleanField(allow_null=True)
+
+
+class ProfessorTurmaAtribuidaSimplificadaSerializer(serializers.Serializer):
+    """Serializa dados de turma atribuída ao professor simplificada."""
+
+    codigoTurma = serializers.IntegerField(allow_null=True)
+    nomeTurma = serializers.CharField(allow_null=True)
+    componenteCurricular = serializers.CharField(allow_null=True)
+    dataInicioAtribuicao = serializers.DateField(allow_null=True)
+    dataFimAtribuicao = serializers.DateField(allow_null=True)
+    ano = serializers.CharField(allow_null=True)
+    etapaEnsino = serializers.IntegerField(allow_null=True)
