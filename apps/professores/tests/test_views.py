@@ -165,7 +165,7 @@ class ProfessoresUrlsTest(SimpleTestCase):
     def test_preserva_rf_escola_e_ano_turmas_atribuidas(self) -> None:
         match = resolve(
             "/api/professores/000001/escolas/019465/"
-            "turmas/ano_letivo/2026/"
+            "turmas/anos_letivos/2026/"
         )
 
         self.assertEqual(
@@ -179,7 +179,7 @@ class ProfessoresUrlsTest(SimpleTestCase):
 
     def test_preserva_escola_e_ano_turmas_atribuidas(self) -> None:
         match = resolve(
-            "/api/professores/escolas/019465/turmas/ano_letivo/2026/"
+            "/api/professores/escolas/019465/turmas/anos_letivos/2026/"
         )
 
         self.assertEqual(
@@ -188,7 +188,7 @@ class ProfessoresUrlsTest(SimpleTestCase):
         )
 
     def test_preserva_rf_e_ano_turmas_atribuidas(self) -> None:
-        match = resolve("/api/professores/000001/turmas/ano_letivo/2026/")
+        match = resolve("/api/professores/000001/turmas/anos_letivos/2026/")
 
         self.assertEqual(
             match.kwargs,
@@ -1486,7 +1486,9 @@ class ProfessorAutoCompleteViewTest(SimpleTestCase):
         )
 
     @patch("apps.professores.views.services.get_autocomplete_professores")
-    def test_200_lista_vazia_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
+    def test_200_lista_vazia_quando_sem_conteudo(
+        self, mock_service: MagicMock
+    ) -> None:
         """Testa 200 [] quando o sidecar retorna None para autocomplete de professores."""
         mock_service.return_value = None
         client = _cliente_autenticado()
@@ -1499,7 +1501,9 @@ class ProfessorAutoCompleteViewTest(SimpleTestCase):
         self.assertEqual(resp.json(), [])
 
     @patch("apps.professores.views.services.get_autocomplete_professores")
-    def test_200_lista_vazia_quando_lista_vazia(self, mock_service: MagicMock) -> None:
+    def test_200_lista_vazia_quando_lista_vazia(
+        self, mock_service: MagicMock
+    ) -> None:
         """Testa 200 [] quando o sidecar retorna lista vazia para autocomplete."""
         mock_service.return_value = []
         client = _cliente_autenticado()
@@ -1599,7 +1603,7 @@ class ProfessorBuscaTurmasAtribuidasEscolaViewTest(SimpleTestCase):
 
         resp = client.get(
             "/api/professores/000001/escolas/019465/"
-            "turmas/ano_letivo/2026/"
+            "turmas/anos_letivos/2026/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -1610,15 +1614,13 @@ class ProfessorBuscaTurmasAtribuidasEscolaViewTest(SimpleTestCase):
         "apps.professores.views.services."
         "get_turmas_atribuidas_professor_escola"
     )
-    def test_204_quando_sem_conteudo(
-        self, mock_service: MagicMock
-    ) -> None:
+    def test_204_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
         mock_service.return_value = []
         client = _cliente_autenticado()
 
         resp = client.get(
             "/api/professores/000001/escolas/019465/"
-            "turmas/ano_letivo/2026/"
+            + "turmas/anos_letivos/2026/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
@@ -1633,8 +1635,7 @@ class ProfessorBuscaTurmasAtribuidasEscolaViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/000001/escolas/%20/"
-            "turmas/ano_letivo/2026/"
+            "/api/professores/000001/escolas/%20/turmas/anos_letivos/2026/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -1657,7 +1658,7 @@ class BuscaTurmasAtribuidasProfessoresEscolaViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/escolas/019465/turmas/ano_letivo/2026/"
+            "/api/professores/escolas/019465/turmas/anos_letivos/2026/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -1668,14 +1669,12 @@ class BuscaTurmasAtribuidasProfessoresEscolaViewTest(SimpleTestCase):
         "apps.professores.views.services."
         "get_turmas_atribuidas_professores_escola"
     )
-    def test_204_quando_sem_conteudo(
-        self, mock_service: MagicMock
-    ) -> None:
+    def test_204_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
         mock_service.return_value = None
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/escolas/019465/turmas/ano_letivo/2026/"
+            "/api/professores/escolas/019465/turmas/anos_letivos/2026/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
@@ -1690,7 +1689,7 @@ class BuscaTurmasAtribuidasProfessoresEscolaViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/escolas/%20/turmas/ano_letivo/2026/"
+            "/api/professores/escolas/%20/turmas/anos_letivos/2026/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -1705,43 +1704,38 @@ class ProfessorBuscarTurmasAtribuidasViewTest(SimpleTestCase):
     """Valida turmas atribuídas ao professor por ano letivo."""
 
     @patch(
-        "apps.professores.views.services."
-        "get_turmas_atribuidas_professor"
+        "apps.professores.views.services.get_turmas_atribuidas_professor"
     )
     def test_200_retorna_turmas(self, mock_service: MagicMock) -> None:
         mock_service.return_value = [_turma_atribuida_simplificada()]
         client = _cliente_autenticado()
 
-        resp = client.get("/api/professores/000001/turmas/ano_letivo/2026/")
+        resp = client.get("/api/professores/000001/turmas/anos_letivos/2026/")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [_turma_atribuida_simplificada()])
         mock_service.assert_called_once_with("000001", 2026)
 
     @patch(
-        "apps.professores.views.services."
-        "get_turmas_atribuidas_professor"
+        "apps.professores.views.services.get_turmas_atribuidas_professor"
     )
-    def test_204_quando_sem_conteudo(
-        self, mock_service: MagicMock
-    ) -> None:
+    def test_204_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
         mock_service.return_value = []
         client = _cliente_autenticado()
 
-        resp = client.get("/api/professores/000001/turmas/ano_letivo/2026/")
+        resp = client.get("/api/professores/000001/turmas/anos_letivos/2026/")
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
     @patch(
-        "apps.professores.views.services."
-        "get_turmas_atribuidas_professor"
+        "apps.professores.views.services.get_turmas_atribuidas_professor"
     )
     def test_400_quando_codigo_rf_e_somente_espacos(
         self, mock_service: MagicMock
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/professores/%20/turmas/ano_letivo/2026/")
+        resp = client.get("/api/professores/%20/turmas/anos_letivos/2026/")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
