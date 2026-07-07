@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing import Any
 
 import httpx
-from sme_sidecar_sdk.config import get_settings
-from sme_sidecar_sdk.resilience.timeout import build_sync_client
+from sme_sidecar_sdk import CircuitOpenError, build_http_client
+from sme_sidecar_sdk.http import SyncHTTPClient
 
 
 class ServiceClient:
@@ -30,17 +30,18 @@ class ServiceClient:
         self.dominio = dominio
         self._api_key = api_key
         self._api_key_header = api_key_header
-        self._client: httpx.Client | None = None
+        self._client: SyncHTTPClient | None = None
 
-    def _http_client(self) -> httpx.Client:
+    def _http_client(self) -> SyncHTTPClient:
         """Retorna o cliente HTTP persistente.
 
         Returns:
-            Cliente HTTP configurado com timeout e keep-alive.
+            Cliente HTTP configurado com resiliência e observabilidade.
         """
         if self._client is None:
-            self._client = build_sync_client(
-                get_settings(),
+            self._client = build_http_client(
+                self.dominio,
+                base_url=self.base_url,
                 follow_redirects=True,
             )
         return self._client
@@ -69,11 +70,14 @@ class ServiceClient:
         Raises:
             httpx.HTTPError: Em caso de falha de transporte ou timeout.
         """
-        return self._http_client().get(
-            f"{self.base_url}{path}",
-            headers=self._headers(),
-            params=params,
-        )
+        try:
+            return self._http_client().get(
+                path,
+                headers=self._headers(),
+                params=params,
+            )
+        except CircuitOpenError as exc:
+            raise self._unavailable_error("GET", path) from exc
 
     def post(
         self,
@@ -94,12 +98,15 @@ class ServiceClient:
         Raises:
             httpx.HTTPError: Em caso de falha de transporte ou timeout.
         """
-        return self._http_client().post(
-            f"{self.base_url}{path}",
-            headers=self._headers(),
-            json=payload,
-            params=params,
-        )
+        try:
+            return self._http_client().post(
+                path,
+                headers=self._headers(),
+                json=payload,
+                params=params,
+            )
+        except CircuitOpenError as exc:
+            raise self._unavailable_error("POST", path) from exc
 
     def put(
         self,
@@ -151,10 +158,12 @@ class ServiceClient:
         """
         try:
             response = self._http_client().get(
-                f"{self.base_url}/health/",
+                "/health/",
                 headers=self._headers(),
             )
             return response.status_code < 500
+        except httpx.HTTPStatusError as exc:
+            return exc.response.status_code < 500
         except Exception:
             return False
 
@@ -163,3 +172,19 @@ class ServiceClient:
         if self._client is not None:
             self._client.close()
             self._client = None
+
+    def _unavailable_error(self, method: str, path: str) -> httpx.ConnectError:
+        """Converta circuito aberto para erro de indisponibilidade HTTPX.
+
+        Args:
+            method: Método HTTP da chamada original.
+            path: Caminho relativo chamado no sidecar.
+
+        Returns:
+            Erro compatível com os handlers já existentes nas views.
+        """
+        request = httpx.Request(method, f"{self.base_url}{path}")
+        return httpx.ConnectError(
+            f"Circuit breaker aberto para {self.dominio}",
+            request=request,
+        )

@@ -4,9 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import httpx
 from django.test import SimpleTestCase
-from sme_sidecar_sdk.config import get_settings
+from sme_sidecar_sdk import build_http_client
 from sme_sidecar_sdk.observability.context import correlation_context
-from sme_sidecar_sdk.resilience.timeout import build_sync_client
 
 from apps.core.http_client import ServiceClient
 
@@ -75,7 +74,7 @@ class JsonOrNoneTest(SimpleTestCase):
 class ServiceClientRequestTest(SimpleTestCase):
     """Valida chamadas HTTP executadas pelo ServiceClient."""
 
-    @patch("apps.core.http_client.build_sync_client")
+    @patch("apps.core.http_client.build_http_client")
     def test_reaproveita_cliente_http_em_gets(
         self, mock_client: MagicMock
     ) -> None:
@@ -84,11 +83,25 @@ class ServiceClientRequestTest(SimpleTestCase):
         svc.get("/a")
         svc.get("/b")
 
-        mock_client.assert_called_once()
+        mock_client.assert_called_once_with(
+            "test",
+            base_url="https://fake-sidecar",
+            follow_redirects=True,
+        )
         instance = mock_client.return_value
         self.assertEqual(instance.get.call_count, 2)
+        instance.get.assert_any_call(
+            "/a",
+            headers={"Accept": "application/json"},
+            params=None,
+        )
+        instance.get.assert_any_call(
+            "/b",
+            headers={"Accept": "application/json"},
+            params=None,
+        )
 
-    @patch("apps.core.http_client.build_sync_client")
+    @patch("apps.core.http_client.build_http_client")
     def test_close_fecha_cliente_http(self, mock_client: MagicMock) -> None:
         svc = _make_client()
         svc.get("/a")
@@ -120,8 +133,9 @@ class ServiceClientRequestTest(SimpleTestCase):
             return httpx.Response(200)
 
         svc = _make_client()
-        svc._client = build_sync_client(  # noqa: SLF001
-            get_settings(),
+        svc._client = build_http_client(  # noqa: SLF001
+            "test",
+            base_url="https://fake-sidecar",
             transport=httpx.MockTransport(handler),
         )
 
