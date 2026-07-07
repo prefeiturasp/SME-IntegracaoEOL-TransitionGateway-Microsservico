@@ -9,6 +9,9 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 
+_MSG_TURMAS_NAO_ENCONTRADAS = "Não foram encontradas turmas atribuídas."
+
+
 def _cliente_autenticado() -> APIClient:
     """Cria um APIClient autenticado para os testes."""
     client = APIClient()
@@ -1614,7 +1617,7 @@ class ProfessorBuscaTurmasAtribuidasEscolaViewTest(SimpleTestCase):
         "apps.professores.views.services."
         "get_turmas_atribuidas_professor_escola"
     )
-    def test_204_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
+    def test_404_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
         mock_service.return_value = []
         client = _cliente_autenticado()
 
@@ -1623,7 +1626,8 @@ class ProfessorBuscaTurmasAtribuidasEscolaViewTest(SimpleTestCase):
             + "turmas/anos_letivos/2026/"
         )
 
-        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(resp.json(), _MSG_TURMAS_NAO_ENCONTRADAS)
 
     @patch(
         "apps.professores.views.services."
@@ -1669,7 +1673,7 @@ class BuscaTurmasAtribuidasProfessoresEscolaViewTest(SimpleTestCase):
         "apps.professores.views.services."
         "get_turmas_atribuidas_professores_escola"
     )
-    def test_204_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
+    def test_404_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
         mock_service.return_value = None
         client = _cliente_autenticado()
 
@@ -1677,7 +1681,8 @@ class BuscaTurmasAtribuidasProfessoresEscolaViewTest(SimpleTestCase):
             "/api/professores/escolas/019465/turmas/anos_letivos/2026/"
         )
 
-        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(resp.json(), _MSG_TURMAS_NAO_ENCONTRADAS)
 
     @patch(
         "apps.professores.views.services."
@@ -1719,13 +1724,14 @@ class ProfessorBuscarTurmasAtribuidasViewTest(SimpleTestCase):
     @patch(
         "apps.professores.views.services.get_turmas_atribuidas_professor"
     )
-    def test_204_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
+    def test_404_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
         mock_service.return_value = []
         client = _cliente_autenticado()
 
         resp = client.get("/api/professores/000001/turmas/anos_letivos/2026/")
 
-        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(resp.json(), _MSG_TURMAS_NAO_ENCONTRADAS)
 
     @patch(
         "apps.professores.views.services.get_turmas_atribuidas_professor"
