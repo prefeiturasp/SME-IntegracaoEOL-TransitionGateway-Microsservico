@@ -14,9 +14,11 @@ from apps.alunos.views import (
     AlunosDataMatriculaTicksView,
     AlunosDaUeView,
     AlunosListView,
-    AlunoTurmasPorSituacaoView,
     AlunoTurmaConsideraInativosView,
+    AlunoTurmasPorSituacaoView,
     AlunoTurmasView,
+    CodigosTurmasRegularesAlunoView,
+    CodigoTurmaAlunoComponenteCurricularView,
     FiliacaoAlunoView,
     InformacoesAlunosTurmaView,
     ResponsavelResumidoView,
@@ -51,6 +53,18 @@ turma_urlpatterns = [
         "<str:codigo_turma>/calculo-frequencia/",
         AlunosCalculoFrequenciaTurmaView.as_view(),
         name="alunos-calculo-frequencia-turma",
+    ),
+    path(
+        "anos-letivos/<str:ano_letivo>/alunos/<str:codigo_aluno>/"
+        "regulares/",
+        CodigosTurmasRegularesAlunoView.as_view(),
+        name="codigos-turmas-regulares-aluno",
+    ),
+    path(
+        "anos-letivos/<str:ano_letivo>/alunos/<str:codigo_aluno>/"
+        "componentes-curriculares/<str:componente_curricular_codigo>/",
+        CodigoTurmaAlunoComponenteCurricularView.as_view(),
+        name="codigo-turma-aluno-componente-curricular",
     ),
 ]
 

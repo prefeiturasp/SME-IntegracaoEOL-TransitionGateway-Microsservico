@@ -736,7 +736,185 @@ class AlunosCalculoFrequenciaTurmaView(APIView):
             return _sidecar_error_response(exc)
         except httpx.RequestError as exc:
             return _sidecar_unavailable_response(exc)
-        return Response([str(aluno["codigo_aluno"]) for aluno in data])
+        # O UNION (distinct) não tem ORDER BY, mas o SQL Server devolve o
+        # resultado ordenado ascendente como efeito colateral da
+        # deduplicação. Espelhamos: dedup + ordenação numérica ascendente.
+        codigos = sorted(
+            {str(aluno["codigo_aluno"]) for aluno in data}, key=int
+        )
+        return Response(codigos)
+
+
+def _query_int_list(request: Request, nome: str) -> list[int]:
+    """Extrai inteiros repetíveis da query string, ignorando inválidos.
+
+    Args:
+        request: Requisição consultada.
+        nome: Nome do parâmetro (snake_case).
+
+    Returns:
+        Inteiros informados, sem entradas vazias ou não numéricas.
+    """
+    valores: list[int] = []
+    for bruto in request.query_params.getlist(nome):
+        texto = bruto.strip()
+        if texto.lstrip("-").isdigit():
+            valores.append(int(texto))
+    return valores
+
+
+def _query_int_opt(request: Request, nome: str) -> int | None:
+    """Lê um inteiro opcional da query string.
+
+    Args:
+        request: Requisição consultada.
+        nome: Nome do parâmetro (snake_case).
+
+    Returns:
+        Inteiro informado, ou ``None`` quando ausente/inválido.
+    """
+    bruto = request.query_params.get(nome)
+    if bruto is not None and bruto.strip().lstrip("-").isdigit():
+        return int(bruto.strip())
+    return None
+
+
+class CodigosTurmasRegularesAlunoView(APIView):
+    """Lista códigos de turma regulares do aluno no ano letivo."""
+
+    @extend_schema(
+        tags=["Turma"],
+        description=(
+            "Retorna os códigos de turma do aluno no ano letivo, "
+            "resolvidos pelo Alunos-MS (situação de matrícula) e recortados "
+            "pelo Pedagógico-MS (tipo de turma, UE e semestre)."
+        ),
+        parameters=[
+            OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
+            OpenApiParameter("codigo_aluno", int, OpenApiParameter.PATH),
+            OpenApiParameter(
+                "tipos_turma",
+                OpenApiTypes.INT,
+                OpenApiParameter.QUERY,
+                many=True,
+                required=False,
+            ),
+            OpenApiParameter(
+                "ue_codigo", str, OpenApiParameter.QUERY, required=False
+            ),
+            OpenApiParameter(
+                "data_referencia", str, OpenApiParameter.QUERY, required=False
+            ),
+            OpenApiParameter(
+                "semestre", int, OpenApiParameter.QUERY, required=False
+            ),
+        ],
+        responses={200: OpenApiResponse(description="Success")},
+    )
+    def get(
+        self,
+        request: Request,
+        ano_letivo: str,
+        codigo_aluno: str,
+    ) -> Response:
+        """Lista os códigos de turma regulares do aluno no ano letivo.
+
+        Args:
+            request: Requisição com os filtros ``tipos_turma``, ``ue_codigo``,
+                ``data_referencia`` e ``semestre``.
+            ano_letivo: Ano letivo consultado.
+            codigo_aluno: Código EOL do aluno.
+
+        Returns:
+            Lista de códigos de turma (inteiros), ou lista vazia quando não
+            houver correspondência.
+        """
+        tipos_turma = _query_int_list(request, "tipos_turma")
+        ue_codigo = request.query_params.get("ue_codigo")
+        data_referencia = request.query_params.get("data_referencia")
+        semestre = _query_int_opt(request, "semestre")
+        try:
+            codigos = services.montar_codigos_turmas_regulares_aluno(
+                ano_letivo=ano_letivo,
+                codigo_aluno=codigo_aluno,
+                tipos_turma=tipos_turma,
+                ue_codigo=ue_codigo,
+                data_referencia=data_referencia,
+                semestre=semestre,
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+        # Os códigos são devolvidos como string (IReadOnlyList<string>).
+        return Response([str(codigo) for codigo in codigos])
+
+
+class CodigoTurmaAlunoComponenteCurricularView(APIView):
+    """Lista códigos de turma do aluno por componente curricular.
+
+    Alias do endpoint ``.../regulares``: o componente curricular é aceito
+    na rota mas ignorado no corpo do handler, consultando a mesma função.
+    Aqui só ``tipos_turma`` é considerado, conforme a assinatura deste
+    endpoint.
+    """
+
+    @extend_schema(
+        tags=["Turma"],
+        description=(
+            "Retorna os códigos de turma do aluno no ano letivo. O código "
+            "do componente curricular é aceito na rota mas ignorado."
+        ),
+        parameters=[
+            OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
+            OpenApiParameter("codigo_aluno", int, OpenApiParameter.PATH),
+            OpenApiParameter(
+                "componente_curricular_codigo",
+                int,
+                OpenApiParameter.PATH,
+            ),
+            OpenApiParameter(
+                "tipos_turma",
+                OpenApiTypes.INT,
+                OpenApiParameter.QUERY,
+                many=True,
+                required=False,
+            ),
+        ],
+        responses={200: OpenApiResponse(description="Success")},
+    )
+    def get(
+        self,
+        request: Request,
+        ano_letivo: str,
+        codigo_aluno: str,
+        componente_curricular_codigo: str,
+    ) -> Response:
+        """Lista os códigos de turma do aluno, ignorando o componente.
+
+        Args:
+            request: Requisição com o filtro ``tipos_turma``.
+            ano_letivo: Ano letivo consultado.
+            codigo_aluno: Código EOL do aluno.
+            componente_curricular_codigo: Aceito na rota mas ignorado.
+
+        Returns:
+            Lista de códigos de turma (inteiros), ou lista vazia quando não
+            houver correspondência.
+        """
+        tipos_turma = _query_int_list(request, "tipos_turma")
+        try:
+            codigos = services.montar_codigos_turmas_regulares_aluno(
+                ano_letivo=ano_letivo,
+                codigo_aluno=codigo_aluno,
+                tipos_turma=tipos_turma,
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+        # Os códigos são devolvidos como string (IReadOnlyList<string>).
+        return Response([str(codigo) for codigo in codigos])
 
 
 class AlunoNecessidadesEspeciaisView(APIView):

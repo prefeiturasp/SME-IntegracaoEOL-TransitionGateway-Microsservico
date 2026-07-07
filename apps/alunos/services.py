@@ -425,6 +425,82 @@ def get_total_alunos_ativos_periodo(
     return _client.json_or_none(resp)
 
 
+def get_codigos_turmas_regulares_aluno(
+    ano_letivo: str,
+    codigo_aluno: str,
+    data_referencia: str | None = None,
+) -> list[int]:
+    """Lista os códigos de turma do aluno no ano letivo (recorte de matrícula).
+
+    Args:
+        ano_letivo: Ano letivo consultado.
+        codigo_aluno: Código EOL do aluno.
+        data_referencia: Data de referência (ISO) do filtro de situação.
+
+    Returns:
+        Códigos de turma ordenados por data da situação decrescente. Lista
+        vazia quando o sidecar responde 4xx (código inválido ou sem
+        vínculos).
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar erro de servidor (5xx).
+        httpx.RequestError: Se o sidecar estiver inacessível.
+    """
+    params: dict[str, Any] = {}
+    if data_referencia:
+        params["data_referencia"] = data_referencia
+    resp = _client.get(
+        f"{_BASE}/anos-letivos/{ano_letivo}/alunos/{codigo_aluno}"
+        "/codigos-turmas-regulares",
+        params=params or None,
+    )
+    if resp.status_code in (400, 404):
+        return []
+    resp.raise_for_status()
+    dados = _client.json_or_none(resp) or []
+    return [int(codigo) for codigo in dados]
+
+
+def montar_codigos_turmas_regulares_aluno(
+    ano_letivo: str,
+    codigo_aluno: str,
+    tipos_turma: list[int] | None = None,
+    ue_codigo: str | None = None,
+    data_referencia: str | None = None,
+    semestre: int | None = None,
+) -> list[int]:
+    """Compõe os códigos de turma regulares do aluno.
+
+    Args:
+        ano_letivo: Ano letivo consultado.
+        codigo_aluno: Código EOL do aluno.
+        tipos_turma: Tipos de turma aceitos; sem filtro quando vazio.
+        ue_codigo: Código da UE; sem filtro quando ausente.
+        data_referencia: Data de referência (ISO) do filtro de situação.
+        semestre: Semestre da turma; sem filtro quando ausente.
+
+    Returns:
+        Códigos de turma que atendem ao recorte, na ordem do Alunos-MS.
+
+    Raises:
+        httpx.HTTPStatusError: Se algum sidecar retornar erro de servidor.
+        httpx.RequestError: Se algum sidecar estiver inacessível.
+    """
+    from apps.pedagogico import services as pedagogico_services
+
+    codigos = get_codigos_turmas_regulares_aluno(
+        ano_letivo, codigo_aluno, data_referencia
+    )
+    if not codigos:
+        return []
+    permitidos = set(
+        pedagogico_services.get_turmas_recorte_por_tipo(
+            codigos, tipos_turma, ue_codigo, semestre
+        )
+    )
+    return [codigo for codigo in codigos if codigo in permitidos]
+
+
 def listar_alunos(codigos_aluno: list[str]) -> Any:
     """Retorna lista de alunos pelos códigos informados.
 

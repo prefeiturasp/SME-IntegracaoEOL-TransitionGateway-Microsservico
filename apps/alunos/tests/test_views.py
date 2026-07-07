@@ -301,6 +301,7 @@ class AlunosUrlsTest(SimpleTestCase):
             {"codigo_turma", "codigo_aluno", "considera_inativos"},
         )
 
+
 class AlunoAutocompleteAtivosViewTest(SimpleTestCase):
     """Valida a view de autocomplete de alunos ativos."""
 
@@ -1480,6 +1481,25 @@ class AlunosCalculoFrequenciaTurmaViewTest(SimpleTestCase):
         )
 
     @patch("apps.alunos.views.services.get_alunos_por_turma")
+    def test_200_dedup_e_ordena_ascendente(
+        self, mock_service: MagicMock
+    ) -> None:
+        # Entrada fora de ordem e com aluno repetido (vigente+histórico):
+        # o UNION (distinct) devolve o resultado ascendente.
+        mock_service.return_value = [
+            {"codigo_aluno": 6205175},
+            {"codigo_aluno": 4896701},
+            {"codigo_aluno": 5883703},
+            {"codigo_aluno": 4896701},
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), ["4896701", "5883703", "6205175"])
+
+    @patch("apps.alunos.views.services.get_alunos_por_turma")
     def test_200_lista_vazia_quando_sem_resultado(
         self, mock_service: MagicMock
     ) -> None:
@@ -1959,3 +1979,145 @@ class AlunosListViewTest(SimpleTestCase):
             "Os códigos dos Alunos são obrigatórios.",
         )
         mock_service.assert_not_called()
+
+
+class CodigosTurmasRegularesAlunoViewTest(SimpleTestCase):
+    """Valida o endpoint .../regulares (endpoint 3)."""
+
+    _PATH = "/api/turmas/anos-letivos/2026/alunos/7345634/regulares/"
+    _SVC = (
+        "apps.alunos.views.services." "montar_codigos_turmas_regulares_aluno"
+    )
+
+    @patch(_SVC)
+    def test_200_retorna_codigos(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [23456, 12345]
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), ["23456", "12345"])
+        mock_service.assert_called_once_with(
+            ano_letivo="2026",
+            codigo_aluno="7345634",
+            tipos_turma=[],
+            ue_codigo=None,
+            data_referencia=None,
+            semestre=None,
+        )
+
+    @patch(_SVC)
+    def test_200_repassa_filtros_da_query(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Testa que os filtros da query string são repassados para o serviço."""
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            self._PATH + "?tipos_turma=1&tipos_turma=5&ue_codigo=019370"
+            "&data_referencia=2026-06-01&semestre=1"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_service.assert_called_once_with(
+            ano_letivo="2026",
+            codigo_aluno="7345634",
+            tipos_turma=[1, 5],
+            ue_codigo="019370",
+            data_referencia="2026-06-01",
+            semestre=1,
+        )
+
+    @patch(_SVC)
+    def test_200_lista_vazia_quando_sem_resultado(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Testa que o endpoint retorna 200 e lista vazia quando o serviço"""
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+
+    @patch(_SVC)
+    def test_503_quando_sidecar_indisponivel(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Testa que o endpoint retorna 503 quando o serviço de alunos está"""
+        mock_service.side_effect = _request_error()
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    @patch(_SVC)
+    def test_preserva_erro_http_do_sidecar(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.side_effect = _http_status_error(
+            status.HTTP_404_NOT_FOUND, {"detail": "nao encontrado"}
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_403_sem_autenticacao(self) -> None:
+        """Testa que o endpoint retorna 403 quando não há autenticação."""
+        resp = APIClient().get(self._PATH)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class CodigoTurmaAlunoComponenteCurricularViewTest(SimpleTestCase):
+    """Valida o endpoint componentes-curriculares (endpoint 4)."""
+
+    _PATH = (
+        "/api/turmas/anos-letivos/2026/alunos/7345634/"
+        "componentes-curriculares/512/"
+    )
+    _SVC = (
+        "apps.alunos.views.services." "montar_codigos_turmas_regulares_aluno"
+    )
+
+    @patch(_SVC)
+    def test_200_ignora_componente_e_so_passa_tipos_turma(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Testa que o endpoint retorna 200 e lista de códigos de turma, ignorando"""
+        mock_service.return_value = [12345]
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH + "?tipos_turma=1&ue_codigo=019370")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), ["12345"])
+        # Alias do endpoint 3: só tipos_turma é considerado; ue_codigo é
+        # ignorado (conforme a assinatura deste endpoint).
+        mock_service.assert_called_once_with(
+            ano_letivo="2026",
+            codigo_aluno="7345634",
+            tipos_turma=[1],
+        )
+
+    @patch(_SVC)
+    def test_503_quando_sidecar_indisponivel(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Testa que o endpoint retorna 503 quando o serviço de alunos está"""
+        mock_service.side_effect = _request_error()
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    def test_403_sem_autenticacao(self) -> None:
+        """Testa que o endpoint retorna 403 quando não há autenticação."""
+        resp = APIClient().get(self._PATH)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)

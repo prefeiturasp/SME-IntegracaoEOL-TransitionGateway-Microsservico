@@ -68,6 +68,45 @@ def get_turmas_recorte_fund_medio_eja(
     return _client.json_or_none(resp) or []
 
 
+def get_turmas_recorte_por_tipo(
+    codigos: list[int],
+    tipos_turma: list[int] | None = None,
+    ue_codigo: str | None = None,
+    semestre: int | None = None,
+) -> list[int]:
+    """Filtra códigos de turma por tipo de turma, UE e semestre.
+
+    Args:
+        codigos: Códigos de turma candidatos (vindos do Alunos-MS).
+        tipos_turma: Tipos de turma aceitos; sem filtro quando vazio.
+        ue_codigo: Código da UE; sem filtro quando ausente.
+        semestre: Semestre da turma; sem filtro quando ausente.
+
+    Returns:
+        Subconjunto dos códigos que atende ao recorte.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+    """
+    if not codigos:
+        return []
+    params: dict[str, Any] = {}
+    if tipos_turma:
+        params["tipos_turma"] = [int(tipo) for tipo in tipos_turma]
+    if ue_codigo:
+        params["ue_codigo"] = ue_codigo
+    if semestre is not None:
+        params["semestre"] = semestre
+    resp = _client.post(
+        f"{_BASE_TURMAS}/recorte-por-tipo/",
+        payload=[int(codigo) for codigo in codigos],
+        params=params or None,
+    )
+    resp.raise_for_status()
+    dados = _client.json_or_none(resp) or []
+    return [int(codigo) for codigo in dados]
+
+
 def get_componentes_curriculares() -> Any:
     """Retorna o catálogo completo de componentes curriculares.
 
