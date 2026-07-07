@@ -112,15 +112,15 @@ urlpatterns = [
         EscolaFuncionariosView.as_view(),
     ),
     path(
-        "professores/<str:codigo_rf>/escolas/<str:codigo_eol_escola>/turmas/ano_letivo/<int:ano_letivo>/",
+        "professores/<str:codigo_rf>/escolas/<str:codigo_eol_escola>/turmas/anos_letivos/<int:ano_letivo>/",
         ProfessorBuscaTurmasAtribuidasEscolaView.as_view(),
     ),
     path(
-        "professores/escolas/<str:codigo_eol_escola>/turmas/ano_letivo/<int:ano_letivo>/",
+        "professores/escolas/<str:codigo_eol_escola>/turmas/anos_letivos/<int:ano_letivo>/",
         BuscaTurmasAtribuidasProfessoresEscolaView.as_view(),
     ),
     path(
-        "professores/<str:codigo_rf>/turmas/ano_letivo/<int:ano_letivo>/",
+        "professores/<str:codigo_rf>/turmas/anos_letivos/<int:ano_letivo>/",
         ProfessorBuscarTurmasAtribuidasView.as_view(),
     ),
 ]
