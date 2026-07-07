@@ -1635,7 +1635,7 @@ class ProfessorBuscaTurmasAtribuidasEscolaViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/000001/escolas/%20/" "turmas/anos_letivos/2026/"
+            "/api/professores/000001/escolas/%20/turmas/anos_letivos/2026/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -1704,7 +1704,7 @@ class ProfessorBuscarTurmasAtribuidasViewTest(SimpleTestCase):
     """Valida turmas atribuídas ao professor por ano letivo."""
 
     @patch(
-        "apps.professores.views.services." "get_turmas_atribuidas_professor"
+        "apps.professores.views.services.get_turmas_atribuidas_professor"
     )
     def test_200_retorna_turmas(self, mock_service: MagicMock) -> None:
         mock_service.return_value = [_turma_atribuida_simplificada()]
@@ -1717,7 +1717,7 @@ class ProfessorBuscarTurmasAtribuidasViewTest(SimpleTestCase):
         mock_service.assert_called_once_with("000001", 2026)
 
     @patch(
-        "apps.professores.views.services." "get_turmas_atribuidas_professor"
+        "apps.professores.views.services.get_turmas_atribuidas_professor"
     )
     def test_204_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
         mock_service.return_value = []
@@ -1728,7 +1728,7 @@ class ProfessorBuscarTurmasAtribuidasViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
     @patch(
-        "apps.professores.views.services." "get_turmas_atribuidas_professor"
+        "apps.professores.views.services.get_turmas_atribuidas_professor"
     )
     def test_400_quando_codigo_rf_e_somente_espacos(
         self, mock_service: MagicMock
