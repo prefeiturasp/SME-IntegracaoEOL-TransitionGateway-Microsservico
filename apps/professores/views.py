@@ -49,6 +49,7 @@ _CAMPOS_TURMA = {
     "data_disponibilizacao_aulas",
     "data_atribuicao_aula",
 }
+_MSG_TURMAS_NAO_ENCONTRADAS = "Não foram encontradas turmas atribuídas."
 
 
 def _query_params(
@@ -962,7 +963,7 @@ class ProfessorBuscaTurmasAtribuidasEscolaView(APIView):
         ),
         responses={
             200: ProfessorTurmaAtribuidaSimplificadaSerializer(many=True),
-            204: None,
+            404: _MSG_TURMAS_NAO_ENCONTRADAS,
         },
     )
     def get(
@@ -994,7 +995,10 @@ class ProfessorBuscaTurmasAtribuidasEscolaView(APIView):
             codigo_rf, codigo_eol_escola, ano_letivo
         )
         if not data:
-            return Response(status=204)
+            return Response(
+                status=404,
+                data=_MSG_TURMAS_NAO_ENCONTRADAS,
+            )
         return Response(
             ProfessorTurmaAtribuidaSimplificadaSerializer(data, many=True).data
         )
@@ -1010,7 +1014,7 @@ class BuscaTurmasAtribuidasProfessoresEscolaView(APIView):
         ),
         responses={
             200: ProfessorTurmaAtribuidaSimplificadaSerializer(many=True),
-            204: None,
+            404: _MSG_TURMAS_NAO_ENCONTRADAS,
         },
     )
     def get(
@@ -1037,7 +1041,7 @@ class BuscaTurmasAtribuidasProfessoresEscolaView(APIView):
             ano_letivo,
         )
         if not data:
-            return Response(status=204)
+            return Response(status=404, data=_MSG_TURMAS_NAO_ENCONTRADAS)
         return Response(
             ProfessorTurmaAtribuidaSimplificadaSerializer(data, many=True).data
         )
@@ -1051,7 +1055,7 @@ class ProfessorBuscarTurmasAtribuidasView(APIView):
         description=("Retorna turmas atribuídas ao professor no ano letivo."),
         responses={
             200: ProfessorTurmaAtribuidaSimplificadaSerializer(many=True),
-            204: None,
+            404: _MSG_TURMAS_NAO_ENCONTRADAS,
         },
     )
     def get(
@@ -1077,7 +1081,7 @@ class ProfessorBuscarTurmasAtribuidasView(APIView):
             return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
         data = services.get_turmas_atribuidas_professor(codigo_rf, ano_letivo)
         if not data:
-            return Response(status=204)
+            return Response(status=404, data=_MSG_TURMAS_NAO_ENCONTRADAS)
         return Response(
             ProfessorTurmaAtribuidaSimplificadaSerializer(data, many=True).data
         )
