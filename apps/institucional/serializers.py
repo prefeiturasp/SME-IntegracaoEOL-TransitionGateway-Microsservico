@@ -18,6 +18,28 @@ class SubprefeiturasSerializer(serializers.Serializer):
     nomeSubprefeitura = serializers.CharField()
 
 
+class EscolaSigpaeSerializer(serializers.Serializer):
+    """Serializa escola por DRE no formato SIGPAE."""
+
+    codigoEscola = serializers.CharField()
+    nomeEscola = serializers.CharField()
+    codigoDRE = serializers.CharField()
+    tipoEscola = serializers.CharField()
+    siglaTipoEscola = serializers.CharField()
+    nomeDRE = serializers.CharField()
+    siglaDRE = serializers.CharField()
+    codigoSubprefeitura = serializers.CharField()
+    nomeSubprefeitura = serializers.CharField()
+
+
+class UnidadeCodigoIntegracaoSerializer(serializers.Serializer):
+    """Serializa códigos de integração de UEs por DRE."""
+
+    codigoUe = serializers.CharField()
+    nomeUe = serializers.CharField()
+    codigoIntegracao = serializers.CharField(allow_null=True, required=False)
+
+
 class EscolaPorDreETipoSerializer(serializers.Serializer):
     """Serializa escola retornada por DRE e tipo."""
 

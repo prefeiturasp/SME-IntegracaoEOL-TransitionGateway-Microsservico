@@ -109,6 +109,23 @@ def get_escolas_por_dre(codigo_dre: str) -> Any:
     return resp.json()
 
 
+def get_escolas_sigpae_por_dre(codigo_dre: str) -> Any:
+    """Lista escolas por DRE no formato SIGPAE.
+
+    Args:
+        codigo_dre: Código da Diretoria Regional de Educação.
+
+    Returns:
+        Escolas vinculadas à DRE no formato do contrato D09.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status HTTP de erro.
+    """
+    resp = _client.get(f"{_BASE}/dres/{codigo_dre}/escola/Sigpae/")
+    resp.raise_for_status()
+    return _client.json_or_none(resp)
+
+
 def get_escolas_por_dre_e_tipo(codigo_dre: str, tipo_escola: str) -> Any:
     """Lista escolas de uma Diretoria Regional de Educação por tipo.
 
@@ -157,6 +174,24 @@ def get_unidades_por_dre(codigo_dre: str) -> Any:
     return resp.json()
 
 
+def get_unidades_codigo_integracao_por_dre(codigo_dre: str) -> Any:
+    """Lista códigos de integração das UEs de uma DRE.
+
+    Args:
+        codigo_dre: Código da Diretoria Regional de Educação.
+
+    Returns:
+        UEs com seus códigos de integração no contrato D11.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status
+            HTTP de erro.
+    """
+    resp = _client.get(f"{_BASE}/dres/{codigo_dre}/unidades/codigo-integracao/")
+    resp.raise_for_status()
+    return resp.json()
+
+
 def get_escola(codigo_escola: str) -> Any:
     """Retorna dados de uma escola.
 
@@ -171,6 +206,24 @@ def get_escola(codigo_escola: str) -> Any:
             HTTP de erro.
     """
     resp = _client.get(f"{_BASE}/escolas/{codigo_escola}/")
+    resp.raise_for_status()
+    return resp.json()
+
+
+def get_subprefeituras_por_escola(codigo_escola: str) -> Any:
+    """Lista subprefeituras vinculadas a uma escola.
+
+    Args:
+        codigo_escola: Código EOL da escola.
+
+    Returns:
+        Subprefeituras vinculadas à escola informada.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status
+            HTTP de erro.
+    """
+    resp = _client.get(f"{_BASE}/escolas/{codigo_escola}/subprefeituras/")
     resp.raise_for_status()
     return resp.json()
 
