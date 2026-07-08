@@ -8,12 +8,15 @@ from apps.institucional.views import (
     DREListView,
     EquipamentosView,
     EscolaDetalheView,
+    EscolasSigpaePorDREView,
     EscolasPorDREeTipoView,
     EscolasPorDREView,
+    SubprefeiturasPorEscolaView,
     SubprefeiturasPorDREView,
     TiposEscolasView,
     TiposUnidadeEducacaoView,
     TodasUnidadesView,
+    UnidadeCodigoIntegracaoPorDREView,
     UesPorDREView,
     UnidadesPorDREView,
     SincronizacoesInstitucionaisView,
@@ -40,9 +43,19 @@ urlpatterns = [
         name="dre-ues",
     ),
     path(
+        "DREs/<str:dre_codigo>/unidades/codigo-integracao/",
+        UnidadeCodigoIntegracaoPorDREView.as_view(),
+        name="dre-unidades-codigo-integracao",
+    ),
+    path(
         "DREs/<str:dre_codigo>/unidades/",
         UnidadesPorDREView.as_view(),
         name="dre-unidades",
+    ),
+    path(
+        "DREs/<str:codigo_eol_dre>/escola/Sigpae/",
+        EscolasSigpaePorDREView.as_view(),
+        name="dre-escolas-sigpae",
     ),
     path(
         "DREs/<str:codigo_eol_dre>/escola/",
@@ -99,6 +112,11 @@ urlpatterns = [
         "escolas/dados/<str:codigo_escola_eol>/",
         DadosEscolaView.as_view(),
         name="escola-dados",
+    ),
+    path(
+        "escolas/<str:codigo_escola_eol>/subprefeituras/",
+        SubprefeiturasPorEscolaView.as_view(),
+        name="escola-subprefeituras",
     ),
     path(
         "escolas/<str:codigo_escola_eol>/",

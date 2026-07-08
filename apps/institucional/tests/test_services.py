@@ -103,6 +103,37 @@ class GetEscolasPorDRETest(SimpleTestCase):
         self.assertEqual(result, [])
 
 
+class GetEscolasSigpaePorDRETest(SimpleTestCase):
+    """Valida a consulta de escolas SIGPAE por DRE."""
+
+    @patch("apps.institucional.services._client")
+    def test_chama_path_com_codigo_dre(self, mock_client: MagicMock) -> None:
+        """Monta o path SIGPAE com o código da DRE."""
+        mock_client.get.return_value.raise_for_status = MagicMock()
+        mock_client.json_or_none.return_value = [
+            {"codigoEscola": "019308", "nomeEscola": "EMEF TESTE"}
+        ]
+
+        result = services.get_escolas_sigpae_por_dre("BT")
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/dres/BT/escola/Sigpae/"
+        )
+        self.assertEqual(result[0]["codigoEscola"], "019308")
+
+    @patch("apps.institucional.services._client")
+    def test_retorna_none_quando_sem_conteudo(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Retorna None quando o sidecar responde sem conteúdo."""
+        mock_client.get.return_value.raise_for_status = MagicMock()
+        mock_client.json_or_none.return_value = None
+
+        result = services.get_escolas_sigpae_por_dre("BT")
+
+        self.assertIsNone(result)
+
+
 class GetUesPorDRETest(SimpleTestCase):
     """Valida a consulta de códigos de UEs por DRE."""
 
@@ -133,6 +164,25 @@ class GetUnidadesPorDRETest(SimpleTestCase):
         self.assertEqual(result, [])
 
 
+class GetUnidadesCodigoIntegracaoPorDRETest(SimpleTestCase):
+    """Valida a consulta de códigos de integração por DRE."""
+
+    @patch("apps.institucional.services._client")
+    def test_chama_path_com_codigo_dre(self, mock_client: MagicMock) -> None:
+        """Monta o path de código integração com o código da DRE."""
+        mock_client.get.return_value.raise_for_status = MagicMock()
+        mock_client.get.return_value.json.return_value = [
+            {"codigoUe": "019308", "nomeUe": "EMEF TESTE"}
+        ]
+
+        result = services.get_unidades_codigo_integracao_por_dre("BT")
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/dres/BT/unidades/codigo-integracao/"
+        )
+        self.assertEqual(result[0]["codigoUe"], "019308")
+
+
 class GetEscolaTest(SimpleTestCase):
     """Valida a consulta de uma escola."""
 
@@ -150,6 +200,30 @@ class GetEscolaTest(SimpleTestCase):
 
         mock_client.get.assert_called_once_with(f"{_BASE}/escolas/019308/")
         self.assertEqual(result["codigoEscola"], "019308")
+
+
+class GetSubprefeiturasPorEscolaTest(SimpleTestCase):
+    """Valida a consulta de subprefeituras por escola."""
+
+    @patch("apps.institucional.services._client")
+    def test_chama_path_com_codigo_escola(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Monta o path de subprefeituras com o código da escola."""
+        mock_client.get.return_value.raise_for_status = MagicMock()
+        mock_client.get.return_value.json.return_value = [
+            {
+                "codigoSubprefeitura": "50",
+                "nomeSubprefeitura": "BUTANTA",
+            }
+        ]
+
+        result = services.get_subprefeituras_por_escola("019308")
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/escolas/019308/subprefeituras/"
+        )
+        self.assertEqual(result[0]["codigoSubprefeitura"], "50")
 
 
 class GetUnidadeEolTest(SimpleTestCase):
