@@ -12,8 +12,42 @@ from apps.pedagogico import services as pedagogico_services
 _BASE = "/api/v1/professores"
 _BASE_ACESSOS = f"{_BASE}/acessos"
 _BASE_FUNCIONARIOS = f"{_BASE}/funcionarios"
+_BASE_FUNCIONARIOS_LEGADO = "/api/v1/funcionarios"
 _BASE_ESCOLAS = f"{_BASE}/escolas"
 _BASE_TURMAS = f"{_BASE}/turmas"
+_PERFIL_PROFESSOR = "40e1e074-37d6-e911-abd6-f81654fe895d"
+_CARGOS_PERFIL_PROFESSOR = [
+    3131,
+    3212,
+    3213,
+    3220,
+    3239,
+    3247,
+    3255,
+    3263,
+    3271,
+    3280,
+    3298,
+    3301,
+    3310,
+    3336,
+    3344,
+    3395,
+    3425,
+    3433,
+    3450,
+    3816,
+    3840,
+    3859,
+    3867,
+    3874,
+    3875,
+    3877,
+    3880,
+    3883,
+    3884,
+    3885,
+]
 
 _client = ServiceClient(
     base_url=settings.SIDECAR_PROFESSORES_URL,
@@ -473,6 +507,248 @@ def get_turmas_professor(codigo_rf: str) -> Any:
     """
     resp = _client.get(f"{_BASE}/{codigo_rf}/turmas/")
     return _client.json_or_none(resp)
+
+
+def get_abrangencia_funcionario_perfil(login: str, id_perfil: str) -> Any:
+    """Retorna abrangência de turmas do funcionário.
+
+    Args:
+        login: Login usado na consulta.
+        id_perfil: Perfil usado na consulta.
+
+    Returns:
+        Abrangência de turmas ou ausência de conteúdo.
+    """
+    resp = _client.get(
+        f"{_BASE_FUNCIONARIOS_LEGADO}/{login}/perfis/{id_perfil}/turmas/"
+    )
+    data = _to_legado_abrangencia(_client.json_or_none(resp))
+    if isinstance(data, dict):
+        data["abrangencia"] = _abrangencia_perfil_legado(id_perfil)
+    return data
+
+
+def get_abrangencia_ues(codigos_ue: list[str]) -> Any:
+    """Retorna abrangência de turmas para unidades.
+
+    Args:
+        codigos_ue: Códigos EOL das unidades educacionais.
+
+    Returns:
+        Abrangência de turmas ou ausência de conteúdo.
+    """
+    data = pedagogico_services.get_turmas_atribuidas_dre_ue(codigos_ue)
+    return _to_legado_turmas_atribuidas(data)
+
+
+def get_turmas_elegiveis(payload: dict[str, Any]) -> Any:
+    """Retorna turmas elegíveis para cópia.
+
+    Args:
+        payload: Dados usados na consulta.
+
+    Returns:
+        Turmas elegíveis ou ausência de conteúdo.
+    """
+    data = pedagogico_services.get_turmas_elegiveis(payload)
+    if not isinstance(data, list):
+        return data
+    return [
+        {
+            "nomeTurma": item.get("nome_turma"),
+            "codTurma": item.get("cod_turma"),
+        }
+        for item in data
+        if isinstance(item, dict)
+    ]
+
+
+def get_funcionarios(payload: dict[str, Any]) -> Any:
+    """Retorna funcionários por filtros básicos.
+
+    Args:
+        payload: Filtros recebidos na requisição.
+
+    Returns:
+        Funcionários encontrados ou ausência de conteúdo.
+    """
+    resp = _client.post(
+        f"{_BASE_FUNCIONARIOS_LEGADO}/",
+        payload=payload,
+    )
+    data = _client.json_or_none(resp)
+    if not isinstance(data, list):
+        return data
+    return [
+        {
+            "cd_Cargo": 0,
+            "codigoFuncaoAtividade": (
+                item.get("codigo_funcao_atividade") or 0
+            ),
+            "codigoRf": item.get("codigo_rf"),
+            "funcaoExterno": item.get("funcao_externo") or 0,
+            "login": item.get("codigo_rf"),
+            "nomeServidor": item.get("nome"),
+            "tipoFuncaoExterno": item.get("tipo_funcao_externo") or 0,
+        }
+        for item in data
+        if isinstance(item, dict)
+    ]
+
+
+def _to_legado_abrangencia(data: Any) -> Any:
+    """Monta a abrangência no contrato legado."""
+    if not isinstance(data, dict):
+        return data
+    return {
+        "abrangencia": _to_legado_grupo(data.get("abrangencia")),
+        "dres": [
+            _to_legado_dre(dre)
+            for dre in data.get("dres", [])
+            if isinstance(dre, dict)
+        ],
+    }
+
+
+def _to_legado_grupo(data: Any) -> Any:
+    if not isinstance(data, dict):
+        return data
+    return {
+        "grupoID": data.get("grupo_id"),
+        "cargosId": data.get("cargos_id"),
+        "funcoesId": data.get("funcoes_id"),
+        "grupo": data.get("grupo"),
+        "abrangencia": data.get("abrangencia"),
+        "ehPerfilManual": data.get("eh_perfil_manual"),
+    }
+
+
+def _abrangencia_perfil_legado(id_perfil: str) -> dict[str, Any] | None:
+    if id_perfil.lower() != _PERFIL_PROFESSOR:
+        return None
+    return {
+        "grupoID": _PERFIL_PROFESSOR,
+        "cargosId": _CARGOS_PERFIL_PROFESSOR,
+        "funcoesId": [],
+        "grupo": 6,
+        "abrangencia": 2,
+        "ehPerfilManual": False,
+    }
+
+
+def _to_legado_dre(data: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "abreviacao": data.get("abreviacao"),
+        "codigo": data.get("codigo"),
+        "nome": data.get("nome"),
+        "ues": [
+            _to_legado_ue(ue)
+            for ue in data.get("ues", [])
+            if isinstance(ue, dict)
+        ],
+    }
+
+
+def _to_legado_ue(data: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "codigo": data.get("codigo"),
+        "nome": data.get("nome"),
+        "codTipoEscola": data.get("cod_tipo_escola"),
+        "turmas": [
+            _to_legado_turma(turma)
+            for turma in data.get("turmas", [])
+            if isinstance(turma, dict)
+        ],
+    }
+
+
+def _to_legado_turma(data: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "ano": data.get("ano"),
+        "anoLetivo": data.get("ano_letivo"),
+        "codigo": data.get("codigo"),
+        "tipoTurma": 0,
+        "modalidade": data.get("modalidade"),
+        "codigoModalidade": data.get("codigo_modalidade"),
+        "nomeTurma": data.get("nome_turma"),
+        "semestre": data.get("semestre"),
+        "duracaoTurno": data.get("duracao_turno"),
+        "tipoTurno": data.get("tipo_turno"),
+        "dataFim": data.get("data_fim"),
+        "ehistorico": data.get("ehistorico"),
+        "ensinoEspecial": data.get("ensino_especial"),
+        "etapaEJA": data.get("etapa_eja"),
+        "serieEnsino": data.get("serie_ensino"),
+        "dataInicioTurma": None,
+        "extinta": data.get("extinta"),
+        "situacao": data.get("situacao"),
+        "ueCodigo": data.get("ue_codigo"),
+    }
+
+
+def _to_legado_turmas_atribuidas(data: Any) -> Any:
+    """Monta as turmas atribuídas no contrato legado."""
+    if not isinstance(data, list):
+        return data
+
+    dres: dict[str, dict[str, Any]] = {}
+    ues_por_dre: dict[tuple[str, str], dict[str, Any]] = {}
+
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        codigo_dre = item.get("codigo_dre")
+        codigo_ue = item.get("codigo_escola")
+        if not codigo_dre or not codigo_ue:
+            continue
+
+        dre = dres.setdefault(
+            str(codigo_dre),
+            {
+                "abreviacao": item.get("dre_abreviacao"),
+                "codigo": codigo_dre,
+                "nome": item.get("dre"),
+                "ues": [],
+            },
+        )
+        chave_ue = (str(codigo_dre), str(codigo_ue))
+        ue = ues_por_dre.setdefault(
+            chave_ue,
+            {
+                "codigo": codigo_ue,
+                "nome": item.get("ue"),
+                "codTipoEscola": item.get("codigo_tipo_escola"),
+                "turmas": [],
+            },
+        )
+        if ue not in dre["ues"]:
+            dre["ues"].append(ue)
+
+        ue["turmas"].append(
+            {
+                "ano": item.get("ano"),
+                "anoLetivo": item.get("ano_letivo"),
+                "codigo": item.get("codigo_turma"),
+                "tipoTurma": 0,
+                "modalidade": item.get("modalidade"),
+                "codigoModalidade": item.get("codigo_modalidade"),
+                "nomeTurma": item.get("nome_turma"),
+                "semestre": item.get("semestre"),
+                "duracaoTurno": item.get("duracao_turno"),
+                "tipoTurno": item.get("tipo_turno"),
+                "dataFim": None,
+                "ehistorico": False,
+                "ensinoEspecial": False,
+                "etapaEJA": 0,
+                "serieEnsino": None,
+                "dataInicioTurma": None,
+                "extinta": False,
+                "situacao": None,
+                "ueCodigo": None,
+            }
+        )
+
+    return {"abrangencia": None, "dres": list(dres.values())}
 
 
 def _montar_turma_atribuida(

@@ -45,6 +45,52 @@ def listar_turmas(codigos: list[int]) -> Any:
     return _client.json_or_none(resp) or []
 
 
+def get_turmas_atribuidas_dre_ue(
+    codigos_ue: list[str],
+) -> list[dict[str, Any]]:
+    """Lista turmas atribuídas por unidades.
+
+    Args:
+        codigos_ue: Códigos das unidades educacionais.
+
+    Returns:
+        Turmas atribuídas retornadas pelo sidecar.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+    """
+    if not codigos_ue:
+        return []
+    resp = _client.post(
+        f"{_BASE_TURMAS}/turmas-atribuidas-dre-ue/",
+        payload=codigos_ue,
+    )
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
+def get_turmas_elegiveis(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    """Lista turmas elegíveis por atribuição.
+
+    Args:
+        payload: Dados no contrato legado.
+
+    Returns:
+        Turmas elegíveis retornadas pelo sidecar.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+    """
+    dados = {
+        "codigo_rf": str(payload.get("CodigoRf", "")),
+        "codigo_turma": payload.get("CodigoTurma"),
+        "componente_curricular": payload.get("ComponenteCurricular"),
+    }
+    resp = _client.post(f"{_BASE_TURMAS}/turmas-elegiveis/", payload=dados)
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
 def get_turmas_recorte_fund_medio_eja(
     codigos: list[int],
 ) -> list[dict[str, Any]]:

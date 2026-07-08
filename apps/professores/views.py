@@ -760,6 +760,126 @@ class ProfessorTurmasView(APIView):
         )
 
 
+class FuncionarioPerfilTurmasView(APIView):
+    """Retorna abrangência de turmas do funcionário."""
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna abrangência de turmas do funcionário."),
+        responses={200: OpenApiTypes.OBJECT, 204: None},
+    )
+    def get(self, _request: Request, login: str, id_perfil: str) -> Response:
+        """Retorna abrangência de turmas do funcionário.
+
+        Args:
+            login: Login usado na consulta.
+            id_perfil: Perfil usado na consulta.
+
+        Returns:
+            Abrangência de turmas, ou ausência de conteúdo.
+
+        Raises:
+            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
+        """
+        if not login.strip():
+            return detail_response("É necessário informar o login.")
+        if not id_perfil.strip():
+            return detail_response("É necessário informar o perfil.")
+        data = services.get_abrangencia_funcionario_perfil(login, id_perfil)
+        if data is None:
+            return Response(status=204)
+        return Response(data)
+
+
+class FuncionariosTurmasView(APIView):
+    """Retorna abrangência de turmas para unidades."""
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna abrangência de turmas para unidades."),
+        request=ListaStringSerializer,
+        responses={200: OpenApiTypes.OBJECT, 204: None},
+    )
+    def post(self, request: Request) -> Response:
+        """Retorna abrangência de turmas para unidades.
+
+        Args:
+            request: Requisição com a lista de UEs no corpo.
+
+        Returns:
+            Abrangência de turmas, ou ausência de conteúdo.
+
+        Raises:
+            ValidationError: Quando a lista de UEs informada é inválida.
+            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
+        """
+        serializer = ListaStringSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = services.get_abrangencia_ues(serializer.validated_data)
+        if data is None:
+            return Response(status=204)
+        return Response(data)
+
+
+class FuncionariosBuscarTurmasElegiveisView(APIView):
+    """Retorna turmas elegíveis para cópia."""
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna turmas elegíveis para cópia."),
+        request=OpenApiTypes.OBJECT,
+        responses={200: OpenApiTypes.OBJECT, 204: None},
+    )
+    def post(self, request: Request) -> Response:
+        """Retorna turmas elegíveis para cópia.
+
+        Args:
+            request: Requisição com os dados da consulta.
+
+        Returns:
+            Turmas elegíveis, ou ausência de conteúdo.
+
+        Raises:
+            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
+        """
+        data = services.get_turmas_elegiveis(request.data)
+        if not data:
+            return Response(status=204)
+        return Response(data)
+
+
+class FuncionariosView(APIView):
+    """Retorna funcionários por filtros básicos."""
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna funcionários por filtros básicos."),
+        request=OpenApiTypes.OBJECT,
+        responses={200: OpenApiTypes.OBJECT, 204: None},
+    )
+    def post(self, request: Request) -> Response:
+        """Retorna funcionários por filtros básicos.
+
+        Args:
+            request: Requisição com os filtros no corpo.
+
+        Returns:
+            Funcionários encontrados, ou ausência de conteúdo.
+
+        Raises:
+            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
+        """
+        data = services.get_funcionarios(request.data)
+        if data is None:
+            return Response(status=204)
+        if data == []:
+            return Response(
+                "Não foram encontrados funcionários.",
+                status=404,
+            )
+        return Response(data)
+
+
 class ProfessorBuscarPorRfDreUeView(APIView):
     """Retorna dados resumidos de professor por RF, DRE e UE."""
 
