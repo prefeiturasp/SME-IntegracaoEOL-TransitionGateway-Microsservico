@@ -8,6 +8,14 @@ from apps.core.datetime import datetime_legado
 from apps.core.http_client import ServiceClient
 from apps.institucional import services as institucional_services
 from apps.pedagogico import services as pedagogico_services
+from apps.professores.serializers import (
+    AbrangenciaLegadoSerializer,
+    DisciplinaTurmaAgrupamentoSerializer,
+    DisciplinaTurmaAtribuidaSerializer,
+    FuncionarioLegadoSerializer,
+    TurmaElegivelLegadoSerializer,
+    TurmasAtribuidasLegadoSerializer,
+)
 
 _BASE = "/api/v1/professores"
 _BASE_ACESSOS = f"{_BASE}/acessos"
@@ -15,39 +23,23 @@ _BASE_FUNCIONARIOS = f"{_BASE}/funcionarios"
 _BASE_FUNCIONARIOS_LEGADO = "/api/v1/funcionarios"
 _BASE_ESCOLAS = f"{_BASE}/escolas"
 _BASE_TURMAS = f"{_BASE}/turmas"
-_PERFIL_PROFESSOR = "40e1e074-37d6-e911-abd6-f81654fe895d"
-_CARGOS_PERFIL_PROFESSOR = [
-    3131,
-    3212,
-    3213,
-    3220,
-    3239,
-    3247,
-    3255,
-    3263,
-    3271,
-    3280,
-    3298,
-    3301,
-    3310,
-    3336,
-    3344,
-    3395,
-    3425,
-    3433,
-    3450,
-    3816,
-    3840,
-    3859,
-    3867,
-    3874,
-    3875,
-    3877,
-    3880,
-    3883,
-    3884,
-    3885,
-]
+_TIPO_ABRANGENCIA_UE = 1
+_TIPO_ABRANGENCIA_PROFESSOR = 2
+_TIPO_ABRANGENCIA_UE_TURMAS_DISCIPLINAS = 3
+_TIPO_ABRANGENCIA_DRE = 4
+_TIPO_ABRANGENCIA_DRE_ESCOLAS_ATRIBUIDAS = 5
+_TIPO_ABRANGENCIA_SME = 6
+_TIPOS_ABRANGENCIA_DRE = frozenset(
+    {_TIPO_ABRANGENCIA_DRE, _TIPO_ABRANGENCIA_DRE_ESCOLAS_ATRIBUIDAS}
+)
+_TIPOS_ABRANGENCIA_VINCULO_UE = frozenset(
+    {
+        _TIPO_ABRANGENCIA_UE,
+        _TIPO_ABRANGENCIA_UE_TURMAS_DISCIPLINAS,
+        _TIPO_ABRANGENCIA_DRE,
+        _TIPO_ABRANGENCIA_DRE_ESCOLAS_ATRIBUIDAS,
+    }
+)
 
 _client = ServiceClient(
     base_url=settings.SIDECAR_PROFESSORES_URL,
@@ -509,23 +501,252 @@ def get_turmas_professor(codigo_rf: str) -> Any:
     return _client.json_or_none(resp)
 
 
-def get_abrangencia_funcionario_perfil(login: str, id_perfil: str) -> Any:
+def get_disciplinas_turma(codigo_turma: str) -> Any:
+    """Retorna disciplinas de uma turma.
+
+    Args:
+        codigo_turma: Código da turma usada na consulta.
+
+    Returns:
+        Disciplinas no contrato legado.
+    """
+    data = pedagogico_services.get_componentes_por_lista_turmas(
+        [codigo_turma],
+        adicionar_componentes_planejamento=False,
+        incluir_extintas=True,
+    )
+    if not isinstance(data, list):
+        return data
+    return DisciplinaTurmaAgrupamentoSerializer(data, many=True).data
+
+
+def get_disciplinas_funcionario_turma(
+    login: str,
+    id_perfil: str,
+    codigo_turma: str,
+    planejamento: bool = False,
+    abrangencia: int | None = None,
+    cargos: list[int] | None = None,
+) -> Any:
+    """Retorna disciplinas do funcionário em uma turma.
+
+    Args:
+        login: Login/RF usado na consulta.
+        id_perfil: Perfil usado na consulta.
+        codigo_turma: Código da turma usada na consulta.
+        planejamento: Indica consulta para planejamento.
+        abrangencia: Tipo de abrangência temporário; substitui o valor que
+            viria da identidade enquanto a integração não existe.
+        cargos: Cargos temporários do perfil usados no filtro de vínculo.
+
+    Returns:
+        Disciplinas no contrato legado.
+    """
+    data = _get_componentes_por_switch(
+        login=login,
+        id_perfil=id_perfil,
+        codigo_turma=codigo_turma,
+        planejamento=planejamento,
+        abrangencia=abrangencia,
+        cargos=cargos,
+    )
+    if not isinstance(data, list):
+        return data
+    return DisciplinaTurmaAtribuidaSerializer(data, many=True).data
+
+
+def _get_componentes_por_switch(
+    login: str,
+    id_perfil: str,
+    codigo_turma: str,
+    planejamento: bool,
+    abrangencia: int | None = None,
+    cargos: list[int] | None = None,
+) -> Any:
+    """Seleciona a fonte de componentes pela abrangência.
+
+    ``abrangencia`` é o override temporário informado na consulta até a
+    integração com identidade; sem ele, cai na fonte padrão do funcionário.
+    """
+    tipo_abrangencia = abrangencia
+
+    if tipo_abrangencia == _TIPO_ABRANGENCIA_PROFESSOR:
+        return _get_componentes_professor(
+            login,
+            id_perfil,
+            codigo_turma,
+            planejamento,
+        )
+
+    if tipo_abrangencia in _TIPOS_ABRANGENCIA_VINCULO_UE:
+        return _get_componentes_turma_atribuida_ue(
+            login,
+            id_perfil,
+            codigo_turma,
+            planejamento,
+            cargos=cargos,
+        )
+
+    if tipo_abrangencia == _TIPO_ABRANGENCIA_SME:
+        return _get_componentes_sme(codigo_turma, planejamento)
+
+    return _get_componentes_funcionario(
+        login,
+        id_perfil,
+        codigo_turma,
+        planejamento,
+    )
+
+
+def _get_componentes_professor(
+    login: str,
+    id_perfil: str,
+    codigo_turma: str,
+    planejamento: bool,
+) -> Any:
+    """Consulta componentes do professor."""
+    return _get_componentes_funcionario(
+        login,
+        id_perfil,
+        codigo_turma,
+        planejamento,
+    )
+
+
+def _get_componentes_turma_atribuida_ue(
+    login: str,
+    id_perfil: str,
+    codigo_turma: str,
+    planejamento: bool,
+    cargos: list[int] | None = None,
+) -> Any:
+    """Consulta disciplinas por vínculo de UE."""
+    if planejamento:
+        return _get_componentes_funcionario(
+            login,
+            id_perfil,
+            codigo_turma,
+            planejamento,
+        )
+
+    params: dict[str, Any] = {}
+    if cargos:
+        params["cargos"] = [str(cargo) for cargo in cargos]
+
+    resp = _client.get(
+        f"{_BASE_FUNCIONARIOS_LEGADO}/{login}/turmas/"
+        f"{codigo_turma}/disciplinas-atribuidas-ue/",
+        params=params or None,
+    )
+    return _client.json_or_none(resp)
+
+
+def _get_componentes_sme(codigo_turma: str, planejamento: bool) -> Any:
+    """Consulta componentes da turma."""
+    return pedagogico_services.get_componentes_por_lista_turmas(
+        [codigo_turma],
+        adicionar_componentes_planejamento=planejamento,
+    )
+
+
+def _get_componentes_funcionario(
+    login: str,
+    id_perfil: str,
+    codigo_turma: str,
+    planejamento: bool,
+) -> Any:
+    """Consulta componentes do funcionário no domínio pedagógico."""
+    if planejamento:
+        return pedagogico_services.get_componentes_planejamento(
+            codigo_turma=codigo_turma,
+            login=login,
+            id_perfil=id_perfil,
+        )
+    return pedagogico_services.get_componentes_turma_funcionario(
+        codigo_turma=codigo_turma,
+        login=login,
+        id_perfil=id_perfil,
+        agrupa_componente_curricular=False,
+    )
+
+
+def get_abrangencia_funcionario_perfil(
+    login: str,
+    id_perfil: str,
+    abrangencia: int | None = None,
+    cargos: list[int] | None = None,
+    funcoes: list[int] | None = None,
+    grupo: int | None = None,
+    dre_codigo: str | None = None,
+    eh_perfil_manual: bool = False,
+) -> Any:
     """Retorna abrangência de turmas do funcionário.
 
     Args:
         login: Login usado na consulta.
         id_perfil: Perfil usado na consulta.
+        abrangencia: Tipo de abrangência temporário; substitui o valor que
+            viria da identidade enquanto a integração não existe.
+        cargos: Cargos temporários do perfil usados no filtro de vínculo.
+        funcoes: Funções temporárias do perfil.
+        grupo: Grupo temporário do perfil.
+        dre_codigo: DRE temporária usada na abrangência por DRE.
+        eh_perfil_manual: Marca temporária de perfil manual no bloco.
 
     Returns:
         Abrangência de turmas ou ausência de conteúdo.
     """
-    resp = _client.get(
-        f"{_BASE_FUNCIONARIOS_LEGADO}/{login}/perfis/{id_perfil}/turmas/"
-    )
-    data = _to_legado_abrangencia(_client.json_or_none(resp))
+    if abrangencia == _TIPO_ABRANGENCIA_SME:
+        data = get_todas_turmas_atribuidas_dre_ue()
+    elif abrangencia in _TIPOS_ABRANGENCIA_VINCULO_UE:
+        dre = dre_codigo if abrangencia in _TIPOS_ABRANGENCIA_DRE else None
+        cargos_filtro = (
+            None if abrangencia in _TIPOS_ABRANGENCIA_DRE else cargos
+        )
+        data = get_turmas_atribuidas_ue(login, cargos_filtro, dre)
+    else:
+        resp = _client.get(
+            f"{_BASE_FUNCIONARIOS_LEGADO}/{login}/perfis/{id_perfil}/turmas/"
+        )
+        data = _client.json_or_none(resp)
+        if isinstance(data, dict):
+            data = AbrangenciaLegadoSerializer(data).data
+
     if isinstance(data, dict):
-        data["abrangencia"] = _abrangencia_perfil_legado(id_perfil)
+        data["abrangencia"] = _bloco_abrangencia_temporario(
+            id_perfil, abrangencia, cargos, funcoes, grupo, eh_perfil_manual
+        )
     return data
+
+
+def get_turmas_atribuidas_ue(
+    codigo_rf: str,
+    cargos: list[int] | None = None,
+    codigo_dre: str | None = None,
+) -> Any:
+    """Retorna turmas atribuídas por vínculo com UE.
+
+    Args:
+        codigo_rf: RF usado na consulta.
+        cargos: Cargos usados no filtro.
+        codigo_dre: DRE usada no filtro.
+
+    Returns:
+        Abrangência de turmas no contrato legado.
+    """
+    params: dict[str, Any] = {}
+    if cargos:
+        params["cargos"] = [str(cargo) for cargo in cargos]
+    if codigo_dre:
+        params["codigo_dre"] = codigo_dre
+    resp = _client.get(
+        f"{_BASE_FUNCIONARIOS_LEGADO}/{codigo_rf}/turmas-atribuidas-ue/",
+        params=params or None,
+    )
+    data = _client.json_or_none(resp)
+    if not isinstance(data, list):
+        return data
+    return TurmasAtribuidasLegadoSerializer(data).data
 
 
 def get_abrangencia_ues(codigos_ue: list[str]) -> Any:
@@ -538,7 +759,12 @@ def get_abrangencia_ues(codigos_ue: list[str]) -> Any:
         Abrangência de turmas ou ausência de conteúdo.
     """
     data = pedagogico_services.get_turmas_atribuidas_dre_ue(codigos_ue)
-    return _to_legado_turmas_atribuidas(data)
+    return TurmasAtribuidasLegadoSerializer(data).data
+
+
+def get_todas_turmas_atribuidas_dre_ue() -> Any:
+    """Retorna abrangência de turmas atribuídas (já agrupada pelo domínio)."""
+    return pedagogico_services.get_todas_turmas_atribuidas_dre_ue()
 
 
 def get_turmas_elegiveis(payload: dict[str, Any]) -> Any:
@@ -553,14 +779,7 @@ def get_turmas_elegiveis(payload: dict[str, Any]) -> Any:
     data = pedagogico_services.get_turmas_elegiveis(payload)
     if not isinstance(data, list):
         return data
-    return [
-        {
-            "nomeTurma": item.get("nome_turma"),
-            "codTurma": item.get("cod_turma"),
-        }
-        for item in data
-        if isinstance(item, dict)
-    ]
+    return TurmaElegivelLegadoSerializer(data, many=True).data
 
 
 def get_funcionarios(payload: dict[str, Any]) -> Any:
@@ -579,176 +798,34 @@ def get_funcionarios(payload: dict[str, Any]) -> Any:
     data = _client.json_or_none(resp)
     if not isinstance(data, list):
         return data
-    return [
-        {
-            "cd_Cargo": 0,
-            "codigoFuncaoAtividade": (
-                item.get("codigo_funcao_atividade") or 0
-            ),
-            "codigoRf": item.get("codigo_rf"),
-            "funcaoExterno": item.get("funcao_externo") or 0,
-            "login": item.get("codigo_rf"),
-            "nomeServidor": item.get("nome"),
-            "tipoFuncaoExterno": item.get("tipo_funcao_externo") or 0,
-        }
-        for item in data
-        if isinstance(item, dict)
-    ]
+    return FuncionarioLegadoSerializer(data, many=True).data
 
 
-def _to_legado_abrangencia(data: Any) -> Any:
-    """Monta a abrangência no contrato legado."""
-    if not isinstance(data, dict):
-        return data
-    return {
-        "abrangencia": _to_legado_grupo(data.get("abrangencia")),
-        "dres": [
-            _to_legado_dre(dre)
-            for dre in data.get("dres", [])
-            if isinstance(dre, dict)
-        ],
-    }
+def _bloco_abrangencia_temporario(
+    id_perfil: str,
+    abrangencia: int | None,
+    cargos: list[int] | None,
+    funcoes: list[int] | None,
+    grupo: int | None,
+    eh_perfil_manual: bool,
+) -> dict[str, Any] | None:
+    """Monta o bloco de abrangência a partir dos parâmetros temporários.
 
-
-def _to_legado_grupo(data: Any) -> Any:
-    if not isinstance(data, dict):
-        return data
-    return {
-        "grupoID": data.get("grupo_id"),
-        "cargosId": data.get("cargos_id"),
-        "funcoesId": data.get("funcoes_id"),
-        "grupo": data.get("grupo"),
-        "abrangencia": data.get("abrangencia"),
-        "ehPerfilManual": data.get("eh_perfil_manual"),
-    }
-
-
-def _abrangencia_perfil_legado(id_perfil: str) -> dict[str, Any] | None:
-    if id_perfil.lower() != _PERFIL_PROFESSOR:
+    Os valores viriam da identidade (CoreSSO); enquanto a integração não
+    existe, são informados por parâmetros temporários de consulta.
+    """
+    if not any(
+        valor is not None for valor in (abrangencia, cargos, funcoes, grupo)
+    ):
         return None
     return {
-        "grupoID": _PERFIL_PROFESSOR,
-        "cargosId": _CARGOS_PERFIL_PROFESSOR,
-        "funcoesId": [],
-        "grupo": 6,
-        "abrangencia": 2,
-        "ehPerfilManual": False,
+        "grupoID": id_perfil,
+        "cargosId": cargos or [],
+        "funcoesId": funcoes or [],
+        "grupo": grupo,
+        "abrangencia": abrangencia,
+        "ehPerfilManual": eh_perfil_manual,
     }
-
-
-def _to_legado_dre(data: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "abreviacao": data.get("abreviacao"),
-        "codigo": data.get("codigo"),
-        "nome": data.get("nome"),
-        "ues": [
-            _to_legado_ue(ue)
-            for ue in data.get("ues", [])
-            if isinstance(ue, dict)
-        ],
-    }
-
-
-def _to_legado_ue(data: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "codigo": data.get("codigo"),
-        "nome": data.get("nome"),
-        "codTipoEscola": data.get("cod_tipo_escola"),
-        "turmas": [
-            _to_legado_turma(turma)
-            for turma in data.get("turmas", [])
-            if isinstance(turma, dict)
-        ],
-    }
-
-
-def _to_legado_turma(data: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "ano": data.get("ano"),
-        "anoLetivo": data.get("ano_letivo"),
-        "codigo": data.get("codigo"),
-        "tipoTurma": 0,
-        "modalidade": data.get("modalidade"),
-        "codigoModalidade": data.get("codigo_modalidade"),
-        "nomeTurma": data.get("nome_turma"),
-        "semestre": data.get("semestre"),
-        "duracaoTurno": data.get("duracao_turno"),
-        "tipoTurno": data.get("tipo_turno"),
-        "dataFim": data.get("data_fim"),
-        "ehistorico": data.get("ehistorico"),
-        "ensinoEspecial": data.get("ensino_especial"),
-        "etapaEJA": data.get("etapa_eja"),
-        "serieEnsino": data.get("serie_ensino"),
-        "dataInicioTurma": None,
-        "extinta": data.get("extinta"),
-        "situacao": data.get("situacao"),
-        "ueCodigo": data.get("ue_codigo"),
-    }
-
-
-def _to_legado_turmas_atribuidas(data: Any) -> Any:
-    """Monta as turmas atribuídas no contrato legado."""
-    if not isinstance(data, list):
-        return data
-
-    dres: dict[str, dict[str, Any]] = {}
-    ues_por_dre: dict[tuple[str, str], dict[str, Any]] = {}
-
-    for item in data:
-        if not isinstance(item, dict):
-            continue
-        codigo_dre = item.get("codigo_dre")
-        codigo_ue = item.get("codigo_escola")
-        if not codigo_dre or not codigo_ue:
-            continue
-
-        dre = dres.setdefault(
-            str(codigo_dre),
-            {
-                "abreviacao": item.get("dre_abreviacao"),
-                "codigo": codigo_dre,
-                "nome": item.get("dre"),
-                "ues": [],
-            },
-        )
-        chave_ue = (str(codigo_dre), str(codigo_ue))
-        ue = ues_por_dre.setdefault(
-            chave_ue,
-            {
-                "codigo": codigo_ue,
-                "nome": item.get("ue"),
-                "codTipoEscola": item.get("codigo_tipo_escola"),
-                "turmas": [],
-            },
-        )
-        if ue not in dre["ues"]:
-            dre["ues"].append(ue)
-
-        ue["turmas"].append(
-            {
-                "ano": item.get("ano"),
-                "anoLetivo": item.get("ano_letivo"),
-                "codigo": item.get("codigo_turma"),
-                "tipoTurma": 0,
-                "modalidade": item.get("modalidade"),
-                "codigoModalidade": item.get("codigo_modalidade"),
-                "nomeTurma": item.get("nome_turma"),
-                "semestre": item.get("semestre"),
-                "duracaoTurno": item.get("duracao_turno"),
-                "tipoTurno": item.get("tipo_turno"),
-                "dataFim": None,
-                "ehistorico": False,
-                "ensinoEspecial": False,
-                "etapaEJA": 0,
-                "serieEnsino": None,
-                "dataInicioTurma": None,
-                "extinta": False,
-                "situacao": None,
-                "ueCodigo": None,
-            }
-        )
-
-    return {"abrangencia": None, "dres": list(dres.values())}
 
 
 def _montar_turma_atribuida(

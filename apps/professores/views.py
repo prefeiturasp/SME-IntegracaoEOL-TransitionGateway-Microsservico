@@ -1,5 +1,7 @@
 """Views do domínio de professores."""
 
+from typing import NamedTuple
+
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.request import Request
@@ -8,6 +10,10 @@ from rest_framework.views import APIView
 from apps.core.responses import Response, detail_response
 from apps.professores import services
 from apps.professores.serializers import (
+    BuscarFuncionariosPorUeSerializer,
+    BuscarTurmasElegiveisSerializer,
+    DisciplinaTurmaAgrupamentoSerializer,
+    DisciplinaTurmaAtribuidaSerializer,
     FuncionarioCargoSerializer,
     FuncionarioEscolaSerializer,
     FuncionarioFuncaoAtividadeSerializer,
@@ -50,6 +56,135 @@ _CAMPOS_TURMA = {
     "data_atribuicao_aula",
 }
 _MSG_TURMAS_NAO_ENCONTRADAS = "Não foram encontradas turmas atribuídas."
+
+# Parâmetros temporários usados enquanto a identidade não informa
+# a abrangência.
+_PARAM_ABRANGENCIA_TEMPORARIO = OpenApiParameter(
+    "abrangencia",
+    OpenApiTypes.INT,
+    OpenApiParameter.QUERY,
+    required=False,
+    enum=[1, 2, 3, 4, 5, 6],
+    description=(
+        "TEMPORÁRIO (removido após a integração com identidade). "
+        "Tipo de abrangência: 1=UE, 2=Professor, 3=UeTurmasDisciplinas, "
+        "4=Dre, 5=DreEscolasAtribuidas, 6=SME."
+    ),
+)
+_PARAM_CARGOS_TEMPORARIO = OpenApiParameter(
+    "cargos",
+    OpenApiTypes.INT,
+    OpenApiParameter.QUERY,
+    required=False,
+    many=True,
+    description=(
+        "TEMPORÁRIO (removido após a integração com identidade). "
+        "Cargos do perfil (viriam do CoreSSO); filtram as abrangências "
+        "de vínculo com UE/DRE."
+    ),
+)
+_PARAM_FUNCOES_TEMPORARIO = OpenApiParameter(
+    "funcoesId",
+    OpenApiTypes.INT,
+    OpenApiParameter.QUERY,
+    required=False,
+    many=True,
+    description=(
+        "TEMPORÁRIO (removido após a integração com identidade). "
+        "Funções de atividade do perfil (viriam do CoreSSO); compõem o "
+        "bloco de abrangência retornado."
+    ),
+)
+_PARAM_GRUPO_TEMPORARIO = OpenApiParameter(
+    "grupo",
+    OpenApiTypes.INT,
+    OpenApiParameter.QUERY,
+    required=False,
+    description=(
+        "TEMPORÁRIO (removido após a integração com identidade). "
+        "Grupo/perfil (viria do CoreSSO); compõe o bloco de abrangência "
+        "retornado."
+    ),
+)
+_PARAM_DRE_CODIGO_TEMPORARIO = OpenApiParameter(
+    "dreCodigo",
+    OpenApiTypes.STR,
+    OpenApiParameter.QUERY,
+    required=False,
+    description=(
+        "TEMPORÁRIO (removido após a integração com identidade). "
+        "Código da DRE atribuída (viria do CoreSSO); usado na abrangência "
+        "de turmas por DRE."
+    ),
+)
+_PARAM_EH_PERFIL_MANUAL_TEMPORARIO = OpenApiParameter(
+    "ehPerfilManual",
+    OpenApiTypes.BOOL,
+    OpenApiParameter.QUERY,
+    required=False,
+    description=(
+        "TEMPORÁRIO (removido após a integração com identidade). "
+        "Marca de perfil manual (viria do CoreSSO); compõe o bloco de "
+        "abrangência retornado."
+    ),
+)
+# Planejamento: os branches curto-circuitam, então só a abrangência é útil.
+_PARAMS_ABRANGENCIA_TEMPORARIOS = [_PARAM_ABRANGENCIA_TEMPORARIO]
+# Disciplinas: o branch de vínculo com UE/DRE filtra por cargos.
+_PARAMS_DISCIPLINAS_TEMPORARIOS = [
+    _PARAM_ABRANGENCIA_TEMPORARIO,
+    _PARAM_CARGOS_TEMPORARIO,
+]
+# Turmas: switch completo por abrangência, incluindo o branch por DRE.
+_PARAMS_TURMAS_TEMPORARIOS = [
+    _PARAM_ABRANGENCIA_TEMPORARIO,
+    _PARAM_CARGOS_TEMPORARIO,
+    _PARAM_FUNCOES_TEMPORARIO,
+    _PARAM_GRUPO_TEMPORARIO,
+    _PARAM_DRE_CODIGO_TEMPORARIO,
+    _PARAM_EH_PERFIL_MANUAL_TEMPORARIO,
+]
+
+
+class _AbrangenciaTemporaria(NamedTuple):
+    """Parâmetros temporários que substituem os dados do CoreSSO."""
+
+    abrangencia: int | None
+    cargos: list[int] | None
+    funcoes: list[int] | None
+    grupo: int | None
+    dre_codigo: str | None
+    eh_perfil_manual: bool
+
+
+def _inteiro_param(request: Request, nome: str) -> int | None:
+    """Lê um parâmetro inteiro único da query string."""
+    bruto = request.query_params.get(nome)
+    return int(bruto) if bruto and bruto.isdigit() else None
+
+
+def _inteiros_param(request: Request, nome: str) -> list[int] | None:
+    """Lê um parâmetro inteiro repetido da query string."""
+    valores = [
+        item
+        for item in request.query_params.getlist(nome)
+        if item.strip().isdigit()
+    ]
+    return [int(item) for item in valores] or None
+
+
+def _abrangencia_temporaria(request: Request) -> _AbrangenciaTemporaria:
+    """Lê os parâmetros temporários que substituem os dados do CoreSSO."""
+    return _AbrangenciaTemporaria(
+        abrangencia=_inteiro_param(request, "abrangencia"),
+        cargos=_inteiros_param(request, "cargos"),
+        funcoes=_inteiros_param(request, "funcoesId"),
+        grupo=_inteiro_param(request, "grupo"),
+        dre_codigo=request.query_params.get("dreCodigo") or None,
+        eh_perfil_manual=(
+            request.query_params.get("ehPerfilManual", "").lower() == "true"
+        ),
+    )
 
 
 def _query_params(
@@ -263,6 +398,151 @@ class NomeUsuarioEolView(APIView):
         if data is None:
             return Response(status=204)
         return Response(data)
+
+
+class FuncionarioTurmaDisciplinasView(APIView):
+    """Retorna disciplinas da turma."""
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna disciplinas vinculadas à turma."),
+        responses={200: DisciplinaTurmaAgrupamentoSerializer(many=True)},
+    )
+    def get(self, _request: Request, codigo_turma: str) -> Response:
+        """Retorna disciplinas da turma.
+
+        Args:
+            codigo_turma: Código da turma usada na consulta.
+
+        Returns:
+            Disciplinas da turma, ou ausência de conteúdo.
+
+        Raises:
+            httpx.HTTPError: Quando a chamada ao sidecar falha.
+        """
+        if not codigo_turma.strip():
+            return detail_response("É necessário informar o codigoTurma.")
+        data = services.get_disciplinas_turma(codigo_turma)
+        if data == []:
+            return Response(status=204)
+        return Response(data)
+
+
+class FuncionarioPerfilTurmaDisciplinasView(APIView):
+    """Retorna disciplinas do funcionário na turma."""
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna disciplinas do funcionário na turma."),
+        parameters=_PARAMS_DISCIPLINAS_TEMPORARIOS,
+        responses={200: DisciplinaTurmaAtribuidaSerializer(many=True)},
+    )
+    def get(
+        self,
+        request: Request,
+        login: str,
+        id_perfil: str,
+        codigo_turma: str,
+    ) -> Response:
+        """Retorna disciplinas do funcionário na turma.
+
+        Args:
+            request: Requisição com os parâmetros temporários de abrangência.
+            login: Login/RF usado na consulta.
+            id_perfil: Perfil usado na consulta.
+            codigo_turma: Código da turma usada na consulta.
+
+        Returns:
+            Disciplinas da turma, ou ausência de conteúdo.
+
+        Raises:
+            httpx.HTTPError: Quando a chamada ao sidecar falha.
+        """
+        response = _validar_disciplinas_funcionario(
+            login,
+            id_perfil,
+            codigo_turma,
+        )
+        if response is not None:
+            return response
+        params = _abrangencia_temporaria(request)
+        data = services.get_disciplinas_funcionario_turma(
+            login,
+            id_perfil,
+            codigo_turma,
+            abrangencia=params.abrangencia,
+            cargos=params.cargos,
+        )
+        if data == []:
+            return Response(status=204)
+        return Response(data)
+
+
+class FuncionarioPerfilTurmaDisciplinasPlanejamentoView(APIView):
+    """Retorna disciplinas de planejamento do funcionário na turma."""
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=(
+            "Retorna disciplinas de planejamento do funcionário na turma."
+        ),
+        parameters=_PARAMS_ABRANGENCIA_TEMPORARIOS,
+        responses={200: DisciplinaTurmaAtribuidaSerializer(many=True)},
+    )
+    def get(
+        self,
+        request: Request,
+        login: str,
+        id_perfil: str,
+        codigo_turma: str,
+    ) -> Response:
+        """Retorna disciplinas de planejamento do funcionário na turma.
+
+        Args:
+            request: Requisição com os parâmetros temporários de abrangência.
+            login: Login/RF usado na consulta.
+            id_perfil: Perfil usado na consulta.
+            codigo_turma: Código da turma usada na consulta.
+
+        Returns:
+            Disciplinas da turma, ou ausência de conteúdo.
+
+        Raises:
+            httpx.HTTPError: Quando a chamada ao sidecar falha.
+        """
+        response = _validar_disciplinas_funcionario(
+            login,
+            id_perfil,
+            codigo_turma,
+        )
+        if response is not None:
+            return response
+        params = _abrangencia_temporaria(request)
+        data = services.get_disciplinas_funcionario_turma(
+            login,
+            id_perfil,
+            codigo_turma,
+            planejamento=True,
+            abrangencia=params.abrangencia,
+        )
+        if data == []:
+            return Response(status=204)
+        return Response(data)
+
+
+def _validar_disciplinas_funcionario(
+    login: str,
+    id_perfil: str,
+    codigo_turma: str,
+) -> Response | None:
+    """Valida parâmetros da consulta de disciplinas."""
+    if not login.strip():
+        return detail_response("É necessário informar o login.")
+    if not id_perfil.strip():
+        return detail_response("É necessário informar o idPerfil.")
+    if not codigo_turma.strip():
+        return detail_response("É necessário informar o codigoTurma.")
+    return None
 
 
 class ProfessorBuscarPorRfView(APIView):
@@ -766,12 +1046,14 @@ class FuncionarioPerfilTurmasView(APIView):
     @extend_schema(
         tags=_TAG_FUNCIONARIO,
         description=("Retorna abrangência de turmas do funcionário."),
+        parameters=_PARAMS_TURMAS_TEMPORARIOS,
         responses={200: OpenApiTypes.OBJECT, 204: None},
     )
-    def get(self, _request: Request, login: str, id_perfil: str) -> Response:
+    def get(self, request: Request, login: str, id_perfil: str) -> Response:
         """Retorna abrangência de turmas do funcionário.
 
         Args:
+            request: Requisição com os parâmetros temporários de abrangência.
             login: Login usado na consulta.
             id_perfil: Perfil usado na consulta.
 
@@ -785,7 +1067,17 @@ class FuncionarioPerfilTurmasView(APIView):
             return detail_response("É necessário informar o login.")
         if not id_perfil.strip():
             return detail_response("É necessário informar o perfil.")
-        data = services.get_abrangencia_funcionario_perfil(login, id_perfil)
+        params = _abrangencia_temporaria(request)
+        data = services.get_abrangencia_funcionario_perfil(
+            login,
+            id_perfil,
+            abrangencia=params.abrangencia,
+            cargos=params.cargos,
+            funcoes=params.funcoes,
+            grupo=params.grupo,
+            dre_codigo=params.dre_codigo,
+            eh_perfil_manual=params.eh_perfil_manual,
+        )
         if data is None:
             return Response(status=204)
         return Response(data)
@@ -827,7 +1119,7 @@ class FuncionariosBuscarTurmasElegiveisView(APIView):
     @extend_schema(
         tags=_TAG_FUNCIONARIO,
         description=("Retorna turmas elegíveis para cópia."),
-        request=OpenApiTypes.OBJECT,
+        request=BuscarTurmasElegiveisSerializer,
         responses={200: OpenApiTypes.OBJECT, 204: None},
     )
     def post(self, request: Request) -> Response:
@@ -854,7 +1146,7 @@ class FuncionariosView(APIView):
     @extend_schema(
         tags=_TAG_FUNCIONARIO,
         description=("Retorna funcionários por filtros básicos."),
-        request=OpenApiTypes.OBJECT,
+        request=BuscarFuncionariosPorUeSerializer,
         responses={200: OpenApiTypes.OBJECT, 204: None},
     )
     def post(self, request: Request) -> Response:

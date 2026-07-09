@@ -69,6 +69,20 @@ def get_turmas_atribuidas_dre_ue(
     return _client.json_or_none(resp) or []
 
 
+def get_todas_turmas_atribuidas_dre_ue() -> Any:
+    """Retorna a abrangência SME já agrupada por DRE/UE.
+
+    Returns:
+        Abrangência de turmas atribuídas retornada pelo sidecar.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+    """
+    resp = _client.get(f"{_BASE_TURMAS}/turmas-atribuidas-dre-ue/todas/")
+    resp.raise_for_status()
+    return _client.json_or_none(resp)
+
+
 def get_turmas_elegiveis(payload: dict[str, Any]) -> list[dict[str, Any]]:
     """Lista turmas elegíveis por atribuição.
 
@@ -659,6 +673,7 @@ def get_componentes_planejamento(
 def get_componentes_por_lista_turmas(
     codigos_turmas: list[str],
     adicionar_componentes_planejamento: bool = True,
+    incluir_extintas: bool = False,
 ) -> Any:
     """Retorna componentes para planejamento por lista de turmas.
 
@@ -666,6 +681,7 @@ def get_componentes_por_lista_turmas(
         codigos_turmas: Códigos das turmas usadas no filtro.
         adicionar_componentes_planejamento: Indica se componentes de
             planejamento serão adicionados.
+        incluir_extintas: Inclui turmas extintas no resultado.
 
     Returns:
         Componentes curriculares das turmas informadas.
@@ -681,6 +697,7 @@ def get_componentes_por_lista_turmas(
             "adicionarComponentesPlanejamento": (
                 adicionar_componentes_planejamento
             ),
+            "incluirExtintas": incluir_extintas,
         },
     ).json()
 

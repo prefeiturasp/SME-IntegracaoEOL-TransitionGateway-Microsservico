@@ -1102,9 +1102,32 @@ class GetComponentesPorListaTurmasTest(SimpleTestCase):
             params={
                 "codigoTurmas": ["T001", "T002"],
                 "adicionarComponentesPlanejamento": False,
+                "incluirExtintas": False,
             },
         )
         self.assertEqual(result, [])
+
+    @patch("apps.pedagogico.services._client")
+    def test_incluir_extintas_repassa_flag(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Repassa incluirExtintas=True para o serviço pedagógico."""
+        mock_client.get.return_value.json.return_value = []
+
+        services.get_componentes_por_lista_turmas(
+            ["T001"],
+            adicionar_componentes_planejamento=False,
+            incluir_extintas=True,
+        )
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/turmas",
+            params={
+                "codigoTurmas": ["T001"],
+                "adicionarComponentesPlanejamento": False,
+                "incluirExtintas": True,
+            },
+        )
 
 
 class GetComponentesTurmasRegularesTest(SimpleTestCase):
