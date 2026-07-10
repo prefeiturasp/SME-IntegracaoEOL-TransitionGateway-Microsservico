@@ -201,8 +201,7 @@ class ProfessoresUrlsTest(SimpleTestCase):
 
     def test_preserva_rf_escola_e_ano_turmas_atribuidas(self) -> None:
         match = resolve(
-            "/api/professores/000001/escolas/019465/"
-            "turmas/anos_letivos/2026/"
+            "/api/professores/000001/escolas/019465/turmas/anos_letivos/2026/"
         )
 
         self.assertEqual(
@@ -1926,8 +1925,7 @@ class ProfessorBuscaTurmasAtribuidasEscolaViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/000001/escolas/019465/"
-            "turmas/anos_letivos/2026/"
+            "/api/professores/000001/escolas/019465/turmas/anos_letivos/2026/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -1943,8 +1941,7 @@ class ProfessorBuscaTurmasAtribuidasEscolaViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/000001/escolas/019465/"
-            + "turmas/anos_letivos/2026/"
+            "/api/professores/000001/escolas/019465/turmas/anos_letivos/2026/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)

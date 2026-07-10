@@ -1306,8 +1306,7 @@ class GetTurmasAtribuidasProfessorEscolaTest(SimpleTestCase):
         )
 
         mock_client.get.assert_called_once_with(
-            "/api/v1/professores/000001/escolas/019465/"
-            "turmas/anos_letivos/2026/"
+            "/api/v1/professores/000001/escolas/019465/turmas/anos_letivos/2026/"
         )
         self.assertEqual(
             result,
@@ -1364,7 +1363,7 @@ class GetTurmasAtribuidasProfessoresEscolaTest(SimpleTestCase):
         )
 
         mock_client.get.assert_called_once_with(
-            "/api/v1/professores/escolas/019465/" "turmas/anos_letivos/2026/"
+            "/api/v1/professores/escolas/019465/turmas/anos_letivos/2026/"
         )
         self.assertEqual(
             result,
