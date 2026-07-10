@@ -1253,6 +1253,26 @@ class GetCatalogoComponentesTest(SimpleTestCase):
         self.assertEqual(result, [])
 
 
+class GetTodasTurmasAtribuidasDreUeTest(SimpleTestCase):
+    """Valida a abrangência SME de turmas atribuídas."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_chama_path_correto(self, mock_client: MagicMock) -> None:
+        payload: dict[str, object] = {"abrangencia": None, "dres": []}
+        response = MagicMock()
+        mock_client.get.return_value = response
+        mock_client.json_or_none.return_value = payload
+
+        result = services.get_todas_turmas_atribuidas_dre_ue()
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE_TURMAS}/turmas-atribuidas-dre-ue/todas/"
+        )
+        response.raise_for_status.assert_called_once_with()
+        mock_client.json_or_none.assert_called_once_with(response)
+        self.assertEqual(result, payload)
+
+
 class GetGradeCurricularTest(SimpleTestCase):
     """Valida a consulta da grade curricular."""
 
