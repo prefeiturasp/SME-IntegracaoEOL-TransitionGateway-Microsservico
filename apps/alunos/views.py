@@ -32,7 +32,11 @@ from apps.alunos.serializers import (
     ResponsavelResumidoSerializer,
     TurmaDoAlunoSerializer,
 )
-from apps.core.responses import Response, detail_response
+from apps.core.responses import (
+    Response,
+    detail_response,
+    sidecar_error_response_status_livre,
+)
 
 _TAG = ["Aluno"]
 _MSG_CODIGO_OBRIGATORIO = "É necessário informar o codigo do aluno."
@@ -82,30 +86,6 @@ def _sidecar_unavailable_response(_exc: httpx.RequestError) -> Response:
         {"detail": _MSG_SIDECAR_INDISPONIVEL},
         status=503,
     )
-
-
-def _sidecar_error_response_status_livre(
-    exc: httpx.HTTPStatusError,
-) -> Response:
-    """Monta resposta de erro preservando status fora do intervalo padrão.
-
-    O legado usa códigos como 601, acima do limite aceito na construção da
-    resposta; por isso o código é atribuído depois.
-
-    Args:
-        exc: Exceção HTTP lançada pelo cliente externo.
-
-    Returns:
-        Resposta com o corpo e o status originais do sidecar.
-    """
-    try:
-        body: Any = exc.response.json()
-    except ValueError:
-        detail = exc.response.text.strip() or exc.response.reason_phrase
-        body = {"detail": detail}
-    resposta = Response(body, status=400)
-    resposta.status_code = exc.response.status_code
-    return resposta
 
 
 def _is_not_found(exc: httpx.HTTPStatusError) -> bool:
@@ -415,7 +395,7 @@ class DadosAcompanhamentoEscolarView(APIView):
                 cpf_responsavel=_query_value(request, "cpf_responsavel"),
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response_status_livre(exc)
+            return sidecar_error_response_status_livre(exc)
         except httpx.RequestError as exc:
             return _sidecar_unavailable_response(exc)
         return Response(
@@ -531,7 +511,7 @@ class AlunosPorAnoView(APIView):
         try:
             data = services.listar_alunos_por_ano(ano_letivo, codigos_aluno)
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response_status_livre(exc)
+            return sidecar_error_response_status_livre(exc)
         except httpx.RequestError as exc:
             return _sidecar_unavailable_response(exc)
         return Response(AlunoPorCodigoSerializer(data, many=True).data)
@@ -581,7 +561,7 @@ class QuantidadeMatriculadosCCView(APIView):
                 ue_id=_query_value(request, "ue_id"),
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response_status_livre(exc)
+            return sidecar_error_response_status_livre(exc)
         except httpx.RequestError as exc:
             return _sidecar_unavailable_response(exc)
         return Response(
@@ -630,7 +610,7 @@ class QuantidadeMatriculadosView(APIView):
                 turma=request.query_params.getlist("turma"),
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response_status_livre(exc)
+            return sidecar_error_response_status_livre(exc)
         except httpx.RequestError as exc:
             return _sidecar_unavailable_response(exc)
         return Response(
