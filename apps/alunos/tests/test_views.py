@@ -1985,9 +1985,7 @@ class CodigosTurmasRegularesAlunoViewTest(SimpleTestCase):
     """Valida o endpoint .../regulares (endpoint 3)."""
 
     _PATH = "/api/turmas/anos-letivos/2026/alunos/7345634/regulares/"
-    _SVC = (
-        "apps.alunos.views.services." "montar_codigos_turmas_regulares_aluno"
-    )
+    _SVC = "apps.alunos.views.services.montar_codigos_turmas_regulares_aluno"
 
     @patch(_SVC)
     def test_200_retorna_codigos(self, mock_service: MagicMock) -> None:
@@ -2081,9 +2079,7 @@ class CodigoTurmaAlunoComponenteCurricularViewTest(SimpleTestCase):
         "/api/turmas/anos-letivos/2026/alunos/7345634/"
         "componentes-curriculares/512/"
     )
-    _SVC = (
-        "apps.alunos.views.services." "montar_codigos_turmas_regulares_aluno"
-    )
+    _SVC = "apps.alunos.views.services.montar_codigos_turmas_regulares_aluno"
 
     @patch(_SVC)
     def test_200_ignora_componente_e_so_passa_tipos_turma(
