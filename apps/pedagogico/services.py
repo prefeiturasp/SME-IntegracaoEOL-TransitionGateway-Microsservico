@@ -45,6 +45,66 @@ def listar_turmas(codigos: list[int]) -> Any:
     return _client.json_or_none(resp) or []
 
 
+def get_turmas_atribuidas_dre_ue(
+    codigos_ue: list[str],
+) -> list[dict[str, Any]]:
+    """Lista turmas atribuídas por unidades.
+
+    Args:
+        codigos_ue: Códigos das unidades educacionais.
+
+    Returns:
+        Turmas atribuídas retornadas pelo sidecar.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+    """
+    if not codigos_ue:
+        return []
+    resp = _client.post(
+        f"{_BASE_TURMAS}/turmas-atribuidas-dre-ue/",
+        payload=codigos_ue,
+    )
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
+def get_todas_turmas_atribuidas_dre_ue() -> Any:
+    """Retorna a abrangência SME já agrupada por DRE/UE.
+
+    Returns:
+        Abrangência de turmas atribuídas retornada pelo sidecar.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+    """
+    resp = _client.get(f"{_BASE_TURMAS}/turmas-atribuidas-dre-ue/todas/")
+    resp.raise_for_status()
+    return _client.json_or_none(resp)
+
+
+def get_turmas_elegiveis(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    """Lista turmas elegíveis por atribuição.
+
+    Args:
+        payload: Dados no contrato legado.
+
+    Returns:
+        Turmas elegíveis retornadas pelo sidecar.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+    """
+    dados = {
+        "codigo_rf": str(payload.get("CodigoRf", "")),
+        "codigo_turma": payload.get("CodigoTurma"),
+        "componente_curricular": payload.get("ComponenteCurricular"),
+    }
+    resp = _client.post(f"{_BASE_TURMAS}/turmas-elegiveis/", payload=dados)
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
 def get_turmas_recorte_fund_medio_eja(
     codigos: list[int],
 ) -> list[dict[str, Any]]:
@@ -613,6 +673,7 @@ def get_componentes_planejamento(
 def get_componentes_por_lista_turmas(
     codigos_turmas: list[str],
     adicionar_componentes_planejamento: bool = True,
+    incluir_extintas: bool = False,
 ) -> Any:
     """Retorna componentes para planejamento por lista de turmas.
 
@@ -620,6 +681,7 @@ def get_componentes_por_lista_turmas(
         codigos_turmas: Códigos das turmas usadas no filtro.
         adicionar_componentes_planejamento: Indica se componentes de
             planejamento serão adicionados.
+        incluir_extintas: Inclui turmas extintas no resultado.
 
     Returns:
         Componentes curriculares das turmas informadas.
@@ -635,6 +697,7 @@ def get_componentes_por_lista_turmas(
             "adicionarComponentesPlanejamento": (
                 adicionar_componentes_planejamento
             ),
+            "incluirExtintas": incluir_extintas,
         },
     ).json()
 

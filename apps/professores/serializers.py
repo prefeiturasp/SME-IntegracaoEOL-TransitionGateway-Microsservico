@@ -58,6 +58,339 @@ class NomeServidorSerializer(serializers.Serializer):
     cpf = serializers.CharField()
 
 
+@extend_schema_serializer(component_name="buscar_funcionarios_por_ue")
+class BuscarFuncionariosPorUeSerializer(serializers.Serializer):
+    """Filtros do POST de funcionários por UE (contrato legado)."""
+
+    CodigoUE = serializers.CharField(required=False, allow_blank=True)
+    CodigoRF = serializers.CharField(required=False, allow_blank=True)
+    NomeServidor = serializers.CharField(required=False, allow_blank=True)
+
+
+@extend_schema_serializer(component_name="buscar_turmas_elegiveis")
+class BuscarTurmasElegiveisSerializer(serializers.Serializer):
+    """Filtros do POST de turmas elegíveis para cópia (contrato legado)."""
+
+    CodigoRf = serializers.CharField()
+    CodigoTurma = serializers.IntegerField()
+    ComponenteCurricular = serializers.IntegerField()
+
+
+class DisciplinaTurmaAtribuidaSerializer(serializers.Serializer):
+    """Serializa disciplina atribuída no contrato legado."""
+
+    codDisciplina = serializers.IntegerField(source="codigo")
+    codDisciplinaPai = serializers.IntegerField(
+        source="codigo_componente_curricular_pai",
+        allow_null=True,
+        default=None,
+    )
+    codCompTerritorioSaber = serializers.SerializerMethodField()
+    disciplina = serializers.CharField(source="descricao", allow_null=True)
+    regencia = serializers.BooleanField(default=False)
+    tipoEscola = serializers.SerializerMethodField()
+    territorioSaber = serializers.BooleanField(
+        source="territorio_saber",
+        default=False,
+    )
+    professor = serializers.SerializerMethodField()
+
+    def get_codCompTerritorioSaber(  # noqa: N802
+        self, obj: dict[str, Any]
+    ) -> int | None:
+        """Retorna código de território saber."""
+        return obj.get("codigo_componente_territorio_saber") or None
+
+    def get_tipoEscola(self, obj: dict[str, Any]) -> str | None:  # noqa: N802
+        """Retorna tipo de escola."""
+        return obj.get("tipo_escola")
+
+    def get_professor(self, _obj: dict[str, Any]) -> None:
+        """Retorna professor da disciplina."""
+        return None
+
+
+class DisciplinaTurmaAgrupamentoSerializer(DisciplinaTurmaAtribuidaSerializer):
+    """Serializa disciplina de turma com agrupamentos."""
+
+    codCompTerritorioSaber = serializers.SerializerMethodField()
+    tipoEscola = serializers.SerializerMethodField()
+    codigosTerritoriosAgrupamento = serializers.ListField(
+        source="codigos_territorios_agrupamento",
+        child=serializers.IntegerField(),
+        allow_empty=True,
+        default=list,
+    )
+
+    def get_codCompTerritorioSaber(  # noqa: N802
+        self, obj: dict[str, Any]
+    ) -> int:
+        """Retorna código de território saber."""
+        return obj.get("codigo_componente_territorio_saber") or 0
+
+    def get_tipoEscola(self, _obj: dict[str, Any]) -> None:  # noqa: N802
+        """Retorna tipo de escola conforme contrato legado."""
+        return None
+
+
+class TurmaAbrangenciaLegadoSerializer(serializers.Serializer):
+    """Serializa turma da abrangência no contrato legado."""
+
+    ano = serializers.CharField(allow_null=True, default=None)
+    anoLetivo = serializers.IntegerField(
+        source="ano_letivo",
+        allow_null=True,
+        default=None,
+    )
+    codigo = serializers.IntegerField(allow_null=True, default=None)
+    tipoTurma = serializers.SerializerMethodField()
+    modalidade = serializers.CharField(allow_null=True, default=None)
+    codigoModalidade = serializers.IntegerField(
+        source="codigo_modalidade",
+        allow_null=True,
+        default=None,
+    )
+    nomeTurma = serializers.CharField(
+        source="nome_turma",
+        allow_null=True,
+        default=None,
+    )
+    semestre = serializers.IntegerField(allow_null=True, default=None)
+    duracaoTurno = serializers.IntegerField(
+        source="duracao_turno",
+        allow_null=True,
+        default=None,
+    )
+    tipoTurno = serializers.IntegerField(
+        source="tipo_turno",
+        allow_null=True,
+        default=None,
+    )
+    dataFim = serializers.CharField(
+        source="data_fim",
+        allow_null=True,
+        default=None,
+    )
+    ehistorico = serializers.BooleanField(default=False)
+    ensinoEspecial = serializers.BooleanField(
+        source="ensino_especial",
+        allow_null=True,
+        default=None,
+    )
+    etapaEJA = serializers.IntegerField(
+        source="etapa_eja",
+        allow_null=True,
+        default=None,
+    )
+    serieEnsino = serializers.CharField(
+        source="serie_ensino",
+        allow_null=True,
+        default=None,
+    )
+    dataInicioTurma = serializers.SerializerMethodField()
+    extinta = serializers.BooleanField(allow_null=True, default=None)
+    situacao = serializers.CharField(allow_null=True, default=None)
+    ueCodigo = serializers.CharField(
+        source="ue_codigo",
+        allow_null=True,
+        default=None,
+    )
+
+    def get_tipoTurma(self, _obj: Any) -> int:  # noqa: N802
+        """Retorna tipo de turma padrão."""
+        return 0
+
+    def get_dataInicioTurma(self, _obj: Any) -> None:  # noqa: N802
+        """Retorna data de início sempre nula."""
+        return None
+
+
+class UeAbrangenciaLegadoSerializer(serializers.Serializer):
+    """Serializa UE da abrangência no contrato legado."""
+
+    codigo = serializers.CharField(allow_null=True, default=None)
+    nome = serializers.CharField(allow_null=True, default=None)
+    codTipoEscola = serializers.IntegerField(
+        source="cod_tipo_escola",
+        allow_null=True,
+        default=None,
+    )
+    turmas = TurmaAbrangenciaLegadoSerializer(many=True, default=list)
+
+
+class DreAbrangenciaLegadoSerializer(serializers.Serializer):
+    """Serializa DRE da abrangência no contrato legado."""
+
+    abreviacao = serializers.CharField(allow_null=True, default=None)
+    codigo = serializers.CharField(allow_null=True, default=None)
+    nome = serializers.CharField(allow_null=True, default=None)
+    ues = UeAbrangenciaLegadoSerializer(many=True, default=list)
+
+
+class GrupoAbrangenciaLegadoSerializer(serializers.Serializer):
+    """Serializa grupo da abrangência no contrato legado."""
+
+    grupoID = serializers.CharField(
+        source="grupo_id",
+        allow_null=True,
+        default=None,
+    )
+    cargosId = serializers.ListField(
+        source="cargos_id",
+        child=serializers.IntegerField(),
+        allow_empty=True,
+        allow_null=True,
+        default=None,
+    )
+    funcoesId = serializers.ListField(
+        source="funcoes_id",
+        child=serializers.IntegerField(),
+        allow_empty=True,
+        allow_null=True,
+        default=None,
+    )
+    grupo = serializers.IntegerField(allow_null=True, default=None)
+    abrangencia = serializers.IntegerField(allow_null=True, default=None)
+    ehPerfilManual = serializers.BooleanField(
+        source="eh_perfil_manual",
+        allow_null=True,
+        default=None,
+    )
+
+
+class AbrangenciaLegadoSerializer(serializers.Serializer):
+    """Serializa abrangência do funcionário no contrato legado."""
+
+    abrangencia = GrupoAbrangenciaLegadoSerializer(allow_null=True)
+    dres = DreAbrangenciaLegadoSerializer(many=True, default=list)
+
+
+class TurmasAtribuidasLegadoSerializer(serializers.Serializer):
+    """Serializa turmas atribuídas no contrato legado."""
+
+    def to_representation(self, instance: Any) -> Any:
+        """Agrupa turmas por DRE e UE."""
+        if not isinstance(instance, list):
+            return instance
+
+        dres: dict[str, dict[str, Any]] = {}
+        ues_por_dre: dict[tuple[str, str], dict[str, Any]] = {}
+        turmas_por_ue: set[tuple[str, str, int | str | None]] = set()
+
+        for item in instance:
+            if not isinstance(item, dict):
+                continue
+            codigo_dre = item.get("codigo_dre")
+            codigo_ue = item.get("codigo_escola")
+            if not codigo_ue:
+                continue
+
+            chave_dre = str(codigo_dre) if codigo_dre else "__sem_dre__"
+            dre = dres.setdefault(
+                chave_dre,
+                {
+                    "abreviacao": item.get("dre_abreviacao"),
+                    "codigo": codigo_dre,
+                    "nome": item.get("dre"),
+                    "ues": [],
+                },
+            )
+            chave_ue = (chave_dre, str(codigo_ue))
+            ue = ues_por_dre.get(chave_ue)
+            if ue is None:
+                ue = {
+                    "codigo": codigo_ue,
+                    "nome": item.get("ue"),
+                    "codTipoEscola": item.get("codigo_tipo_escola"),
+                    "turmas": [],
+                }
+                ues_por_dre[chave_ue] = ue
+                dre["ues"].append(ue)
+
+            chave_turma = (chave_dre, str(codigo_ue), item.get("codigo_turma"))
+            if chave_turma in turmas_por_ue:
+                continue
+            turmas_por_ue.add(chave_turma)
+
+            ue["turmas"].append(
+                {
+                    "ano": item.get("ano"),
+                    "anoLetivo": item.get("ano_letivo"),
+                    "codigo": item.get("codigo_turma"),
+                    "tipoTurma": 0,
+                    "modalidade": item.get("modalidade"),
+                    "codigoModalidade": item.get("codigo_modalidade") or 0,
+                    "nomeTurma": item.get("nome_turma"),
+                    "semestre": item.get("semestre"),
+                    "duracaoTurno": item.get("duracao_turno"),
+                    "tipoTurno": item.get("tipo_turno"),
+                    "dataFim": None,
+                    "ehistorico": False,
+                    "ensinoEspecial": False,
+                    "etapaEJA": 0,
+                    "serieEnsino": None,
+                    "dataInicioTurma": None,
+                    "extinta": False,
+                    "situacao": None,
+                    "ueCodigo": None,
+                }
+            )
+
+        return {"abrangencia": None, "dres": list(dres.values())}
+
+
+class TurmaElegivelLegadoSerializer(serializers.Serializer):
+    """Serializa turma elegível no contrato legado."""
+
+    nomeTurma = serializers.CharField(
+        source="nome_turma",
+        allow_null=True,
+        default=None,
+    )
+    codTurma = serializers.IntegerField(
+        source="cod_turma",
+        allow_null=True,
+        default=None,
+    )
+
+
+class FuncionarioLegadoSerializer(serializers.Serializer):
+    """Serializa funcionário no contrato legado."""
+
+    cd_Cargo = serializers.SerializerMethodField()
+    codigoFuncaoAtividade = serializers.IntegerField(
+        source="codigo_funcao_atividade",
+        default=0,
+    )
+    codigoRf = serializers.CharField(
+        source="codigo_rf",
+        allow_null=True,
+        default=None,
+    )
+    funcaoExterno = serializers.IntegerField(
+        source="funcao_externo",
+        default=0,
+    )
+    login = serializers.CharField(
+        source="codigo_rf",
+        allow_null=True,
+        default=None,
+    )
+    nomeServidor = serializers.CharField(
+        source="nome",
+        allow_null=True,
+        default=None,
+    )
+    tipoFuncaoExterno = serializers.IntegerField(
+        source="tipo_funcao_externo",
+        default=0,
+    )
+
+    def get_cd_Cargo(self, _obj: Any) -> int:  # noqa: N802
+        """Retorna cargo padrão."""
+        return 0
+
+
 class ProfessorBuscarPorRfSerializer(serializers.Serializer):
     """Serializa dados resumidos de professor."""
 
