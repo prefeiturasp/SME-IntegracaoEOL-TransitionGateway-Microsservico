@@ -439,6 +439,217 @@ class AlunoAutocompleteAtivosViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
 
+class AlunoAutocompleteUeViewTest(SimpleTestCase):
+    """Valida a view de autocomplete de alunos da UE por ano letivo."""
+
+    @patch("apps.alunos.views.services.get_alunos_autocomplete_ue")
+    def test_200_retorna_lista_alunos(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [
+            {
+                "codigo_aluno": 123456,
+                "nome_aluno": "Fulano de Tal",
+                "nome_social_aluno": None,
+                "codigo_turma": 9001,
+                "numero_aluno_chamada": "15",
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/v1/alunos/ues/100001/anosLetivos/2026/autocomplete"
+            "?nome_aluno=Fulano&codigo_eol=123456&limite=5"
+            "&codigos_turmas=9001&eh_historico=false"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        data = resp.json()
+        self.assertEqual(data[0]["codigoAluno"], 123456)
+        self.assertEqual(data[0]["nomeAluno"], "Fulano de Tal")
+        self.assertEqual(data[0]["codigoTurma"], 9001)
+        self.assertEqual(data[0]["numeroAlunoChamada"], "15")
+        mock_service.assert_called_once_with(
+            codigo_ue="100001",
+            ano_letivo="2026",
+            codigo_turmas=["9001"],
+            nome_aluno="Fulano",
+            codigo_eol="123456",
+            somente_ativos=None,
+            eh_historico="false",
+            limite=5,
+        )
+
+    @patch("apps.alunos.views.services.get_alunos_autocomplete_ue")
+    def test_repassa_erro_do_sidecar(self, mock_service: MagicMock) -> None:
+        mock_service.side_effect = _http_status_error(
+            404, {"detail": "Não foram encontradas turmas para o aluno."}
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/v1/alunos/ues/100001/anosLetivos/2026/autocomplete"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch("apps.alunos.views.services.get_alunos_autocomplete_ue")
+    def test_400_quando_limite_invalido(
+        self, mock_service: MagicMock
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/v1/alunos/ues/100001/anosLetivos/2026/autocomplete"
+            "?limite=abc"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_service.assert_not_called()
+
+    def test_403_sem_autenticacao(self) -> None:
+        client = APIClient()
+
+        resp = client.get(
+            "/api/v1/alunos/ues/100001/anosLetivos/2026/autocomplete"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class DadosAcompanhamentoEscolarViewTest(SimpleTestCase):
+    """Valida a view de dados de acompanhamento escolar."""
+
+    @patch("apps.alunos.views.services.get_dados_acompanhamento_escolar")
+    def test_200_retorna_contrato_legado(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = [
+            {
+                "codigo_eol": 7074492,
+                "nome_responsavel": "MARIA DA SILVA",
+                "cpf_responsavel": "12345678901",
+                "nome": "JOAO DA SILVA",
+                "nome_social": None,
+                "codigo_escola": "019267",
+                "codigo_dre": "108200",
+                "escola": "EMEF TESTE",
+                "tipo_responsavel": 1,
+                "codigo_tipo_escola": 1,
+                "descricao_tipo_escola": "EMEF",
+                "sigla_dre": "DRE - CL",
+                "codigo_turma": 3038818,
+                "turma": "5A",
+                "situacao_matricula": "Ativo",
+                "data_nascimento": "2015-04-21",
+                "data_situacao_matricula": "2026-01-22T11:59:03.323000",
+                "codigo_ciclo_ensino": 24,
+                "codigo_etapa_ensino": 5,
+                "serie_resumida": "5",
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/v1/alunos/dados-acompanhamento-escolar"
+            "?codigo_aluno=7074492"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        corpo = resp.json()[0]
+        self.assertEqual(corpo["codigoEol"], 7074492)
+        self.assertEqual(corpo["codigoEscola"], "019267")
+        self.assertEqual(corpo["escola"], "EMEF TESTE")
+        self.assertEqual(corpo["siglaDre"], "DRE - CL")
+        self.assertEqual(corpo["dataNascimento"], "2015-04-21T00:00:00")
+        self.assertEqual(
+            corpo["dataSituacaoMatricula"], "2026-01-22T11:59:03.323"
+        )
+        self.assertEqual(corpo["modalidadeCodigo"], 0)
+        self.assertIsNone(corpo["modalidadeDescricao"])
+        self.assertEqual(
+            list(corpo)[-2:], ["modalidadeCodigo", "modalidadeDescricao"]
+        )
+
+    @patch("apps.alunos.views.services.get_dados_acompanhamento_escolar")
+    def test_repassa_status_601_do_sidecar(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.side_effect = _http_status_error(
+            601, "Nenhum filtro foi especificado"
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/v1/alunos/dados-acompanhamento-escolar")
+
+        self.assertEqual(resp.status_code, 601)
+
+
+class QuantidadeMatriculadosViewTest(SimpleTestCase):
+    """Valida a view de quantidade de matriculados."""
+
+    @patch("apps.alunos.views.services.get_quantidade_matriculados")
+    def test_200_retorna_contrato_legado(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = [
+            {
+                "quantidade": 28,
+                "ordem": 2,
+                "modalidade": "EF",
+                "ano": "3",
+                "turma": "3B",
+                "dre_codigo": "108200",
+                "ue_codigo": "019267",
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/v1/alunos/ano-letivo/2026/matriculados/quantidade"
+            "?ue_codigo=019267&modalidade=5&ano=3&turma=3038818"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        corpo = resp.json()[0]
+        self.assertEqual(
+            list(corpo),
+            [
+                "quantidade",
+                "ordem",
+                "modalidade",
+                "ano",
+                "turma",
+                "dreCodigo",
+                "ueCodigo",
+            ],
+        )
+        self.assertEqual(corpo["quantidade"], 28)
+        self.assertEqual(corpo["dreCodigo"], "108200")
+        self.assertEqual(corpo["ueCodigo"], "019267")
+        mock_service.assert_called_once_with(
+            ano_letivo="2026",
+            dre_codigo=None,
+            ue_codigo="019267",
+            modalidade=["5"],
+            ano=["3"],
+            turma=["3038818"],
+        )
+
+    @patch("apps.alunos.views.services.get_quantidade_matriculados")
+    def test_repassa_status_601_do_sidecar(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.side_effect = _http_status_error(
+            601, "Ano Letivo deve ser informado"
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/v1/alunos/ano-letivo/0/matriculados/quantidade"
+        )
+
+        self.assertEqual(resp.status_code, 601)
+
+
 class AlunoInformacoesViewTest(SimpleTestCase):
     """Valida a view de informações do aluno."""
 

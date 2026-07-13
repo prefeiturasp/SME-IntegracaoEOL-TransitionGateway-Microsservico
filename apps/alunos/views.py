@@ -7,6 +7,7 @@ from typing import Any, cast
 import httpx
 from django.http import HttpResponse
 from drf_spectacular.utils import (
+    OpenApiExample,
     OpenApiParameter,
     OpenApiResponse,
     OpenApiTypes,
@@ -22,9 +23,12 @@ from apps.alunos.serializers import (
     AlunoInformacoesSerializer,
     AlunoMatriculaTurmaSerializer,
     AlunoPorCodigoSerializer,
+    DadosAcompanhamentoEscolarSerializer,
     FiliacaoResponsavelSerializer,
     InformacoesAlunoTurmaSerializer,
     NecessidadeEspecialSerializer,
+    QuantidadeMatriculadosCCSerializer,
+    QuantidadeMatriculadosSerializer,
     ResponsavelResumidoSerializer,
     TurmaDoAlunoSerializer,
 )
@@ -45,6 +49,7 @@ _MSG_SIDECAR_INDISPONIVEL = "Servico de alunos indisponivel."
 _MSG_LEGADO_ERRO_INESPERADO = (
     "Houve um comportamento inesperado do sistema. Por favor, contate a SME."
 )
+_EXEMPLO_BOOL_LEGADO = OpenApiExample("Padrão do legado", value=True)
 
 
 def _sidecar_error_response(exc: httpx.HTTPStatusError) -> Response:
@@ -77,6 +82,30 @@ def _sidecar_unavailable_response(_exc: httpx.RequestError) -> Response:
         {"detail": _MSG_SIDECAR_INDISPONIVEL},
         status=503,
     )
+
+
+def _sidecar_error_response_status_livre(
+    exc: httpx.HTTPStatusError,
+) -> Response:
+    """Monta resposta de erro preservando status fora do intervalo padrão.
+
+    O legado usa códigos como 601, acima do limite aceito na construção da
+    resposta; por isso o código é atribuído depois.
+
+    Args:
+        exc: Exceção HTTP lançada pelo cliente externo.
+
+    Returns:
+        Resposta com o corpo e o status originais do sidecar.
+    """
+    try:
+        body: Any = exc.response.json()
+    except ValueError:
+        detail = exc.response.text.strip() or exc.response.reason_phrase
+        body = {"detail": detail}
+    resposta = Response(body, status=400)
+    resposta.status_code = exc.response.status_code
+    return resposta
 
 
 def _is_not_found(exc: httpx.HTTPStatusError) -> bool:
@@ -288,6 +317,325 @@ class AlunoAutocompleteAtivosView(APIView):
         except httpx.RequestError as exc:
             return _sidecar_unavailable_response(exc)
         return Response(AlunoAutocompleteSerializer(data, many=True).data)
+
+
+class AlunoAutocompleteUeView(APIView):
+    """Lista alunos da UE/ano para autocomplete."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Autocomplete de alunos da UE por ano letivo",
+        description="Retorna alunos da UE no ano letivo por filtro.",
+        parameters=[
+            OpenApiParameter("codigo_ue", str, OpenApiParameter.PATH),
+            OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
+            OpenApiParameter(
+                "codigos_turmas", int, OpenApiParameter.QUERY, many=True
+            ),
+            OpenApiParameter("nome_aluno", str, OpenApiParameter.QUERY),
+            OpenApiParameter("codigo_eol", str, OpenApiParameter.QUERY),
+            OpenApiParameter("somente_ativos", bool, OpenApiParameter.QUERY),
+            OpenApiParameter("eh_historico", bool, OpenApiParameter.QUERY),
+            OpenApiParameter(
+                "limite",
+                int,
+                OpenApiParameter.QUERY,
+                default=10,
+            ),
+        ],
+        responses={200: OpenApiResponse(description="Success")},
+    )
+    def get(
+        self, request: Request, codigo_ue: str, ano_letivo: str
+    ) -> Response:
+        """Busca alunos da UE no ano letivo para autocomplete.
+
+        Args:
+            request: Requisição HTTP recebida.
+            codigo_ue: Código EOL da unidade educacional.
+            ano_letivo: Ano letivo consultado.
+
+        Returns:
+            Alunos encontrados compatíveis com os filtros.
+        """
+        try:
+            limite = _query_int(request, "limite", 10)
+        except ValueError as exc:
+            return detail_response(str(exc))
+        codigo_turmas = request.query_params.getlist("codigos_turmas")
+        try:
+            data = services.get_alunos_autocomplete_ue(
+                codigo_ue=codigo_ue,
+                ano_letivo=ano_letivo,
+                codigo_turmas=codigo_turmas,
+                nome_aluno=_query_value(request, "nome_aluno"),
+                codigo_eol=_query_value(request, "codigo_eol"),
+                somente_ativos=_query_value(request, "somente_ativos"),
+                eh_historico=_query_value(request, "eh_historico"),
+                limite=limite,
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+        return Response(AlunoAutocompleteSerializer(data, many=True).data)
+
+
+class DadosAcompanhamentoEscolarView(APIView):
+    """Lista dados de acompanhamento escolar dos alunos."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Dados de acompanhamento escolar",
+        description=(
+            "Retorna dados dos alunos para acompanhamento do estudante."
+        ),
+        parameters=[
+            OpenApiParameter("codigo_aluno", int, OpenApiParameter.QUERY),
+            OpenApiParameter("codigo_dre", str, OpenApiParameter.QUERY),
+            OpenApiParameter("codigo_ue", str, OpenApiParameter.QUERY),
+            OpenApiParameter("cpf_responsavel", str, OpenApiParameter.QUERY),
+        ],
+        responses={200: OpenApiResponse(description="Success")},
+    )
+    def get(self, request: Request) -> Response:
+        """Busca dados de acompanhamento escolar conforme os filtros.
+
+        Args:
+            request: Requisição HTTP recebida.
+
+        Returns:
+            Dados de acompanhamento escolar dos alunos.
+        """
+        try:
+            data = services.get_dados_acompanhamento_escolar(
+                codigo_aluno=_query_value(request, "codigo_aluno"),
+                codigo_dre=_query_value(request, "codigo_dre"),
+                codigo_ue=_query_value(request, "codigo_ue"),
+                cpf_responsavel=_query_value(request, "cpf_responsavel"),
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response_status_livre(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+        return Response(
+            DadosAcompanhamentoEscolarSerializer(data, many=True).data
+        )
+
+
+class AlunoTurmasComHistoricoView(APIView):
+    """Lista turmas do aluno com origem histórica explícita."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Turmas do aluno por histórico, situação e tipo de turma",
+        description=(
+            "Retorna as turmas do aluno no ano letivo, escolhendo a origem "
+            "(corrente ou histórica) e os filtros de situação e tipo."
+        ),
+        parameters=[
+            OpenApiParameter("codigo_aluno", int, OpenApiParameter.PATH),
+            OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
+            OpenApiParameter("historico", bool, OpenApiParameter.PATH),
+            OpenApiParameter(
+                "filtrar_situacao",
+                bool,
+                OpenApiParameter.PATH,
+                default=True,
+                examples=[_EXEMPLO_BOOL_LEGADO],
+            ),
+            OpenApiParameter(
+                "tipo_turma",
+                bool,
+                OpenApiParameter.PATH,
+                default=True,
+                examples=[_EXEMPLO_BOOL_LEGADO],
+            ),
+        ],
+        responses={200: OpenApiResponse(description="Success")},
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_aluno: str,
+        ano_letivo: str,
+        historico: str,
+        filtrar_situacao: str,
+        tipo_turma: str,
+    ) -> Response:
+        """Busca turmas do aluno conforme origem e filtros informados.
+
+        Args:
+            codigo_aluno: Código EOL do aluno.
+            ano_letivo: Ano letivo consultado.
+            historico: Consulta os vínculos históricos quando verdadeiro.
+            filtrar_situacao: Restringe às situações de matrícula válidas.
+            tipo_turma: Exclui turmas do tipo programa quando verdadeiro.
+
+        Returns:
+            Lista de turmas do aluno conforme os filtros.
+        """
+        if not codigo_aluno.strip():
+            return detail_response(_MSG_CODIGO_OBRIGATORIO)
+        try:
+            data = services.get_turmas_aluno_com_historico(
+                codigo_aluno,
+                ano_letivo,
+                historico,
+                filtrar_situacao,
+                tipo_turma,
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+        return Response(TurmaDoAlunoSerializer(data, many=True).data)
+
+
+class AlunosPorAnoView(APIView):
+    """Lista alunos pelos códigos restritos a um ano letivo."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Alunos por códigos e ano letivo",
+        description="Retorna alunos pelos códigos no ano letivo informado.",
+        parameters=[
+            OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
+            OpenApiParameter(
+                "codigos_aluno",
+                int,
+                OpenApiParameter.QUERY,
+                many=True,
+                required=True,
+            ),
+        ],
+        responses={200: OpenApiResponse(description="Success")},
+    )
+    def get(self, request: Request, ano_letivo: str) -> Response:
+        """Lista alunos pelos códigos informados no ano letivo.
+
+        Args:
+            request: Requisição HTTP recebida.
+            ano_letivo: Ano letivo consultado.
+
+        Returns:
+            Lista de alunos correspondentes aos códigos informados.
+        """
+        codigos_aluno = request.query_params.getlist(
+            "codigos_aluno"
+        ) or request.query_params.getlist("codigosAluno")
+        if not codigos_aluno:
+            return _legacy_status_601_response(
+                _MSG_CODIGOS_ALUNOS_OBRIGATORIOS
+            )
+        try:
+            data = services.listar_alunos_por_ano(ano_letivo, codigos_aluno)
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response_status_livre(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+        return Response(AlunoPorCodigoSerializer(data, many=True).data)
+
+
+class QuantidadeMatriculadosCCView(APIView):
+    """Lista matriculados por componente curricular e ano letivo."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Matriculados por componente curricular",
+        description=(
+            "Retorna quantidades de matriculados por componente curricular."
+        ),
+        parameters=[
+            OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
+            OpenApiParameter("dre_id", str, OpenApiParameter.QUERY),
+            OpenApiParameter("ue_id", str, OpenApiParameter.QUERY),
+            OpenApiParameter(
+                "componentes_curriculares",
+                int,
+                OpenApiParameter.QUERY,
+                many=True,
+                required=True,
+            ),
+        ],
+        responses={200: OpenApiResponse(description="Success")},
+    )
+    def get(self, request: Request, ano_letivo: str) -> Response:
+        """Busca matriculados por componente conforme os filtros.
+
+        Args:
+            request: Requisição HTTP recebida.
+            ano_letivo: Ano letivo consultado.
+
+        Returns:
+            Quantidades de matriculados por componente curricular.
+        """
+        componentes = request.query_params.getlist(
+            "componentes_curriculares"
+        ) or request.query_params.getlist("componentesCurriculares")
+        try:
+            data = services.get_quantidade_matriculados_cc(
+                ano_letivo=ano_letivo,
+                componentes_curriculares=componentes,
+                dre_id=_query_value(request, "dre_id"),
+                ue_id=_query_value(request, "ue_id"),
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response_status_livre(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+        return Response(
+            QuantidadeMatriculadosCCSerializer(data, many=True).data
+        )
+
+
+class QuantidadeMatriculadosView(APIView):
+    """Lista a quantidade de alunos matriculados por ano letivo."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Quantidade de alunos matriculados",
+        description=(
+            "Retorna quantidades de matriculados agregadas por turma."
+        ),
+        parameters=[
+            OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
+            OpenApiParameter("dre_codigo", str, OpenApiParameter.QUERY),
+            OpenApiParameter("ue_codigo", str, OpenApiParameter.QUERY),
+            OpenApiParameter(
+                "modalidade", int, OpenApiParameter.QUERY, many=True
+            ),
+            OpenApiParameter("ano", int, OpenApiParameter.QUERY, many=True),
+            OpenApiParameter("turma", int, OpenApiParameter.QUERY, many=True),
+        ],
+        responses={200: OpenApiResponse(description="Success")},
+    )
+    def get(self, request: Request, ano_letivo: str) -> Response:
+        """Busca a quantidade de matriculados conforme os filtros.
+
+        Args:
+            request: Requisição HTTP recebida.
+            ano_letivo: Ano letivo consultado.
+
+        Returns:
+            Quantidades de matriculados agregadas por turma.
+        """
+        try:
+            data = services.get_quantidade_matriculados(
+                ano_letivo=ano_letivo,
+                dre_codigo=_query_value(request, "dre_codigo"),
+                ue_codigo=_query_value(request, "ue_codigo"),
+                modalidade=request.query_params.getlist("modalidade"),
+                ano=request.query_params.getlist("ano"),
+                turma=request.query_params.getlist("turma"),
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response_status_livre(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+        return Response(
+            QuantidadeMatriculadosSerializer(data, many=True).data
+        )
 
 
 class AlunoInformacoesView(APIView):
@@ -765,9 +1113,19 @@ class AlunoTurmasPorSituacaoView(APIView):
             OpenApiParameter("codigo_aluno", int, OpenApiParameter.PATH),
             OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
             OpenApiParameter(
-                "filtrar_situacao_matricula", bool, OpenApiParameter.PATH
+                "filtrar_situacao_matricula",
+                bool,
+                OpenApiParameter.PATH,
+                default=True,
+                examples=[_EXEMPLO_BOOL_LEGADO],
             ),
-            OpenApiParameter("tipo_turma", bool, OpenApiParameter.PATH),
+            OpenApiParameter(
+                "tipo_turma",
+                bool,
+                OpenApiParameter.PATH,
+                default=True,
+                examples=[_EXEMPLO_BOOL_LEGADO],
+            ),
         ],
         responses={200: OpenApiResponse(description="Success")},
     )

@@ -4,6 +4,7 @@ from django.urls import path
 
 from apps.alunos.views import (
     AlunoAutocompleteAtivosView,
+    AlunoAutocompleteUeView,
     AlunoInformacoesView,
     AlunoNecessidadesEspeciaisView,
     AlunosAtivosDataAulaTicksView,
@@ -12,11 +13,16 @@ from apps.alunos.views import (
     AlunosDataMatriculaTicksView,
     AlunosDaUeView,
     AlunosListView,
-    AlunoTurmasPorSituacaoView,
+    AlunosPorAnoView,
     AlunoTurmaConsideraInativosView,
+    AlunoTurmasComHistoricoView,
+    AlunoTurmasPorSituacaoView,
     AlunoTurmasView,
+    DadosAcompanhamentoEscolarView,
     FiliacaoAlunoView,
     InformacoesAlunosTurmaView,
+    QuantidadeMatriculadosCCView,
+    QuantidadeMatriculadosView,
     ResponsavelResumidoView,
     TotalAlunosAtivosPeriodoView,
 )
@@ -55,6 +61,31 @@ urlpatterns = [
         name="alunos-da-ue",
     ),
     path(
+        "ues/<str:codigo_ue>/anosLetivos/<str:ano_letivo>/autocomplete",
+        AlunoAutocompleteUeView.as_view(),
+        name="aluno-autocomplete-ue",
+    ),
+    path(
+        "dados-acompanhamento-escolar",
+        DadosAcompanhamentoEscolarView.as_view(),
+        name="dados-acompanhamento-escolar",
+    ),
+    path(
+        "ano-letivo/<str:ano_letivo>/matriculados",
+        QuantidadeMatriculadosCCView.as_view(),
+        name="quantidade-matriculados-cc",
+    ),
+    path(
+        "ano-letivo/<str:ano_letivo>/matriculados/quantidade",
+        QuantidadeMatriculadosView.as_view(),
+        name="quantidade-matriculados",
+    ),
+    path(
+        "anoLetivo/<str:ano_letivo>/alunos",
+        AlunosPorAnoView.as_view(),
+        name="alunos-por-ano",
+    ),
+    path(
         "responsaveis/<str:cpf_responsavel>/resumido",
         ResponsavelResumidoView.as_view(),
         name="aluno-responsavel-resumido",
@@ -88,6 +119,14 @@ urlpatterns = [
         "<str:codigo_aluno>/turmas/",
         AlunoTurmasView.as_view(),
         name="aluno-turmas-com-barra",
+    ),
+    path(
+        "<str:codigo_aluno>/turmas/anosLetivos/<str:ano_letivo>/"
+        "historico/<str:historico>/"
+        "filtrar-situacao/<str:filtrar_situacao>/"
+        "tipo-turma/<str:tipo_turma>",
+        AlunoTurmasComHistoricoView.as_view(),
+        name="aluno-turmas-com-historico",
     ),
     path(
         "<str:codigo_aluno>/turmas/anosLetivos/<str:ano_letivo>/"
