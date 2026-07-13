@@ -378,6 +378,74 @@ def _turma_historica_elegivel(turma: dict[str, Any]) -> bool:
     return tipo_escola in _TIPOS_ESCOLA_TURMAS_HISTORICAS
 
 
+def get_listagem_turmas_componentes(
+    codigo_ue: str,
+    modalidade: int,
+    ano_letivo: int,
+    codigo_turma: int | None = None,
+    qtde_registros: int | None = None,
+    qtde_registros_ignorados: int | None = None,
+    eh_professor: bool = False,
+    codigo_rf: str | None = None,
+    considera_historico: bool = False,
+    periodo_escolar_inicio_tick: int | None = None,
+    anos_infantil_desconsiderar: list[str] | None = None,
+) -> dict[str, Any]:
+    """Lista turmas e componentes por UE, modalidade e ano letivo.
+
+    Args:
+        codigo_ue: Código da unidade educacional.
+        modalidade: Código da modalidade de ensino.
+        ano_letivo: Ano letivo consultado.
+        codigo_turma: Filtra por uma turma específica quando informado.
+        qtde_registros: Tamanho da página usado no total de páginas.
+        qtde_registros_ignorados: Compatibilidade legada; repassado ao MS.
+        eh_professor: Restringe os componentes ao RF informado.
+        codigo_rf: RF do professor usado no filtro e no território.
+        considera_historico: Inclui turmas históricas (situação C/E).
+        periodo_escolar_inicio_tick: Início do período escolar em ticks .NET.
+        anos_infantil_desconsiderar: Anos de turma removidos do retorno.
+
+    Returns:
+        Envelope paginado (`items`, `total_registros`, `total_paginas`).
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+        ValueError: Se a resposta não representar um objeto.
+        OverflowError: Se os ticks excederem o limite do datetime.
+    """
+    params: dict[str, Any] = {
+        "eh_professor": str(eh_professor).lower(),
+        "considera_historico": str(considera_historico).lower(),
+    }
+    if codigo_turma:
+        params["codigo_turma"] = codigo_turma
+    if qtde_registros is not None:
+        params["qtde_registros"] = qtde_registros
+    if qtde_registros_ignorados is not None:
+        params["qtde_registros_ignorados"] = qtde_registros_ignorados
+    if eh_professor and codigo_rf:
+        params["codigo_rf"] = codigo_rf
+    if periodo_escolar_inicio_tick:
+        params["periodo_escolar_inicio"] = _ticks_dotnet_para_data(
+            periodo_escolar_inicio_tick
+        )
+    if anos_infantil_desconsiderar:
+        params["anos_infantil_desconsiderar"] = anos_infantil_desconsiderar
+
+    response = _client.get(
+        f"{_BASE}/ues/{codigo_ue}/modalidades/{modalidade}/anos/"
+        f"{ano_letivo}/componentes/",
+        params=params,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, dict):
+        raise ValueError("Resposta da listagem de turmas deve ser um objeto.")
+    return payload
+
+
 def get_sincronizacao_institucional_turma(
     codigo_ue: str,
     codigo_turma: str,
