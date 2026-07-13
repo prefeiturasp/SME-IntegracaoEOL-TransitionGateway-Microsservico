@@ -16,6 +16,23 @@ _client = ServiceClient(
 )
 
 
+def _codigos_ue(data: Any) -> list[str]:
+    """Extrai códigos de UE de um payload do sidecar.
+
+    Args:
+        data: Payload retornado pelo sidecar institucional.
+
+    Returns:
+        Códigos EOL das unidades educacionais.
+    """
+    if not isinstance(data, dict):
+        return []
+    codigos = data.get("codigos_ue")
+    if not isinstance(codigos, list):
+        return []
+    return [codigo for codigo in codigos if isinstance(codigo, str)]
+
+
 def get_dres() -> Any:
     """Lista Diretorias Regionais de Educação.
 
@@ -321,8 +338,7 @@ def get_codigos_ue_emei(codigos: list[str]) -> list[str]:
         f"{_BASE}/escolas/recorte-emei/",
         payload=[str(codigo) for codigo in codigos],
     )
-    data = _client.json_or_none(resp) or {}
-    return data.get("codigos_ue", []) if isinstance(data, dict) else []
+    return _codigos_ue(_client.json_or_none(resp))
 
 
 def get_codigos_ue_tipo_sgp(codigos: list[str]) -> list[str]:
@@ -340,8 +356,7 @@ def get_codigos_ue_tipo_sgp(codigos: list[str]) -> list[str]:
         f"{_BASE}/escolas/recorte-tipo-sgp/",
         payload=[str(codigo) for codigo in codigos],
     )
-    data = _client.json_or_none(resp) or {}
-    return data.get("codigos_ue", []) if isinstance(data, dict) else []
+    return _codigos_ue(_client.json_or_none(resp))
 
 
 def get_todas_unidades() -> Any:

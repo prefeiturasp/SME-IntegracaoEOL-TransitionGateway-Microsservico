@@ -9,11 +9,27 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 
+_MSG_TURMAS_NAO_ENCONTRADAS = "Não foram encontradas turmas atribuídas."
+
+
 def _cliente_autenticado() -> APIClient:
     """Cria um APIClient autenticado para os testes."""
     client = APIClient()
     client.force_authenticate(user=User(username="test-user"))
     return client
+
+
+def _turma_atribuida_simplificada() -> dict[str, object]:
+    """Cria payload simplificado de turma atribuída para os testes."""
+    return {
+        "codigoTurma": 3030050,
+        "nomeTurma": "1A",
+        "componenteCurricular": "Matemática",
+        "dataInicioAtribuicao": "2026-02-03",
+        "dataFimAtribuicao": None,
+        "ano": "1",
+        "etapaEnsino": 1,
+    }
 
 
 class ProfessoresUrlsTest(SimpleTestCase):
@@ -147,6 +163,39 @@ class ProfessoresUrlsTest(SimpleTestCase):
         self.assertEqual(
             match.kwargs,
             {"ano_letivo": 2026, "dre_id": "1"},
+        )
+
+    def test_preserva_rf_escola_e_ano_turmas_atribuidas(self) -> None:
+        match = resolve(
+            "/api/professores/000001/escolas/019465/"
+            "turmas/anos_letivos/2026/"
+        )
+
+        self.assertEqual(
+            match.kwargs,
+            {
+                "codigo_rf": "000001",
+                "codigo_eol_escola": "019465",
+                "ano_letivo": 2026,
+            },
+        )
+
+    def test_preserva_escola_e_ano_turmas_atribuidas(self) -> None:
+        match = resolve(
+            "/api/professores/escolas/019465/turmas/anos_letivos/2026/"
+        )
+
+        self.assertEqual(
+            match.kwargs,
+            {"codigo_eol_escola": "019465", "ano_letivo": 2026},
+        )
+
+    def test_preserva_rf_e_ano_turmas_atribuidas(self) -> None:
+        match = resolve("/api/professores/000001/turmas/anos_letivos/2026/")
+
+        self.assertEqual(
+            match.kwargs,
+            {"codigo_rf": "000001", "ano_letivo": 2026},
         )
 
 
@@ -1440,7 +1489,9 @@ class ProfessorAutoCompleteViewTest(SimpleTestCase):
         )
 
     @patch("apps.professores.views.services.get_autocomplete_professores")
-    def test_200_lista_vazia_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
+    def test_200_lista_vazia_quando_sem_conteudo(
+        self, mock_service: MagicMock
+    ) -> None:
         """Testa 200 [] quando o sidecar retorna None para autocomplete de professores."""
         mock_service.return_value = None
         client = _cliente_autenticado()
@@ -1453,7 +1504,9 @@ class ProfessorAutoCompleteViewTest(SimpleTestCase):
         self.assertEqual(resp.json(), [])
 
     @patch("apps.professores.views.services.get_autocomplete_professores")
-    def test_200_lista_vazia_quando_lista_vazia(self, mock_service: MagicMock) -> None:
+    def test_200_lista_vazia_quando_lista_vazia(
+        self, mock_service: MagicMock
+    ) -> None:
         """Testa 200 [] quando o sidecar retorna lista vazia para autocomplete."""
         mock_service.return_value = []
         client = _cliente_autenticado()
@@ -1537,4 +1590,162 @@ class ProfessorAutoCompleteViewTest(SimpleTestCase):
         )
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        mock_service.assert_not_called()
+
+
+class ProfessorBuscaTurmasAtribuidasEscolaViewTest(SimpleTestCase):
+    """Valida turmas atribuídas ao professor por escola."""
+
+    @patch(
+        "apps.professores.views.services."
+        "get_turmas_atribuidas_professor_escola"
+    )
+    def test_200_retorna_turmas(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [_turma_atribuida_simplificada()]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/professores/000001/escolas/019465/"
+            "turmas/anos_letivos/2026/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [_turma_atribuida_simplificada()])
+        mock_service.assert_called_once_with("000001", "019465", 2026)
+
+    @patch(
+        "apps.professores.views.services."
+        "get_turmas_atribuidas_professor_escola"
+    )
+    def test_404_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/professores/000001/escolas/019465/"
+            + "turmas/anos_letivos/2026/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(resp.json(), _MSG_TURMAS_NAO_ENCONTRADAS)
+
+    @patch(
+        "apps.professores.views.services."
+        "get_turmas_atribuidas_professor_escola"
+    )
+    def test_400_quando_codigo_escola_e_somente_espacos(
+        self, mock_service: MagicMock
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/professores/000001/escolas/%20/turmas/anos_letivos/2026/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "É necessário informar o codigoUE."},
+        )
+        mock_service.assert_not_called()
+
+
+class BuscaTurmasAtribuidasProfessoresEscolaViewTest(SimpleTestCase):
+    """Valida turmas atribuídas aos professores por escola."""
+
+    @patch(
+        "apps.professores.views.services."
+        "get_turmas_atribuidas_professores_escola"
+    )
+    def test_200_retorna_turmas(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [_turma_atribuida_simplificada()]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/professores/escolas/019465/turmas/anos_letivos/2026/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [_turma_atribuida_simplificada()])
+        mock_service.assert_called_once_with("019465", 2026)
+
+    @patch(
+        "apps.professores.views.services."
+        "get_turmas_atribuidas_professores_escola"
+    )
+    def test_404_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = None
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/professores/escolas/019465/turmas/anos_letivos/2026/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(resp.json(), _MSG_TURMAS_NAO_ENCONTRADAS)
+
+    @patch(
+        "apps.professores.views.services."
+        "get_turmas_atribuidas_professores_escola"
+    )
+    def test_400_quando_codigo_escola_e_somente_espacos(
+        self, mock_service: MagicMock
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/professores/escolas/%20/turmas/anos_letivos/2026/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "É necessário informar o codigoRF."},
+        )
+        mock_service.assert_not_called()
+
+
+class ProfessorBuscarTurmasAtribuidasViewTest(SimpleTestCase):
+    """Valida turmas atribuídas ao professor por ano letivo."""
+
+    @patch(
+        "apps.professores.views.services.get_turmas_atribuidas_professor"
+    )
+    def test_200_retorna_turmas(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [_turma_atribuida_simplificada()]
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/professores/000001/turmas/anos_letivos/2026/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [_turma_atribuida_simplificada()])
+        mock_service.assert_called_once_with("000001", 2026)
+
+    @patch(
+        "apps.professores.views.services.get_turmas_atribuidas_professor"
+    )
+    def test_404_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/professores/000001/turmas/anos_letivos/2026/")
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(resp.json(), _MSG_TURMAS_NAO_ENCONTRADAS)
+
+    @patch(
+        "apps.professores.views.services.get_turmas_atribuidas_professor"
+    )
+    def test_400_quando_codigo_rf_e_somente_espacos(
+        self, mock_service: MagicMock
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/professores/%20/turmas/anos_letivos/2026/")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "É necessário informar o codigoRF."},
+        )
         mock_service.assert_not_called()
