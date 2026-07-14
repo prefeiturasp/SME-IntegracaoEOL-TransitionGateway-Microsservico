@@ -24,6 +24,7 @@ from apps.pedagogico.views import (
     DadosTurmaViewSet,
     GradeComponentesCurricularesViewSet,
     ItinerariosEnsinoMedioViewSet,
+    ListagemTurmasComponentesViewSet,
     ListarTurmasViewSet,
     SincronizacaoInstitucionalTurmaViewSet,
     SincronizacoesInstitucionaisAnosLetivosViewSet,
@@ -65,6 +66,12 @@ turma_urlpatterns = [
     path(
         "listar-turmas/",
         ListarTurmasViewSet.as_view(),
+    ),
+    path(
+        "ues/<str:codigo_ue>/modalidades/<int:modalidade>/anos/"
+        "<int:ano_letivo>/componentes/",
+        ListagemTurmasComponentesViewSet.as_view(),
+        name="listagem-turmas-componentes",
     ),
     path(
         "<str:codigo_turma>/sem-redis/",

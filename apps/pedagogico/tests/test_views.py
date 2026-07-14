@@ -2262,3 +2262,157 @@ class AgrupamentosTerritorioViewSetTest(SimpleTestCase):
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         mock_svc.assert_not_called()
+
+
+_ITEM_LISTAGEM = {
+    "id": None,
+    "turma_codigo": "T1",
+    "modalidade": 5,
+    "nome_turma": "1 ANO A",
+    "ano": "1",
+    "complemento_turma_eja": "",
+    "nome_componente_curricular": "Matematica",
+    "componente_curricular_codigo": 1,
+    "turno": "3",
+    "territorio_saber": False,
+    "componente_curricular_territorio_saber_codigo": 0,
+}
+_ENVELOPE_LISTAGEM = {
+    "items": [_ITEM_LISTAGEM],
+    "total_registros": 1,
+    "total_paginas": 1,
+}
+_PATH_LISTAGEM = (
+    f"{_PREFIX_TURMAS}/ues/9000/modalidades/5/anos/2024/componentes/"
+)
+
+
+class ListagemTurmasComponentesViewSetTest(SimpleTestCase):
+    """Valida a view de listagem turma×componente."""
+
+    @patch("apps.pedagogico.views.services.get_listagem_turmas_componentes")
+    def test_200_reshape_contrato_legado(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = _ENVELOPE_LISTAGEM
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PATH_LISTAGEM}?qtdeRegistros=10")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data["totalRegistros"], 1)
+        self.assertEqual(resp.data["totalPaginas"], 1)
+        item = resp.data["items"][0]
+        self.assertEqual(item["turmaCodigo"], "T1")
+        self.assertEqual(item["nomeTurma"], "1 ANO A")
+        self.assertEqual(item["nomeComponenteCurricular"], "Matematica")
+        self.assertEqual(item["componenteCurricularCodigo"], 1)
+        self.assertEqual(item["complementoTurmaEJA"], "")
+        self.assertIn("componenteCurricularTerritorioSaberCodigo", item)
+
+    @patch("apps.pedagogico.views.services.get_listagem_turmas_componentes")
+    def test_paridade_campos_legado(self, mock_svc: MagicMock) -> None:
+        """Preenche campos reais e fixos no contrato legado."""
+        item = {
+            **_ITEM_LISTAGEM,
+            "tipo_escola": 2,
+            "situacao_turma_escola": "A",
+            "data_status_turma_escola": "2026-06-30T16:00:57.183",
+            "codigo_escola": "9000",
+            "ano_letivo": 2026,
+            "etapa_ensino": 6,
+            "ciclo_ensino": 3,
+            "serie_ensino": "4A",
+            "tipo_grade_programa": 0,
+            "codigo_grade_programa": 0,
+            "descricao_grade_programa": "EJA FINAL II",
+            "data_inicio_turma": None,
+            "data_fim_turma": None,
+            "data_atualizacao": None,
+            "duracao_turno": 5,
+            "ensino_especial": True,
+            "semestre": 0,
+            "extinta": False,
+            "tipo_turma": 1,
+        }
+        mock_svc.return_value = {
+            "items": [item],
+            "total_registros": 1,
+            "total_paginas": 1,
+        }
+        client = _cliente_autenticado()
+
+        resp = client.get(_PATH_LISTAGEM)
+
+        legado = resp.data["items"][0]
+        # Campos preenchidos com dado real do domínio.
+        self.assertEqual(legado["tipoEscola"], 2)
+        self.assertEqual(legado["situacaoTurmaEscola"], "A")
+        self.assertEqual(legado["anoLetivo"], 2026)
+        self.assertEqual(legado["etapaEnsino"], 6)
+        self.assertEqual(legado["cicloEnsino"], 3)
+        self.assertEqual(legado["serieEnsino"], "4A")
+        self.assertEqual(legado["tipoTurma"], 1)
+        self.assertEqual(legado["duracaoTurno"], 5)
+        self.assertEqual(legado["codigoEscola"], "9000")
+        self.assertEqual(
+            legado["descricaoGradePrograma"], "EJA FINAL II"
+        )
+        # bool -> int.
+        self.assertEqual(legado["ensinoEspecial"], 1)
+        self.assertEqual(legado["extinta"], 0)
+        # Data .NET para não-anulável com valor.
+        self.assertEqual(
+            legado["dataStatusTurmaEscola"], "2026-06-30T16:00:57.183"
+        )
+        # Não-anulável sem valor -> sentinela; anuláveis -> null.
+        self.assertEqual(legado["dataAtualizacao"], "0001-01-01T00:00:00")
+        self.assertIsNone(legado["dataInicioTurma"])
+        self.assertIsNone(legado["dataFimTurma"])
+        # Sem fonte no domínio -> valor fixo.
+        self.assertEqual(legado["totalRegistros"], 0)
+        self.assertIsNone(legado["registroFuncional"])
+        self.assertFalse(legado["historica"])
+        self.assertIsNone(legado["dataDisponibizacao"])
+        self.assertIsNone(legado["nomeFiltro"])
+        self.assertEqual(legado["etapaEJA"], 0)
+
+    @patch("apps.pedagogico.views.services.get_listagem_turmas_componentes")
+    def test_traduz_parametros_professor(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = _ENVELOPE_LISTAGEM
+        client = _cliente_autenticado()
+
+        client.get(
+            f"{_PATH_LISTAGEM}?ehProfessor=true&codigoRf=RF1"
+            "&codigoTurma=77&qtdeRegistros=10"
+        )
+
+        _, kwargs = mock_svc.call_args
+        self.assertTrue(kwargs["eh_professor"])
+        self.assertEqual(kwargs["codigo_rf"], "RF1")
+        self.assertEqual(kwargs["codigo_turma"], 77)
+        self.assertEqual(kwargs["qtde_registros"], 10)
+
+    @patch("apps.pedagogico.views.services.get_listagem_turmas_componentes")
+    def test_gestor_nao_repassa_rf(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = _ENVELOPE_LISTAGEM
+        client = _cliente_autenticado()
+
+        client.get(f"{_PATH_LISTAGEM}?codigoRf=RF1")
+
+        _, kwargs = mock_svc.call_args
+        self.assertFalse(kwargs["eh_professor"])
+        self.assertIsNone(kwargs["codigo_rf"])
+
+    @patch("apps.pedagogico.views.services.get_listagem_turmas_componentes")
+    def test_503_quando_sidecar_indisponivel(
+        self, mock_svc: MagicMock
+    ) -> None:
+        mock_svc.side_effect = httpx.RequestError("timeout")
+        client = _cliente_autenticado()
+
+        resp = client.get(_PATH_LISTAGEM)
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    def test_403_sem_autenticacao(self) -> None:
+        resp = APIClient().get(_PATH_LISTAGEM)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)

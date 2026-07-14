@@ -6,13 +6,20 @@ from apps.alunos.views import (
     AlunoAutocompleteAtivosView,
     AlunoAutocompleteUeView,
     AlunoInformacoesView,
+    AlunoMatriculasTurmaView,
     AlunoNecessidadesEspeciaisView,
     AlunosAtivosDataAulaTicksView,
     AlunosAtivosPeriodoTurmaView,
     AlunosAtivosTurmaView,
+    AlunosCalculoFrequenciaTurmaView,
     AlunosDataMatriculaTicksView,
     AlunosDaUeView,
     AlunosListView,
+    AlunoTurmaConsideraInativosView,
+    AlunoTurmasPorSituacaoView,
+    AlunoTurmasView,
+    CodigosTurmasRegularesAlunoView,
+    CodigoTurmaAlunoComponenteCurricularView,
     AlunosPorAnoView,
     AlunoTurmaConsideraInativosView,
     AlunoTurmasComHistoricoView,
@@ -45,6 +52,28 @@ turma_urlpatterns = [
         "considera-inativos/<str:considera_inativos>/",
         AlunoTurmaConsideraInativosView.as_view(),
         name="aluno-turma-considera-inativos",
+    ),
+    path(
+        "<str:codigo_turma>/aluno/<str:codigo_aluno>/matriculas/",
+        AlunoMatriculasTurmaView.as_view(),
+        name="aluno-matriculas-turma",
+    ),
+    path(
+        "<str:codigo_turma>/calculo-frequencia/",
+        AlunosCalculoFrequenciaTurmaView.as_view(),
+        name="alunos-calculo-frequencia-turma",
+    ),
+    path(
+        "anos-letivos/<str:ano_letivo>/alunos/<str:codigo_aluno>/"
+        "regulares/",
+        CodigosTurmasRegularesAlunoView.as_view(),
+        name="codigos-turmas-regulares-aluno",
+    ),
+    path(
+        "anos-letivos/<str:ano_letivo>/alunos/<str:codigo_aluno>/"
+        "componentes-curriculares/<str:componente_curricular_codigo>/",
+        CodigoTurmaAlunoComponenteCurricularView.as_view(),
+        name="codigo-turma-aluno-componente-curricular",
     ),
 ]
 
