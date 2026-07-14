@@ -41,6 +41,8 @@ const envKeys = [
   "UE_TURMAS_CODIGO",
   "API_KEY_HEADER",
   "REGISTRO_FUNCIONAL",
+  "DRE_CODIGO",
+  "DRE_LISTA_CODIGOS",
 ];
 
 export default defineConfig({

@@ -3,6 +3,7 @@
 from django.urls import path
 
 from apps.professores.views import (
+    BuscaTurmasAtribuidasProfessoresEscolaView,
     EscolaFuncionariosCargosView,
     EscolaFuncionariosCargoView,
     EscolaFuncionariosFuncaoAtividadeView,
@@ -11,12 +12,21 @@ from apps.professores.views import (
     EscolaFuncionariosFuncoesExternasView,
     EscolaFuncionariosView,
     FuncionarioAtivoView,
+    FuncionarioPerfilTurmaDisciplinasPlanejamentoView,
+    FuncionarioPerfilTurmaDisciplinasView,
+    FuncionarioPerfilTurmasView,
     FuncionariosBuscarPorListaRfView,
+    FuncionariosBuscarTurmasElegiveisView,
+    FuncionariosTurmasView,
+    FuncionariosView,
+    FuncionarioTurmaDisciplinasView,
     NomeServidorView,
     NomeUsuarioEolView,
     ProfessorAutoCompleteView,
     ProfessorBuscarPorRfDreUeView,
     ProfessorBuscarPorRfView,
+    ProfessorBuscarTurmasAtribuidasView,
+    ProfessorBuscaTurmasAtribuidasEscolaView,
     ProfessorDisciplinaTurmasView,
     ProfessorEhEmeiView,
     ProfessoresBuscarPorListaRfAnoView,
@@ -26,6 +36,36 @@ from apps.professores.views import (
 )
 
 urlpatterns = [
+    path(
+        "funcionarios/turmas/<str:codigo_turma>/disciplinas/",
+        FuncionarioTurmaDisciplinasView.as_view(),
+    ),
+    path(
+        "funcionarios/<str:login>/perfis/<str:id_perfil>/turmas/"
+        "<str:codigo_turma>/disciplinas/planejamento/",
+        FuncionarioPerfilTurmaDisciplinasPlanejamentoView.as_view(),
+    ),
+    path(
+        "funcionarios/<str:login>/perfis/<str:id_perfil>/turmas/"
+        "<str:codigo_turma>/disciplinas/",
+        FuncionarioPerfilTurmaDisciplinasView.as_view(),
+    ),
+    path(
+        "funcionarios/<str:login>/perfis/<str:id_perfil>/turmas/",
+        FuncionarioPerfilTurmasView.as_view(),
+    ),
+    path(
+        "funcionarios/turmas/",
+        FuncionariosTurmasView.as_view(),
+    ),
+    path(
+        "funcionarios/BuscarTurmasElegiveis/",
+        FuncionariosBuscarTurmasElegiveisView.as_view(),
+    ),
+    path(
+        "funcionarios/",
+        FuncionariosView.as_view(),
+    ),
     path(
         "professores/<str:codigo_rf>/BuscarPorRf/<int:ano_letivo>/",
         ProfessorBuscarPorRfView.as_view(),
@@ -107,5 +147,17 @@ urlpatterns = [
     path(
         "escolas/<str:codigo_ue>/funcionarios/",
         EscolaFuncionariosView.as_view(),
+    ),
+    path(
+        "professores/<str:codigo_rf>/escolas/<str:codigo_eol_escola>/turmas/anos_letivos/<int:ano_letivo>/",
+        ProfessorBuscaTurmasAtribuidasEscolaView.as_view(),
+    ),
+    path(
+        "professores/escolas/<str:codigo_eol_escola>/turmas/anos_letivos/<int:ano_letivo>/",
+        BuscaTurmasAtribuidasProfessoresEscolaView.as_view(),
+    ),
+    path(
+        "professores/<str:codigo_rf>/turmas/anos_letivos/<int:ano_letivo>/",
+        ProfessorBuscarTurmasAtribuidasView.as_view(),
     ),
 ]

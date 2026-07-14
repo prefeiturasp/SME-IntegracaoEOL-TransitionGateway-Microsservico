@@ -704,3 +704,207 @@ class MontarCodigosTurmasRegularesAlunoTest(SimpleTestCase):
 
         self.assertEqual(result, [])
         mock_recorte.assert_not_called()
+
+
+def _resp_lista(payload: list) -> MagicMock:
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.content = b"[]"
+    mock_resp.json.return_value = payload
+    return mock_resp
+
+
+class GetAlunosAutocompleteUeTest(SimpleTestCase):
+    """Valida a consulta de autocomplete de alunos da UE."""
+
+    @patch.object(services._client, "get")
+    def test_chama_sidecar_com_params_completos(
+        self, mock_get: MagicMock
+    ) -> None:
+        payload = [{"codigo_aluno": 123456}]
+        mock_get.return_value = _resp_lista(payload)
+
+        result = services.get_alunos_autocomplete_ue(
+            codigo_ue="100001",
+            ano_letivo="2026",
+            codigo_turmas=["9001"],
+            nome_aluno="Fulano",
+            codigo_eol="123456",
+            somente_ativos="true",
+            eh_historico="false",
+            limite=5,
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/ues/100001/anos_letivos/2026/autocomplete",
+            params={
+                "limite": 5,
+                "codigos_turmas": ["9001"],
+                "nome_aluno": "Fulano",
+                "codigo_eol": "123456",
+                "somente_ativos": "true",
+                "eh_historico": "false",
+            },
+        )
+        self.assertEqual(result, payload)
+
+    @patch.object(services._client, "get")
+    def test_params_minimos(self, mock_get: MagicMock) -> None:
+        mock_get.return_value = _resp_lista([])
+
+        result = services.get_alunos_autocomplete_ue(
+            codigo_ue="100001", ano_letivo="2026"
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/ues/100001/anos_letivos/2026/autocomplete",
+            params={"limite": 10},
+        )
+        self.assertEqual(result, [])
+
+
+class GetDadosAcompanhamentoEscolarTest(SimpleTestCase):
+    """Valida a consulta de dados de acompanhamento escolar."""
+
+    @patch.object(services._client, "get")
+    def test_chama_sidecar_com_filtros(self, mock_get: MagicMock) -> None:
+        payload = [{"codigo_eol": 7074492}]
+        mock_get.return_value = _resp_lista(payload)
+
+        result = services.get_dados_acompanhamento_escolar(
+            codigo_aluno="7074492",
+            codigo_dre="108200",
+            codigo_ue="019267",
+            cpf_responsavel="12345678901",
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/dados-acompanhamento-escolar/contrato",
+            params={
+                "codigo_aluno": "7074492",
+                "codigo_dre": "108200",
+                "codigo_ue": "019267",
+                "cpf_responsavel": "12345678901",
+            },
+        )
+        self.assertEqual(result, payload)
+
+    @patch.object(services._client, "get")
+    def test_sem_filtros_envia_params_none(
+        self, mock_get: MagicMock
+    ) -> None:
+        mock_get.return_value = _resp_lista([])
+
+        result = services.get_dados_acompanhamento_escolar()
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/dados-acompanhamento-escolar/contrato",
+            params=None,
+        )
+        self.assertEqual(result, [])
+
+
+class GetTurmasAlunoComHistoricoTest(SimpleTestCase):
+    """Valida a consulta de turmas do aluno com histórico."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_correto(self, mock_get: MagicMock) -> None:
+        payload = [{"codigo_turma": 9001}]
+        mock_get.return_value = _resp_lista(payload)
+
+        result = services.get_turmas_aluno_com_historico(
+            "7074492", "2026", "false", "true", "true"
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/7074492/turmas/anos_letivos/2026"
+            "/historico/false/filtrar_situacao/true/tipo_turma/true"
+        )
+        self.assertEqual(result, payload)
+
+
+class ListarAlunosPorAnoTest(SimpleTestCase):
+    """Valida a consulta de alunos por códigos e ano letivo."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_com_codigos(self, mock_get: MagicMock) -> None:
+        payload = [{"codigo_aluno": 1}]
+        mock_get.return_value = _resp_lista(payload)
+
+        result = services.listar_alunos_por_ano("2026", ["1", "2"])
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/ano_letivo/2026/alunos",
+            params={"codigos_aluno": ["1", "2"]},
+        )
+        self.assertEqual(result, payload)
+
+
+class GetQuantidadeMatriculadosCCTest(SimpleTestCase):
+    """Valida a consulta de matriculados por componente curricular."""
+
+    @patch.object(services._client, "get")
+    def test_chama_sidecar_com_filtros(self, mock_get: MagicMock) -> None:
+        payload = [{"componente_curricular_id": 1310}]
+        mock_get.return_value = _resp_lista(payload)
+
+        result = services.get_quantidade_matriculados_cc(
+            ano_letivo="2026",
+            componentes_curriculares=["1310"],
+            dre_id="109100",
+            ue_id="093181",
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/ano-letivo/2026/matriculados/contrato",
+            params={
+                "componentes_curriculares": ["1310"],
+                "dre_id": "109100",
+                "ue_id": "093181",
+            },
+        )
+        self.assertEqual(result, payload)
+
+
+class GetQuantidadeMatriculadosTest(SimpleTestCase):
+    """Valida a consulta da quantidade de matriculados."""
+
+    @patch.object(services._client, "get")
+    def test_chama_sidecar_com_filtros(self, mock_get: MagicMock) -> None:
+        payload = [{"quantidade": 28}]
+        mock_get.return_value = _resp_lista(payload)
+
+        result = services.get_quantidade_matriculados(
+            ano_letivo="2026",
+            dre_codigo="108200",
+            ue_codigo="019267",
+            modalidade=["5"],
+            ano=["3"],
+            turma=["3038818"],
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/ano-letivo/2026/matriculados/quantidade/contrato",
+            params={
+                "dre_codigo": "108200",
+                "ue_codigo": "019267",
+                "modalidade": ["5"],
+                "ano": ["3"],
+                "turma": ["3038818"],
+            },
+        )
+        self.assertEqual(result, payload)
+
+    @patch.object(services._client, "get")
+    def test_sem_filtros_envia_params_none(
+        self, mock_get: MagicMock
+    ) -> None:
+        mock_get.return_value = _resp_lista([])
+
+        result = services.get_quantidade_matriculados(ano_letivo="2026")
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/ano-letivo/2026/matriculados/quantidade/contrato",
+            params=None,
+        )
+        self.assertEqual(result, [])
