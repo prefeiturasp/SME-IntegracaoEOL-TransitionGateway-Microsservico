@@ -47,11 +47,19 @@ Institucional
 
 .. autoclass:: apps.institucional.views.EscolasPorDREView
 
+.. autoclass:: apps.institucional.views.EscolasSigpaePorDREView
+
 .. autoclass:: apps.institucional.views.EscolasPorDREeTipoView
+
+.. autoclass:: apps.institucional.views.UnidadeCodigoIntegracaoPorDREView
 
 .. autoclass:: apps.institucional.views.DadosEscolaView
 
+.. autoclass:: apps.institucional.views.SubprefeiturasPorEscolaView
+
 .. autoclass:: apps.institucional.views.TiposEscolasView
+
+.. autoclass:: apps.institucional.views.EscolasListPostView
 
 .. autoclass:: apps.institucional.views.EscolaDetalheView
 
