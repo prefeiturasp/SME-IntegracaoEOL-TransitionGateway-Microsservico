@@ -20,6 +20,7 @@ from apps.alunos import services
 from apps.alunos.serializers import (
     AlunoAtivoTurmaSerializer,
     AlunoAutocompleteSerializer,
+    AlunoAutocompleteUeSerializer,
     AlunoInformacoesSerializer,
     AlunoMatriculaTurmaSerializer,
     AlunoPorCodigoSerializer,
@@ -358,7 +359,9 @@ class AlunoAutocompleteUeView(APIView):
             return _sidecar_error_response(exc)
         except httpx.RequestError as exc:
             return _sidecar_unavailable_response(exc)
-        return Response(AlunoAutocompleteSerializer(data, many=True).data)
+        return Response(
+            AlunoAutocompleteUeSerializer(data, many=True).data
+        )
 
 
 class DadosAcompanhamentoEscolarView(APIView):

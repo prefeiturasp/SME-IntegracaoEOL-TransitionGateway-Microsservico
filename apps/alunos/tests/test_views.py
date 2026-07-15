@@ -493,6 +493,37 @@ class AlunoAutocompleteUeViewTest(SimpleTestCase):
         )
 
     @patch("apps.alunos.views.services.get_alunos_autocomplete_ue")
+    def test_contrato_tem_apenas_5_campos(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = [
+            {
+                "codigo_aluno": 123456,
+                "nome_aluno": "Fulano de Tal",
+                "nome_social_aluno": None,
+                "codigo_turma": 9001,
+                "numero_aluno_chamada": "15",
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/v1/alunos/ues/100001/anosLetivos/2026/autocomplete"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            list(resp.json()[0]),
+            [
+                "codigoAluno",
+                "nomeAluno",
+                "nomeSocialAluno",
+                "codigoTurma",
+                "numeroAlunoChamada",
+            ],
+        )
+
+    @patch("apps.alunos.views.services.get_alunos_autocomplete_ue")
     def test_repassa_erro_do_sidecar(self, mock_service: MagicMock) -> None:
         mock_service.side_effect = _http_status_error(
             404, {"detail": "Não foram encontradas turmas para o aluno."}
