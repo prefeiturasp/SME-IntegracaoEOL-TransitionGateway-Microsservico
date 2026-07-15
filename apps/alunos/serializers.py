@@ -177,7 +177,7 @@ class AlunoInformacoesSerializer(serializers.Serializer):
 
 
 class AlunoAutocompleteUeSerializer(serializers.Serializer):
-    """Serializa o autocomplete de alunos da UE (contrato de 5 campos)."""
+    """Serializa o autocomplete de alunos da UE."""
 
     codigoAluno = serializers.IntegerField(
         source="codigo_aluno", allow_null=True
