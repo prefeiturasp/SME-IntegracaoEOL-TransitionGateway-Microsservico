@@ -176,8 +176,8 @@ class AlunoInformacoesSerializer(serializers.Serializer):
     cns = serializers.CharField(allow_null=True)
 
 
-class AlunoAutocompleteSerializer(serializers.Serializer):
-    """Serializa dados de autocomplete de aluno."""
+class AlunoAutocompleteUeSerializer(serializers.Serializer):
+    """Serializa o autocomplete de alunos da UE."""
 
     codigoAluno = serializers.IntegerField(
         source="codigo_aluno", allow_null=True
@@ -194,6 +194,11 @@ class AlunoAutocompleteSerializer(serializers.Serializer):
     numeroAlunoChamada = serializers.CharField(
         source="numero_aluno_chamada", allow_null=True
     )  # NOSONAR
+
+
+class AlunoAutocompleteSerializer(AlunoAutocompleteUeSerializer):
+    """Serializa o autocomplete de alunos ativos."""
+
     turma = serializers.CharField(allow_null=True)
     modalidade = serializers.CharField(allow_null=True)
 
