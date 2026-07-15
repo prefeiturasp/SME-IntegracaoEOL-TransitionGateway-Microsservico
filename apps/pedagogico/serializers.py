@@ -551,7 +551,7 @@ class ListagemTurmaComponenteSerializer(serializers.Serializer):
             "turno": d.get("turno"),
             "territorioSaber": bool(d.get("territorio_saber", False)),
             "totalRegistros": 0,
-            "registroFuncional": None,
+            "registroFuncional": d.get("registro_funcional"),
             "historica": False,
             "dataDisponibizacao": None,
             "nomeFiltro": None,

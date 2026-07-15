@@ -2369,11 +2369,38 @@ class ListagemTurmasComponentesViewSetTest(SimpleTestCase):
         self.assertIsNone(legado["dataFimTurma"])
         # Sem fonte no domínio -> valor fixo.
         self.assertEqual(legado["totalRegistros"], 0)
+        # Item comum (não-território) não tem RF.
         self.assertIsNone(legado["registroFuncional"])
         self.assertFalse(legado["historica"])
         self.assertIsNone(legado["dataDisponibizacao"])
         self.assertIsNone(legado["nomeFiltro"])
         self.assertEqual(legado["etapaEJA"], 0)
+
+    @patch("apps.pedagogico.views.services.get_listagem_turmas_componentes")
+    def test_item_territorio_propaga_id_e_registro_funcional(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Item de território carrega id e RF do professor da atribuição."""
+        item = {
+            **_ITEM_LISTAGEM,
+            "id": "808137",
+            "registro_funcional": "8285411",
+            "territorio_saber": True,
+            "componente_curricular_territorio_saber_codigo": 1214,
+        }
+        mock_svc.return_value = {
+            "items": [item],
+            "total_registros": 1,
+            "total_paginas": 1,
+        }
+        client = _cliente_autenticado()
+
+        resp = client.get(_PATH_LISTAGEM)
+
+        legado = resp.data["items"][0]
+        self.assertEqual(legado["id"], "808137")
+        self.assertEqual(legado["registroFuncional"], "8285411")
+        self.assertTrue(legado["territorioSaber"])
 
     @patch("apps.pedagogico.views.services.get_listagem_turmas_componentes")
     def test_traduz_parametros_professor(self, mock_svc: MagicMock) -> None:
