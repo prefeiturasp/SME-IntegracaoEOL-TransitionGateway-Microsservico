@@ -202,6 +202,39 @@ class GetEscolaTest(SimpleTestCase):
         self.assertEqual(result["codigoEscola"], "019308")
 
 
+class PostEscolasTest(SimpleTestCase):
+    """Valida a consulta de escolas por lista de códigos."""
+
+    @patch("apps.institucional.services._client")
+    def test_chama_post_com_lista_de_codigos(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Envia os códigos via POST e retorna as escolas encontradas."""
+        mock_client.post.return_value.raise_for_status = MagicMock()
+        mock_client.json_or_none.return_value = [
+            {"codigoEscola": "000027", "nomeEscola": "LUIS MARTINS"}
+        ]
+
+        result = services.post_escolas(["000027"])
+
+        mock_client.post.assert_called_once_with(
+            f"{_BASE}/escolas/", payload=["000027"]
+        )
+        self.assertEqual(result[0]["codigoEscola"], "000027")
+
+    @patch("apps.institucional.services._client")
+    def test_retorna_none_quando_sem_registros(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Retorna None quando o sidecar não encontra registros."""
+        mock_client.post.return_value.raise_for_status = MagicMock()
+        mock_client.json_or_none.return_value = None
+
+        result = services.post_escolas(["INEXISTENTE"])
+
+        self.assertIsNone(result)
+
+
 class GetSubprefeiturasPorEscolaTest(SimpleTestCase):
     """Valida a consulta de subprefeituras por escola."""
 

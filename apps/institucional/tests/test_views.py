@@ -671,6 +671,98 @@ class TiposEscolasViewTest(SimpleTestCase):
         self.assertEqual(resp.json(), [])
 
 
+class EscolasListPostViewTest(SimpleTestCase):
+    """Valida a view de escolas por lista de códigos."""
+
+    @patch("apps.institucional.views.services.post_escolas")
+    def test_200_retorna_lista_escolas(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 com as escolas encontradas para os códigos."""
+        mock_svc.return_value = [
+            {
+                "codigoEscola": "000027",
+                "nomeEscola": "LUIS MARTINS",
+                "nomeDRE": "NUCLEO DE ACAO EDUCATIVA - NAE-01",
+                "siglaDRE": "NUCLEO DE ACAO EDUCATIVA - NAE-01",
+                "codigoDRE": "100013",
+                "tipoEscola": "ESC.MUN. DE ENS. SUPLETIVO DE 1.GRAU",
+                "siglaTipoEscola": "EMES 1.G",
+                "codigoTipoEscola": 30,
+                "tipoEscolaId": 30,
+                "tipoUnidadeId": 30,
+                "dreId": "100013",
+                "codigoIntegracao": None,
+            }
+        ]
+
+        resp = _cliente_autenticado().post(
+            "/api/escolas/", ["000027"], format="json"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.json(),
+            [
+                {
+                    "codigoEscola": "000027",
+                    "nomeEscola": "LUIS MARTINS",
+                    "nomeDRE": "NUCLEO DE ACAO EDUCATIVA - NAE-01",
+                    "siglaDRE": "NUCLEO DE ACAO EDUCATIVA - NAE-01",
+                    "codigoDRE": "100013",
+                    "tipoEscola": "ESC.MUN. DE ENS. SUPLETIVO DE 1.GRAU",
+                    "siglaTipoEscola": "EMES 1.G",
+                }
+            ],
+        )
+        mock_svc.assert_called_once_with(["000027"])
+
+    @patch("apps.institucional.views.services.post_escolas")
+    def test_200_lista_vazia_quando_sem_registros(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna 200 com lista vazia quando o sidecar não encontra escolas."""
+        mock_svc.return_value = None
+
+        resp = _cliente_autenticado().post(
+            "/api/escolas/", ["999999"], format="json"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+        mock_svc.assert_called_once_with(["999999"])
+
+    @patch("apps.institucional.views.services.post_escolas")
+    def test_400_quando_sidecar_retorna_400(self, mock_svc: MagicMock) -> None:
+        """Retorna 400 quando o sidecar valida a lista como inválida."""
+        mock_svc.side_effect = _httpx_status_error(
+            400, {"detail": "Lista de códigos é obrigatória."}
+        )
+
+        resp = _cliente_autenticado().post("/api/escolas/", [], format="json")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(), {"detail": "Lista de códigos é obrigatória."}
+        )
+
+    @patch("apps.institucional.views.services.post_escolas")
+    def test_502_quando_sidecar_indisponivel(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna 502 quando o serviço institucional está indisponível."""
+        mock_svc.side_effect = httpx.RequestError(
+            "connection failed", request=MagicMock()
+        )
+
+        resp = _cliente_autenticado().post(
+            "/api/escolas/", ["000027"], format="json"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+        self.assertEqual(
+            resp.json(), {"detail": "Serviço institucional indisponível"}
+        )
+
+
 class EscolaDetalheViewTest(SimpleTestCase):
     """Valida a view de detalhe de escola."""
 
