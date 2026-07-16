@@ -4,7 +4,19 @@ from typing import Any, cast
 
 from rest_framework import serializers
 
-from apps.core.datetime import formatar_datetime_legado
+from apps.core.datetime import datetime_legado, formatar_datetime_legado
+
+_SENTINELA_DATA = "0001-01-01T00:00:00"
+
+
+def _int_ou_zero(valor: Any) -> int:
+    """Coalesce inteiro do legado (campos não-anuláveis viram 0)."""
+    return int(valor) if valor is not None else 0
+
+
+def _data_legado_ou_sentinela(valor: Any) -> str:
+    """Data no formato .NET; sentinela quando ausente (campo não-anulável)."""
+    return datetime_legado(valor) or _SENTINELA_DATA
 
 
 class CodigoTurmaField(serializers.CharField):
@@ -463,3 +475,121 @@ class GradeCurricularSerializer(serializers.Serializer):
         source="codigo_serie_ensino", allow_null=True
     )  # NOSONAR
     modalidade = serializers.IntegerField()
+
+
+class ListagemTurmaComponenteSerializer(serializers.Serializer):
+    """Serializa um item da listagem turma×componente (contrato legado)."""
+
+    id = serializers.CharField(allow_null=True)
+    turmaCodigo = serializers.CharField(
+        source="turma_codigo", allow_null=True
+    )  # NOSONAR
+    modalidade = serializers.IntegerField(allow_null=True)  # NOSONAR
+    nomeTurma = serializers.CharField(
+        source="nome_turma", allow_null=True
+    )  # NOSONAR
+    ano = serializers.CharField(allow_null=True)  # NOSONAR
+    complementoTurmaEJA = serializers.CharField(
+        source="complemento_turma_eja", allow_blank=True
+    )  # NOSONAR
+    nomeComponenteCurricular = serializers.CharField(
+        source="nome_componente_curricular", allow_null=True
+    )  # NOSONAR
+    componenteCurricularCodigo = serializers.IntegerField(
+        source="componente_curricular_codigo", allow_null=True
+    )  # NOSONAR
+    turno = serializers.CharField(allow_null=True)  # NOSONAR
+    territorioSaber = serializers.BooleanField(
+        source="territorio_saber"
+    )  # NOSONAR
+    componenteCurricularTerritorioSaberCodigo = serializers.IntegerField(
+        source="componente_curricular_territorio_saber_codigo"
+    )  # NOSONAR
+    totalRegistros = serializers.IntegerField()  # NOSONAR
+    registroFuncional = serializers.CharField(allow_null=True)  # NOSONAR
+    historica = serializers.BooleanField()  # NOSONAR
+    tipoEscola = serializers.IntegerField()  # NOSONAR
+    situacaoTurmaEscola = serializers.CharField(allow_null=True)  # NOSONAR
+    dataStatusTurmaEscola = serializers.CharField(allow_null=True)  # NOSONAR
+    codigoEscola = serializers.CharField(allow_null=True)  # NOSONAR
+    anoLetivo = serializers.IntegerField()  # NOSONAR
+    dataDisponibizacao = serializers.CharField(allow_null=True)  # NOSONAR
+    etapaEnsino = serializers.IntegerField()  # NOSONAR
+    tipoGradePrograma = serializers.IntegerField()  # NOSONAR
+    codigoGradePrograma = serializers.IntegerField()  # NOSONAR
+    descricaoGradePrograma = serializers.CharField(allow_null=True)  # NOSONAR
+    serieEnsino = serializers.CharField(allow_null=True)  # NOSONAR
+    nomeFiltro = serializers.CharField(allow_null=True)  # NOSONAR
+    dataInicioTurma = serializers.CharField(allow_null=True)  # NOSONAR
+    dataFimTurma = serializers.CharField(allow_null=True)  # NOSONAR
+    cicloEnsino = serializers.IntegerField()  # NOSONAR
+    tipoTurma = serializers.IntegerField()  # NOSONAR
+    duracaoTurno = serializers.IntegerField()  # NOSONAR
+    dataAtualizacao = serializers.CharField(allow_null=True)  # NOSONAR
+    ensinoEspecial = serializers.IntegerField()  # NOSONAR
+    semestre = serializers.IntegerField()  # NOSONAR
+    extinta = serializers.IntegerField()  # NOSONAR
+    etapaEJA = serializers.IntegerField()  # NOSONAR
+
+    def to_representation(self, instance: Any) -> dict[str, Any]:
+        """Monta o item no contrato (camelCase, tipos e defaults)."""
+        d = instance if isinstance(instance, dict) else {}
+        return {
+            "id": d.get("id"),
+            "turmaCodigo": d.get("turma_codigo"),
+            "modalidade": d.get("modalidade"),
+            "nomeTurma": d.get("nome_turma"),
+            "ano": d.get("ano"),
+            "nomeComponenteCurricular": d.get("nome_componente_curricular"),
+            "componenteCurricularCodigo": d.get(
+                "componente_curricular_codigo"
+            ),
+            "complementoTurmaEJA": d.get("complemento_turma_eja") or "",
+            "componenteCurricularTerritorioSaberCodigo": (
+                d.get("componente_curricular_territorio_saber_codigo") or 0
+            ),
+            "turno": d.get("turno"),
+            "territorioSaber": bool(d.get("territorio_saber", False)),
+            "totalRegistros": 0,
+            "registroFuncional": d.get("registro_funcional"),
+            "historica": False,
+            "dataDisponibizacao": None,
+            "nomeFiltro": None,
+            "etapaEJA": 0,
+            # Preenchidos com dado real do domínio (correção do default):
+            "tipoEscola": _int_ou_zero(d.get("tipo_escola")),
+            "situacaoTurmaEscola": d.get("situacao_turma_escola"),
+            "dataStatusTurmaEscola": _data_legado_ou_sentinela(
+                d.get("data_status_turma_escola")
+            ),
+            "codigoEscola": d.get("codigo_escola"),
+            "anoLetivo": _int_ou_zero(d.get("ano_letivo")),
+            "etapaEnsino": _int_ou_zero(d.get("etapa_ensino")),
+            "tipoGradePrograma": _int_ou_zero(d.get("tipo_grade_programa")),
+            "codigoGradePrograma": _int_ou_zero(
+                d.get("codigo_grade_programa")
+            ),
+            "descricaoGradePrograma": d.get("descricao_grade_programa"),
+            "serieEnsino": d.get("serie_ensino"),
+            "dataInicioTurma": datetime_legado(d.get("data_inicio_turma")),
+            "dataFimTurma": datetime_legado(d.get("data_fim_turma")),
+            "cicloEnsino": _int_ou_zero(d.get("ciclo_ensino")),
+            "tipoTurma": _int_ou_zero(d.get("tipo_turma")),
+            "duracaoTurno": _int_ou_zero(d.get("duracao_turno")),
+            "dataAtualizacao": _data_legado_ou_sentinela(
+                d.get("data_atualizacao")
+            ),
+            "ensinoEspecial": int(bool(d.get("ensino_especial"))),
+            "semestre": _int_ou_zero(d.get("semestre")),
+            "extinta": int(bool(d.get("extinta"))),
+        }
+
+
+class ListagemTurmasComponentesPaginadoSerializer(serializers.Serializer):
+    """Serializa a resposta paginada da listagem turma×componente."""
+
+    items = ListagemTurmaComponenteSerializer(many=True)
+    totalRegistros = serializers.IntegerField(
+        source="total_registros"
+    )  # NOSONAR
+    totalPaginas = serializers.IntegerField(source="total_paginas")  # NOSONAR

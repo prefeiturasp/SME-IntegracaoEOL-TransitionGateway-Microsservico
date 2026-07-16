@@ -56,6 +56,10 @@ class URLsInstitucionalTest(SimpleTestCase):
         match = resolve("/api/escolas/tiposEscolas/")
         self.assertEqual(match.view_name, "escola-tipos-escolas")
 
+    def test_escola_list_post_resolve(self) -> None:
+        match = resolve("/api/escolas/")
+        self.assertEqual(match.view_name, "escola-list-post")
+
     def test_equipamentos_resolve_antes_do_detalhe(self) -> None:
         # Garante que "equipamentos/" não é capturado pelo padrão
         # <str:codigoEscolaEol>/

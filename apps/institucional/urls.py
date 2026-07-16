@@ -7,6 +7,7 @@ from apps.institucional.views import (
     DREDetalheView,
     DREListView,
     EquipamentosView,
+    EscolasListPostView,
     EscolaDetalheView,
     EscolasSigpaePorDREView,
     EscolasPorDREeTipoView,
@@ -73,6 +74,11 @@ urlpatterns = [
         name="dre-detalhe",
     ),
     # Escolas — rotas literais antes das com parâmetro para evitar colisão
+    path(
+        "escolas/",
+        EscolasListPostView.as_view(),
+        name="escola-list-post",
+    ),
     path(
         "escolas/tiposEscolas/",
         TiposEscolasView.as_view(),

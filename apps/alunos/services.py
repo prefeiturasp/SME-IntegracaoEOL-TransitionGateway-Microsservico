@@ -8,6 +8,7 @@ from django.conf import settings
 from apps.core.http_client import ServiceClient
 
 _BASE = "/api/v1/alunos"
+_BASE_UES = f"{_BASE}/ues"
 
 _client = ServiceClient(
     base_url=settings.SIDECAR_ALUNOS_URL,
@@ -85,8 +86,231 @@ def buscar_alunos_ativos_autocomplete(
     if data_referencia:
         params["data_referencia"] = data_referencia.isoformat()
     resp = _client.get(
-        f"{_BASE}/ues/{ue_codigo}/autocomplete/ativos",
+        f"{_BASE_UES}/{ue_codigo}/autocomplete/ativos",
         params=params,
+    )
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
+def get_alunos_autocomplete_ue(
+    codigo_ue: str,
+    ano_letivo: str,
+    codigo_turmas: list[str] | None = None,
+    nome_aluno: str | None = None,
+    codigo_eol: str | None = None,
+    somente_ativos: str | None = None,
+    eh_historico: str | None = None,
+    limite: int = 10,
+) -> Any:
+    """Busca alunos da UE/ano para autocomplete.
+
+    Args:
+        codigo_ue: Código da unidade educacional.
+        ano_letivo: Ano letivo consultado.
+        codigo_turmas: Códigos de turma usados como filtro opcional.
+        nome_aluno: Nome parcial do aluno para filtro.
+        codigo_eol: Código EOL do aluno para filtro direto.
+        somente_ativos: Indicador repassado por compatibilidade.
+        eh_historico: Consulta os vínculos históricos quando verdadeiro.
+        limite: Quantidade máxima de resultados.
+
+    Returns:
+        Lista de alunos encontrados ou lista vazia.
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+    """
+    params: dict[str, Any] = {"limite": limite}
+    if codigo_turmas:
+        params["codigos_turmas"] = codigo_turmas
+    if nome_aluno:
+        params["nome_aluno"] = nome_aluno
+    if codigo_eol:
+        params["codigo_eol"] = codigo_eol
+    if somente_ativos is not None:
+        params["somente_ativos"] = somente_ativos
+    if eh_historico is not None:
+        params["eh_historico"] = eh_historico
+    resp = _client.get(
+        f"{_BASE_UES}/{codigo_ue}/anos_letivos/{ano_letivo}/autocomplete",
+        params=params,
+    )
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
+def get_dados_acompanhamento_escolar(
+    codigo_aluno: str | None = None,
+    codigo_dre: str | None = None,
+    codigo_ue: str | None = None,
+    cpf_responsavel: str | None = None,
+) -> Any:
+    """Busca dados de acompanhamento escolar dos alunos.
+
+    Args:
+        codigo_aluno: Código EOL do aluno usado como filtro opcional.
+        codigo_dre: Código da DRE usado como filtro opcional.
+        codigo_ue: Código da UE usado como filtro opcional.
+        cpf_responsavel: CPF do responsável usado como filtro opcional.
+
+    Returns:
+        Lista de dados de acompanhamento ou lista vazia.
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+    """
+    params: dict[str, Any] = {}
+    if codigo_aluno:
+        params["codigo_aluno"] = codigo_aluno
+    if codigo_dre:
+        params["codigo_dre"] = codigo_dre
+    if codigo_ue:
+        params["codigo_ue"] = codigo_ue
+    if cpf_responsavel:
+        params["cpf_responsavel"] = cpf_responsavel
+    resp = _client.get(
+        f"{_BASE}/dados-acompanhamento-escolar/contrato",
+        params=params or None,
+    )
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
+def get_turmas_aluno_com_historico(
+    codigo_aluno: str,
+    ano_letivo: str,
+    historico: str,
+    filtrar_situacao: str,
+    tipo_turma: str,
+) -> Any:
+    """Retorna turmas do aluno com a origem histórica explícita.
+
+    Args:
+        codigo_aluno: Código EOL do aluno.
+        ano_letivo: Ano letivo consultado.
+        historico: Consulta os vínculos históricos quando verdadeiro.
+        filtrar_situacao: Restringe às situações de matrícula válidas.
+        tipo_turma: Exclui turmas do tipo programa quando verdadeiro.
+
+    Returns:
+        Lista de turmas retornada pelo sidecar.
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+    """
+    resp = _client.get(
+        f"{_BASE}/{codigo_aluno}/turmas/anos_letivos/{ano_letivo}"
+        f"/historico/{historico}/filtrar_situacao/{filtrar_situacao}"
+        f"/tipo_turma/{tipo_turma}"
+    )
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
+def listar_alunos_por_ano(
+    ano_letivo: str,
+    codigos_aluno: list[str],
+) -> Any:
+    """Retorna alunos pelos códigos informados restritos ao ano letivo.
+
+    Args:
+        ano_letivo: Ano letivo consultado.
+        codigos_aluno: Códigos EOL dos alunos.
+
+    Returns:
+        Lista de alunos retornada pelo sidecar.
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+    """
+    params: dict[str, Any] = {"codigos_aluno": codigos_aluno}
+    resp = _client.get(
+        f"{_BASE}/ano_letivo/{ano_letivo}/alunos", params=params
+    )
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
+def get_quantidade_matriculados_cc(
+    ano_letivo: str,
+    componentes_curriculares: list[str],
+    dre_id: str | None = None,
+    ue_id: str | None = None,
+) -> Any:
+    """Busca matriculados por componente curricular no ano letivo.
+
+    Args:
+        ano_letivo: Ano letivo consultado.
+        componentes_curriculares: Códigos dos componentes curriculares.
+        dre_id: Código da DRE usado como filtro opcional.
+        ue_id: Código da UE usado como filtro opcional.
+
+    Returns:
+        Lista de quantidades agregadas ou lista vazia.
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+    """
+    params: dict[str, Any] = {
+        "componentes_curriculares": componentes_curriculares
+    }
+    if dre_id:
+        params["dre_id"] = dre_id
+    if ue_id:
+        params["ue_id"] = ue_id
+    resp = _client.get(
+        f"{_BASE}/ano-letivo/{ano_letivo}/matriculados/contrato",
+        params=params,
+    )
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
+def get_quantidade_matriculados(
+    ano_letivo: str,
+    dre_codigo: str | None = None,
+    ue_codigo: str | None = None,
+    modalidade: list[str] | None = None,
+    ano: list[str] | None = None,
+    turma: list[str] | None = None,
+) -> Any:
+    """Busca a quantidade de alunos matriculados por ano letivo.
+
+    Args:
+        ano_letivo: Ano letivo consultado.
+        dre_codigo: Código da DRE usado como filtro opcional.
+        ue_codigo: Código da UE usado como filtro opcional.
+        modalidade: Códigos de modalidade usados como filtro.
+        ano: Séries usadas como filtro.
+        turma: Códigos de turma usados como filtro.
+
+    Returns:
+        Lista de quantidades agregadas ou lista vazia.
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+    """
+    params: dict[str, Any] = {}
+    if dre_codigo:
+        params["dre_codigo"] = dre_codigo
+    if ue_codigo:
+        params["ue_codigo"] = ue_codigo
+    if modalidade:
+        params["modalidade"] = modalidade
+    if ano:
+        params["ano"] = ano
+    if turma:
+        params["turma"] = turma
+    resp = _client.get(
+        f"{_BASE}/ano-letivo/{ano_letivo}/matriculados/quantidade/contrato",
+        params=params or None,
     )
     resp.raise_for_status()
     return _client.json_or_none(resp) or []
@@ -267,7 +491,7 @@ def get_alunos_da_ue(
     if codigo_eol:
         params["codigo_eol"] = codigo_eol
     resp = _client.get(
-        f"{_BASE}/ues/{codigo_ue}/anos_letivos/{ano_letivo}",
+        f"{_BASE_UES}/{codigo_ue}/anos_letivos/{ano_letivo}",
         params=params or None,
     )
     resp.raise_for_status()
@@ -423,6 +647,82 @@ def get_total_alunos_ativos_periodo(
     )
     resp.raise_for_status()
     return _client.json_or_none(resp)
+
+
+def get_codigos_turmas_regulares_aluno(
+    ano_letivo: str,
+    codigo_aluno: str,
+    data_referencia: str | None = None,
+) -> list[int]:
+    """Lista os códigos de turma do aluno no ano letivo (recorte de matrícula).
+
+    Args:
+        ano_letivo: Ano letivo consultado.
+        codigo_aluno: Código EOL do aluno.
+        data_referencia: Data de referência (ISO) do filtro de situação.
+
+    Returns:
+        Códigos de turma ordenados por data da situação decrescente. Lista
+        vazia quando o sidecar responde 4xx (código inválido ou sem
+        vínculos).
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar erro de servidor (5xx).
+        httpx.RequestError: Se o sidecar estiver inacessível.
+    """
+    params: dict[str, Any] = {}
+    if data_referencia:
+        params["data_referencia"] = data_referencia
+    resp = _client.get(
+        f"{_BASE}/anos-letivos/{ano_letivo}/alunos/{codigo_aluno}"
+        "/codigos-turmas-regulares",
+        params=params or None,
+    )
+    if resp.status_code in (400, 404):
+        return []
+    resp.raise_for_status()
+    dados = _client.json_or_none(resp) or []
+    return [int(codigo) for codigo in dados]
+
+
+def montar_codigos_turmas_regulares_aluno(
+    ano_letivo: str,
+    codigo_aluno: str,
+    tipos_turma: list[int] | None = None,
+    ue_codigo: str | None = None,
+    data_referencia: str | None = None,
+    semestre: int | None = None,
+) -> list[int]:
+    """Compõe os códigos de turma regulares do aluno.
+
+    Args:
+        ano_letivo: Ano letivo consultado.
+        codigo_aluno: Código EOL do aluno.
+        tipos_turma: Tipos de turma aceitos; sem filtro quando vazio.
+        ue_codigo: Código da UE; sem filtro quando ausente.
+        data_referencia: Data de referência (ISO) do filtro de situação.
+        semestre: Semestre da turma; sem filtro quando ausente.
+
+    Returns:
+        Códigos de turma que atendem ao recorte, na ordem do Alunos-MS.
+
+    Raises:
+        httpx.HTTPStatusError: Se algum sidecar retornar erro de servidor.
+        httpx.RequestError: Se algum sidecar estiver inacessível.
+    """
+    from apps.pedagogico import services as pedagogico_services
+
+    codigos = get_codigos_turmas_regulares_aluno(
+        ano_letivo, codigo_aluno, data_referencia
+    )
+    if not codigos:
+        return []
+    permitidos = set(
+        pedagogico_services.get_turmas_recorte_por_tipo(
+            codigos, tipos_turma, ue_codigo, semestre
+        )
+    )
+    return [codigo for codigo in codigos if codigo in permitidos]
 
 
 def listar_alunos(codigos_aluno: list[str]) -> Any:

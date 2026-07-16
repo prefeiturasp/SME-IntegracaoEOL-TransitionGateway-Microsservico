@@ -128,6 +128,45 @@ def get_turmas_recorte_fund_medio_eja(
     return _client.json_or_none(resp) or []
 
 
+def get_turmas_recorte_por_tipo(
+    codigos: list[int],
+    tipos_turma: list[int] | None = None,
+    ue_codigo: str | None = None,
+    semestre: int | None = None,
+) -> list[int]:
+    """Filtra códigos de turma por tipo de turma, UE e semestre.
+
+    Args:
+        codigos: Códigos de turma candidatos (vindos do Alunos-MS).
+        tipos_turma: Tipos de turma aceitos; sem filtro quando vazio.
+        ue_codigo: Código da UE; sem filtro quando ausente.
+        semestre: Semestre da turma; sem filtro quando ausente.
+
+    Returns:
+        Subconjunto dos códigos que atende ao recorte.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+    """
+    if not codigos:
+        return []
+    params: dict[str, Any] = {}
+    if tipos_turma:
+        params["tipos_turma"] = [int(tipo) for tipo in tipos_turma]
+    if ue_codigo:
+        params["ue_codigo"] = ue_codigo
+    if semestre is not None:
+        params["semestre"] = semestre
+    resp = _client.post(
+        f"{_BASE_TURMAS}/recorte-por-tipo/",
+        payload=[int(codigo) for codigo in codigos],
+        params=params or None,
+    )
+    resp.raise_for_status()
+    dados = _client.json_or_none(resp) or []
+    return [int(codigo) for codigo in dados]
+
+
 def get_componentes_curriculares() -> Any:
     """Retorna o catálogo completo de componentes curriculares.
 
@@ -397,6 +436,74 @@ def _turma_historica_elegivel(turma: dict[str, Any]) -> bool:
     if tipo_escola is None:
         return True
     return tipo_escola in _TIPOS_ESCOLA_TURMAS_HISTORICAS
+
+
+def get_listagem_turmas_componentes(
+    codigo_ue: str,
+    modalidade: int,
+    ano_letivo: int,
+    codigo_turma: int | None = None,
+    qtde_registros: int | None = None,
+    qtde_registros_ignorados: int | None = None,
+    eh_professor: bool = False,
+    codigo_rf: str | None = None,
+    considera_historico: bool = False,
+    periodo_escolar_inicio_tick: int | None = None,
+    anos_infantil_desconsiderar: list[str] | None = None,
+) -> dict[str, Any]:
+    """Lista turmas e componentes por UE, modalidade e ano letivo.
+
+    Args:
+        codigo_ue: Código da unidade educacional.
+        modalidade: Código da modalidade de ensino.
+        ano_letivo: Ano letivo consultado.
+        codigo_turma: Filtra por uma turma específica quando informado.
+        qtde_registros: Tamanho da página usado no total de páginas.
+        qtde_registros_ignorados: Compatibilidade legada; repassado ao MS.
+        eh_professor: Restringe os componentes ao RF informado.
+        codigo_rf: RF do professor usado no filtro e no território.
+        considera_historico: Inclui turmas históricas (situação C/E).
+        periodo_escolar_inicio_tick: Início do período escolar em ticks .NET.
+        anos_infantil_desconsiderar: Anos de turma removidos do retorno.
+
+    Returns:
+        Envelope paginado (`items`, `total_registros`, `total_paginas`).
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+        ValueError: Se a resposta não representar um objeto.
+        OverflowError: Se os ticks excederem o limite do datetime.
+    """
+    params: dict[str, Any] = {
+        "eh_professor": str(eh_professor).lower(),
+        "considera_historico": str(considera_historico).lower(),
+    }
+    if codigo_turma:
+        params["codigo_turma"] = codigo_turma
+    if qtde_registros is not None:
+        params["qtde_registros"] = qtde_registros
+    if qtde_registros_ignorados is not None:
+        params["qtde_registros_ignorados"] = qtde_registros_ignorados
+    if eh_professor and codigo_rf:
+        params["codigo_rf"] = codigo_rf
+    if periodo_escolar_inicio_tick:
+        params["periodo_escolar_inicio"] = _ticks_dotnet_para_data(
+            periodo_escolar_inicio_tick
+        )
+    if anos_infantil_desconsiderar:
+        params["anos_infantil_desconsiderar"] = anos_infantil_desconsiderar
+
+    response = _client.get(
+        f"{_BASE}/ues/{codigo_ue}/modalidades/{modalidade}/anos/"
+        f"{ano_letivo}/componentes/",
+        params=params,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, dict):
+        raise ValueError("Resposta da listagem de turmas deve ser um objeto.")
+    return payload
 
 
 def get_sincronizacao_institucional_turma(
