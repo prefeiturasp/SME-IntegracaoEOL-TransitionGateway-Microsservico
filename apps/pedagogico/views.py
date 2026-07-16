@@ -555,9 +555,8 @@ class ListagemTurmasComponentesViewSet(APIView):
             ),
             OpenApiParameter(
                 "anosInfantilDesconsiderar",
-                OpenApiTypes.STR,
+                {"type": "array", "items": {"type": "string", "example": ""}},
                 OpenApiParameter.QUERY,
-                many=True,
             ),
         ],
         responses={200: ListagemTurmasComponentesPaginadoSerializer},
