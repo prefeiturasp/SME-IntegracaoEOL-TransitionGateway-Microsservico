@@ -36,3 +36,27 @@ def get_matriculas_ano_atual(ano_letivo: int, ue_codigo: str) -> Any:
     )
     resp.raise_for_status()
     return _client.json_or_none(resp) or []
+
+
+def get_matriculas_anos_anteriores(
+    ano_letivo: int, ue_codigo: str
+) -> Any:
+    """Retorna matrículas históricas consolidadas por turma.
+
+    Args:
+        ano_letivo: Ano letivo usado no filtro.
+        ue_codigo: Código da unidade educacional.
+
+    Returns:
+        Lista de matrículas históricas consolidadas por turma.
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+    """
+    resp = _client.get(
+        f"{_BASE}/anos-anteriores",
+        params={"ano_letivo": ano_letivo, "ue_codigo": ue_codigo},
+    )
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
