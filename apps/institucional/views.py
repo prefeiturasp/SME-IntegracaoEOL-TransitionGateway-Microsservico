@@ -14,12 +14,14 @@ from apps.institucional.serializers import (
     DadosEscolaSerializer,
     DRESerializer,
     EquipamentoSerializer,
+    EscolaSigpaeSerializer,
     EscolaPorDreETipoSerializer,
     EscolaResumoSerializer,
     EscolaSerializer,
     SincronizacaoInstitucionalSerializer,
     SubprefeiturasSerializer,
     TipoEscolaSerializer,
+    UnidadeCodigoIntegracaoSerializer,
     UnidadeEducacionalSerializer,
     UnidadeEolSerializer,
     UnidadeParceiraSerializer,
@@ -62,6 +64,24 @@ _ESCOLA_POR_DRE_TIPO_CAMPOS = {
     "siglaDRE",
     "codigoSubprefeitura",
     "nomeSubprefeitura",
+}
+
+_ESCOLA_SIGPAE_CAMPOS = {
+    "codigoEscola",
+    "nomeEscola",
+    "codigoDRE",
+    "tipoEscola",
+    "siglaTipoEscola",
+    "nomeDRE",
+    "siglaDRE",
+    "codigoSubprefeitura",
+    "nomeSubprefeitura",
+}
+
+_UNIDADE_CODIGO_INTEGRACAO_CAMPOS = {
+    "codigoUe",
+    "nomeUe",
+    "codigoIntegracao",
 }
 
 _DADOS_ESCOLA_CAMPOS = {
@@ -116,6 +136,18 @@ def _filtrar_escola_detalhe(item: dict) -> dict:
 
 def _filtrar_escola_por_dre_tipo(item: dict) -> dict:
     return {k: v for k, v in item.items() if k in _ESCOLA_POR_DRE_TIPO_CAMPOS}
+
+
+def _filtrar_escola_sigpae(item: dict) -> dict:
+    return {k: v for k, v in item.items() if k in _ESCOLA_SIGPAE_CAMPOS}
+
+
+def _filtrar_unidade_codigo_integracao(item: dict) -> dict:
+    return {
+        k: v
+        for k, v in item.items()
+        if k in _UNIDADE_CODIGO_INTEGRACAO_CAMPOS
+    }
 
 
 def _filtrar_dados_escola(item: dict) -> dict:
@@ -233,6 +265,55 @@ class EscolasPorDREView(APIView):
                 return Response(status=status.HTTP_404_NOT_FOUND)
             raise
         return Response([_filtrar_escola_resumo(e) for e in data])
+
+
+class EscolasSigpaePorDREView(APIView):
+    """Lista escolas de uma DRE no formato SIGPAE."""
+
+    @extend_schema(
+        tags=_TAG_DRE,
+        summary="Escolas SIGPAE de uma DRE",
+        description=(
+            "Retorna lista de unidades educacionais de uma DRE "
+            "no formato esperado pelo SIGPAE.\n\n"
+            "Contrato D09: `GET /api/dres/{codigoEolDRE}/escola/Sigpae/`."
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="codigo_eol_dre",
+                location=OpenApiParameter.PATH,
+                description="Código EOL da DRE",
+                required=True,
+                type=str,
+            )
+        ],
+        responses={
+            200: EscolaSigpaeSerializer(many=True),
+            404: None,
+        },
+    )
+    def get(self, _request: Request, codigo_eol_dre: str) -> Response:
+        """Retorna escolas SIGPAE por DRE."""
+        try:
+            data = services.get_escolas_sigpae_por_dre(codigo_eol_dre)
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+            raise
+        except httpx.RequestError:
+            return _sidecar_unavailable_response()
+
+        if not data:
+            return Response([])
+        if isinstance(data, list):
+            return Response([
+                _filtrar_escola_sigpae(item)
+                for item in data
+                if isinstance(item, dict)
+            ])
+        if isinstance(data, dict):
+            return Response([_filtrar_escola_sigpae(data)])
+        return Response([])
 
 
 class SubprefeiturasPorDREView(APIView):
@@ -375,6 +456,52 @@ class UnidadesPorDREView(APIView):
         return Response(data)
 
 
+class UnidadeCodigoIntegracaoPorDREView(APIView):
+    """Lista UEs com código de integração por DRE."""
+
+    @extend_schema(
+        tags=_TAG_DRE,
+        summary="UEs com código de integração por DRE",
+        description=(
+            "Retorna lista de unidades educacionais da DRE com seus "
+            "códigos de integração.\n\n"
+            "Contrato D11: "
+            "`GET /api/dres/{dreCodigo}/unidades/codigo-integracao/`."
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="dre_codigo",
+                location=OpenApiParameter.PATH,
+                description="Código da DRE",
+                required=True,
+                type=str,
+            )
+        ],
+        responses={200: UnidadeCodigoIntegracaoSerializer(many=True), 404: None},
+    )
+    def get(self, _request: Request, dre_codigo: str) -> Response:
+        """Retorna UEs com código de integração da DRE."""
+        try:
+            data = services.get_unidades_codigo_integracao_por_dre(dre_codigo)
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+            raise
+        except httpx.RequestError:
+            return _sidecar_unavailable_response()
+        if not data:
+            return Response([])
+        if isinstance(data, list):
+            return Response([
+                _filtrar_unidade_codigo_integracao(item)
+                for item in data
+                if isinstance(item, dict)
+            ])
+        if isinstance(data, dict):
+            return Response([_filtrar_unidade_codigo_integracao(data)])
+        return Response([])
+
+
 class DadosEscolaView(APIView):
     """Retorna dados completos de uma escola."""
 
@@ -410,6 +537,41 @@ class DadosEscolaView(APIView):
         if isinstance(item, dict):
             return Response(_filtrar_dados_escola(item))
         return Response(item)
+
+
+class SubprefeiturasPorEscolaView(APIView):
+    """Lista subprefeituras vinculadas à escola."""
+
+    @extend_schema(
+        tags=_TAG_ESCOLA,
+        summary="Subprefeituras da escola",
+        description=(
+            "Retorna subprefeituras vinculadas à unidade educacional.\n\n"
+            "Contrato E17: "
+            "`GET /api/escolas/{codigoEscolaEol}/subprefeituras/`."
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="codigo_escola_eol",
+                location=OpenApiParameter.PATH,
+                description="Código EOL da escola",
+                required=True,
+                type=str,
+            )
+        ],
+        responses={200: SubprefeiturasSerializer(many=True), 404: None},
+    )
+    def get(self, _request: Request, codigo_escola_eol: str) -> Response:
+        """Retorna subprefeituras da escola."""
+        try:
+            data = services.get_subprefeituras_por_escola(codigo_escola_eol)
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+            raise
+        except httpx.RequestError:
+            return _sidecar_unavailable_response()
+        return Response(data)
 
 
 def _sidecar_error_response(exc: httpx.HTTPStatusError) -> Response:

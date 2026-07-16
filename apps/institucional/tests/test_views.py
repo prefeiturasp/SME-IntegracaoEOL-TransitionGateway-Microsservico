@@ -59,6 +59,24 @@ _SUBPREFEITURA = {
     "nomeSubprefeitura": "SUBPREFEITURA TESTE",
 }
 
+_ESCOLA_SIGPAE = {
+    "codigoEscola": "019308",
+    "nomeEscola": "EMEF TESTE",
+    "codigoDRE": "108100",
+    "tipoEscola": "EMEF",
+    "siglaTipoEscola": "EMEF",
+    "nomeDRE": "DRE BUTANTA",
+    "siglaDRE": "DRE-BT",
+    "codigoSubprefeitura": "50",
+    "nomeSubprefeitura": "BUTANTA",
+}
+
+_UNIDADE_CODIGO_INTEGRACAO = {
+    "codigoUe": "019308",
+    "nomeUe": "EMEF TESTE",
+    "codigoIntegracao": None,
+}
+
 _TIPO_ESCOLA = {
     "codigo": 1,
     "descricaoSigla": "EMEF",
@@ -256,6 +274,93 @@ class EscolasPorDREViewTest(SimpleTestCase):
             _cliente_autenticado().get("/api/DREs/108100/escola/")
 
 
+class EscolasSigpaePorDREViewTest(SimpleTestCase):
+    """Valida a view de escolas SIGPAE por DRE."""
+
+    @patch("apps.institucional.views.services.get_escolas_sigpae_por_dre")
+    def test_200_repassa_codigo_dre(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 repassando o código da DRE ao service."""
+        mock_svc.return_value = [_ESCOLA_SIGPAE]
+        resp = _cliente_autenticado().get("/api/DREs/108100/escola/Sigpae/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_svc.assert_called_once_with("108100")
+
+    @patch("apps.institucional.views.services.get_escolas_sigpae_por_dre")
+    def test_200_filtra_campos_do_contrato(self, mock_svc: MagicMock) -> None:
+        """Retorna apenas os 9 campos previstos no contrato D09."""
+        payload_expandido = {
+            **_ESCOLA_SIGPAE,
+            "tipoEscolaId": 1,
+            "tipoUnidadeId": 1,
+            "subprefeituraId": 50,
+            "dreId": "108100",
+            "codigoIntegracao": None,
+        }
+        mock_svc.return_value = [payload_expandido]
+
+        resp = _cliente_autenticado().get("/api/DREs/108100/escola/Sigpae/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        item = resp.json()[0]
+        self.assertEqual(
+            set(item.keys()),
+            {
+                "codigoEscola",
+                "nomeEscola",
+                "codigoDRE",
+                "tipoEscola",
+                "siglaTipoEscola",
+                "nomeDRE",
+                "siglaDRE",
+                "codigoSubprefeitura",
+                "nomeSubprefeitura",
+            },
+        )
+
+    @patch("apps.institucional.views.services.get_escolas_sigpae_por_dre")
+    def test_200_lista_vazia_quando_sem_conteudo(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna 200 com lista vazia quando o sidecar não devolve conteúdo."""
+        mock_svc.return_value = None
+        resp = _cliente_autenticado().get("/api/DREs/108100/escola/Sigpae/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+
+    @patch("apps.institucional.views.services.get_escolas_sigpae_por_dre")
+    def test_404_quando_dre_inexistente(self, mock_svc: MagicMock) -> None:
+        """Retorna 404 quando o sidecar responde com 404."""
+        mock_svc.side_effect = _httpx_404()
+        resp = _cliente_autenticado().get(
+            "/api/DREs/INEXISTENTE/escola/Sigpae/"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch("apps.institucional.views.services.get_escolas_sigpae_por_dre")
+    def test_propaga_erro_http_nao_404(self, mock_svc: MagicMock) -> None:
+        """Propaga HTTPStatusError quando o status do sidecar não é 404."""
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "500", request=MagicMock(), response=mock_response
+        )
+        with self.assertRaises(httpx.HTTPStatusError):
+            _cliente_autenticado().get("/api/DREs/108100/escola/Sigpae/")
+
+    @patch("apps.institucional.views.services.get_escolas_sigpae_por_dre")
+    def test_502_quando_sidecar_indisponivel(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna 502 quando o sidecar institucional está indisponível."""
+        mock_svc.side_effect = httpx.RequestError(
+            "connection failed", request=MagicMock()
+        )
+        resp = _cliente_autenticado().get("/api/DREs/108100/escola/Sigpae/")
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+        self.assertEqual(
+            resp.json(), {"detail": "Serviço institucional indisponível"}
+        )
+
+
 class EscolasPorDREeTipoViewTest(SimpleTestCase):
     """Valida a view de escolas por DRE e tipo de escola."""
 
@@ -358,6 +463,94 @@ class UnidadesPorDREViewTest(SimpleTestCase):
             _cliente_autenticado().get("/api/DREs/108100/unidades/")
 
 
+class UnidadeCodigoIntegracaoPorDREViewTest(SimpleTestCase):
+    """Valida a view de UEs com código de integração por DRE."""
+
+    @patch(
+        "apps.institucional.views.services.get_unidades_codigo_integracao_por_dre"
+    )
+    def test_200_retorna_lista(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 com a lista de UEs e código de integração."""
+        mock_svc.return_value = [_UNIDADE_CODIGO_INTEGRACAO]
+        resp = _cliente_autenticado().get(
+            "/api/DREs/108100/unidades/codigo-integracao/"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_svc.assert_called_once_with("108100")
+
+    @patch(
+        "apps.institucional.views.services.get_unidades_codigo_integracao_por_dre"
+    )
+    def test_200_filtra_campos_do_contrato(self, mock_svc: MagicMock) -> None:
+        """Retorna apenas os 3 campos previstos no contrato D11."""
+        payload_expandido = {
+            **_UNIDADE_CODIGO_INTEGRACAO,
+            "tipoEscolaId": 1,
+            "tipoUnidadeId": 1,
+            "subprefeituraId": 50,
+            "dreId": "108100",
+        }
+        mock_svc.return_value = [payload_expandido]
+
+        resp = _cliente_autenticado().get(
+            "/api/DREs/108100/unidades/codigo-integracao/"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        item = resp.json()[0]
+        self.assertEqual(
+            set(item.keys()),
+            {
+                "codigoUe",
+                "nomeUe",
+                "codigoIntegracao",
+            },
+        )
+
+    @patch(
+        "apps.institucional.views.services.get_unidades_codigo_integracao_por_dre"
+    )
+    def test_404_quando_dre_inexistente(self, mock_svc: MagicMock) -> None:
+        """Retorna 404 quando o sidecar responde com 404."""
+        mock_svc.side_effect = _httpx_404()
+        resp = _cliente_autenticado().get(
+            "/api/DREs/INEXISTENTE/unidades/codigo-integracao/"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch(
+        "apps.institucional.views.services.get_unidades_codigo_integracao_por_dre"
+    )
+    def test_propaga_erro_http_nao_404(self, mock_svc: MagicMock) -> None:
+        """Propaga HTTPStatusError quando o status do sidecar não é 404."""
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "500", request=MagicMock(), response=mock_response
+        )
+        with self.assertRaises(httpx.HTTPStatusError):
+            _cliente_autenticado().get(
+                "/api/DREs/108100/unidades/codigo-integracao/"
+            )
+
+    @patch(
+        "apps.institucional.views.services.get_unidades_codigo_integracao_por_dre"
+    )
+    def test_502_quando_sidecar_indisponivel(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna 502 quando o sidecar institucional está indisponível."""
+        mock_svc.side_effect = httpx.RequestError(
+            "connection failed", request=MagicMock()
+        )
+        resp = _cliente_autenticado().get(
+            "/api/DREs/108100/unidades/codigo-integracao/"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+        self.assertEqual(
+            resp.json(), {"detail": "Serviço institucional indisponível"}
+        )
+
+
 class DadosEscolaViewTest(SimpleTestCase):
     """Valida a view de dados completos de escola."""
 
@@ -410,6 +603,52 @@ class DadosEscolaViewTest(SimpleTestCase):
         )
         with self.assertRaises(httpx.HTTPStatusError):
             _cliente_autenticado().get("/api/escolas/dados/019308/")
+
+
+class SubprefeiturasPorEscolaViewTest(SimpleTestCase):
+    """Valida a view de subprefeituras por escola."""
+
+    @patch("apps.institucional.views.services.get_subprefeituras_por_escola")
+    def test_200_repassa_codigo_escola(self, mock_svc: MagicMock) -> None:
+        """Retorna 200 repassando o código da escola ao service."""
+        mock_svc.return_value = [_SUBPREFEITURA]
+        resp = _cliente_autenticado().get("/api/escolas/019308/subprefeituras/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_svc.assert_called_once_with("019308")
+
+    @patch("apps.institucional.views.services.get_subprefeituras_por_escola")
+    def test_404_quando_escola_inexistente(self, mock_svc: MagicMock) -> None:
+        """Retorna 404 quando o sidecar responde com 404."""
+        mock_svc.side_effect = _httpx_404()
+        resp = _cliente_autenticado().get(
+            "/api/escolas/INEXISTENTE/subprefeituras/"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch("apps.institucional.views.services.get_subprefeituras_por_escola")
+    def test_propaga_erro_http_nao_404(self, mock_svc: MagicMock) -> None:
+        """Propaga HTTPStatusError quando o status do sidecar não é 404."""
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_svc.side_effect = httpx.HTTPStatusError(
+            "500", request=MagicMock(), response=mock_response
+        )
+        with self.assertRaises(httpx.HTTPStatusError):
+            _cliente_autenticado().get("/api/escolas/019308/subprefeituras/")
+
+    @patch("apps.institucional.views.services.get_subprefeituras_por_escola")
+    def test_502_quando_sidecar_indisponivel(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna 502 quando o sidecar institucional está indisponível."""
+        mock_svc.side_effect = httpx.RequestError(
+            "connection failed", request=MagicMock()
+        )
+        resp = _cliente_autenticado().get("/api/escolas/019308/subprefeituras/")
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+        self.assertEqual(
+            resp.json(), {"detail": "Serviço institucional indisponível"}
+        )
 
 
 class TiposEscolasViewTest(SimpleTestCase):

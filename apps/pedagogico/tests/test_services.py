@@ -1102,9 +1102,32 @@ class GetComponentesPorListaTurmasTest(SimpleTestCase):
             params={
                 "codigoTurmas": ["T001", "T002"],
                 "adicionarComponentesPlanejamento": False,
+                "incluirExtintas": False,
             },
         )
         self.assertEqual(result, [])
+
+    @patch("apps.pedagogico.services._client")
+    def test_incluir_extintas_repassa_flag(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Repassa incluirExtintas=True para o serviço pedagógico."""
+        mock_client.get.return_value.json.return_value = []
+
+        services.get_componentes_por_lista_turmas(
+            ["T001"],
+            adicionar_componentes_planejamento=False,
+            incluir_extintas=True,
+        )
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/turmas",
+            params={
+                "codigoTurmas": ["T001"],
+                "adicionarComponentesPlanejamento": False,
+                "incluirExtintas": True,
+            },
+        )
 
 
 class GetComponentesTurmasRegularesTest(SimpleTestCase):
@@ -1228,6 +1251,26 @@ class GetCatalogoComponentesTest(SimpleTestCase):
         mock_client.get.assert_called_once_with(_BASE)
 
         self.assertEqual(result, [])
+
+
+class GetTodasTurmasAtribuidasDreUeTest(SimpleTestCase):
+    """Valida a abrangência SME de turmas atribuídas."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_chama_path_correto(self, mock_client: MagicMock) -> None:
+        payload: dict[str, object] = {"abrangencia": None, "dres": []}
+        response = MagicMock()
+        mock_client.get.return_value = response
+        mock_client.json_or_none.return_value = payload
+
+        result = services.get_todas_turmas_atribuidas_dre_ue()
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE_TURMAS}/turmas-atribuidas-dre-ue/todas/"
+        )
+        response.raise_for_status.assert_called_once_with()
+        mock_client.json_or_none.assert_called_once_with(response)
+        self.assertEqual(result, payload)
 
 
 class GetGradeCurricularTest(SimpleTestCase):

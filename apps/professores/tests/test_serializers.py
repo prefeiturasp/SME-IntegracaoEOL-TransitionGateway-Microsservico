@@ -6,13 +6,18 @@ from django.test import SimpleTestCase
 from rest_framework import serializers
 
 from apps.professores.serializers import (
+    DisciplinaTurmaAgrupamentoSerializer,
+    DisciplinaTurmaAtribuidaSerializer,
     FuncionarioCargoSerializer,
     FuncionarioFuncaoAtividadeSerializer,
     FuncionarioFuncaoExternaSerializer,
+    FuncionarioLegadoSerializer,
     ProfessorAutoCompleteSerializer,
     ProfessorTurmaAtribuidaSimplificadaSerializer,
     TextoEstritoField,
     TurmaAtribuidaProfessorSerializer,
+    TurmaElegivelLegadoSerializer,
+    TurmasAtribuidasLegadoSerializer,
 )
 
 
@@ -41,7 +46,11 @@ class FuncionarioSerializerTest(SimpleTestCase):
             (
                 FuncionarioCargoSerializer,
                 {"codigo_rf": "7730900", "nome": None, "cargo_id": 3239},
-                {"funcionarioRF": "7730900", "funcionarioNome": None, "cargoId": 3239},
+                {
+                    "funcionarioRF": "7730900",
+                    "funcionarioNome": None,
+                    "cargoId": 3239,
+                },
             ),
             (
                 FuncionarioFuncaoAtividadeSerializer,
@@ -65,6 +74,141 @@ class FuncionarioSerializerTest(SimpleTestCase):
         for serializer_cls, payload, esperado in casos:
             with self.subTest(serializer=serializer_cls.__name__):
                 self.assertEqual(serializer_cls(payload).data, esperado)
+
+
+class FuncionarioLegadoSerializerTest(SimpleTestCase):
+    """Valida serialização de funcionário no contrato legado."""
+
+    def test_serializa_campos(self) -> None:
+        payload = {
+            "codigo_funcao_atividade": 30,
+            "codigo_rf": "000001",
+            "funcao_externo": 5,
+            "nome": "ANA",
+            "tipo_funcao_externo": 7,
+        }
+
+        self.assertEqual(
+            FuncionarioLegadoSerializer(payload).data,
+            {
+                "cd_Cargo": 0,
+                "codigoFuncaoAtividade": 30,
+                "codigoRf": "000001",
+                "funcaoExterno": 5,
+                "login": "000001",
+                "nomeServidor": "ANA",
+                "tipoFuncaoExterno": 7,
+            },
+        )
+
+
+class DisciplinaTurmaSerializerTest(SimpleTestCase):
+    """Valida serialização de disciplinas no contrato legado."""
+
+    def test_disciplina_atribuida_preserva_tipo_escola(self) -> None:
+        payload = {
+            "codigo": 512,
+            "codigo_componente_curricular_pai": None,
+            "codigo_componente_territorio_saber": None,
+            "descricao": "ARTE",
+            "regencia": False,
+            "tipo_escola": "EMEF",
+            "territorio_saber": False,
+        }
+
+        self.assertEqual(
+            DisciplinaTurmaAtribuidaSerializer(payload).data,
+            {
+                "codDisciplina": 512,
+                "codDisciplinaPai": None,
+                "codCompTerritorioSaber": None,
+                "disciplina": "ARTE",
+                "regencia": False,
+                "tipoEscola": "EMEF",
+                "territorioSaber": False,
+                "professor": None,
+            },
+        )
+
+    def test_disciplina_agrupamento_usa_zero_e_tipo_escola_nulo(self) -> None:
+        payload = {
+            "codigo": 138,
+            "codigo_componente_curricular_pai": 512,
+            "codigo_componente_territorio_saber": None,
+            "codigos_territorios_agrupamento": [1, 2],
+            "descricao": "LINGUA PORTUGUESA",
+            "regencia": True,
+            "territorio_saber": True,
+        }
+
+        self.assertEqual(
+            DisciplinaTurmaAgrupamentoSerializer(payload).data[
+                "codCompTerritorioSaber"
+            ],
+            0,
+        )
+        self.assertIsNone(
+            DisciplinaTurmaAgrupamentoSerializer(payload).data["tipoEscola"]
+        )
+
+
+class TurmasAtribuidasLegadoSerializerTest(SimpleTestCase):
+    """Valida agrupamento de turmas atribuídas."""
+
+    def test_agrupa_por_dre_ue_e_remove_turma_repetida(self) -> None:
+        payload = [
+            {
+                "codigo_dre": "108100",
+                "dre": "DRE TESTE",
+                "dre_abreviacao": "DRE-T",
+                "codigo_escola": "000532",
+                "ue": "EMEF TESTE",
+                "codigo_tipo_escola": 1,
+                "codigo_turma": 3030050,
+                "ano": "1",
+                "ano_letivo": 2026,
+                "modalidade": "Fundamental",
+                "codigo_modalidade": None,
+                "nome_turma": "1A",
+                "semestre": 0,
+                "duracao_turno": 5,
+                "tipo_turno": 4,
+            },
+            {
+                "codigo_dre": "108100",
+                "codigo_escola": "000532",
+                "codigo_turma": 3030050,
+            },
+        ]
+
+        data = TurmasAtribuidasLegadoSerializer(payload).data
+
+        self.assertEqual(len(data["dres"]), 1)
+        self.assertEqual(len(data["dres"][0]["ues"]), 1)
+        self.assertEqual(len(data["dres"][0]["ues"][0]["turmas"]), 1)
+        self.assertEqual(
+            data["dres"][0]["ues"][0]["turmas"][0]["codigoModalidade"],
+            0,
+        )
+
+    def test_retorna_payload_nao_lista_sem_transformar(self) -> None:
+        payload = {"abrangencia": None}
+
+        self.assertEqual(
+            TurmasAtribuidasLegadoSerializer(payload).data, payload
+        )
+
+
+class TurmaElegivelLegadoSerializerTest(SimpleTestCase):
+    """Valida serialização de turma elegível."""
+
+    def test_serializa_campos(self) -> None:
+        payload = {"nome_turma": "1A", "cod_turma": 3030050}
+
+        self.assertEqual(
+            TurmaElegivelLegadoSerializer(payload).data,
+            {"nomeTurma": "1A", "codTurma": 3030050},
+        )
 
 
 class ProfessorAutoCompleteSerializerTest(SimpleTestCase):
@@ -106,34 +250,36 @@ class TurmaAtribuidaProfessorSerializerTest(SimpleTestCase):
     def test_serializa_campos(self) -> None:
         mapeamento = [
             # (campo_entrada,      campo_saida,       valor)
-            ("cod_escola",         "codEscola",       "019465"),
-            ("cod_turma",          "codTurma",        3030050),
-            ("tipo_turma",         "tipoTurma",       1),
-            ("ano",                "ano",             "1"),
-            ("ano_letivo",         "anoLetivo",       2026),
-            ("cod_modalidade",     "codModalidade",   5),
-            ("cod_dre",            "codDre",          "108100"),
-            ("dre",                "dre",             "DRE TESTE"),
-            ("dre_abrev",          "dreAbrev",        "DRE-T"),
-            ("modalidade",         "modalidade",      "Fundamental"),
-            ("nome_turma",         "nomeTurma",       "1A"),
-            ("semestre",           "semestre",        0),
-            ("tipo_ue",            "tipoUE",          "EMEF"),
-            ("cod_tipo_ue",        "codTipoUE",       1),
-            ("cod_ue",             "codUe",           "019465"),
-            ("ue",                 "ue",              "EMEF TESTE"),
-            ("ue_abrev",           "ueAbrev",         "EMEF T."),
-            ("tipo_escola",        "tipoEscola",      "EMEF"),
-            ("cod_tipo_escola",    "codTipoEscola",   1),
-            ("duracao_turno",      "duracaoTurno",    5),
-            ("tipo_turno",         "tipoTurno",       4),
-            ("ensino_especial",    "ensinoEspecial",  False),
-            ("serie_ensino",       "serieEnsino",     "1 ANO"),
-            ("data_inicio_turma",  "dataInicioTurma", "2024-02-01T00:00:00"),
-            ("data_fim_turma",     "dataFimTurma",    None),
-            ("extinta",            "extinta",         False),
+            ("cod_escola", "codEscola", "019465"),
+            ("cod_turma", "codTurma", 3030050),
+            ("tipo_turma", "tipoTurma", 1),
+            ("ano", "ano", "1"),
+            ("ano_letivo", "anoLetivo", 2026),
+            ("cod_modalidade", "codModalidade", 5),
+            ("cod_dre", "codDre", "108100"),
+            ("dre", "dre", "DRE TESTE"),
+            ("dre_abrev", "dreAbrev", "DRE-T"),
+            ("modalidade", "modalidade", "Fundamental"),
+            ("nome_turma", "nomeTurma", "1A"),
+            ("semestre", "semestre", 0),
+            ("tipo_ue", "tipoUE", "EMEF"),
+            ("cod_tipo_ue", "codTipoUE", 1),
+            ("cod_ue", "codUe", "019465"),
+            ("ue", "ue", "EMEF TESTE"),
+            ("ue_abrev", "ueAbrev", "EMEF T."),
+            ("tipo_escola", "tipoEscola", "EMEF"),
+            ("cod_tipo_escola", "codTipoEscola", 1),
+            ("duracao_turno", "duracaoTurno", 5),
+            ("tipo_turno", "tipoTurno", 4),
+            ("ensino_especial", "ensinoEspecial", False),
+            ("serie_ensino", "serieEnsino", "1 ANO"),
+            ("data_inicio_turma", "dataInicioTurma", "2024-02-01T00:00:00"),
+            ("data_fim_turma", "dataFimTurma", None),
+            ("extinta", "extinta", False),
         ]
         payload = {entrada: valor for entrada, _, valor in mapeamento}
         esperado = {saida: valor for _, saida, valor in mapeamento}
 
-        self.assertEqual(TurmaAtribuidaProfessorSerializer(payload).data, esperado)
+        self.assertEqual(
+            TurmaAtribuidaProfessorSerializer(payload).data, esperado
+        )

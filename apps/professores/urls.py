@@ -12,7 +12,14 @@ from apps.professores.views import (
     EscolaFuncionariosFuncoesExternasView,
     EscolaFuncionariosView,
     FuncionarioAtivoView,
+    FuncionarioPerfilTurmaDisciplinasPlanejamentoView,
+    FuncionarioPerfilTurmaDisciplinasView,
+    FuncionarioPerfilTurmasView,
     FuncionariosBuscarPorListaRfView,
+    FuncionariosBuscarTurmasElegiveisView,
+    FuncionariosTurmasView,
+    FuncionariosView,
+    FuncionarioTurmaDisciplinasView,
     NomeServidorView,
     NomeUsuarioEolView,
     ProfessorAutoCompleteView,
@@ -29,6 +36,36 @@ from apps.professores.views import (
 )
 
 urlpatterns = [
+    path(
+        "funcionarios/turmas/<str:codigo_turma>/disciplinas/",
+        FuncionarioTurmaDisciplinasView.as_view(),
+    ),
+    path(
+        "funcionarios/<str:login>/perfis/<str:id_perfil>/turmas/"
+        "<str:codigo_turma>/disciplinas/planejamento/",
+        FuncionarioPerfilTurmaDisciplinasPlanejamentoView.as_view(),
+    ),
+    path(
+        "funcionarios/<str:login>/perfis/<str:id_perfil>/turmas/"
+        "<str:codigo_turma>/disciplinas/",
+        FuncionarioPerfilTurmaDisciplinasView.as_view(),
+    ),
+    path(
+        "funcionarios/<str:login>/perfis/<str:id_perfil>/turmas/",
+        FuncionarioPerfilTurmasView.as_view(),
+    ),
+    path(
+        "funcionarios/turmas/",
+        FuncionariosTurmasView.as_view(),
+    ),
+    path(
+        "funcionarios/BuscarTurmasElegiveis/",
+        FuncionariosBuscarTurmasElegiveisView.as_view(),
+    ),
+    path(
+        "funcionarios/",
+        FuncionariosView.as_view(),
+    ),
     path(
         "professores/<str:codigo_rf>/BuscarPorRf/<int:ano_letivo>/",
         ProfessorBuscarPorRfView.as_view(),

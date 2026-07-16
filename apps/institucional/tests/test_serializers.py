@@ -6,11 +6,13 @@ from apps.institucional.serializers import (
     DadosEscolaSerializer,
     DRESerializer,
     EquipamentoSerializer,
+    EscolaSigpaeSerializer,
     EscolaPorDreETipoSerializer,
     EscolaResumoSerializer,
     EscolaSerializer,
     SincronizacaoInstitucionalSerializer,
     UnidadeEolSerializer,
+    UnidadeCodigoIntegracaoSerializer,
     UnidadeParceiraSerializer,
     SubprefeiturasSerializer,
     TipoEscolaSerializer,
@@ -56,6 +58,70 @@ class SubprefeiturasSerializerTest(SimpleTestCase):
         s = SubprefeiturasSerializer(data=data)
         self.assertFalse(s.is_valid())
         self.assertIn("nomeSubprefeitura", s.errors)
+
+
+class EscolaSigpaeSerializerTest(SimpleTestCase):
+    """Valida o serializer de escola SIGPAE."""
+
+    def test_payload_valido(self) -> None:
+        """Aceita payload completo do contrato D09."""
+        data = {
+            "codigoEscola": "019308",
+            "nomeEscola": "EMEF TESTE",
+            "codigoDRE": "108100",
+            "tipoEscola": "EMEF",
+            "siglaTipoEscola": "EMEF",
+            "nomeDRE": "DRE BUTANTA",
+            "siglaDRE": "DRE-BT",
+            "codigoSubprefeitura": "50",
+            "nomeSubprefeitura": "BUTANTA",
+        }
+        s = EscolaSigpaeSerializer(data=data)
+        self.assertTrue(s.is_valid(), s.errors)
+
+    def test_payload_com_campos_extras_nao_entra_no_contrato(self) -> None:
+        """Ignora campos extras fora do contrato D09 na saída validada."""
+        data = {
+            "codigoEscola": "019308",
+            "nomeEscola": "EMEF TESTE",
+            "codigoDRE": "108100",
+            "tipoEscola": "EMEF",
+            "siglaTipoEscola": "EMEF",
+            "nomeDRE": "DRE BUTANTA",
+            "siglaDRE": "DRE-BT",
+            "codigoSubprefeitura": "50",
+            "nomeSubprefeitura": "BUTANTA",
+            "tipoEscolaId": 1,
+        }
+        s = EscolaSigpaeSerializer(data=data)
+        self.assertTrue(s.is_valid(), s.errors)
+        self.assertNotIn("tipoEscolaId", s.validated_data)
+
+
+class UnidadeCodigoIntegracaoSerializerTest(SimpleTestCase):
+    """Valida o serializer de código de integração por DRE."""
+
+    def test_payload_valido(self) -> None:
+        """Aceita payload completo do contrato D11."""
+        data = {
+            "codigoUe": "019308",
+            "nomeUe": "EMEF TESTE",
+            "codigoIntegracao": None,
+        }
+        s = UnidadeCodigoIntegracaoSerializer(data=data)
+        self.assertTrue(s.is_valid(), s.errors)
+
+    def test_payload_com_campos_extras_nao_entra_no_contrato(self) -> None:
+        """Ignora campos extras fora do contrato D11 na saída validada."""
+        data = {
+            "codigoUe": "019308",
+            "nomeUe": "EMEF TESTE",
+            "codigoIntegracao": None,
+            "dreId": "108100",
+        }
+        s = UnidadeCodigoIntegracaoSerializer(data=data)
+        self.assertTrue(s.is_valid(), s.errors)
+        self.assertNotIn("dreId", s.validated_data)
 
 
 class EscolaPorDreETipoSerializerTest(SimpleTestCase):
