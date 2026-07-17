@@ -85,6 +85,11 @@ SPECTACULAR_SETTINGS = {
     # Mantém os parâmetros na ordem declarada nas views, alinhada ao Swagger
     # do legado, em vez da ordenação alfabética padrão.
     "SORT_OPERATION_PARAMETERS": False,
+    # Exibe booleanos de path pré-preenchidos como "Default value" na UI,
+    # como no Swagger do legado, em vez do seletor de "Examples".
+    "POSTPROCESSING_HOOKS": [
+        "apps.core.schema.converter_examples_de_path_em_default",
+    ],
     "APPEND_COMPONENTS": {
         "securitySchemes": {
             "ApiKeyAuth": {
