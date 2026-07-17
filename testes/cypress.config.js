@@ -43,6 +43,8 @@ const envKeys = [
   "REGISTRO_FUNCIONAL",
   "DRE_CODIGO",
   "DRE_LISTA_CODIGOS",
+  "COD_AGRUPAMENTO",
+  "LISTA_COD_AGRUPAMENTO",
 ];
 
 export default defineConfig({
