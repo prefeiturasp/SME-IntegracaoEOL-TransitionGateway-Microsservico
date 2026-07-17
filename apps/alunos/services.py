@@ -334,6 +334,37 @@ def get_responsavel_resumido(cpf_responsavel: str) -> Any:
     return _client.json_or_none(resp)
 
 
+def get_responsaveis(
+    codigo_dre: str | None = None,
+    codigo_ue: str | None = None,
+    ano_letivo: int | None = None,
+) -> Any:
+    """Retorna responsáveis aptos ao acompanhamento por turma.
+
+    Args:
+        codigo_dre: Código EOL da DRE usado como filtro opcional.
+        codigo_ue: Código EOL da UE usado como filtro opcional.
+        ano_letivo: Ano letivo usado como filtro opcional.
+
+    Returns:
+        Lista de responsáveis retornada pelo serviço de Alunos.
+
+    Raises:
+        httpx.HTTPStatusError: Se o serviço retornar status de erro.
+        httpx.RequestError: Se o serviço estiver inacessível.
+    """
+    params: dict[str, Any] = {}
+    if codigo_dre:
+        params["codigo_dre"] = codigo_dre
+    if codigo_ue:
+        params["codigo_ue"] = codigo_ue
+    if ano_letivo is not None:
+        params["ano_letivo"] = ano_letivo
+    resp = _client.get(f"{_BASE}/responsaveis", params=params or None)
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
 def get_filiacao_aluno(codigo_aluno: str) -> Any:
     """Retorna os dados de filiação do aluno.
 

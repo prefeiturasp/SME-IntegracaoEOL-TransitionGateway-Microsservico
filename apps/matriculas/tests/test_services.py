@@ -34,3 +34,29 @@ class GetMatriculasAnoAtualTest(SimpleTestCase):
         )
         mock_resp.raise_for_status.assert_called_once_with()
         self.assertEqual(result, payload)
+
+
+class GetMatriculasAnosAnterioresTest(SimpleTestCase):
+    """Valida a consulta de matrículas históricas."""
+
+    @patch.object(services._client, "get")
+    def test_chama_sidecar_com_params_corretos(
+        self, mock_get: MagicMock
+    ) -> None:
+        payload = [{"turma_codigo": "9001", "quantidade": 35}]
+        mock_resp = MagicMock()
+        mock_resp.content = b"[]"
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_matriculas_anos_anteriores(
+            ano_letivo=2025,
+            ue_codigo="100001",
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/anos-anteriores",
+            params={"ano_letivo": 2025, "ue_codigo": "100001"},
+        )
+        mock_resp.raise_for_status.assert_called_once_with()
+        self.assertEqual(result, payload)

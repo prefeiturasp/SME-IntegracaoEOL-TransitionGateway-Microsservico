@@ -569,6 +569,41 @@ class ResponsavelResumidoSerializer(serializers.Serializer):
     )  # NOSONAR
 
 
+class ResponsavelTurmaSerializer(serializers.Serializer):
+    """Serializa responsáveis aptos ao acompanhamento por turma."""
+
+    codigoDre = serializers.CharField(source="codigo_dre")  # NOSONAR
+    dre = serializers.CharField(allow_null=True)
+    codigoUe = serializers.CharField(source="codigo_ue")  # NOSONAR
+    ue = serializers.CharField(allow_null=True)
+    codigoTurma = serializers.IntegerField(  # NOSONAR
+        source="codigo_turma"
+    )
+    turma = serializers.CharField(allow_null=True)
+    cpfResponsavel = serializers.IntegerField(  # NOSONAR
+        source="cpf_responsavel"
+    )
+    codigoAluno = serializers.IntegerField(  # NOSONAR
+        source="codigo_aluno"
+    )
+    codigoTipoEscola = serializers.IntegerField(  # NOSONAR
+        source="codigo_tipo_escola"
+    )
+    codigoEtapaEnsino = serializers.IntegerField(  # NOSONAR
+        source="codigo_etapa_ensino"
+    )
+    codigoCicloEnsino = serializers.IntegerField(  # NOSONAR
+        source="codigo_ciclo_ensino"
+    )
+    serieResumida = serializers.CharField(  # NOSONAR
+        source="serie_resumida", allow_null=True
+    )
+    codigoModalidadeTurma = serializers.IntegerField(  # NOSONAR
+        source="codigo_modalidade_turma"
+    )
+    temAppInstalado = ConstanteLegadoField(False)  # NOSONAR
+
+
 class DadosAcompanhamentoEscolarSerializer(serializers.Serializer):
     """Serializa dados de acompanhamento escolar no contrato legado."""
 
