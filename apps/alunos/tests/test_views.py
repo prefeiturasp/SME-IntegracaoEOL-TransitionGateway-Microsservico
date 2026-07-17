@@ -997,6 +997,75 @@ class ResponsavelResumidoViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
 
+class ResponsaveisViewTest(SimpleTestCase):
+    """Valida a listagem de responsáveis no contrato legado."""
+
+    @patch("apps.alunos.views.services.get_responsaveis")
+    def test_200_retorna_contrato_completo(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = [
+            {
+                "codigo_dre": "108",
+                "dre": "DRE TESTE",
+                "codigo_ue": "100001",
+                "ue": "UE TESTE",
+                "codigo_turma": 12345,
+                "turma": "5A",
+                "cpf_responsavel": 1234567890,
+                "codigo_aluno": 1234567,
+                "codigo_tipo_escola": 1,
+                "codigo_etapa_ensino": 5,
+                "codigo_ciclo_ensino": 2,
+                "serie_resumida": "5",
+                "codigo_modalidade_turma": 5,
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/v1/alunos/responsaveis"
+            "?codigo_dre=108&codigo_ue=100001&ano_letivo=2026"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.json(),
+            [
+                {
+                    "codigoDre": "108",
+                    "dre": "DRE TESTE",
+                    "codigoUe": "100001",
+                    "ue": "UE TESTE",
+                    "codigoTurma": 12345,
+                    "turma": "5A",
+                    "cpfResponsavel": 1234567890,
+                    "codigoAluno": 1234567,
+                    "codigoTipoEscola": 1,
+                    "codigoEtapaEnsino": 5,
+                    "codigoCicloEnsino": 2,
+                    "serieResumida": "5",
+                    "codigoModalidadeTurma": 5,
+                    "temAppInstalado": False,
+                }
+            ],
+        )
+        mock_service.assert_called_once_with(
+            codigo_dre="108",
+            codigo_ue="100001",
+            ano_letivo=2026,
+        )
+
+    @patch("apps.alunos.views.services.get_responsaveis")
+    def test_400_quando_ano_invalido(self, mock_service: MagicMock) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/v1/alunos/responsaveis?ano_letivo=abc")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_service.assert_not_called()
+
+
 class FiliacaoAlunoViewTest(SimpleTestCase):
     """Valida a view de dados de filiação do aluno."""
 

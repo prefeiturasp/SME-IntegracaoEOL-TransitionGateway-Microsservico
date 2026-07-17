@@ -151,6 +151,35 @@ class GetResponsavelResumidoTest(SimpleTestCase):
         self.assertEqual(result, payload)
 
 
+class GetResponsaveisTest(SimpleTestCase):
+    """Valida a consulta de responsáveis por DRE, UE e turma."""
+
+    @patch.object(services._client, "get")
+    def test_chama_rota_direta_com_filtros(self, mock_get: MagicMock) -> None:
+        payload = [{"codigo_aluno": 1234567}]
+        mock_resp = MagicMock()
+        mock_resp.content = b"[]"
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_responsaveis(
+            codigo_dre="108",
+            codigo_ue="100001",
+            ano_letivo=2026,
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/responsaveis",
+            params={
+                "codigo_dre": "108",
+                "codigo_ue": "100001",
+                "ano_letivo": 2026,
+            },
+        )
+        mock_resp.raise_for_status.assert_called_once_with()
+        self.assertEqual(result, payload)
+
+
 class GetFiliacaoAlunoTest(SimpleTestCase):
     """Valida a consulta de dados de filiação do aluno."""
 

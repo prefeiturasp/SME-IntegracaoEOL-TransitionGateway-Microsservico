@@ -31,6 +31,7 @@ from apps.alunos.views import (
     QuantidadeMatriculadosCCView,
     QuantidadeMatriculadosView,
     ResponsavelResumidoView,
+    ResponsaveisView,
     TotalAlunosAtivosPeriodoView,
 )
 
@@ -113,6 +114,11 @@ urlpatterns = [
         "anoLetivo/<str:ano_letivo>/alunos",
         AlunosPorAnoView.as_view(),
         name="alunos-por-ano",
+    ),
+    path(
+        "responsaveis",
+        ResponsaveisView.as_view(),
+        name="alunos-responsaveis",
     ),
     path(
         "responsaveis/<str:cpf_responsavel>/resumido",

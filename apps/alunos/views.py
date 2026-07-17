@@ -31,6 +31,7 @@ from apps.alunos.serializers import (
     QuantidadeMatriculadosCCSerializer,
     QuantidadeMatriculadosSerializer,
     ResponsavelResumidoSerializer,
+    ResponsavelTurmaSerializer,
     TurmaDoAlunoSerializer,
 )
 from apps.core.responses import (
@@ -710,6 +711,47 @@ class ResponsavelResumidoView(APIView):
             # quando o contrato legado for descontinuado.
             return Response(status=204)
         return Response(ResponsavelResumidoSerializer(data).data)
+
+
+class ResponsaveisView(APIView):
+    """Lista responsáveis aptos ao acompanhamento por turma."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Responsáveis por DRE, UE e turma",
+        parameters=[
+            OpenApiParameter("codigo_dre", str, OpenApiParameter.QUERY),
+            OpenApiParameter("codigo_ue", str, OpenApiParameter.QUERY),
+            OpenApiParameter("ano_letivo", int, OpenApiParameter.QUERY),
+        ],
+        responses={200: ResponsavelTurmaSerializer(many=True)},
+    )
+    def get(self, request: Request) -> Response:
+        """Busca responsáveis por DRE, UE e ano letivo.
+
+        Args:
+            request: Requisição com filtros opcionais da consulta.
+
+        Returns:
+            Responsáveis encontrados no contrato legado.
+        """
+        ano_raw = request.query_params.get("ano_letivo")
+        try:
+            ano_letivo = int(ano_raw) if ano_raw is not None else None
+        except (TypeError, ValueError):
+            return detail_response("ano_letivo deve ser um inteiro válido.")
+
+        try:
+            data = services.get_responsaveis(
+                codigo_dre=request.query_params.get("codigo_dre"),
+                codigo_ue=request.query_params.get("codigo_ue"),
+                ano_letivo=ano_letivo,
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+        return Response(ResponsavelTurmaSerializer(data, many=True).data)
 
 
 class FiliacaoAlunoView(APIView):
