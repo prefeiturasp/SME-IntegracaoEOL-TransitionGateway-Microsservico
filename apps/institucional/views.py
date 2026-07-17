@@ -610,6 +610,51 @@ class TiposEscolasView(APIView):
         return Response(services.get_tipos_escolas())
 
 
+class EscolasListPostView(APIView):
+    """Lista escolas pelos códigos informados no corpo da requisição."""
+
+    @extend_schema(
+        tags=_TAG_ESCOLA,
+        summary="Escolas por lista de códigos",
+        description=(
+            "Retorna escolas correspondentes aos códigos EOL informados no "
+            "corpo da requisição."
+        ),
+        request={
+            "application/json": {"type": "array", "items": {"type": "string"}}
+        },
+        responses={200: UnidadeEducacionalSerializer(many=True), 400: None},
+    )
+    def post(self, request: Request) -> Response:
+        """Retorna escolas encontradas para os códigos informados."""
+
+        try:
+            codigos = cast(list[str], request.data)
+            data = services.post_escolas(codigos)
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError:
+            return _sidecar_unavailable_response()
+
+        if not data:
+            return Response([])
+        if isinstance(data, list):
+            return Response([
+                _filtrar_toda_unidade(item)
+                for item in data
+                if isinstance(item, dict)
+            ])
+        if isinstance(data, dict):
+            resultados = data.get("results")
+            if isinstance(resultados, list):
+                return Response([
+                    _filtrar_toda_unidade(item)
+                    for item in resultados
+                    if isinstance(item, dict)
+                ])
+        return Response([])
+
+
 class EscolaDetalheView(APIView):
     """Retorna dados de uma escola."""
 

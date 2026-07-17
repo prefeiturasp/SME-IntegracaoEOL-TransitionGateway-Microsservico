@@ -210,6 +210,23 @@ def get_escola(codigo_escola: str) -> Any:
     return resp.json()
 
 
+def post_escolas(codigos: list[str]) -> Any:
+    """Retorna escolas pelos códigos informados.
+
+    Args:
+        codigos: Lista de códigos EOL das escolas para consulta.
+
+    Returns:
+        Lista de escolas encontradas.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status HTTP de erro.
+    """
+    resp = _client.post(f"{_BASE}/escolas/", payload=codigos)
+    resp.raise_for_status()
+    return _client.json_or_none(resp)
+
+
 def get_subprefeituras_por_escola(codigo_escola: str) -> Any:
     """Lista subprefeituras vinculadas a uma escola.
 

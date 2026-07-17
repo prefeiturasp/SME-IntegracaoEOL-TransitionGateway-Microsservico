@@ -29,6 +29,11 @@ class MatriculasUrlsTest(SimpleTestCase):
 
         self.assertEqual(match.kwargs, {})
 
+    def test_rota_anos_anteriores_sem_barra(self) -> None:
+        match = resolve("/api/v1/matriculas/anos-anteriores")
+
+        self.assertEqual(match.url_name, "matriculas-anos-anteriores")
+
 
 class MatriculasAnoAtualViewTest(SimpleTestCase):
     """Valida a view de matrículas do ano letivo."""
@@ -128,3 +133,56 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
         resp = client.get("/api/v1/matriculas/?anoLetivo=2026&ueCodigo=100001")
 
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class MatriculasAnosAnterioresViewTest(SimpleTestCase):
+    """Valida a consolidação de matrículas históricas."""
+
+    @patch("apps.matriculas.views.services.get_matriculas_anos_anteriores")
+    def test_200_retorna_contrato_legado(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = [
+            {"turma_codigo": "54321", "quantidade": 27}
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/v1/matriculas/anos-anteriores"
+            "?ano_letivo=2025&ue_codigo=100001"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.json(), [{"turmaCodigo": "54321", "quantidade": 27}]
+        )
+        mock_service.assert_called_once_with(
+            ano_letivo=2025,
+            ue_codigo="100001",
+        )
+
+    @patch("apps.matriculas.views.services.get_matriculas_anos_anteriores")
+    def test_200_vazio_quando_parametro_ausente(
+        self, mock_service: MagicMock
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/v1/matriculas/anos-anteriores?ano_letivo=2025"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+        mock_service.assert_not_called()
+
+    @patch("apps.matriculas.views.services.get_matriculas_anos_anteriores")
+    def test_400_quando_ano_invalido(self, mock_service: MagicMock) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/v1/matriculas/anos-anteriores"
+            "?ano_letivo=abc&ue_codigo=100001"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_service.assert_not_called()

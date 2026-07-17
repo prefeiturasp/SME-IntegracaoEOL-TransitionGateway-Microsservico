@@ -110,3 +110,45 @@ class MatriculasAnoAtualView(APIView):
         except httpx.RequestError as exc:
             return _sidecar_unavailable_response(exc)
         return Response(MatriculaSerializer(data, many=True).data)
+
+
+class MatriculasAnosAnterioresView(APIView):
+    """Lista matrículas históricas consolidadas por turma."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Matrículas consolidadas de anos anteriores",
+        description="Retorna quantidade histórica de matrículas por turma.",
+        parameters=[
+            OpenApiParameter("ano_letivo", int, OpenApiParameter.QUERY),
+            OpenApiParameter("ue_codigo", str, OpenApiParameter.QUERY),
+        ],
+        responses={200: OpenApiResponse(description="Success")},
+    )
+    def get(self, request: Request) -> Response:
+        """Busca matrículas históricas por ano letivo e UE.
+
+        Args:
+            request: Requisição HTTP recebida.
+
+        Returns:
+            Matrículas históricas consolidadas por turma.
+        """
+        ano_raw = _query_alias(request, "ano_letivo")
+        ue_codigo = _query_alias(request, "ue_codigo")
+        if not ano_raw or not ue_codigo:
+            return Response([])
+        try:
+            ano_letivo = int(ano_raw)
+        except (TypeError, ValueError):
+            return detail_response(_MSG_ANO_LETIVO_INVALIDO)
+        try:
+            data = services.get_matriculas_anos_anteriores(
+                ano_letivo=ano_letivo,
+                ue_codigo=ue_codigo,
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+        return Response(MatriculaSerializer(data, many=True).data)

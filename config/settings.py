@@ -82,6 +82,9 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Porta de entrada única para os domínios internos.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    # Mantém os parâmetros na ordem declarada nas views, alinhada ao Swagger
+    # do legado, em vez da ordenação alfabética padrão.
+    "SORT_OPERATION_PARAMETERS": False,
     "APPEND_COMPONENTS": {
         "securitySchemes": {
             "ApiKeyAuth": {

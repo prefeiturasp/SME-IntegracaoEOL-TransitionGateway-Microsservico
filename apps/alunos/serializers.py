@@ -176,8 +176,8 @@ class AlunoInformacoesSerializer(serializers.Serializer):
     cns = serializers.CharField(allow_null=True)
 
 
-class AlunoAutocompleteSerializer(serializers.Serializer):
-    """Serializa dados de autocomplete de aluno."""
+class AlunoAutocompleteUeSerializer(serializers.Serializer):
+    """Serializa o autocomplete de alunos da UE."""
 
     codigoAluno = serializers.IntegerField(
         source="codigo_aluno", allow_null=True
@@ -194,6 +194,11 @@ class AlunoAutocompleteSerializer(serializers.Serializer):
     numeroAlunoChamada = serializers.CharField(
         source="numero_aluno_chamada", allow_null=True
     )  # NOSONAR
+
+
+class AlunoAutocompleteSerializer(AlunoAutocompleteUeSerializer):
+    """Serializa o autocomplete de alunos ativos."""
+
     turma = serializers.CharField(allow_null=True)
     modalidade = serializers.CharField(allow_null=True)
 
@@ -562,3 +567,110 @@ class ResponsavelResumidoSerializer(serializers.Serializer):
     codigoAluno = serializers.CharField(
         source="codigo_aluno", allow_null=True
     )  # NOSONAR
+
+
+class ResponsavelTurmaSerializer(serializers.Serializer):
+    """Serializa responsáveis aptos ao acompanhamento por turma."""
+
+    codigoDre = serializers.CharField(source="codigo_dre")  # NOSONAR
+    dre = serializers.CharField(allow_null=True)
+    codigoUe = serializers.CharField(source="codigo_ue")  # NOSONAR
+    ue = serializers.CharField(allow_null=True)
+    codigoTurma = serializers.IntegerField(  # NOSONAR
+        source="codigo_turma"
+    )
+    turma = serializers.CharField(allow_null=True)
+    cpfResponsavel = serializers.IntegerField(  # NOSONAR
+        source="cpf_responsavel"
+    )
+    codigoAluno = serializers.IntegerField(  # NOSONAR
+        source="codigo_aluno"
+    )
+    codigoTipoEscola = serializers.IntegerField(  # NOSONAR
+        source="codigo_tipo_escola"
+    )
+    codigoEtapaEnsino = serializers.IntegerField(  # NOSONAR
+        source="codigo_etapa_ensino"
+    )
+    codigoCicloEnsino = serializers.IntegerField(  # NOSONAR
+        source="codigo_ciclo_ensino"
+    )
+    serieResumida = serializers.CharField(  # NOSONAR
+        source="serie_resumida", allow_null=True
+    )
+    codigoModalidadeTurma = serializers.IntegerField(  # NOSONAR
+        source="codigo_modalidade_turma"
+    )
+    temAppInstalado = ConstanteLegadoField(False)  # NOSONAR
+
+
+class DadosAcompanhamentoEscolarSerializer(serializers.Serializer):
+    """Serializa dados de acompanhamento escolar no contrato legado."""
+
+    codigoEol = serializers.IntegerField(source="codigo_eol")  # NOSONAR
+    nomeResponsavel = StringOrNoneField(
+        source="nome_responsavel"
+    )  # NOSONAR
+    cpfResponsavel = StringOrNoneField(source="cpf_responsavel")  # NOSONAR
+    nome = serializers.CharField(allow_null=True)
+    nomeSocial = StringOrNoneField(source="nome_social")  # NOSONAR
+    codigoEscola = StringOrNoneField(source="codigo_escola")  # NOSONAR
+    codigoDre = StringOrNoneField(source="codigo_dre")  # NOSONAR
+    escola = serializers.CharField(allow_null=True)
+    tipoResponsavel = serializers.IntegerField(
+        source="tipo_responsavel", allow_null=True
+    )  # NOSONAR
+    codigoTipoEscola = serializers.IntegerField(
+        source="codigo_tipo_escola", allow_null=True
+    )  # NOSONAR
+    descricaoTipoEscola = StringOrNoneField(
+        source="descricao_tipo_escola"
+    )  # NOSONAR
+    siglaDre = StringOrNoneField(source="sigla_dre")  # NOSONAR
+    codigoTurma = serializers.IntegerField(source="codigo_turma")  # NOSONAR
+    turma = serializers.CharField(allow_null=True)
+    situacaoMatricula = StringOrNoneField(
+        source="situacao_matricula"
+    )  # NOSONAR
+    dataNascimento = DatetimeLegadoField(source="data_nascimento")  # NOSONAR
+    dataSituacaoMatricula = DatetimeLegadoField(
+        source="data_situacao_matricula"
+    )  # NOSONAR
+    codigoCicloEnsino = serializers.IntegerField(
+        source="codigo_ciclo_ensino", allow_null=True
+    )  # NOSONAR
+    codigoEtapaEnsino = serializers.IntegerField(
+        source="codigo_etapa_ensino", allow_null=True
+    )  # NOSONAR
+    serieResumida = StringOrNoneField(source="serie_resumida")  # NOSONAR
+    modalidadeCodigo = ConstanteLegadoField(0)  # NOSONAR
+    modalidadeDescricao = ConstanteLegadoField(None)  # NOSONAR
+
+
+class QuantidadeMatriculadosSerializer(serializers.Serializer):
+    """Serializa a quantidade de matriculados no contrato legado."""
+
+    quantidade = serializers.IntegerField()
+    ordem = serializers.IntegerField(allow_null=True)
+    modalidade = serializers.CharField(allow_null=True)
+    ano = serializers.CharField(allow_null=True)
+    turma = serializers.CharField(allow_null=True)
+    dreCodigo = serializers.CharField(
+        source="dre_codigo", allow_null=True
+    )  # NOSONAR
+    ueCodigo = serializers.CharField(
+        source="ue_codigo", allow_null=True
+    )  # NOSONAR
+
+
+class QuantidadeMatriculadosCCSerializer(serializers.Serializer):
+    """Serializa matriculados por componente no contrato legado."""
+
+    componenteCurricularId = serializers.IntegerField(
+        source="componente_curricular_id"
+    )  # NOSONAR
+    quantidade = serializers.IntegerField()
+    ordem = serializers.IntegerField()
+    modalidade = serializers.CharField(allow_null=True)
+    ano = serializers.CharField(allow_null=True)
+    turma = serializers.CharField(allow_null=True)

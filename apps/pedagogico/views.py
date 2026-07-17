@@ -24,6 +24,7 @@ from apps.pedagogico.serializers import (
     DadosAulaTurmaSerializer,
     GradeCurricularSerializer,
     ItinerarioEnsinoMedioSerializer,
+    ListagemTurmasComponentesPaginadoSerializer,
     SincronizacaoInstitucionalTurmaSerializer,
     TurmaDadosSerializer,
     TurmaHistoricaGeralSerializer,
@@ -476,6 +477,151 @@ class TurmasHistoricasGeraisProfessorViewSet(APIView):
                 _RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA,
                 502,
             )
+        return Response(serializer.data)
+
+
+def _query_bool(request: Request, *nomes: str) -> bool:
+    """Lê um booleano de query params.
+
+    Args:
+        request: Requisição HTTP recebida.
+        nomes: Nomes de parâmetro aceitos, em ordem de precedência.
+
+    Returns:
+        Valor booleano interpretado do parâmetro (default False).
+    """
+    for nome in nomes:
+        valor = request.query_params.get(nome)
+        if valor is not None:
+            return valor.lower() == "true"
+    return False
+
+
+def _query_int(request: Request, *nomes: str) -> int | None:
+    """Lê um inteiro de query params.
+
+    Args:
+        request: Requisição HTTP recebida.
+        nomes: Nomes de parâmetro aceitos, em ordem de precedência.
+
+    Returns:
+        Valor inteiro do parâmetro, ou None quando ausente/ inválido.
+    """
+    for nome in nomes:
+        valor = request.query_params.get(nome)
+        if valor:
+            try:
+                return int(valor)
+            except ValueError:
+                return None
+    return None
+
+
+class ListagemTurmasComponentesViewSet(APIView):
+    """Lista turmas e componentes por UE, modalidade e ano letivo."""
+
+    @extend_schema(
+        tags=_TAG_TURMA,
+        description=(
+            "Retorna turmas e componentes por UE, modalidade e ano letivo"
+        ),
+        parameters=[
+            OpenApiParameter(
+                "codigoTurma", OpenApiTypes.INT, OpenApiParameter.QUERY
+            ),
+            OpenApiParameter(
+                "qtdeRegistros", OpenApiTypes.INT, OpenApiParameter.QUERY
+            ),
+            OpenApiParameter(
+                "qtdeRegistrosIgnorados",
+                OpenApiTypes.INT,
+                OpenApiParameter.QUERY,
+            ),
+            OpenApiParameter(
+                "ehProfessor", OpenApiTypes.BOOL, OpenApiParameter.QUERY
+            ),
+            OpenApiParameter(
+                "codigoRf", OpenApiTypes.STR, OpenApiParameter.QUERY
+            ),
+            OpenApiParameter(
+                "consideraHistorico",
+                OpenApiTypes.BOOL,
+                OpenApiParameter.QUERY,
+            ),
+            OpenApiParameter(
+                "periodoEscolarInicio",
+                OpenApiTypes.INT,
+                OpenApiParameter.QUERY,
+            ),
+            OpenApiParameter(
+                "anosInfantilDesconsiderar",
+                {"type": "array", "items": {"type": "string", "example": ""}},
+                OpenApiParameter.QUERY,
+            ),
+        ],
+        responses={200: ListagemTurmasComponentesPaginadoSerializer},
+    )
+    def get(
+        self,
+        request: Request,
+        codigo_ue: str,
+        modalidade: int,
+        ano_letivo: int,
+    ) -> Response:
+        """Lista turmas e componentes por UE, modalidade e ano letivo.
+
+        Args:
+            request: Requisição HTTP recebida.
+            codigo_ue: Código da unidade educacional.
+            modalidade: Código da modalidade de ensino.
+            ano_letivo: Ano letivo consultado.
+
+        Returns:
+            Resposta HTTP com o envelope paginado de componentes.
+        """
+        eh_professor = _query_bool(
+            request, "ehProfessor", "eh_professor"
+        )
+        codigo_rf = request.query_params.get(
+            "codigoRf", request.query_params.get("codigo_rf")
+        )
+        anos_infantil = _obter_lista_query(
+            request, "anosInfantilDesconsiderar"
+        ) or _obter_lista_query(request, "anos_infantil_desconsiderar")
+        try:
+            data = services.get_listagem_turmas_componentes(
+                codigo_ue=codigo_ue,
+                modalidade=modalidade,
+                ano_letivo=ano_letivo,
+                codigo_turma=_query_int(
+                    request, "codigoTurma", "codigo_turma"
+                ),
+                qtde_registros=_query_int(
+                    request, "qtdeRegistros", "qtde_registros"
+                ),
+                qtde_registros_ignorados=_query_int(
+                    request,
+                    "qtdeRegistrosIgnorados",
+                    "qtde_registros_ignorados",
+                ),
+                eh_professor=eh_professor,
+                codigo_rf=codigo_rf if eh_professor else None,
+                considera_historico=_query_bool(
+                    request, "consideraHistorico", "considera_historico"
+                ),
+                periodo_escolar_inicio_tick=_query_int(
+                    request, "periodoEscolarInicio", "periodo_escolar_inicio"
+                ),
+                anos_infantil_desconsiderar=anos_infantil,
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError:
+            return detail_response(_SERVICO_PEDAGOGICO_INDISPONIVEL, 503)
+        except (ValueError, OverflowError):
+            return detail_response(_RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA, 502)
+
+        serializer = ListagemTurmasComponentesPaginadoSerializer(data)
         return Response(serializer.data)
 
 

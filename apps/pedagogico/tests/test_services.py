@@ -1102,9 +1102,32 @@ class GetComponentesPorListaTurmasTest(SimpleTestCase):
             params={
                 "codigoTurmas": ["T001", "T002"],
                 "adicionarComponentesPlanejamento": False,
+                "incluirExtintas": False,
             },
         )
         self.assertEqual(result, [])
+
+    @patch("apps.pedagogico.services._client")
+    def test_incluir_extintas_repassa_flag(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Repassa incluirExtintas=True para o serviço pedagógico."""
+        mock_client.get.return_value.json.return_value = []
+
+        services.get_componentes_por_lista_turmas(
+            ["T001"],
+            adicionar_componentes_planejamento=False,
+            incluir_extintas=True,
+        )
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/turmas",
+            params={
+                "codigoTurmas": ["T001"],
+                "adicionarComponentesPlanejamento": False,
+                "incluirExtintas": True,
+            },
+        )
 
 
 class GetComponentesTurmasRegularesTest(SimpleTestCase):
@@ -1230,6 +1253,26 @@ class GetCatalogoComponentesTest(SimpleTestCase):
         self.assertEqual(result, [])
 
 
+class GetTodasTurmasAtribuidasDreUeTest(SimpleTestCase):
+    """Valida a abrangência SME de turmas atribuídas."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_chama_path_correto(self, mock_client: MagicMock) -> None:
+        payload: dict[str, object] = {"abrangencia": None, "dres": []}
+        response = MagicMock()
+        mock_client.get.return_value = response
+        mock_client.json_or_none.return_value = payload
+
+        result = services.get_todas_turmas_atribuidas_dre_ue()
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE_TURMAS}/turmas-atribuidas-dre-ue/todas/"
+        )
+        response.raise_for_status.assert_called_once_with()
+        mock_client.json_or_none.assert_called_once_with(response)
+        self.assertEqual(result, payload)
+
+
 class GetGradeCurricularTest(SimpleTestCase):
     """Valida a consulta da grade curricular."""
 
@@ -1248,3 +1291,107 @@ class GetGradeCurricularTest(SimpleTestCase):
         )
 
         self.assertEqual(result, [])
+
+
+class ListagemTurmasComponentesServiceTest(SimpleTestCase):
+    """Valida a tradução do serviço de listagem turma×componente."""
+
+    def _path(self) -> str:
+        """Retorna o path canônico esperado no sidecar."""
+        return f"{_BASE}/ues/9000/modalidades/5/anos/2024/componentes/"
+
+    @patch.object(services._client, "get")
+    def test_professor_monta_path_e_params(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        """Envia RF, ticks convertidos e demais filtros em snake_case."""
+        response = MagicMock()
+        response.json.return_value = {
+            "items": [],
+            "total_registros": 0,
+            "total_paginas": 0,
+        }
+        mock_get.return_value = response
+
+        services.get_listagem_turmas_componentes(
+            "9000",
+            5,
+            2024,
+            codigo_turma=77,
+            qtde_registros=10,
+            qtde_registros_ignorados=0,
+            eh_professor=True,
+            codigo_rf="RF1",
+            considera_historico=True,
+            periodo_escolar_inicio_tick=638527968000000000,
+            anos_infantil_desconsiderar=["1"],
+        )
+
+        mock_get.assert_called_once_with(
+            self._path(),
+            params={
+                "eh_professor": "true",
+                "considera_historico": "true",
+                "codigo_turma": 77,
+                "qtde_registros": 10,
+                "qtde_registros_ignorados": 0,
+                "codigo_rf": "RF1",
+                "periodo_escolar_inicio": "2024-06-01",
+                "anos_infantil_desconsiderar": ["1"],
+            },
+        )
+
+    @patch.object(services._client, "get")
+    def test_gestor_nao_envia_rf(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        """No modo gestor, o RF não é enviado ao sidecar."""
+        response = MagicMock()
+        response.json.return_value = {
+            "items": [],
+            "total_registros": 0,
+            "total_paginas": 0,
+        }
+        mock_get.return_value = response
+
+        services.get_listagem_turmas_componentes(
+            "9000", 5, 2024, eh_professor=False, codigo_rf="RF1"
+        )
+
+        _, kwargs = mock_get.call_args
+        self.assertNotIn("codigo_rf", kwargs["params"])
+        self.assertEqual(kwargs["params"]["eh_professor"], "false")
+
+    @patch.object(services._client, "get")
+    def test_retorna_envelope(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        """Retorna o envelope paginado devolvido pelo sidecar."""
+        envelope = {
+            "items": [{"turma_codigo": "T1"}],
+            "total_registros": 1,
+            "total_paginas": 1,
+        }
+        response = MagicMock()
+        response.json.return_value = envelope
+        mock_get.return_value = response
+
+        resultado = services.get_listagem_turmas_componentes("9000", 5, 2024)
+
+        self.assertEqual(resultado, envelope)
+
+    @patch.object(services._client, "get")
+    def test_payload_nao_objeto_gera_valueerror(
+        self,
+        mock_get: MagicMock,
+    ) -> None:
+        """Rejeita payload que não seja um objeto."""
+        response = MagicMock()
+        response.json.return_value = []
+        mock_get.return_value = response
+
+        with self.assertRaises(ValueError):
+            services.get_listagem_turmas_componentes("9000", 5, 2024)

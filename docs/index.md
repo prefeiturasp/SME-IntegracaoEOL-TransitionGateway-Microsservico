@@ -16,6 +16,13 @@ publicadas automaticamente pelo Sphinx.
 
 ```{toctree}
 :maxdepth: 2
+:caption: Páginas técnicas
+
+dominios/professores/divergencias-legado
+```
+
+```{toctree}
+:maxdepth: 2
 :caption: Referência de código
 
 api
