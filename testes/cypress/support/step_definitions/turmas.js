@@ -3,7 +3,6 @@ import { Given, When, Then, And } from "cypress-cucumber-preprocessor/steps";
 Given("que possuo acesso à API de turmas", () => {
   expect(Cypress.env("API_URL")).to.exist;
   expect(Cypress.env("API_KEY_HEADER")).to.exist;
-  expect(Cypress.env("CODIGO_TURMA")).to.exist;
 });
 
 When("realizo consulta de dados da turma", () => {

@@ -91,7 +91,7 @@ When("realizo consulta ao catalogo de componentes curriculares", () => {
   cy.getComponentesCurriculares().as("response");
 });
 
-When("realizo consulta a grade curricular do ano letivo de 2026", () => {
+When("realizo consulta a grade curricular do ano letivo", () => {
   cy.getGradeComponentesCurriculares().as("response");
 });
 
@@ -99,11 +99,11 @@ When("realizo consulta aos componentes de regencia do ano de turma 1", () => {
   cy.getComponentesRegencia().as("response");
 });
 
-When("realizo consulta aos componentes do funcionario 7907206 no perfil 1", () => {
+When("realizo consulta aos componentes do funcionario no perfil 1", () => {
   cy.getComponentesFuncionarioPorPerfil().as("response");
 });
 
-When("realizo consulta aos componentes da turma 2855275 sem planejamento", () => {
+When("realizo consulta aos componentes da turma sem planejamento", () => {
   cy.getComponentesPorTurma().as("response");
 });
 
@@ -146,5 +146,80 @@ And("os componentes detalhados devem conter codigo e regencia", () => {
     if (response.body.length > 0) {
       expect(response.body[0]).to.include.keys("codigo", "regencia");
     }
+  });
+});
+
+When("realizo consulta aos dados de aula da turma", () => {
+  cy.getDadosAulaTurma().as("response");
+});
+
+When("realizo consulta aos componentes do funcionario na turma", () => {
+  cy.getComponentesTurmaFuncionario().as("response");
+});
+
+When("realizo consulta aos componentes de planejamento da turma", () => {
+  cy.getComponentesPlanejamento().as("response");
+});
+
+When("realizo validacao de componente PAP da turma", () => {
+  cy.getValidacaoComponentePap().as("response");
+});
+
+When("realizo consulta aos componentes sem atribuicao da turma", () => {
+  cy.getComponentesSemAtribuicao(true).as("response");
+});
+
+When(
+  "realizo consulta aos componentes sem atribuicao da turma com retorno vazio",
+  () => {
+    cy.getComponentesSemAtribuicao(false).as("response");
+  },
+);
+
+When("realizo consulta aos componentes de turmas regulares", () => {
+  cy.getComponentesTurmasRegulares().as("response");
+});
+
+When("realizo consulta aos componentes de turmas programa da UE", () => {
+  cy.getComponentesTurmasPrograma().as("response");
+});
+
+When("realizo consulta aos componentes da UE por anos escolares", () => {
+  cy.getComponentesUeAnosEscolares().as("response");
+});
+
+When("realizo consulta aos componentes das turmas da UE", () => {
+  cy.getComponentesTurmasUe().as("response");
+});
+
+And("o retorno deve conter dados de aula da turma", () => {
+  cy.get("@response").then((response) => {
+    expect(response.body).to.be.an("array");
+    if (response.body.length > 0) {
+      expect(response.body[0]).to.include.keys(
+        "componenteCurricularCodigo",
+        "turmaCodigo",
+      );
+    }
+  });
+});
+
+And("o retorno da validacao PAP deve ser booleano", () => {
+  cy.get("@response").then((response) => {
+    expect(response.body).to.be.a("boolean");
+  });
+});
+
+And("o retorno deve conter os componentes sem atribuicao", () => {
+  cy.get("@response").then((response) => {
+    expect(response.body).to.be.a("array");
+    expect(response.body).to.be.not.empty;
+  });
+});
+
+And("o retorno deve conter uma lista de componentes curriculares vazia", () => {
+  cy.get("@response").then((response) => {
+    expect(response.body).to.be.an("array");
+    expect(response.body).to.be.empty;
   });
 });
