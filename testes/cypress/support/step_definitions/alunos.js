@@ -1,152 +1,60 @@
-// ACESSO API
-Given("que possuo acesso à API de alunos", () => {
-  expect(Cypress.env("API_URL")).to.exist;
-});
-
-// INFORMAÇÕES DO ALUNO
-When("realizo consulta de informações do aluno", () => {
-  cy.getAlunoInformacoes(true).as("response");
-});
-When("realizo consulta de informações do aluno não encontrado", () => {
-  cy.getAlunoInformacoes(false).as("response");
-});
-
-// NECESSIDADES ESPECIAIS
-When("realizo consulta de necessidades especiais do aluno", () => {
-  cy.getAlunoNecessidadesEspeciais().as("response");
-});
-
-// TURMAS DO ALUNO
-When("realizo consulta de turmas do aluno", () => {
-  cy.getAlunoTurmas().as("response");
-});
-
-// LISTA DE ALUNOS
-When("realizo consulta de lista de alunos por códigos", () => {
-  cy.getAlunosPorCodigos().as("response");
-});
-
-// ALUNOS PAP
-When("realizo consulta de alunos PAP do ano corrente", () => {
-  cy.getAlunosPapAnoCorrente().as("response");
-});
-When("realizo consulta de alunos PAP por ano letivo", () => {
-  cy.getAlunosPapPorAnoLetivo().as("response");
-});
-
-// SRM PAEE
-When("realizo consulta de dados SRM PAEE do aluno", () => {
-  cy.getAlunoSrmPaee(true).as("response");
-});
-When("realizo consulta de dados SRM PAEE do aluno não encontrado", () => {
-  cy.getAlunoSrmPaee(false).as("response");
-});
-
-//////////////////
-
-// TURMAS DO ALUNO
-When("realizo consulta de turmas do aluno por código", () => {
-  cy.getAlunoTurmas().as("response");
-});
-
-// TURMAS PAP
-When("realizo consulta de turmas PAP por ano letivo e escola", () => {
-  cy.getTurmasPapPorAnoLetivoEEscola().as("response");
-});
-
-// COMPONENTES DE TURMAS PROGRAMA
-When("realizo consulta de componentes das turmas de programa do aluno", () => {
-  cy.getComponentesTurmasProgramaAluno().as("response");
-});
-
-// VERIFICAÇÃO ALUNOS TURMAS PAP
-When("realizo consulta de verificação de alunos em turmas PAP", () => {
-  cy.getVerificacaoAlunosTurmasPap().as("response");
-});
-
-/////////////////
-
-// THEN
-Then("retorna o status 200", function () {
-  cy.get("@response").then((response) => {
-    expect(response.status).to.eq(200);
-  });
-});
-Then("retorna o status 204", function () {
-  cy.get("@response").then((response) => {
-    expect(response.status).to.eq(204);
-  });
-});
-Then("retorna o status 400", function () {
-  cy.get("@response").then((response) => {
-    expect(response.status).to.eq(400);
-  });
-});
-Then("retorna o status 404", function () {
-  cy.get("@response").then((response) => {
-    expect(response.status).to.eq(404);
-  });
-});
-
-// AND
-And("o retorno deve conter dados de SRM PAEE", () => {
-  cy.get("@response").then((response) => {
-    if (response.status === 200) {
-      expect(response.body).to.be.an("array");
-      if (response.body.length > 0) {
-        expect(response.body[0]).to.have.property("codigoTurma");
-        expect(response.body[0]).to.have.property("codigoEscola");
-        expect(response.body[0]).to.have.property("codigoAluno");
-      }
-    }
-  });
-});
 import { Given, When, Then, And } from "cypress-cucumber-preprocessor/steps";
 
 // ACESSO API
 Given("que possuo acesso à API de alunos", () => {
   expect(Cypress.env("API_URL")).to.exist;
-  expect(Cypress.env("API_KEY_HEADER")).to.exist;
-  expect(Cypress.env("CODIGO_ALUNO")).to.exist;
 });
 
-// INFORMAÇÕES DO ALUNO
 When("realizo consulta de informações do aluno", () => {
   cy.getAlunoInformacoes(true).as("response");
 });
+
 When("realizo consulta de informações do aluno não encontrado", () => {
   cy.getAlunoInformacoes(false).as("response");
 });
 
-// NECESSIDADES ESPECIAIS
 When("realizo consulta de necessidades especiais do aluno", () => {
   cy.getAlunoNecessidadesEspeciais().as("response");
 });
 
-// TURMAS DO ALUNO
 When("realizo consulta de turmas do aluno", () => {
   cy.getAlunoTurmas().as("response");
 });
 
-// LISTA DE ALUNOS
 When("realizo consulta de lista de alunos por códigos", () => {
   cy.getAlunosPorCodigos().as("response");
 });
 
-// ALUNOS PAP
 When("realizo consulta de alunos PAP do ano corrente", () => {
   cy.getAlunosPapAnoCorrente().as("response");
 });
+
 When("realizo consulta de alunos PAP por ano letivo", () => {
   cy.getAlunosPapPorAnoLetivo().as("response");
 });
 
-// SRM PAEE
+When("realizo consulta de turmas PAP por ano letivo e escola", () => {
+  cy.getTurmasPapPorAnoLetivoEEscola().as("response");
+});
+
+When("realizo consulta de componentes das turmas de programa do aluno", () => {
+  cy.getComponentesTurmasProgramaAluno().as("response");
+});
+
+When("realizo consulta de verificação de alunos em turmas PAP", () => {
+  cy.getVerificacaoAlunosTurmasPap().as("response");
+});
+
 When("realizo consulta de dados SRM PAEE do aluno", () => {
   cy.getAlunoSrmPaee(true).as("response");
 });
+
 When("realizo consulta de dados SRM PAEE do aluno não encontrado", () => {
   cy.getAlunoSrmPaee(false).as("response");
+});
+
+When("realizo consulta de turmas do aluno por código", () => {
+  cy.getAlunoTurmas().as("response");
 });
 
 // THEN
@@ -155,16 +63,19 @@ Then("retorna o status 200", function () {
     expect(response.status).to.eq(200);
   });
 });
+
 Then("retorna o status 204", function () {
   cy.get("@response").then((response) => {
     expect(response.status).to.eq(204);
   });
 });
+
 Then("retorna o status 400", function () {
   cy.get("@response").then((response) => {
     expect(response.status).to.eq(400);
   });
 });
+
 Then("retorna o status 404", function () {
   cy.get("@response").then((response) => {
     expect(response.status).to.eq(404);
@@ -172,6 +83,7 @@ Then("retorna o status 404", function () {
 });
 
 // AND
+
 And("o retorno deve conter dados de SRM PAEE", () => {
   cy.get("@response").then((response) => {
     if (response.status === 200) {
@@ -295,7 +207,6 @@ And("o retorno deve ser vazio", () => {
   });
 });
 
-// AND
 And("o retorno deve conter lista de turmas PAP", () => {
   cy.get("@response").then((response) => {
     if (response.status === 200) {
@@ -328,83 +239,6 @@ And("o retorno deve conter informações das turmas do aluno", () => {
       if (response.body.length > 0) {
         expect(response.body[0]).to.have.property("codigoTurma");
         expect(response.body[0]).to.have.property("anoLetivo");
-      }
-    }
-  });
-});
-
-// import { Given, When, Then, And } from "cypress-cucumber-preprocessor/steps";
-
-// ACESSO API
-Given("que possuo acesso à API de turmas", () => {
-  expect(Cypress.env("API_URL")).to.exist;
-  expect(Cypress.env("API_KEY_HEADER")).to.exist;
-  expect(Cypress.env("CODIGO_ALUNO")).to.exist;
-  expect(Cypress.env("ANO_LETIVO")).to.exist;
-});
-
-// TURMAS DO ALUNO
-When("realizo consulta de turmas do aluno por código", () => {
-  cy.getAlunoTurmas().as("response");
-});
-
-// TURMAS PAP
-When("realizo consulta de turmas PAP por ano letivo e escola", () => {
-  cy.getTurmasPapPorAnoLetivoEEscola().as("response");
-});
-
-// COMPONENTES DE TURMAS PROGRAMA
-When("realizo consulta de componentes das turmas de programa do aluno", () => {
-  cy.getComponentesTurmasProgramaAluno().as("response");
-});
-
-// VERIFICAÇÃO ALUNOS TURMAS PAP
-When("realizo consulta de verificação de alunos em turmas PAP", () => {
-  cy.getVerificacaoAlunosTurmasPap().as("response");
-});
-
-// THEN
-Then("retorna o status 200", function () {
-  cy.get("@response").then((response) => {
-    expect(response.status).to.eq(200);
-  });
-});
-Then("retorna o status 204", function () {
-  cy.get("@response").then((response) => {
-    expect(response.status).to.eq(204);
-  });
-});
-Then("retorna o status 400", function () {
-  cy.get("@response").then((response) => {
-    expect(response.status).to.eq(400);
-  });
-});
-Then("retorna o status 404", function () {
-  cy.get("@response").then((response) => {
-    expect(response.status).to.eq(404);
-  });
-});
-
-// AND
-And("o retorno deve conter lista de turmas PAP", () => {
-  cy.get("@response").then((response) => {
-    if (response.status === 200) {
-      expect(response.body).to.be.an("array");
-      if (response.body.length > 0) {
-        expect(response.body[0]).to.have.property("codigoTurma");
-        expect(response.body[0]).to.have.property("turmaNome");
-      }
-    }
-  });
-});
-And("o retorno deve conter componentes das turmas de programa", () => {
-  cy.get("@response").then((response) => {
-    if (response.status === 200) {
-      expect(response.body).to.be.an("array");
-      if (response.body.length > 0) {
-        expect(response.body[0]).to.have.property("codigoAluno");
-        expect(response.body[0]).to.have.property("codigoTurma");
-        expect(response.body[0]).to.have.property("codigoComponenteCurricular");
       }
     }
   });
