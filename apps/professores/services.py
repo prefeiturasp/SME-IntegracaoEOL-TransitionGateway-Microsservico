@@ -698,6 +698,10 @@ def get_abrangencia_funcionario_perfil(
     """
     if abrangencia == _TIPO_ABRANGENCIA_SME:
         data = get_todas_turmas_atribuidas_dre_ue()
+    elif abrangencia == _TIPO_ABRANGENCIA_PROFESSOR:
+        data = TurmasAtribuidasLegadoSerializer(
+            montar_turmas_atribuidas_professor(login)
+        ).data
     elif abrangencia in _TIPOS_ABRANGENCIA_VINCULO_UE:
         dre = dre_codigo if abrangencia in _TIPOS_ABRANGENCIA_DRE else None
         cargos_filtro = (

@@ -1597,6 +1597,59 @@ class GetAbrangenciaFuncionarioPerfilTest(SimpleTestCase):
         )
         self.assertIsNone(data["abrangencia"])
 
+    @patch("apps.professores.services._client")
+    @patch("apps.professores.services.montar_turmas_atribuidas_professor")
+    def test_abrangencia_professor_usa_composicao_enriquecida(
+        self,
+        mock_montar_turmas: MagicMock,
+        mock_client: MagicMock,
+    ) -> None:
+        mock_montar_turmas.return_value = [
+            {
+                "cod_dre": "109200",
+                "dre": "DIRETORIA REGIONAL DE EDUCACAO SAO MATEUS",
+                "dre_abrev": "DRE - SM",
+                "cod_escola": "013803",
+                "ue": "JULIO DE GRAMMONT",
+                "cod_tipo_escola": 1,
+                "cod_turma": 3018602,
+                "ano": "7",
+                "ano_letivo": 2026,
+                "modalidade": "Fundamental",
+                "cod_modalidade": 5,
+                "nome_turma": "7A",
+                "semestre": 0,
+                "duracao_turno": 5,
+                "tipo_turno": 1,
+            }
+        ]
+
+        data = services.get_abrangencia_funcionario_perfil(
+            "9364137",
+            "perfil-professor",
+            abrangencia=2,
+            cargos=[3280],
+            grupo=6,
+        )
+
+        mock_montar_turmas.assert_called_once_with("9364137")
+        mock_client.get.assert_not_called()
+        turma = data["dres"][0]["ues"][0]["turmas"][0]
+        self.assertEqual(data["dres"][0]["codigo"], "109200")
+        self.assertEqual(turma["modalidade"], "Fundamental")
+        self.assertEqual(turma["duracaoTurno"], 5)
+        self.assertEqual(
+            data["abrangencia"],
+            {
+                "grupoID": "perfil-professor",
+                "cargosId": [3280],
+                "funcoesId": [],
+                "grupo": 6,
+                "abrangencia": 2,
+                "ehPerfilManual": False,
+            },
+        )
+
     @patch("apps.professores.services.pedagogico_services")
     def test_abrangencia_sme_faz_proxy_e_monta_bloco(
         self, mock_pedagogico_services: MagicMock

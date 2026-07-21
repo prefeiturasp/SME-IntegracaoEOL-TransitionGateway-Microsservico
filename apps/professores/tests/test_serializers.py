@@ -191,6 +191,60 @@ class TurmasAtribuidasLegadoSerializerTest(SimpleTestCase):
             0,
         )
 
+    def test_aceita_campos_da_composicao_de_professor(self) -> None:
+        payload = [
+            {
+                "cod_dre": "109200",
+                "dre": "DIRETORIA REGIONAL DE EDUCACAO SAO MATEUS",
+                "dre_abrev": "DRE - SM",
+                "cod_escola": "013803",
+                "ue": "JULIO DE GRAMMONT",
+                "cod_tipo_escola": 1,
+                "cod_turma": 3018605,
+                "ano": "7",
+                "ano_letivo": 2026,
+                "modalidade": "Fundamental",
+                "cod_modalidade": 5,
+                "nome_turma": "7B",
+                "semestre": 0,
+                "duracao_turno": 5,
+                "tipo_turno": 1,
+            },
+            {
+                "cod_dre": "109200",
+                "dre": "DIRETORIA REGIONAL DE EDUCACAO SAO MATEUS",
+                "dre_abrev": "DRE - SM",
+                "cod_escola": "013803",
+                "ue": "JULIO DE GRAMMONT",
+                "cod_tipo_escola": 1,
+                "cod_turma": 3018602,
+                "ano": "7",
+                "ano_letivo": 2026,
+                "modalidade": "Fundamental",
+                "cod_modalidade": 5,
+                "nome_turma": "7A",
+                "semestre": 0,
+                "duracao_turno": 5,
+                "tipo_turno": 1,
+            },
+        ]
+
+        data = TurmasAtribuidasLegadoSerializer(payload).data
+        dre = data["dres"][0]
+        ue = dre["ues"][0]
+
+        self.assertEqual(dre["codigo"], "109200")
+        self.assertEqual(dre["abreviacao"], "DRE - SM")
+        self.assertEqual(ue["codigo"], "013803")
+        self.assertEqual(ue["codTipoEscola"], 1)
+        self.assertEqual(
+            [turma["codigo"] for turma in ue["turmas"]],
+            [3018602, 3018605],
+        )
+        self.assertEqual(ue["turmas"][0]["modalidade"], "Fundamental")
+        self.assertEqual(ue["turmas"][0]["codigoModalidade"], 5)
+        self.assertEqual(ue["turmas"][0]["duracaoTurno"], 5)
+
     def test_retorna_payload_nao_lista_sem_transformar(self) -> None:
         payload = {"abrangencia": None}
 

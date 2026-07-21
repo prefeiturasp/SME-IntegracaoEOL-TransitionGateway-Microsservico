@@ -268,6 +268,14 @@ class AbrangenciaLegadoSerializer(serializers.Serializer):
 class TurmasAtribuidasLegadoSerializer(serializers.Serializer):
     """Serializa turmas atribuídas no contrato legado."""
 
+    def _valor(self, item: dict[str, Any], *campos: str) -> Any:
+        """Retorna o primeiro valor encontrado."""
+        for campo in campos:
+            valor = item.get(campo)
+            if valor is not None:
+                return valor
+        return None
+
     def to_representation(self, instance: Any) -> Any:
         """Agrupa turmas por DRE e UE."""
         if not isinstance(instance, list):
@@ -280,8 +288,10 @@ class TurmasAtribuidasLegadoSerializer(serializers.Serializer):
         for item in instance:
             if not isinstance(item, dict):
                 continue
-            codigo_dre = item.get("codigo_dre")
-            codigo_ue = item.get("codigo_escola")
+            codigo_dre = self._valor(item, "codigo_dre", "cod_dre")
+            codigo_ue = self._valor(
+                item, "codigo_escola", "cod_escola", "cod_ue"
+            )
             if not codigo_ue:
                 continue
 
@@ -289,7 +299,9 @@ class TurmasAtribuidasLegadoSerializer(serializers.Serializer):
             dre = dres.setdefault(
                 chave_dre,
                 {
-                    "abreviacao": item.get("dre_abreviacao"),
+                    "abreviacao": self._valor(
+                        item, "dre_abreviacao", "dre_abrev"
+                    ),
                     "codigo": codigo_dre,
                     "nome": item.get("dre"),
                     "ues": [],
@@ -301,13 +313,16 @@ class TurmasAtribuidasLegadoSerializer(serializers.Serializer):
                 ue = {
                     "codigo": codigo_ue,
                     "nome": item.get("ue"),
-                    "codTipoEscola": item.get("codigo_tipo_escola"),
+                    "codTipoEscola": self._valor(
+                        item, "codigo_tipo_escola", "cod_tipo_escola"
+                    ),
                     "turmas": [],
                 }
                 ues_por_dre[chave_ue] = ue
                 dre["ues"].append(ue)
 
-            chave_turma = (chave_dre, str(codigo_ue), item.get("codigo_turma"))
+            codigo_turma = self._valor(item, "codigo_turma", "cod_turma")
+            chave_turma = (chave_dre, str(codigo_ue), codigo_turma)
             if chave_turma in turmas_por_ue:
                 continue
             turmas_por_ue.add(chave_turma)
@@ -316,10 +331,13 @@ class TurmasAtribuidasLegadoSerializer(serializers.Serializer):
                 {
                     "ano": item.get("ano"),
                     "anoLetivo": item.get("ano_letivo"),
-                    "codigo": item.get("codigo_turma"),
+                    "codigo": codigo_turma,
                     "tipoTurma": 0,
                     "modalidade": item.get("modalidade"),
-                    "codigoModalidade": item.get("codigo_modalidade") or 0,
+                    "codigoModalidade": self._valor(
+                        item, "codigo_modalidade", "cod_modalidade"
+                    )
+                    or 0,
                     "nomeTurma": item.get("nome_turma"),
                     "semestre": item.get("semestre"),
                     "duracaoTurno": item.get("duracao_turno"),
@@ -336,7 +354,20 @@ class TurmasAtribuidasLegadoSerializer(serializers.Serializer):
                 }
             )
 
-        return {"abrangencia": None, "dres": list(dres.values())}
+        for dre in dres.values():
+            dre["ues"].sort(key=lambda ue: str(ue.get("codigo") or ""))
+            for ue in dre["ues"]:
+                ue["turmas"].sort(
+                    key=lambda turma: (
+                        turma.get("codigo") is None,
+                        turma.get("codigo") or 0,
+                    )
+                )
+
+        dres_ordenadas = sorted(
+            dres.values(), key=lambda dre: str(dre.get("codigo") or "")
+        )
+        return {"abrangencia": None, "dres": dres_ordenadas}
 
 
 class TurmaElegivelLegadoSerializer(serializers.Serializer):
