@@ -258,6 +258,72 @@ class GetFuncionariosEscolaTest(SimpleTestCase):
         self.assertEqual(result, payload)
 
 
+class GetFuncionariosUeTest(SimpleTestCase):
+    """Valida a busca de funcionários por unidade educacional."""
+
+    @patch.object(services._client, "post")
+    def test_chama_path_correto(self, mock_post: MagicMock) -> None:
+        payload = [
+            {
+                "codigo_rf": "000001",
+                "nome": "NOME SERVIDOR",
+                "data_inicio": "03/19/2024 00:00:00",
+                "data_fim": None,
+                "cargo": "DIRETOR",
+                "codigo_tipo_funcao_atividade": 0,
+                "esta_afastado": False,
+                "funcao_externo": 0,
+                "tipo_funcao_externo": 0,
+            },
+        ]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[{}]"
+        mock_resp.json.return_value = payload
+        mock_post.return_value = mock_resp
+        body = {"codigosRfs": ["000001"], "filtro": ""}
+
+        result = services.get_funcionarios_ue("000123", body)
+
+        mock_post.assert_called_once_with(
+            "/api/v1/professores/funcionarios/ue/000123/",
+            payload=body,
+        )
+        self.assertEqual(result, payload)
+
+
+class GetFuncionariosPorCargoTest(SimpleTestCase):
+    """Valida a busca de funcionários por cargo."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_correto(self, mock_get: MagicMock) -> None:
+        payload = [
+            {
+                "codigo_rf": "000001",
+                "nome": "NOME SERVIDOR",
+                "data_inicio": "03/19/2024 00:00:00",
+                "data_fim": None,
+                "cargo": "DIRETOR",
+                "codigo_tipo_funcao_atividade": 0,
+                "esta_afastado": False,
+                "funcao_externo": 0,
+                "tipo_funcao_externo": 0,
+            },
+        ]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[{}]"
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_funcionarios_por_cargo("3360")
+
+        mock_get.assert_called_once_with(
+            "/api/v1/professores/funcionarios/cargos/3360/"
+        )
+        self.assertEqual(result, payload)
+
+
 class GetFuncionariosEscolaPorCargoTest(SimpleTestCase):
     """Valida a busca de funcionários por escola e cargo."""
 

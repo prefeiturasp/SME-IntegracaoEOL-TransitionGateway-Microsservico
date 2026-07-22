@@ -62,9 +62,17 @@ class NomeServidorSerializer(serializers.Serializer):
 class BuscarFuncionariosPorUeSerializer(serializers.Serializer):
     """Filtros do POST de funcionários por UE (contrato legado)."""
 
-    CodigoUE = serializers.CharField(required=False, allow_blank=True)
-    CodigoRF = serializers.CharField(required=False, allow_blank=True)
-    NomeServidor = serializers.CharField(required=False, allow_blank=True)
+    codigosRfs = serializers.ListField(  # noqa: N815
+        child=TextoEstritoField(allow_blank=False),
+        required=False,
+        allow_empty=True,
+        default=list,
+    )
+    filtro = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="",
+    )
 
 
 @extend_schema_serializer(component_name="buscar_turmas_elegiveis")
@@ -355,9 +363,11 @@ class TurmasAtribuidasLegadoSerializer(serializers.Serializer):
             )
 
         for dre in dres.values():
-            dre["ues"].sort(key=lambda ue: str(ue.get("codigo") or ""))
-            for ue in dre["ues"]:
-                ue["turmas"].sort(
+            ues = cast(list[dict[str, Any]], dre["ues"])
+            ues.sort(key=lambda ue: str(ue.get("codigo") or ""))
+            for ue in ues:
+                turmas = cast(list[dict[str, Any]], ue["turmas"])
+                turmas.sort(
                     key=lambda turma: (
                         turma.get("codigo") is None,
                         turma.get("codigo") or 0,
@@ -389,9 +399,8 @@ class FuncionarioLegadoSerializer(serializers.Serializer):
     """Serializa funcionário no contrato legado."""
 
     cd_Cargo = serializers.SerializerMethodField()
-    codigoFuncaoAtividade = serializers.IntegerField(
-        source="codigo_funcao_atividade",
-        default=0,
+    codigoFuncaoAtividade = serializers.SerializerMethodField(
+        method_name="get_codigo_funcao_atividade",
     )
     codigoRf = serializers.CharField(
         source="codigo_rf",
@@ -419,6 +428,18 @@ class FuncionarioLegadoSerializer(serializers.Serializer):
 
     def get_cd_Cargo(self, _obj: Any) -> int:  # noqa: N802
         """Retorna cargo padrão."""
+        return 0
+
+    def get_codigo_funcao_atividade(self, obj: dict[str, Any]) -> int:
+        """Retorna função de atividade."""
+        return int(obj.get("codigo_funcao_atividade") or 0)
+
+
+class FuncionarioUeLegadoSerializer(FuncionarioLegadoSerializer):
+    """Serializa funcionário por UE no contrato legado."""
+
+    def get_codigo_funcao_atividade(self, _obj: dict[str, Any]) -> int:
+        """Retorna função de atividade padrão."""
         return 0
 
 

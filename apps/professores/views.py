@@ -19,6 +19,7 @@ from apps.professores.serializers import (
     FuncionarioFuncaoAtividadeSerializer,
     FuncionarioFuncaoAtividadeUeSerializer,
     FuncionarioFuncaoExternaSerializer,
+    FuncionarioUeLegadoSerializer,
     ListaStringSerializer,
     NomeServidorSerializer,
     ProfessorAutoCompleteSerializer,
@@ -948,6 +949,84 @@ class EscolaFuncionariosView(APIView):
         data = services.get_funcionarios_escola(codigo_ue)
         if data is None:
             return Response(status=204)
+        return Response(FuncionarioEscolaSerializer(data, many=True).data)
+
+
+class FuncionariosUeView(APIView):
+    """Retorna funcionários vinculados à unidade educacional."""
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna funcionários vinculados à unidade educacional."),
+        request=BuscarFuncionariosPorUeSerializer,
+        responses={
+            200: FuncionarioUeLegadoSerializer(many=True),
+            204: None,
+            400: dict,
+            404: str,
+        },
+    )
+    def post(self, request: Request, codigo_ue: str) -> Response:
+        """Retorna funcionários vinculados à unidade educacional.
+
+        Args:
+            request: Requisição HTTP recebida pela API.
+            codigo_ue: Código da unidade educacional usada na consulta.
+
+        Returns:
+            Funcionários vinculados à unidade, ou ausência de conteúdo.
+
+        Raises:
+            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
+        """
+        if not codigo_ue.strip():
+            return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
+        serializer = BuscarFuncionariosPorUeSerializer(data=request.data or {})
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=400)
+        data = services.get_funcionarios_ue(
+            codigo_ue,
+            serializer.validated_data,
+        )
+        if data is None:
+            return Response(status=204)
+        if not isinstance(data, list):
+            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+        if not data:
+            return Response(
+                "Não foram encontrados funcionários.",
+                status=404,
+            )
+        return Response(FuncionarioUeLegadoSerializer(data, many=True).data)
+
+
+class FuncionariosCargoView(APIView):
+    """Retorna funcionários vinculados ao cargo."""
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna funcionários vinculados ao cargo."),
+        responses={200: FuncionarioEscolaSerializer(many=True), 204: None},
+    )
+    def get(self, _request: Request, codigo_cargo: str) -> Response:
+        """Retorna funcionários vinculados ao cargo.
+
+        Args:
+            codigo_cargo: Código do cargo usado na consulta.
+
+        Returns:
+            Funcionários vinculados ao cargo, ou ausência de conteúdo.
+
+        Raises:
+            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
+        """
+        if not codigo_cargo.strip():
+            return detail_response("É necessário informar o codigoCargo.")
+        data = services.get_funcionarios_por_cargo(codigo_cargo)
+        if data is None:
+            return Response(status=204)
+        if not isinstance(data, list):
+            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
         return Response(FuncionarioEscolaSerializer(data, many=True).data)
 
 

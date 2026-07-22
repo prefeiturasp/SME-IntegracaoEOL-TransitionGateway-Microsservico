@@ -72,6 +72,16 @@ class ProfessoresUrlsTest(SimpleTestCase):
 
         self.assertEqual(match.kwargs, {})
 
+    def test_preserva_codigo_ue_funcionarios_ue(self) -> None:
+        match = resolve("/api/funcionarios/ue/000123/")
+
+        self.assertEqual(match.kwargs, {"codigo_ue": "000123"})
+
+    def test_preserva_codigo_cargo_funcionarios_cargos(self) -> None:
+        match = resolve("/api/funcionarios/cargos/3360/")
+
+        self.assertEqual(match.kwargs, {"codigo_cargo": "3360"})
+
     def test_preserva_codigo_ue_funcionarios_escola(self) -> None:
         match = resolve("/api/escolas/000123/funcionarios/")
 
@@ -584,6 +594,177 @@ class EscolaFuncionariosViewTest(SimpleTestCase):
         self.assertEqual(
             resp.json(),
             {"detail": "É necessário informar o codigoUE."},
+        )
+
+
+class FuncionariosUeViewTest(SimpleTestCase):
+    """Valida a busca de funcionários por unidade educacional."""
+
+    @patch("apps.professores.views.services.get_funcionarios_ue")
+    def test_200_retorna_funcionarios(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [
+            {
+                "codigo_rf": "000001",
+                "nome": "NOME SERVIDOR",
+                "data_inicio": "03/19/2024 00:00:00",
+                "data_fim": None,
+                "cargo": "DIRETOR",
+                "codigo_tipo_funcao_atividade": 0,
+                "esta_afastado": False,
+                "funcao_externo": 0,
+                "tipo_funcao_externo": 0,
+            },
+        ]
+        client = _cliente_autenticado()
+        payload = {"codigosRfs": ["000001"], "filtro": ""}
+
+        resp = client.post(
+            "/api/funcionarios/ue/000123/",
+            data=payload,
+            content_type="application/json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.json()[0],
+            {
+                "cd_Cargo": 0,
+                "codigoFuncaoAtividade": 0,
+                "codigoRf": "000001",
+                "funcaoExterno": 0,
+                "login": "000001",
+                "nomeServidor": "NOME SERVIDOR",
+                "tipoFuncaoExterno": 0,
+            },
+        )
+        mock_service.assert_called_once_with("000123", payload)
+
+    @patch("apps.professores.views.services.get_funcionarios_ue")
+    def test_204_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = None
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/ue/000123/",
+            data={"codigosRfs": [], "filtro": ""},
+            content_type="application/json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch("apps.professores.views.services.get_funcionarios_ue")
+    def test_404_quando_lista_vazia(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/ue/000123/",
+            data={"codigosRfs": [], "filtro": ""},
+            content_type="application/json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(resp.json(), "Não foram encontrados funcionários.")
+
+    @patch("apps.professores.views.services.get_funcionarios_ue")
+    def test_502_quando_sidecar_retorna_objeto(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = {"codigo_rf": "000001"}
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/ue/000123/",
+            data={"codigosRfs": [], "filtro": ""},
+            content_type="application/json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+
+    def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/ue/%20/",
+            data={"codigosRfs": [], "filtro": ""},
+            content_type="application/json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "É necessário informar o codigoUE."},
+        )
+
+    def test_400_quando_body_invalido(self) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/ue/000123/",
+            data={"codigosRfs": "000001"},
+            content_type="application/json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("codigosRfs", resp.json())
+
+
+class FuncionariosCargoViewTest(SimpleTestCase):
+    """Valida a busca de funcionários por cargo."""
+
+    @patch("apps.professores.views.services.get_funcionarios_por_cargo")
+    def test_200_retorna_funcionarios(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [
+            {
+                "codigo_rf": "000001",
+                "nome": "NOME SERVIDOR",
+                "data_inicio": "03/19/2024 00:00:00",
+                "data_fim": None,
+                "cargo": "DIRETOR",
+                "codigo_tipo_funcao_atividade": 0,
+                "esta_afastado": False,
+                "funcao_externo": 0,
+                "tipo_funcao_externo": 0,
+            },
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/cargos/3360/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()[0]["codigoRF"], "000001")
+        self.assertEqual(resp.json()[0]["cargo"], "DIRETOR")
+        mock_service.assert_called_once_with("3360")
+
+    @patch("apps.professores.views.services.get_funcionarios_por_cargo")
+    def test_204_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = None
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/cargos/3360/")
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch("apps.professores.views.services.get_funcionarios_por_cargo")
+    def test_502_quando_sidecar_retorna_objeto(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = {"codigo_rf": "000001"}
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/cargos/3360/")
+
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+
+    def test_400_quando_codigo_cargo_e_somente_espacos(self) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/cargos/%20/")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "É necessário informar o codigoCargo."},
         )
 
 

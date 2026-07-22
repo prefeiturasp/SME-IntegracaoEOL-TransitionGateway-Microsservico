@@ -356,6 +356,36 @@ def get_funcionarios_escola(codigo_ue: str) -> Any:
     return _client.json_or_none(resp)
 
 
+def get_funcionarios_ue(codigo_ue: str, payload: dict[str, Any]) -> Any:
+    """Retorna funcionários vinculados à unidade educacional.
+
+    Args:
+        codigo_ue: Código da unidade educacional usada na consulta.
+        payload: Filtros enviados no contrato legado.
+
+    Returns:
+        Lista de funcionários da unidade ou ausência de conteúdo.
+    """
+    resp = _client.post(
+        f"{_BASE_FUNCIONARIOS}/ue/{codigo_ue}/",
+        payload=payload,
+    )
+    return _client.json_or_none(resp)
+
+
+def get_funcionarios_por_cargo(codigo_cargo: str) -> Any:
+    """Retorna funcionários vinculados ao cargo.
+
+    Args:
+        codigo_cargo: Código do cargo usado na consulta.
+
+    Returns:
+        Lista de funcionários do cargo ou ausência de conteúdo.
+    """
+    resp = _client.get(f"{_BASE_FUNCIONARIOS}/cargos/{codigo_cargo}/")
+    return _client.json_or_none(resp)
+
+
 def get_funcionarios_escola_por_cargo(
     codigo_ue: str,
     codigo_cargo: str,
