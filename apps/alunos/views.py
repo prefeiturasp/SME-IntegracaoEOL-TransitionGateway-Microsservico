@@ -18,6 +18,7 @@ from rest_framework.views import APIView
 
 from apps.alunos import services
 from apps.alunos.serializers import (
+    AlunoAcompanhamentoEscolarSerializer,
     AlunoAtivoTurmaSerializer,
     AlunoAutocompleteSerializer,
     AlunoAutocompleteUeSerializer,
@@ -32,6 +33,7 @@ from apps.alunos.serializers import (
     QuantidadeMatriculadosSerializer,
     ResponsavelResumidoSerializer,
     ResponsavelTurmaSerializer,
+    TodosAlunosTurmaSerializer,
     TurmaDoAlunoSerializer,
 )
 from apps.core.responses import (
@@ -39,6 +41,8 @@ from apps.core.responses import (
     detail_response,
     sidecar_error_response_status_livre,
 )
+from apps.institucional import services as institucional_services
+from apps.pedagogico import services as pedagogico_services
 
 _TAG = ["Aluno"]
 _MSG_CODIGO_OBRIGATORIO = "É necessário informar o codigo do aluno."
@@ -48,6 +52,11 @@ _MSG_CODIGOS_ALUNOS_OBRIGATORIOS = "Os códigos dos Alunos são obrigatórios."
 _MSG_NOME_ALUNO_MINIMO = "O Nome deve conter no mínimo 3 caracteres."
 _MSG_CPF_RESPONSAVEL_INVALIDO = "CPF do responsável inválido."
 _MSG_CODIGO_TURMA_LEGADO = "O código da turma é obrigatório."
+# Sem ponto final, diferente de _MSG_CODIGO_TURMA_LEGADO.
+_MSG_TURMA_OBRIGATORIA_TODOS = "O código da turma é obrigatório"
+_MSG_ANO_MODALIDADE_OBRIGATORIOS = (
+    "É preciso inserir o ano da turma e a modalidade para buscar alunos."
+)
 _MSG_DATA_TICKS_OBRIGATORIA = (
     "O código da turma e data da aula são obrigatórios"
 )
@@ -108,6 +117,37 @@ def _inteiro_positivo(value: str) -> bool:
         return int(value) > 0
     except (TypeError, ValueError):
         return False
+
+
+def _para_inteiro(value: str) -> int | None:
+    """Transforma um texto em inteiro, ou ``None`` quando inválido.
+
+    Args:
+        value: Texto que será convertido.
+
+    Returns:
+        O inteiro correspondente, ou ``None`` quando não numérico.
+    """
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _codigos_ue_da_dre(payload: Any) -> list[str]:
+    """Extrai os códigos de UE do payload do sidecar institucional.
+
+    Args:
+        payload: Resposta do serviço institucional para as UEs da DRE.
+
+    Returns:
+        Códigos EOL das UEs, aceitando payload em lista ou objeto.
+    """
+    if isinstance(payload, dict):
+        payload = payload.get("codigos_ue")
+    if not isinstance(payload, list):
+        return []
+    return [str(codigo) for codigo in payload if codigo]
 
 
 def _legacy_string_response(message: str, status_code: int) -> Response:
@@ -1065,6 +1105,326 @@ class AlunoMatriculasTurmaView(APIView):
         except httpx.RequestError as exc:
             return _sidecar_unavailable_response(exc)
 
+        return Response(AlunoMatriculaTurmaSerializer(data, many=True).data)
+
+
+class TotalAlunosTurmasPeriodoView(APIView):
+    """Conta alunos por ano da turma, modalidade, DRE e período."""
+
+    @extend_schema(
+        tags=["Turma"],
+        description=(
+            "Conta as matrículas em turmas de um ano/modalidade/DRE cuja "
+            "matrícula começou até a data de fim. Orquestra os domínios "
+            "Institucional, Pedagógico e Alunos."
+        ),
+        parameters=[
+            OpenApiParameter("ano_turma", str, OpenApiParameter.PATH),
+            OpenApiParameter("modalidade_turma", int, OpenApiParameter.PATH),
+            OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
+            OpenApiParameter("codigo_dre", str, OpenApiParameter.PATH),
+            OpenApiParameter("data_inicio_ticks", int, OpenApiParameter.PATH),
+            OpenApiParameter("data_fim_ticks", int, OpenApiParameter.PATH),
+        ],
+        responses={200: int, 204: None},
+    )
+    def get(
+        self,
+        _request: Request,
+        ano_turma: str,
+        modalidade_turma: str,
+        ano_letivo: str,
+        codigo_dre: str,
+        data_inicio_ticks: str,
+        data_fim_ticks: str,
+    ) -> Response:
+        """Conta os alunos das turmas do recorte informado.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            ano_turma: Ano da turma (primeiro caractere da nomenclatura).
+            modalidade_turma: Código de modalidade da turma.
+            ano_letivo: Ano letivo consultado.
+            codigo_dre: Código da Diretoria Regional de Educação.
+            data_inicio_ticks: Data de início em ticks .NET; validada, mas
+                não filtra a contagem.
+            data_fim_ticks: Data de fim em ticks .NET; limita a data de
+                início da matrícula.
+
+        Returns:
+            O total de alunos, ou resposta vazia quando não há registros.
+
+        Raises:
+            httpx.HTTPError: Se a comunicação com algum serviço falhar de
+                forma não tratada.
+        """
+        modalidade = _para_inteiro(modalidade_turma)
+        if (
+            not ano_turma
+            or modalidade is None
+            or modalidade <= 0
+            or not _inteiro_positivo(data_inicio_ticks)
+            or not _inteiro_positivo(data_fim_ticks)
+        ):
+            return _legacy_string_response(
+                _MSG_ANO_MODALIDADE_OBRIGATORIOS, 400
+            )
+
+        try:
+            ues = _codigos_ue_da_dre(
+                institucional_services.get_ues_por_dre(codigo_dre)
+            )
+            if not ues:
+                return Response(status=204)
+            codigos_turmas = pedagogico_services.post_codigos_turmas_contagem(
+                ues,
+                ano_turma=ano_turma,
+                codigo_modalidade=modalidade,
+                ano_letivo=ano_letivo,
+            )
+            if not codigos_turmas:
+                return Response(status=204)
+            quantidade = services.post_quantidade_matriculas_turmas_periodo(
+                codigos_turmas, data_fim_ticks
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+
+        if not quantidade:
+            return Response(status=204)
+        return Response(quantidade)
+
+
+class AcompanhamentoEscolarTurmaView(APIView):
+    """Lista alunos e responsáveis vigentes de uma turma de acompanhamento."""
+
+    @extend_schema(
+        tags=["Turma"],
+        description=(
+            "Retorna os alunos com responsável vigente na turma, com seus "
+            "dados de contato, para o acompanhamento escolar."
+        ),
+        parameters=[
+            OpenApiParameter("codigo_turma", int, OpenApiParameter.PATH),
+        ],
+        responses={200: AlunoAcompanhamentoEscolarSerializer(many=True)},
+    )
+    def get(self, _request: Request, codigo_turma: str) -> Response:
+        """Lista alunos e responsáveis vigentes da turma.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            codigo_turma: Código EOL da turma.
+
+        Returns:
+            Alunos com responsável vigente na turma, ou lista vazia quando
+            não houver correspondência.
+
+        Raises:
+            httpx.HTTPError: Se a comunicação com o serviço de alunos
+                falhar de forma não tratada.
+        """
+        try:
+            codigo_turma_int = int(codigo_turma)
+        except (TypeError, ValueError):
+            return _legacy_string_response(_MSG_LEGADO_ERRO_INESPERADO, 400)
+
+        if codigo_turma_int <= 0:
+            return _legacy_string_response(_MSG_TURMA_OBRIGATORIA_TODOS, 400)
+
+        try:
+            data = services.get_acompanhamento_escolar_turma(codigo_turma)
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+
+        return Response(
+            AlunoAcompanhamentoEscolarSerializer(data, many=True).data
+        )
+
+
+class TodosAlunosTurmaView(APIView):
+    """Lista o histórico de vínculos dos alunos com a turma."""
+
+    @extend_schema(
+        tags=["Turma"],
+        description=(
+            "Retorna o histórico de vínculos dos alunos com a turma. Uma "
+            "matrícula aparece mais de uma vez quando houve remanejamento "
+            "de saída."
+        ),
+        parameters=[
+            OpenApiParameter("codigo_turma", int, OpenApiParameter.PATH),
+            OpenApiParameter(
+                "codigoAluno", int, OpenApiParameter.QUERY, required=False
+            ),
+        ],
+        responses={200: TodosAlunosTurmaSerializer(many=True)},
+    )
+    def get(self, request: Request, codigo_turma: str) -> Response:
+        """Lista o histórico de vínculos dos alunos com a turma.
+
+        Args:
+            request: Requisição com o filtro opcional ``codigoAluno``.
+            codigo_turma: Código EOL da turma.
+
+        Returns:
+            Vínculos dos alunos com a turma, ou lista vazia quando não
+            houver correspondência.
+
+        Raises:
+            httpx.HTTPError: Se a comunicação com o serviço de alunos
+                falhar de forma não tratada.
+        """
+        codigo_aluno = request.query_params.get("codigoAluno")
+        try:
+            codigo_turma_int = int(codigo_turma)
+            if codigo_aluno is not None:
+                int(codigo_aluno)
+        except (TypeError, ValueError):
+            return _legacy_string_response(_MSG_LEGADO_ERRO_INESPERADO, 400)
+
+        if codigo_turma_int <= 0:
+            return _legacy_string_response(_MSG_TURMA_OBRIGATORIA_TODOS, 400)
+
+        try:
+            data = services.get_todos_alunos_turma(
+                codigo_turma,
+                codigo_aluno=codigo_aluno,
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+
+        return Response(TodosAlunosTurmaSerializer(data, many=True).data)
+
+
+class MatriculasTurmasAlunoView(APIView):
+    """Lista as matrículas-turma do aluno em todas as turmas e anos."""
+
+    @extend_schema(
+        tags=["Turma"],
+        description=(
+            "Retorna as matrículas do aluno em todas as turmas e anos "
+            "letivos, com uma linha por matrícula."
+        ),
+        parameters=[
+            OpenApiParameter("codigo_aluno", int, OpenApiParameter.PATH),
+            OpenApiParameter(
+                "dataAulaTicks", int, OpenApiParameter.QUERY, required=False
+            ),
+            OpenApiParameter(
+                "anoLetivo", int, OpenApiParameter.QUERY, required=False
+            ),
+        ],
+        responses={200: AlunoMatriculaTurmaSerializer(many=True)},
+    )
+    def get(self, request: Request, codigo_aluno: str) -> Response:
+        """Lista as matrículas-turma do aluno.
+
+        Args:
+            request: Requisição com os filtros opcionais ``dataAulaTicks`` e
+                ``anoLetivo``.
+            codigo_aluno: Código EOL do aluno.
+
+        Returns:
+            Uma linha por matrícula do aluno, ou lista vazia quando não
+            houver correspondência.
+
+        Raises:
+            httpx.HTTPError: Se a comunicação com o serviço de alunos
+                falhar de forma não tratada.
+        """
+        data_aula_ticks = request.query_params.get("dataAulaTicks")
+        ano_letivo = request.query_params.get("anoLetivo")
+        try:
+            if data_aula_ticks is not None:
+                int(data_aula_ticks)
+            if ano_letivo is not None:
+                int(ano_letivo)
+        except (TypeError, ValueError):
+            return _legacy_string_response(_MSG_LEGADO_ERRO_INESPERADO, 400)
+
+        try:
+            data = services.get_matriculas_turmas_aluno(
+                codigo_aluno,
+                data_aula_ticks=data_aula_ticks,
+                ano_letivo=ano_letivo,
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+
+        return Response(AlunoMatriculaTurmaSerializer(data, many=True).data)
+
+
+class AlunosTurmaAnoLetivoView(APIView):
+    """Lista os alunos de uma turma em um ano letivo."""
+
+    @extend_schema(
+        tags=["Turma"],
+        description=(
+            "Retorna os alunos vinculados à turma no ano letivo informado, "
+            "com um registro por aluno. Responde 204 quando não houver "
+            "alunos."
+        ),
+        parameters=[
+            OpenApiParameter("codigo_turma", int, OpenApiParameter.PATH),
+            OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
+        ],
+        responses={
+            200: AlunoMatriculaTurmaSerializer(many=True),
+            204: None,
+        },
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_turma: str,
+        ano_letivo: str,
+    ) -> Response:
+        """Lista os alunos da turma no ano letivo informado.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            codigo_turma: Código EOL da turma.
+            ano_letivo: Ano letivo usado no filtro; zero traz todos os anos.
+
+        Returns:
+            Alunos da turma no ano letivo, ou resposta vazia quando não
+            houver correspondência.
+
+        Raises:
+            httpx.HTTPError: Se a comunicação com o serviço de alunos
+                falhar de forma não tratada.
+        """
+        if not codigo_turma:
+            return _legacy_string_response(_MSG_CODIGO_TURMA_LEGADO, 400)
+
+        try:
+            int(codigo_turma)
+            ano_letivo_int = int(ano_letivo)
+        except (TypeError, ValueError):
+            return _legacy_string_response(_MSG_LEGADO_ERRO_INESPERADO, 400)
+
+        try:
+            data = services.get_alunos_por_turma(
+                codigo_turma,
+                considerar_inativos=True,
+                ano_letivo=ano_letivo_int,
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+
+        if not data:
+            return Response(status=204)
         return Response(AlunoMatriculaTurmaSerializer(data, many=True).data)
 
 

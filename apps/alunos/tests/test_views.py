@@ -11,6 +11,15 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 
+_PATCH_QTD_PERIODO = (
+    "apps.alunos.views.services.post_quantidade_matriculas_turmas_periodo"
+)
+_PATCH_CODIGOS_TURMAS = (
+    "apps.alunos.views.pedagogico_services.post_codigos_turmas_contagem"
+)
+_PATCH_UES_DRE = "apps.alunos.views.institucional_services.get_ues_por_dre"
+
+
 def _cliente_autenticado() -> APIClient:
     client = APIClient()
     client.force_authenticate(user=User(username="test-user"))
@@ -1559,6 +1568,529 @@ class AlunosDataMatriculaTicksViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
 
+class TotalAlunosTurmasPeriodoViewTest(SimpleTestCase):
+    """Valida a orquestração da contagem de alunos por ano/modalidade/DRE."""
+
+    _PATH = (
+        "/api/turmas/todos-alunos/anoTurma/1/modalidade/5/"
+        "anoLetivo/2026/dre/108200/inicio/100/fim/200"
+    )
+
+    @patch(_PATCH_QTD_PERIODO)
+    @patch(_PATCH_CODIGOS_TURMAS)
+    @patch(_PATCH_UES_DRE)
+    def test_200_retorna_numero_cru(
+        self, mock_ues: MagicMock, mock_turmas: MagicMock, mock_qtd: MagicMock
+    ) -> None:
+        """Valida a contagem de alunos por ano/modalidade/DRE."""
+        mock_ues.return_value = {"codigos_ue": ["019370", "108200"]}
+        mock_turmas.return_value = [3011258, 3071054]
+        mock_qtd.return_value = 3827
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), 3827)
+        mock_turmas.assert_called_once_with(
+            ["019370", "108200"],
+            ano_turma="1",
+            codigo_modalidade=5,
+            ano_letivo="2026",
+        )
+        mock_qtd.assert_called_once_with([3011258, 3071054], "200")
+
+    @patch(_PATCH_UES_DRE)
+    def test_204_quando_dre_sem_ues(self, mock_ues: MagicMock) -> None:
+        """Valida a contagem de alunos por ano/modalidade/DRE quando não há UEs."""
+        mock_ues.return_value = {"codigos_ue": []}
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch(_PATCH_CODIGOS_TURMAS)
+    @patch(_PATCH_UES_DRE)
+    def test_204_quando_sem_turmas(
+        self, mock_ues: MagicMock, mock_turmas: MagicMock
+    ) -> None:
+        """ Valida a contagem de alunos por ano/modalidade/DRE quando não há turmas."""
+        mock_ues.return_value = {"codigos_ue": ["019370"]}
+        mock_turmas.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch(_PATCH_QTD_PERIODO)
+    @patch(_PATCH_CODIGOS_TURMAS)
+    @patch(_PATCH_UES_DRE)
+    def test_204_quando_quantidade_zero(
+        self, mock_ues: MagicMock, mock_turmas: MagicMock, mock_qtd: MagicMock
+    ) -> None:
+        """ Valida a contagem de alunos por ano/modalidade/DRE quando a quantidade é zero."""
+        mock_ues.return_value = {"codigos_ue": ["019370"]}
+        mock_turmas.return_value = [3011258]
+        mock_qtd.return_value = 0
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch(_PATCH_UES_DRE)
+    def test_400_quando_modalidade_zero(self, mock_ues: MagicMock) -> None:
+        """ Valida a contagem de alunos por ano/modalidade/DRE quando a modalidade é zero."""
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/turmas/todos-alunos/anoTurma/1/modalidade/0/"
+            "anoLetivo/2026/dre/108200/inicio/100/fim/200"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            "É preciso inserir o ano da turma e a modalidade para "
+            "buscar alunos.",
+        )
+        mock_ues.assert_not_called()
+
+    @patch(_PATCH_UES_DRE)
+    def test_400_quando_ticks_fim_invalido(self, mock_ues: MagicMock) -> None:
+        """ Valida a contagem de alunos por ano/modalidade/DRE quando o ticks fim é inválido."""
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/turmas/todos-alunos/anoTurma/1/modalidade/5/"
+            "anoLetivo/2026/dre/108200/inicio/100/fim/0"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_ues.assert_not_called()
+
+
+class AcompanhamentoEscolarTurmaViewTest(SimpleTestCase):
+    """Valida o acompanhamento escolar da turma."""
+
+    _PATH = "/api/turmas/3123349/acompanhamento-escolar/todos-alunos"
+
+    _ITEM = {
+        "numero_chamada": None,
+        "nome_aluno": "HELENA SILVA DOS SANTOS",
+        "codigo_eol_aluno": 7345634,
+        "cpf": 0,
+        "nome_responsavel": "LEIDY SILVA DOS SANTOS",
+        "tipo_responsavel": 1,
+        "ddd_celular": "11",
+        "celular": "988887777",
+        "ddd_fixo": "11",
+        "telefone_fixo": "33334444",
+        "situacao_aluno": 8,
+        "data_situacao_aluno": "2026-02-23T08:45:12.890000-03:00",
+    }
+
+    @patch("apps.alunos.views.services.get_acompanhamento_escolar_turma")
+    def test_200_serializa_contrato(self, mock_service: MagicMock) -> None:
+        """Valida a serialização do contrato legado de acompanhamento escolar da turma."""
+        mock_service.return_value = [self._ITEM]
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        item = resp.json()[0]
+        self.assertEqual(item["codigoEOLAluno"], 7345634)
+        self.assertEqual(item["cpf"], 0)
+        self.assertIsNone(item["numeroChamada"])
+        self.assertEqual(item["dddFixo"], "11")
+        self.assertEqual(item["telefoneFixo"], "33334444")
+        self.assertEqual(item["situacaoAluno"], 8)
+        # DateTime sem sufixo Z, ao contrário dos demais endpoints.
+        self.assertNotIn("Z", item["dataSituacaoAluno"])
+        mock_service.assert_called_once_with("3123349")
+
+    @patch("apps.alunos.views.services.get_acompanhamento_escolar_turma")
+    def test_200_lista_vazia(self, mock_service: MagicMock) -> None:
+        """Valida a serialização do contrato de acompanhamento escolar da turma quando não há alunos."""
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+
+    @patch("apps.alunos.views.services.get_acompanhamento_escolar_turma")
+    def test_400_quando_turma_nao_numerica(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Valida a serialização do contrato de acompanhamento escolar da turma quando o código da turma não é numérico."""
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/turmas/abc/acompanhamento-escolar/todos-alunos"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_service.assert_not_called()
+
+    @patch("apps.alunos.views.services.get_acompanhamento_escolar_turma")
+    def test_400_quando_turma_zero(self, mock_service: MagicMock) -> None:
+        """Turma zero devolve 400 com a mensagem própria do contrato."""
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/turmas/0/acompanhamento-escolar/todos-alunos")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(resp.json(), "O código da turma é obrigatório")
+        mock_service.assert_not_called()
+
+    @patch("apps.alunos.views.services.get_acompanhamento_escolar_turma")
+    def test_503_quando_sidecar_indisponivel(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.side_effect = httpx.RequestError("indisponivel")
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
+class TodosAlunosTurmaViewTest(SimpleTestCase):
+    """Valida o histórico de vínculos dos alunos com a turma."""
+
+    _PATH = "/api/turmas/3123349/todos-alunos"
+
+    _VINCULO = {
+        "codigo_aluno": 7345634,
+        "nome_aluno": "HELENA SILVA DOS SANTOS",
+        "nome_social_aluno": None,
+        "data_nascimento": "2018-06-21",
+        "codigo_situacao_matricula": 14,
+        "situacao_matricula": "Remanejado Saída",
+        "data_situacao": "2025-12-16T12:32:50.857000-03:00",
+        "numero_aluno_chamada": "12",
+        "possui_deficiencia": False,
+        "codigo_matricula": 44267709,
+        "codigo_turma": 3123349,
+        "codigo_escola": "019370",
+        "ano_letivo": 2025,
+        "data_matricula": "2025-12-16T12:10:53.233000-03:00",
+        "nome_responsavel": "LEIDY SILVA DOS SANTOS",
+        "tipo_responsavel": 1,
+        "celular_responsavel": None,
+        "data_atualizacao_contato": "2025-02-10T17:40:53.043000-03:00",
+        "sequencia": 1,
+        "codigo_dre": "108200",
+    }
+
+    @patch("apps.alunos.views.services.get_todos_alunos_turma")
+    def test_200_zera_localizacao_da_unidade(
+        self, mock_service: MagicMock
+    ) -> None:
+        """codigoEscola/ano/codigoDre saem zerados; codigoTurma não."""
+        mock_service.return_value = [self._VINCULO]
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        item = resp.json()[0]
+        self.assertIsNone(item["codigoEscola"])
+        self.assertIsNone(item["codigoDre"])
+        self.assertEqual(item["ano"], 0)
+        self.assertEqual(item["tipoTurma"], 0)
+        self.assertEqual(item["codigoComponenteCurricular"], 0)
+        # codigoTurma e codigoMatricula seguem preenchidos.
+        self.assertEqual(item["codigoTurma"], 3123349)
+        self.assertEqual(item["codigoMatricula"], 44267709)
+        mock_service.assert_called_once_with("3123349", codigo_aluno=None)
+
+    @patch("apps.alunos.views.services.get_todos_alunos_turma")
+    def test_200_lista_vazia(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+
+    @patch("apps.alunos.views.services.get_todos_alunos_turma")
+    def test_repassa_codigo_aluno_camelcase(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{self._PATH}?codigoAluno=7345634")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_service.assert_called_once_with("3123349", codigo_aluno="7345634")
+
+    @patch("apps.alunos.views.services.get_todos_alunos_turma")
+    def test_400_quando_turma_zero(self, mock_service: MagicMock) -> None:
+        """Turma zero devolve a mensagem própria do contrato, sem ponto."""
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/turmas/0/todos-alunos")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(resp.json(), "O código da turma é obrigatório")
+        mock_service.assert_not_called()
+
+    @patch("apps.alunos.views.services.get_todos_alunos_turma")
+    def test_400_quando_turma_nao_numerica(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Valida a serialização do contrato de acompanhamento escolar da turma quando o código da turma não é numérico."""
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/turmas/abc/todos-alunos")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_service.assert_not_called()
+
+    @patch("apps.alunos.views.services.get_todos_alunos_turma")
+    def test_503_quando_sidecar_indisponivel(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Valida a serialização do contrato de acompanhamento escolar da turma quando o sidecar está indisponível."""
+        mock_service.side_effect = httpx.RequestError("indisponivel")
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
+class MatriculasTurmasAlunoViewTest(SimpleTestCase):
+    """Valida a listagem de matrículas-turma do aluno."""
+
+    _PATH = "/api/turmas/alunos/7345634"
+
+    _MATRICULA = {
+        "codigo_aluno": 7345634,
+        "nome_aluno": "HELENA SILVA DOS SANTOS",
+        "nome_social_aluno": None,
+        "data_nascimento": "2018-06-21",
+        "codigo_situacao_matricula": 1,
+        "situacao_matricula": "Ativo",
+        "data_situacao": "2025-12-16T12:32:50.857000-03:00",
+        "numero_aluno_chamada": "12",
+        "possui_deficiencia": False,
+        "codigo_matricula": 44267709,
+        "codigo_turma": 3123349,
+        "codigo_escola": "019370",
+        "ano_letivo": 2025,
+        "data_matricula": "2025-12-16T12:10:53.233000-03:00",
+        "nome_responsavel": "LEIDY SILVA DOS SANTOS",
+        "tipo_responsavel": 1,
+        "celular_responsavel": None,
+        "data_atualizacao_contato": "2025-02-10T17:40:53.043000-03:00",
+        "sequencia": 1,
+        "codigo_dre": "108200",
+    }
+
+    @patch("apps.alunos.views.services.get_matriculas_turmas_aluno")
+    def test_200_retorna_lista_legada(self, mock_service: MagicMock) -> None:
+        """Valida a listagem de matrículas-turma do aluno, com serialização do contrato legado."""
+        mock_service.return_value = [self._MATRICULA]
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        data = resp.json()
+        self.assertEqual(data[0]["codigoAluno"], 7345634)
+        self.assertEqual(data[0]["codigoEscola"], "019370")
+        self.assertEqual(data[0]["codigoDre"], "108200")
+        self.assertEqual(data[0]["ano"], 2025)
+        mock_service.assert_called_once_with(
+            "7345634",
+            data_aula_ticks=None,
+            ano_letivo=None,
+        )
+
+    @patch("apps.alunos.views.services.get_matriculas_turmas_aluno")
+    def test_200_lista_vazia(self, mock_service: MagicMock) -> None:
+        """Valida a listagem de matrículas-turma do aluno, quando não há resultados."""
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+
+    @patch("apps.alunos.views.services.get_matriculas_turmas_aluno")
+    def test_repassa_filtros_camelcase(self, mock_service: MagicMock) -> None:
+        """Valida a passagem de filtros opcionais para o serviço, com nomes em camelCase."""
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{self._PATH}?dataAulaTicks=639059616000000000&anoLetivo=2025"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_service.assert_called_once_with(
+            "7345634",
+            data_aula_ticks="639059616000000000",
+            ano_letivo="2025",
+        )
+
+    @patch("apps.alunos.views.services.get_matriculas_turmas_aluno")
+    def test_400_quando_ticks_nao_numerico(
+        self, mock_service: MagicMock
+    ) -> None:
+        """"Valida a passagem de filtros opcionais para o serviço, com nomes em camelCase."""
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{self._PATH}?dataAulaTicks=abc")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_service.assert_not_called()
+
+    @patch("apps.alunos.views.services.get_matriculas_turmas_aluno")
+    def test_503_quando_sidecar_indisponivel(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Valida a listagem de matrículas-turma do aluno, quando o sidecar está indisponível."""
+        mock_service.side_effect = httpx.RequestError("indisponivel")
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    def test_rota_alunos_nao_colide_com_codigo_turma(self) -> None:
+        """A rota literal ``alunos/`` tem precedência sobre a dinâmica."""
+        match = resolve(self._PATH)
+        self.assertEqual(match.url_name, "matriculas-turmas-aluno")
+        self.assertEqual(match.kwargs, {"codigo_aluno": "7345634"})
+
+
+class AlunosTurmaAnoLetivoViewTest(SimpleTestCase):
+    """Valida a listagem de alunos da turma por ano letivo."""
+
+    _PATH = "/api/turmas/3123349/alunos/anosLetivos/2025"
+
+    _ALUNO = {
+        "codigo_aluno": 7345634,
+        "nome_aluno": "HELENA SILVA DOS SANTOS",
+        "nome_social_aluno": None,
+        "data_nascimento": "2018-06-21",
+        "codigo_situacao_matricula": 1,
+        "situacao_matricula": "Ativo",
+        "data_situacao": "2025-12-16T12:32:50.857000-03:00",
+        "numero_aluno_chamada": "12",
+        "possui_deficiencia": False,
+        "codigo_matricula": 44267709,
+        "codigo_turma": 3123349,
+        "codigo_escola": "019370",
+        "ano_letivo": 2025,
+        "data_matricula": "2025-12-16T12:10:53.233000-03:00",
+        "nome_responsavel": "LEIDY SILVA DOS SANTOS",
+        "tipo_responsavel": 1,
+        "celular_responsavel": None,
+        "data_atualizacao_contato": "2025-02-10T17:40:53.043000-03:00",
+        "sequencia": 1,
+        "codigo_dre": "108200",
+    }
+
+    @patch("apps.alunos.views.services.get_alunos_por_turma")
+    def test_200_retorna_lista_legada(self, mock_service: MagicMock) -> None:
+        """Valida a listagem de alunos da turma por ano letivo, com serialização do contrato."""
+        mock_service.return_value = [self._ALUNO]
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        data = resp.json()
+        self.assertIsInstance(data, list)
+        self.assertEqual(data[0]["codigoAluno"], 7345634)
+        self.assertEqual(data[0]["codigoEscola"], "019370")
+        self.assertEqual(data[0]["codigoDre"], "108200")
+        self.assertEqual(data[0]["ano"], 2025)
+        mock_service.assert_called_once_with(
+            "3123349",
+            considerar_inativos=True,
+            ano_letivo=2025,
+        )
+
+    @patch("apps.alunos.views.services.get_alunos_por_turma")
+    def test_204_quando_sem_resultado(self, mock_service: MagicMock) -> None:
+        """Valida a listagem de alunos da turma por ano letivo, quando não há resultados."""
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch("apps.alunos.views.services.get_alunos_por_turma")
+    def test_ano_letivo_zero_nao_filtra(self, mock_service: MagicMock) -> None:
+        """Valida a listagem de alunos da turma por ano letivo, quando o ano letivo é zero, que não deve filtrar."""
+        mock_service.return_value = [self._ALUNO]
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/turmas/3123349/alunos/anosLetivos/0")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_service.assert_called_once_with(
+            "3123349",
+            considerar_inativos=True,
+            ano_letivo=0,
+        )
+
+    @patch("apps.alunos.views.services.get_alunos_por_turma")
+    def test_400_quando_turma_nao_numerica(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Valida a listagem de alunos da turma por ano letivo, quando o código da turma não é numérico."""
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/turmas/abc/alunos/anosLetivos/2025")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            "Houve um comportamento inesperado do sistema. "
+            "Por favor, contate a SME.",
+        )
+        mock_service.assert_not_called()
+
+    @patch("apps.alunos.views.services.get_alunos_por_turma")
+    def test_400_quando_ano_letivo_nao_numerico(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Valida a listagem de alunos da turma por ano letivo, quando o ano letivo não é numérico."""
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/turmas/3123349/alunos/anosLetivos/abc")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_service.assert_not_called()
+
+    @patch("apps.alunos.views.services.get_alunos_por_turma")
+    def test_503_quando_sidecar_indisponivel(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Valida a listagem de alunos da turma por ano letivo, quando o sidecar está indisponível."""
+        mock_service.side_effect = httpx.RequestError("indisponivel")
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
 class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
     """Valida a consulta de aluno da turma considerando inativos."""
 
@@ -2171,7 +2703,7 @@ class AlunoTurmasPorSituacaoViewTest(SimpleTestCase):
 
 
 class AlunosAtivosTurmaViewTest(SimpleTestCase):
-    """Valida a view de alunos ativos da turma (contrato legado)."""
+    """Valida a view de alunos ativos da turma."""
 
     _URL = "/api/v1/alunos/turmas/9001/ativos"
 
@@ -2189,7 +2721,7 @@ class AlunosAtivosTurmaViewTest(SimpleTestCase):
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         item = resp.json()[0]
-        # 29 campos do contrato legado
+        # 29 campos do contrato
         self.assertEqual(len(item), 29)
         # campos com dado real
         self.assertEqual(item["codigoAluno"], 123456)
