@@ -505,6 +505,31 @@ class GetUsuariosSgpPorPerfilTest(SimpleTestCase):
         self.assertEqual(result, payload)
 
 
+class GetFuncionariosSgpPorPerfilDreTest(SimpleTestCase):
+    """Valida busca de funcionários SGP por perfil e DRE."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_correto_com_params(self, mock_get: MagicMock) -> None:
+        payload = [{"codigo_rf": "000001"}]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[{}]"
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_funcionarios_sgp_por_perfil_dre(
+            "perfil-x",
+            "108100",
+            {"codigo_ue": "000532"},
+        )
+
+        mock_get.assert_called_once_with(
+            "/api/v1/professores/funcionarios/perfis/perfil-x/dres/108100/",
+            params={"codigo_ue": "000532"},
+        )
+        self.assertEqual(result, payload)
+
+
 class GetFuncionariosEscolaFuncoesAtividadesTest(SimpleTestCase):
     """Valida busca de funcionários por funções atividades."""
 

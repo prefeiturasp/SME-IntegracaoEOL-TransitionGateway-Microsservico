@@ -935,6 +935,83 @@ class FuncionariosPerfisViewTest(SimpleTestCase):
         self.assertEqual(resp.json(), "erro")
 
 
+class FuncionariosPerfisDreViewTest(SimpleTestCase):
+    """Valida funcionários SGP por perfil e DRE."""
+
+    @patch(
+        "apps.professores.views.services.get_funcionarios_sgp_por_perfil_dre"
+    )
+    def test_200_com_filtros_legado(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [
+            {
+                "cd_cargo": "3352",
+                "codigo_funcao_atividade": 0,
+                "codigo_rf": "6657109",
+                "funcao_externo": 0,
+                "login": None,
+                "nome_servidor": "CRISTINA",
+                "tipo_funcao_externo": 0,
+            }
+        ]
+        client = _cliente_autenticado()
+        path = "/api/funcionarios/perfis/perfil-x/dres/108200/"
+        query = "?CodigoUe=000532&CodigoRf=6657109&NomeServidor=CRISTINA"
+
+        resp = client.get(f"{path}{query}")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.json(),
+            [
+                {
+                    "cd_Cargo": 3352,
+                    "codigoFuncaoAtividade": 0,
+                    "codigoRf": "6657109",
+                    "funcaoExterno": 0,
+                    "login": None,
+                    "nomeServidor": "CRISTINA",
+                    "tipoFuncaoExterno": 0,
+                }
+            ],
+        )
+        mock_service.assert_called_once_with(
+            "perfil-x",
+            "108200",
+            {
+                "codigo_ue": "000532",
+                "codigo_rf": "6657109",
+                "nome_servidor": "CRISTINA",
+            },
+        )
+
+    @patch(
+        "apps.professores.views.services.get_funcionarios_sgp_por_perfil_dre"
+    )
+    def test_204_quando_sidecar_retorna_none(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = None
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/perfis/perfil-x/dres/108200/")
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch(
+        "apps.professores.views.services.get_funcionarios_sgp_por_perfil_dre"
+    )
+    def test_400_quando_sidecar_retorna_texto(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = "erro"
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/perfis/perfil-x/dres/108200/")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(resp.json(), "erro")
+
+
 class EscolaFuncionariosCargoViewTest(SimpleTestCase):
     """Valida a busca de funcionários por escola e cargo."""
 

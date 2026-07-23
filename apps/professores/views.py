@@ -1178,6 +1178,73 @@ class FuncionariosPerfisView(APIView):
         return Response(FuncionarioSgpLegadoSerializer(data, many=True).data)
 
 
+class FuncionariosPerfisDreView(APIView):
+    """Retorna funcionários SGP por perfil e DRE."""
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna funcionários SGP por perfil e DRE."),
+        parameters=[
+            _PARAM_CODIGO_UE_LEGADO,
+            _PARAM_CODIGO_RF_LEGADO,
+            _PARAM_NOME_SERVIDOR_LEGADO,
+        ],
+        responses={
+            200: FuncionarioSgpLegadoSerializer(many=True),
+            400: str,
+            404: str,
+        },
+    )
+    def get(
+        self,
+        request: Request,
+        id_perfil: str,
+        codigo_dre: str,
+    ) -> Response:
+        """Retorna funcionários SGP por perfil e DRE.
+
+        Args:
+            request: Requisição com filtros de perfil.
+            id_perfil: Perfil usado na consulta.
+            codigo_dre: DRE usada na consulta.
+
+        Returns:
+            Funcionários SGP encontrados para a DRE.
+
+        Raises:
+            httpx.HTTPError: Quando a chamada ao sidecar falha.
+        """
+        if not id_perfil.strip():
+            return detail_response("É necessário informar o perfil.")
+        if not codigo_dre.strip():
+            return detail_response("É necessário informar o codigoDre.")
+        params = {
+            "codigo_ue": (
+                request.query_params.get("CodigoUe")
+                or request.query_params.get("codigo_ue")
+            ),
+            "codigo_rf": (
+                request.query_params.get("CodigoRf")
+                or request.query_params.get("codigo_rf")
+            ),
+            "nome_servidor": (
+                request.query_params.get("NomeServidor")
+                or request.query_params.get("nome_servidor")
+            ),
+        }
+        params = {chave: valor for chave, valor in params.items() if valor}
+        data = services.get_funcionarios_sgp_por_perfil_dre(
+            id_perfil,
+            codigo_dre,
+            params,
+        )
+        if data is None:
+            return Response(status=204)
+        if not isinstance(data, list):
+            return Response(data, status=400)
+        return Response(FuncionarioSgpLegadoSerializer(data, many=True).data)
+
+
 class ProfessorDisciplinaTurmasView(APIView):
     """Retorna turmas atribuídas ao professor."""
 
