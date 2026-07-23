@@ -37,3 +37,13 @@ pela identidade.
 Perfis com visao de rede dependem de uma massa ampla de turmas atribuidas. O
 contrato funcional e mantido, mas o volume completo exige acompanhamento de
 tempo de resposta antes da liberacao irrestrita.
+
+## Supervisores por DRE
+
+O gateway preserva o contrato legado para a busca de supervisores por DRE,
+incluindo validacao da lista de registros funcionais e mensagens de ausencia de
+dados.
+
+O recorte usa os vinculos funcionais carregados no dominio de professores. Dados
+que dependam exclusivamente da Identidade ou do CoreSSO continuam sendo
+tratados como dependencia externa ate a integracao definitiva.

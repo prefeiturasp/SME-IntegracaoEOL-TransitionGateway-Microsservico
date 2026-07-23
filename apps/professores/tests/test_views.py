@@ -82,6 +82,11 @@ class ProfessoresUrlsTest(SimpleTestCase):
 
         self.assertEqual(match.kwargs, {"codigo_cargo": "3360"})
 
+    def test_preserva_codigo_dre_funcionarios_supervisores(self) -> None:
+        match = resolve("/api/funcionarios/supervisores/108100/")
+
+        self.assertEqual(match.kwargs, {"codigo_dre": "108100"})
+
     def test_preserva_codigo_ue_funcionarios_escola(self) -> None:
         match = resolve("/api/escolas/000123/funcionarios/")
 
@@ -680,6 +685,10 @@ class FuncionariosUeViewTest(SimpleTestCase):
         )
 
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "Resposta inválida do sidecar de professores."},
+        )
 
     def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
         client = _cliente_autenticado()
@@ -766,6 +775,77 @@ class FuncionariosCargoViewTest(SimpleTestCase):
             resp.json(),
             {"detail": "É necessário informar o codigoCargo."},
         )
+
+
+class FuncionariosSupervisoresViewTest(SimpleTestCase):
+    """Valida a busca de supervisores por DRE."""
+
+    @patch("apps.professores.views.services.get_supervisores_por_dre")
+    def test_200_retorna_supervisores(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [
+            {
+                "codigo_rf": "000001",
+                "nome_servidor": "NOME SERVIDOR",
+            },
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/supervisores/108100/",
+            data=["000001"],
+            content_type="application/json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()[0]["codigoRF"], "000001")
+        self.assertEqual(resp.json()[0]["nomeServidor"], "NOME SERVIDOR")
+        mock_service.assert_called_once_with("108100", ["000001"])
+
+    @patch("apps.professores.views.services.get_supervisores_por_dre")
+    def test_404_quando_sem_supervisores(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/supervisores/108100/",
+            data=["000001"],
+            content_type="application/json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(resp.json(), "Não foram encontrados supervisores.")
+
+    def test_400_quando_lista_vazia(self) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/supervisores/108100/",
+            data=[],
+            content_type="application/json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            "A lista de códigos de supervisores é obrigatória.",
+        )
+
+    @patch("apps.professores.views.services.get_supervisores_por_dre")
+    def test_502_quando_sidecar_retorna_objeto(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = {"codigo_rf": "000001"}
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/supervisores/108100/",
+            data=["000001"],
+            content_type="application/json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
 
 
 class EscolaFuncionariosCargoViewTest(SimpleTestCase):

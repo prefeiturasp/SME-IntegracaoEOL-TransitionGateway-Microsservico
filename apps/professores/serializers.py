@@ -476,6 +476,13 @@ class FuncionarioCargoSerializer(serializers.Serializer):
     cargoId = serializers.IntegerField(source="cargo_id")
 
 
+class SupervisorLegadoSerializer(serializers.Serializer):
+    """Serializa supervisor no contrato legado."""
+
+    codigoRF = serializers.CharField(source="codigo_rf")
+    nomeServidor = serializers.CharField(source="nome_servidor")
+
+
 class FuncionarioFuncaoAtividadeSerializer(serializers.Serializer):
     """Serializa vínculo de funcionário com função atividade."""
 

@@ -26,6 +26,7 @@ from apps.professores.serializers import (
     ProfessorBuscarPorRfSerializer,
     ProfessorTurmaAtribuidaSimplificadaSerializer,
     ProfessorTurmaSerializer,
+    SupervisorLegadoSerializer,
     TurmaAtribuidaProfessorSerializer,
     TurmasIdsSerializer,
 )
@@ -57,6 +58,10 @@ _CAMPOS_TURMA = {
     "data_atribuicao_aula",
 }
 _MSG_TURMAS_NAO_ENCONTRADAS = "Não foram encontradas turmas atribuídas."
+_MSG_LISTA_SUPERVISORES_OBRIGATORIA = (
+    "A lista de códigos de supervisores é obrigatória."
+)
+_MSG_SUPERVISORES_NAO_ENCONTRADOS = "Não foram encontrados supervisores."
 
 # Parâmetros temporários usados enquanto a identidade não informa
 # a abrangência.
@@ -1028,6 +1033,57 @@ class FuncionariosCargoView(APIView):
         if not isinstance(data, list):
             return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
         return Response(FuncionarioEscolaSerializer(data, many=True).data)
+
+
+class FuncionariosSupervisoresView(APIView):
+    """Retorna supervisores vinculados à DRE."""
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna supervisores vinculados à DRE."),
+        request=ListaStringSerializer,
+        responses={
+            200: SupervisorLegadoSerializer(many=True),
+            400: str,
+            404: str,
+        },
+    )
+    def post(self, request: Request, codigo_dre: str) -> Response:
+        """Retorna supervisores vinculados à DRE.
+
+        Args:
+            request: Requisição HTTP recebida pela API.
+            codigo_dre: Código EOL da DRE consultada.
+
+        Returns:
+            Supervisores vinculados à DRE informada.
+
+        Raises:
+            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
+        """
+        serializer = ListaStringSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                _MSG_LISTA_SUPERVISORES_OBRIGATORIA,
+                status=400,
+            )
+        data = services.get_supervisores_por_dre(
+            codigo_dre,
+            serializer.validated_data,
+        )
+        if data is None:
+            return Response(status=204)
+        if not isinstance(data, list):
+            return Response(
+                {
+                    "detail": _MSG_RESPOSTA_INVALIDA_SIDECAR,
+                    "sidecar": data,
+                },
+                status=502,
+            )
+        if not data:
+            return Response(_MSG_SUPERVISORES_NAO_ENCONTRADOS, status=404)
+        return Response(SupervisorLegadoSerializer(data, many=True).data)
 
 
 class ProfessorDisciplinaTurmasView(APIView):

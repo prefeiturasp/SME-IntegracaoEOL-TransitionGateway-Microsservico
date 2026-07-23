@@ -324,6 +324,32 @@ class GetFuncionariosPorCargoTest(SimpleTestCase):
         self.assertEqual(result, payload)
 
 
+class GetSupervisoresPorDreTest(SimpleTestCase):
+    """Valida a busca de supervisores por DRE."""
+
+    @patch.object(services._client, "post")
+    def test_chama_path_correto(self, mock_post: MagicMock) -> None:
+        payload = [
+            {
+                "codigo_rf": "000001",
+                "nome_servidor": "NOME SERVIDOR",
+            },
+        ]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[{}]"
+        mock_resp.json.return_value = payload
+        mock_post.return_value = mock_resp
+
+        result = services.get_supervisores_por_dre("108100", ["000001"])
+
+        mock_post.assert_called_once_with(
+            "/api/v1/professores/funcionarios/supervisores/108100/",
+            payload=["000001"],
+        )
+        self.assertEqual(result, payload)
+
+
 class GetFuncionariosEscolaPorCargoTest(SimpleTestCase):
     """Valida a busca de funcionários por escola e cargo."""
 

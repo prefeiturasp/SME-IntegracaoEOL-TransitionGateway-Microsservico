@@ -14,6 +14,7 @@ from apps.professores.serializers import (
     FuncionarioLegadoSerializer,
     ProfessorAutoCompleteSerializer,
     ProfessorTurmaAtribuidaSimplificadaSerializer,
+    SupervisorLegadoSerializer,
     TextoEstritoField,
     TurmaAtribuidaProfessorSerializer,
     TurmaElegivelLegadoSerializer,
@@ -69,6 +70,17 @@ class FuncionarioSerializerTest(SimpleTestCase):
                 FuncionarioFuncaoExternaSerializer,
                 {"cpf": "11610699840", "funcao_externo": 5},
                 {"funcionarioCpf": "11610699840", "funcaoExternaId": 5},
+            ),
+            (
+                SupervisorLegadoSerializer,
+                {
+                    "codigo_rf": "000001",
+                    "nome_servidor": "NOME SERVIDOR",
+                },
+                {
+                    "codigoRF": "000001",
+                    "nomeServidor": "NOME SERVIDOR",
+                },
             ),
         ]
         for serializer_cls, payload, esperado in casos:

@@ -386,6 +386,26 @@ def get_funcionarios_por_cargo(codigo_cargo: str) -> Any:
     return _client.json_or_none(resp)
 
 
+def get_supervisores_por_dre(
+    codigo_dre: str,
+    codigos_supervisores: list[str],
+) -> Any:
+    """Retorna supervisores vinculados à DRE.
+
+    Args:
+        codigo_dre: Código EOL da DRE consultada.
+        codigos_supervisores: Registros funcionais considerados na busca.
+
+    Returns:
+        Lista de supervisores ou ausência de conteúdo.
+    """
+    resp = _client.post(
+        f"{_BASE_FUNCIONARIOS}/supervisores/{codigo_dre}/",
+        payload=codigos_supervisores,
+    )
+    return _client.json_or_none(resp)
+
+
 def get_funcionarios_escola_por_cargo(
     codigo_ue: str,
     codigo_cargo: str,
