@@ -443,6 +443,42 @@ class FuncionarioUeLegadoSerializer(FuncionarioLegadoSerializer):
         return 0
 
 
+class FuncionarioSgpLegadoSerializer(serializers.Serializer):
+    """Serializa funcionário SGP no contrato legado."""
+
+    cd_Cargo = serializers.SerializerMethodField()
+    codigoFuncaoAtividade = serializers.SerializerMethodField()
+    codigoRf = serializers.CharField(
+        source="codigo_rf",
+        allow_null=True,
+        default=None,
+    )
+    funcaoExterno = serializers.IntegerField(
+        source="funcao_externo",
+        default=0,
+    )
+    login = serializers.CharField(allow_null=True, default=None)
+    nomeServidor = serializers.CharField(
+        source="nome_servidor",
+        allow_null=True,
+        default=None,
+    )
+    tipoFuncaoExterno = serializers.IntegerField(
+        source="tipo_funcao_externo",
+        default=0,
+    )
+
+    def get_cd_Cargo(self, obj: dict[str, Any]) -> int:  # noqa: N802
+        """Retorna cargo do vínculo."""
+        return int(obj.get("cd_cargo") or obj.get("codigo_cargo") or 0)
+
+    def get_codigoFuncaoAtividade(  # noqa: N802
+        self, obj: dict[str, Any]
+    ) -> int:
+        """Retorna função de atividade."""
+        return int(obj.get("codigo_funcao_atividade") or 0)
+
+
 class ProfessorBuscarPorRfSerializer(serializers.Serializer):
     """Serializa dados resumidos de professor."""
 

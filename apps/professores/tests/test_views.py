@@ -87,6 +87,11 @@ class ProfessoresUrlsTest(SimpleTestCase):
 
         self.assertEqual(match.kwargs, {"codigo_dre": "108100"})
 
+    def test_preserva_id_perfil_funcionarios_perfis(self) -> None:
+        match = resolve("/api/funcionarios/perfis/perfil-x/")
+
+        self.assertEqual(match.kwargs, {"id_perfil": "perfil-x"})
+
     def test_preserva_codigo_ue_funcionarios_escola(self) -> None:
         match = resolve("/api/escolas/000123/funcionarios/")
 
@@ -846,6 +851,88 @@ class FuncionariosSupervisoresViewTest(SimpleTestCase):
         )
 
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+
+
+class FuncionariosPerfisViewTest(SimpleTestCase):
+    """Valida usuários SGP por perfil."""
+
+    @patch("apps.professores.views.services.get_usuarios_sgp_por_perfil")
+    def test_200_com_codigo_dre_legado(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [
+            {
+                "cd_cargo": "3360",
+                "codigo_funcao_atividade": 0,
+                "codigo_rf": "000001",
+                "funcao_externo": 0,
+                "login": None,
+                "nome_servidor": "ANA",
+                "tipo_funcao_externo": 0,
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/funcionarios/perfis/perfil-x/?CodigoDre=108100"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.json(),
+            [
+                {
+                    "cd_Cargo": 3360,
+                    "codigoFuncaoAtividade": 0,
+                    "codigoRf": "000001",
+                    "funcaoExterno": 0,
+                    "login": None,
+                    "nomeServidor": "ANA",
+                    "tipoFuncaoExterno": 0,
+                }
+            ],
+        )
+        mock_service.assert_called_once_with(
+            "perfil-x",
+            {"codigo_dre": "108100"},
+        )
+
+    @patch("apps.professores.views.services.get_usuarios_sgp_por_perfil")
+    def test_200_com_codigo_rf_legado(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [
+            {
+                "cd_cargo": "3379",
+                "codigo_funcao_atividade": 0,
+                "codigo_rf": "7654321",
+                "funcao_externo": 0,
+                "login": None,
+                "nome_servidor": "ANA",
+                "tipo_funcao_externo": 0,
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/funcionarios/perfis/perfil-x/?CodigoRf=7654321"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()[0]["codigoRf"], "7654321")
+        self.assertEqual(resp.json()[0]["login"], None)
+        mock_service.assert_called_once_with(
+            "perfil-x",
+            {"codigo_rf": "7654321"},
+        )
+
+    @patch("apps.professores.views.services.get_usuarios_sgp_por_perfil")
+    def test_400_quando_sidecar_retorna_texto(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = "erro"
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/perfis/perfil-x/")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(resp.json(), "erro")
 
 
 class EscolaFuncionariosCargoViewTest(SimpleTestCase):

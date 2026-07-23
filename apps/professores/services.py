@@ -406,6 +406,26 @@ def get_supervisores_por_dre(
     return _client.json_or_none(resp)
 
 
+def get_usuarios_sgp_por_perfil(
+    id_perfil: str,
+    params: dict[str, Any],
+) -> Any:
+    """Retorna usuários SGP por perfil.
+
+    Args:
+        id_perfil: Perfil usado na consulta.
+        params: Filtros enviados no contrato legado.
+
+    Returns:
+        Usuários SGP no formato do sidecar ou erro de contrato.
+    """
+    resp = _client.get(
+        f"{_BASE_FUNCIONARIOS}/perfis/{id_perfil}/",
+        params=params or None,
+    )
+    return _client.json_or_none(resp)
+
+
 def get_funcionarios_escola_por_cargo(
     codigo_ue: str,
     codigo_cargo: str,

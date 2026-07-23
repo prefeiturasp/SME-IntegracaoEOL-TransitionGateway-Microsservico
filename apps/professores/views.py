@@ -19,6 +19,7 @@ from apps.professores.serializers import (
     FuncionarioFuncaoAtividadeSerializer,
     FuncionarioFuncaoAtividadeUeSerializer,
     FuncionarioFuncaoExternaSerializer,
+    FuncionarioSgpLegadoSerializer,
     FuncionarioUeLegadoSerializer,
     ListaStringSerializer,
     NomeServidorSerializer,
@@ -134,6 +135,36 @@ _PARAM_EH_PERFIL_MANUAL_TEMPORARIO = OpenApiParameter(
         "abrangência retornado."
     ),
 )
+_PARAM_CODIGO_DRE_LEGADO = OpenApiParameter(
+    "CodigoDre",
+    OpenApiTypes.STR,
+    OpenApiParameter.QUERY,
+    required=False,
+    description=(
+        "Código da DRE usado na consulta por perfil quando informado."
+    ),
+)
+_PARAM_CODIGO_UE_LEGADO = OpenApiParameter(
+    "CodigoUe",
+    OpenApiTypes.STR,
+    OpenApiParameter.QUERY,
+    required=False,
+    description="Código da unidade educacional usado no filtro.",
+)
+_PARAM_CODIGO_RF_LEGADO = OpenApiParameter(
+    "CodigoRf",
+    OpenApiTypes.STR,
+    OpenApiParameter.QUERY,
+    required=False,
+    description="Registro funcional usado na consulta por perfil.",
+)
+_PARAM_NOME_SERVIDOR_LEGADO = OpenApiParameter(
+    "NomeServidor",
+    OpenApiTypes.STR,
+    OpenApiParameter.QUERY,
+    required=False,
+    description="Nome do servidor usado no filtro.",
+)
 # Planejamento: os branches curto-circuitam, então só a abrangência é útil.
 _PARAMS_ABRANGENCIA_TEMPORARIOS = [_PARAM_ABRANGENCIA_TEMPORARIO]
 # Disciplinas: o branch de vínculo com UE/DRE filtra por cargos.
@@ -149,6 +180,12 @@ _PARAMS_TURMAS_TEMPORARIOS = [
     _PARAM_GRUPO_TEMPORARIO,
     _PARAM_DRE_CODIGO_TEMPORARIO,
     _PARAM_EH_PERFIL_MANUAL_TEMPORARIO,
+]
+_PARAMS_FUNCIONARIOS_PERFIL = [
+    _PARAM_CODIGO_DRE_LEGADO,
+    _PARAM_CODIGO_UE_LEGADO,
+    _PARAM_CODIGO_RF_LEGADO,
+    _PARAM_NOME_SERVIDOR_LEGADO,
 ]
 
 
@@ -1084,6 +1121,61 @@ class FuncionariosSupervisoresView(APIView):
         if not data:
             return Response(_MSG_SUPERVISORES_NAO_ENCONTRADOS, status=404)
         return Response(SupervisorLegadoSerializer(data, many=True).data)
+
+
+class FuncionariosPerfisView(APIView):
+    """Retorna usuários SGP por perfil."""
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna usuários SGP por perfil."),
+        parameters=_PARAMS_FUNCIONARIOS_PERFIL,
+        responses={
+            200: FuncionarioSgpLegadoSerializer(many=True),
+            400: str,
+            404: str,
+        },
+    )
+    def get(self, request: Request, id_perfil: str) -> Response:
+        """Retorna usuários SGP por perfil.
+
+        Args:
+            request: Requisição com filtros de perfil.
+            id_perfil: Perfil usado na consulta.
+
+        Returns:
+            Usuários SGP encontrados para o perfil.
+
+        Raises:
+            httpx.HTTPError: Quando a chamada ao sidecar falha.
+        """
+        if not id_perfil.strip():
+            return detail_response("É necessário informar o perfil.")
+        params = {
+            "codigo_dre": (
+                request.query_params.get("CodigoDre")
+                or request.query_params.get("codigo_dre")
+            ),
+            "codigo_ue": (
+                request.query_params.get("CodigoUe")
+                or request.query_params.get("codigo_ue")
+            ),
+            "codigo_rf": (
+                request.query_params.get("CodigoRf")
+                or request.query_params.get("codigo_rf")
+            ),
+            "nome_servidor": (
+                request.query_params.get("NomeServidor")
+                or request.query_params.get("nome_servidor")
+            ),
+        }
+        params = {chave: valor for chave, valor in params.items() if valor}
+        data = services.get_usuarios_sgp_por_perfil(id_perfil, params)
+        if data is None:
+            return Response(status=204)
+        if not isinstance(data, list):
+            return Response(data, status=400)
+        return Response(FuncionarioSgpLegadoSerializer(data, many=True).data)
 
 
 class ProfessorDisciplinaTurmasView(APIView):

@@ -12,6 +12,7 @@ from apps.professores.serializers import (
     FuncionarioFuncaoAtividadeSerializer,
     FuncionarioFuncaoExternaSerializer,
     FuncionarioLegadoSerializer,
+    FuncionarioSgpLegadoSerializer,
     ProfessorAutoCompleteSerializer,
     ProfessorTurmaAtribuidaSimplificadaSerializer,
     SupervisorLegadoSerializer,
@@ -108,6 +109,34 @@ class FuncionarioLegadoSerializerTest(SimpleTestCase):
                 "codigoRf": "000001",
                 "funcaoExterno": 5,
                 "login": "000001",
+                "nomeServidor": "ANA",
+                "tipoFuncaoExterno": 7,
+            },
+        )
+
+
+class FuncionarioSgpLegadoSerializerTest(SimpleTestCase):
+    """Valida serialização de funcionário SGP no contrato legado."""
+
+    def test_serializa_campos(self) -> None:
+        payload = {
+            "cd_cargo": "3360",
+            "codigo_funcao_atividade": 30,
+            "codigo_rf": "000001",
+            "funcao_externo": 5,
+            "login": None,
+            "nome_servidor": "ANA",
+            "tipo_funcao_externo": 7,
+        }
+
+        self.assertEqual(
+            FuncionarioSgpLegadoSerializer(payload).data,
+            {
+                "cd_Cargo": 3360,
+                "codigoFuncaoAtividade": 30,
+                "codigoRf": "000001",
+                "funcaoExterno": 5,
+                "login": None,
                 "nomeServidor": "ANA",
                 "tipoFuncaoExterno": 7,
             },
