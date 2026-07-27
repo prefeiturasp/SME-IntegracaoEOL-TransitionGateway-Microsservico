@@ -181,6 +181,14 @@ def get_componentes_curriculares() -> Any:
 
 
 def _codigos_turmas(payload: Any) -> list[str]:
+    """Retorna os códigos de turma do conteúdo informado.
+
+    Args:
+        payload: Conteúdo recebido para conversão.
+
+    Returns:
+        Códigos de turma como texto.
+    """
     codigos = []
     for item in payload:
         if isinstance(item, dict):
@@ -191,6 +199,14 @@ def _codigos_turmas(payload: Any) -> list[str]:
 
 
 def _payload_turmas(response: Any) -> list[str]:
+    """Retorna os códigos de turma da resposta recebida.
+
+    Args:
+        response: Resposta recebida para leitura.
+
+    Returns:
+        Códigos de turma encontrados.
+    """
     payload = _client.json_or_none(response)
     if payload is None:
         return []
@@ -198,6 +214,14 @@ def _payload_turmas(response: Any) -> list[str]:
 
 
 def _turma_legado(item: dict[str, Any]) -> dict[str, Any]:
+    """Retorna turma no formato esperado pelo contrato.
+
+    Args:
+        item: Dados da turma recebidos para conversão.
+
+    Returns:
+        Turma formatada para resposta.
+    """
     return {
         "ano": item.get("ano"),
         "anoLetivo": item.get("ano_letivo"),
