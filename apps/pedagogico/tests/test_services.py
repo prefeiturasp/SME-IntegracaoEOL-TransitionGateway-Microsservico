@@ -201,6 +201,41 @@ class PostTurmasRegularesTest(SimpleTestCase):
         self.assertEqual(result, [])
 
 
+class PostCodigosTurmasContagemTest(SimpleTestCase):
+    """Valida a consulta de códigos de turmas para contagem de alunos."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_monta_path_e_query(self, mock_client: MagicMock) -> None:
+        """Envia as UEs no corpo e os filtros na query string."""
+        mock_client.json_or_none.return_value = [3011258, 3071054]
+
+        result = services.post_codigos_turmas_contagem(
+            ["019370", "108200"],
+            ano_turma="1",
+            codigo_modalidade=5,
+            ano_letivo=2026,
+        )
+
+        mock_client.post.assert_called_once_with(
+            f"{_BASE_TURMAS}/codigos-turmas-contagem/",
+            payload=["019370", "108200"],
+            params={
+                "ano_turma": "1",
+                "codigo_modalidade": 5,
+                "ano_letivo": 2026,
+            },
+        )
+        self.assertEqual(result, [3011258, 3071054])
+
+    @patch("apps.pedagogico.services._client")
+    def test_sem_ues_nao_chama_sidecar(self, mock_client: MagicMock) -> None:
+        """Valida que a lista vazia de UEs não chama o sidecar."""
+        result = services.post_codigos_turmas_contagem([])
+
+        mock_client.post.assert_not_called()
+        self.assertEqual(result, [])
+
+
 class PostTurmasProgramaTest(SimpleTestCase):
     """Valida a consulta de turmas programa."""
 
