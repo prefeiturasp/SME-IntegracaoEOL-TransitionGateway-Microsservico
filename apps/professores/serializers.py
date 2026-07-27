@@ -284,6 +284,102 @@ class TurmasAtribuidasLegadoSerializer(serializers.Serializer):
                 return valor
         return None
 
+    def _obter_dre(
+        self,
+        item: dict[str, Any],
+        dres: dict[str, dict[str, Any]],
+        codigo_dre: Any,
+    ) -> tuple[str, dict[str, Any]]:
+        """Retorna a DRE agrupada."""
+        chave_dre = str(codigo_dre) if codigo_dre else "__sem_dre__"
+        dre = dres.setdefault(
+            chave_dre,
+            {
+                "abreviacao": self._valor(item, "dre_abreviacao", "dre_abrev"),
+                "codigo": codigo_dre,
+                "nome": item.get("dre"),
+                "ues": [],
+            },
+        )
+        return chave_dre, dre
+
+    def _obter_ue(
+        self,
+        item: dict[str, Any],
+        ues_por_dre: dict[tuple[str, str], dict[str, Any]],
+        dre: dict[str, Any],
+        chave_dre: str,
+        codigo_ue: Any,
+    ) -> dict[str, Any]:
+        """Retorna a UE agrupada."""
+        chave_ue = (chave_dre, str(codigo_ue))
+        ue = ues_por_dre.get(chave_ue)
+        if ue is not None:
+            return ue
+
+        ue = {
+            "codigo": codigo_ue,
+            "nome": item.get("ue"),
+            "codTipoEscola": self._valor(
+                item, "codigo_tipo_escola", "cod_tipo_escola"
+            ),
+            "turmas": [],
+        }
+        ues_por_dre[chave_ue] = ue
+        cast(list[dict[str, Any]], dre["ues"]).append(ue)
+        return ue
+
+    def _montar_turma(
+        self,
+        item: dict[str, Any],
+        codigo_turma: Any,
+    ) -> dict[str, Any]:
+        """Monta uma turma atribuída."""
+        return {
+            "ano": item.get("ano"),
+            "anoLetivo": item.get("ano_letivo"),
+            "codigo": codigo_turma,
+            "tipoTurma": 0,
+            "modalidade": item.get("modalidade"),
+            "codigoModalidade": self._valor(
+                item, "codigo_modalidade", "cod_modalidade"
+            )
+            or 0,
+            "nomeTurma": item.get("nome_turma"),
+            "semestre": item.get("semestre"),
+            "duracaoTurno": item.get("duracao_turno"),
+            "tipoTurno": item.get("tipo_turno"),
+            "dataFim": None,
+            "ehistorico": False,
+            "ensinoEspecial": False,
+            "etapaEJA": 0,
+            "serieEnsino": None,
+            "dataInicioTurma": None,
+            "extinta": False,
+            "situacao": None,
+            "ueCodigo": None,
+        }
+
+    def _ordenar_dres(
+        self,
+        dres: dict[str, dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Ordena DREs, UEs e turmas."""
+        for dre in dres.values():
+            ues = cast(list[dict[str, Any]], dre["ues"])
+            ues.sort(key=lambda ue: str(ue.get("codigo") or ""))
+            for ue in ues:
+                turmas = cast(list[dict[str, Any]], ue["turmas"])
+                turmas.sort(
+                    key=lambda turma: (
+                        turma.get("codigo") is None,
+                        turma.get("codigo") or 0,
+                    )
+                )
+        return sorted(
+            dres.values(), key=lambda dre: str(dre.get("codigo") or "")
+        )
+
     def to_representation(self, instance: Any) -> Any:
         """Agrupa turmas por DRE e UE."""
         if not isinstance(instance, list):
@@ -303,31 +399,14 @@ class TurmasAtribuidasLegadoSerializer(serializers.Serializer):
             if not codigo_ue:
                 continue
 
-            chave_dre = str(codigo_dre) if codigo_dre else "__sem_dre__"
-            dre = dres.setdefault(
+            chave_dre, dre = self._obter_dre(item, dres, codigo_dre)
+            ue = self._obter_ue(
+                item,
+                ues_por_dre,
+                dre,
                 chave_dre,
-                {
-                    "abreviacao": self._valor(
-                        item, "dre_abreviacao", "dre_abrev"
-                    ),
-                    "codigo": codigo_dre,
-                    "nome": item.get("dre"),
-                    "ues": [],
-                },
+                codigo_ue,
             )
-            chave_ue = (chave_dre, str(codigo_ue))
-            ue = ues_por_dre.get(chave_ue)
-            if ue is None:
-                ue = {
-                    "codigo": codigo_ue,
-                    "nome": item.get("ue"),
-                    "codTipoEscola": self._valor(
-                        item, "codigo_tipo_escola", "cod_tipo_escola"
-                    ),
-                    "turmas": [],
-                }
-                ues_por_dre[chave_ue] = ue
-                dre["ues"].append(ue)
 
             codigo_turma = self._valor(item, "codigo_turma", "cod_turma")
             chave_turma = (chave_dre, str(codigo_ue), codigo_turma)
@@ -335,49 +414,11 @@ class TurmasAtribuidasLegadoSerializer(serializers.Serializer):
                 continue
             turmas_por_ue.add(chave_turma)
 
-            ue["turmas"].append(
-                {
-                    "ano": item.get("ano"),
-                    "anoLetivo": item.get("ano_letivo"),
-                    "codigo": codigo_turma,
-                    "tipoTurma": 0,
-                    "modalidade": item.get("modalidade"),
-                    "codigoModalidade": self._valor(
-                        item, "codigo_modalidade", "cod_modalidade"
-                    )
-                    or 0,
-                    "nomeTurma": item.get("nome_turma"),
-                    "semestre": item.get("semestre"),
-                    "duracaoTurno": item.get("duracao_turno"),
-                    "tipoTurno": item.get("tipo_turno"),
-                    "dataFim": None,
-                    "ehistorico": False,
-                    "ensinoEspecial": False,
-                    "etapaEJA": 0,
-                    "serieEnsino": None,
-                    "dataInicioTurma": None,
-                    "extinta": False,
-                    "situacao": None,
-                    "ueCodigo": None,
-                }
+            cast(list[dict[str, Any]], ue["turmas"]).append(
+                self._montar_turma(item, codigo_turma)
             )
 
-        for dre in dres.values():
-            ues = cast(list[dict[str, Any]], dre["ues"])
-            ues.sort(key=lambda ue: str(ue.get("codigo") or ""))
-            for ue in ues:
-                turmas = cast(list[dict[str, Any]], ue["turmas"])
-                turmas.sort(
-                    key=lambda turma: (
-                        turma.get("codigo") is None,
-                        turma.get("codigo") or 0,
-                    )
-                )
-
-        dres_ordenadas = sorted(
-            dres.values(), key=lambda dre: str(dre.get("codigo") or "")
-        )
-        return {"abrangencia": None, "dres": dres_ordenadas}
+        return {"abrangencia": None, "dres": self._ordenar_dres(dres)}
 
 
 class TurmaElegivelLegadoSerializer(serializers.Serializer):
