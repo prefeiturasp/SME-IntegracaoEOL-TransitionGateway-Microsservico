@@ -48,6 +48,7 @@ _MSG_CODIGO_FUNCAO_ATIVIDADE_OBRIGATORIO = (
 _MSG_REGISTRO_FUNCIONAL_OBRIGATORIO = (
     "É necessário informar o registro funcional."
 )
+_MSG_PERFIL_OBRIGATORIO = "É necessário informar o perfil."
 _MSG_DRE_ID_OBRIGATORIO = "É necessário informar o dreId."
 _MSG_UE_ID_OBRIGATORIO = "É necessário informar o ueId."
 _MSG_NOME_OBRIGATORIO = "É necessário informar o nome."
@@ -1089,7 +1090,7 @@ class FuncionariosPerfisView(APIView):
             Usuários SGP encontrados para o perfil.
         """
         if not id_perfil.strip():
-            return detail_response("É necessário informar o perfil.")
+            return detail_response(_MSG_PERFIL_OBRIGATORIO)
         params = {
             "codigo_dre": (
                 request.query_params.get("CodigoDre")
@@ -1151,7 +1152,7 @@ class FuncionariosPerfisDreView(APIView):
             Funcionários SGP encontrados para a DRE.
         """
         if not id_perfil.strip():
-            return detail_response("É necessário informar o perfil.")
+            return detail_response(_MSG_PERFIL_OBRIGATORIO)
         if not codigo_dre.strip():
             return detail_response("É necessário informar o codigoDre.")
         params = {
@@ -1289,7 +1290,7 @@ class FuncionarioPerfilTurmasView(APIView):
         if not login.strip():
             return detail_response("É necessário informar o login.")
         if not id_perfil.strip():
-            return detail_response("É necessário informar o perfil.")
+            return detail_response(_MSG_PERFIL_OBRIGATORIO)
         params = _abrangencia_temporaria(request)
         data = services.get_abrangencia_funcionario_perfil(
             login,
