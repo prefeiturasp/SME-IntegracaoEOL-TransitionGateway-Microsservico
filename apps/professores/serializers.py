@@ -30,12 +30,6 @@ class ListaStringSerializer(serializers.ListSerializer):
     """Valida uma lista simples de textos."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Inicializa a lista de textos.
-
-        Args:
-            *args: Argumentos posicionais do campo.
-            **kwargs: Argumentos nomeados do campo.
-        """
         kwargs.setdefault(
             "child",
             TextoEstritoField(allow_blank=False),
@@ -49,12 +43,6 @@ class TurmasIdsSerializer(serializers.ListSerializer):
     """Representa a lista de turmas informadas."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Inicializa a lista de turmas.
-
-        Args:
-            *args: Argumentos posicionais do campo.
-            **kwargs: Argumentos nomeados do campo.
-        """
         kwargs.setdefault(
             "child",
             TextoEstritoField(allow_blank=False),
@@ -118,15 +106,36 @@ class DisciplinaTurmaAtribuidaSerializer(serializers.Serializer):
     def get_codCompTerritorioSaber(  # noqa: N802
         self, obj: dict[str, Any]
     ) -> int | None:
-        """Retorna código de território saber."""
+        """Retorna código de território saber.
+
+        Args:
+            obj: Dados da disciplina.
+
+        Returns:
+            Código encontrado quando houver valor.
+        """
         return obj.get("codigo_componente_territorio_saber") or None
 
     def get_tipoEscola(self, obj: dict[str, Any]) -> str | None:  # noqa: N802
-        """Retorna tipo de escola."""
+        """Retorna tipo de escola.
+
+        Args:
+            obj: Dados da disciplina.
+
+        Returns:
+            Tipo de escola encontrado.
+        """
         return obj.get("tipo_escola")
 
     def get_professor(self, _obj: dict[str, Any]) -> None:
-        """Retorna professor da disciplina."""
+        """Retorna professor da disciplina.
+
+        Args:
+            _obj: Dados da disciplina.
+
+        Returns:
+            Valor nulo para o campo.
+        """
         return None
 
 
@@ -145,11 +154,25 @@ class DisciplinaTurmaAgrupamentoSerializer(DisciplinaTurmaAtribuidaSerializer):
     def get_codCompTerritorioSaber(  # noqa: N802
         self, obj: dict[str, Any]
     ) -> int:
-        """Retorna código de território saber."""
+        """Retorna código de território saber.
+
+        Args:
+            obj: Dados da disciplina.
+
+        Returns:
+            Código encontrado ou zero.
+        """
         return obj.get("codigo_componente_territorio_saber") or 0
 
     def get_tipoEscola(self, _obj: dict[str, Any]) -> None:  # noqa: N802
-        """Retorna tipo de escola conforme contrato legado."""
+        """Retorna tipo de escola.
+
+        Args:
+            _obj: Dados da disciplina.
+
+        Returns:
+            Valor nulo para o campo.
+        """
         return None
 
 
@@ -217,11 +240,25 @@ class TurmaAbrangenciaLegadoSerializer(serializers.Serializer):
     )
 
     def get_tipoTurma(self, _obj: Any) -> int:  # noqa: N802
-        """Retorna tipo de turma padrão."""
+        """Retorna tipo de turma.
+
+        Args:
+            _obj: Dados da turma.
+
+        Returns:
+            Tipo de turma padrão.
+        """
         return 0
 
     def get_dataInicioTurma(self, _obj: Any) -> None:  # noqa: N802
-        """Retorna data de início sempre nula."""
+        """Retorna data de início.
+
+        Args:
+            _obj: Dados da turma.
+
+        Returns:
+            Valor nulo para o campo.
+        """
         return None
 
 
@@ -289,7 +326,15 @@ class TurmasAtribuidasLegadoSerializer(serializers.Serializer):
     """Serializa turmas atribuídas no contrato legado."""
 
     def _valor(self, item: dict[str, Any], *campos: str) -> Any:
-        """Retorna o primeiro valor encontrado."""
+        """Retorna o primeiro valor encontrado.
+
+        Args:
+            item: Dados usados na busca.
+            *campos: Campos consultados em ordem.
+
+        Returns:
+            Primeiro valor encontrado.
+        """
         for campo in campos:
             valor = item.get(campo)
             if valor is not None:
@@ -302,7 +347,16 @@ class TurmasAtribuidasLegadoSerializer(serializers.Serializer):
         dres: dict[str, dict[str, Any]],
         codigo_dre: Any,
     ) -> tuple[str, dict[str, Any]]:
-        """Retorna a DRE agrupada."""
+        """Retorna a DRE agrupada.
+
+        Args:
+            item: Dados usados na composição.
+            dres: DREs já agrupadas.
+            codigo_dre: Código usado como chave.
+
+        Returns:
+            Chave e dados agrupados da DRE.
+        """
         chave_dre = str(codigo_dre) if codigo_dre else "__sem_dre__"
         dre = dres.setdefault(
             chave_dre,
@@ -323,7 +377,18 @@ class TurmasAtribuidasLegadoSerializer(serializers.Serializer):
         chave_dre: str,
         codigo_ue: Any,
     ) -> dict[str, Any]:
-        """Retorna a UE agrupada."""
+        """Retorna a UE agrupada.
+
+        Args:
+            item: Dados usados na composição.
+            ues_por_dre: UEs já agrupadas por DRE.
+            dre: Dados agrupados da DRE.
+            chave_dre: Chave da DRE.
+            codigo_ue: Código usado como chave.
+
+        Returns:
+            Dados agrupados da UE.
+        """
         chave_ue = (chave_dre, str(codigo_ue))
         ue = ues_por_dre.get(chave_ue)
         if ue is not None:
@@ -346,7 +411,15 @@ class TurmasAtribuidasLegadoSerializer(serializers.Serializer):
         item: dict[str, Any],
         codigo_turma: Any,
     ) -> dict[str, Any]:
-        """Monta uma turma atribuída."""
+        """Monta uma turma atribuída.
+
+        Args:
+            item: Dados usados na composição.
+            codigo_turma: Código da turma.
+
+        Returns:
+            Turma no formato de resposta.
+        """
         return {
             "ano": item.get("ano"),
             "anoLetivo": item.get("ano_letivo"),
@@ -376,7 +449,14 @@ class TurmasAtribuidasLegadoSerializer(serializers.Serializer):
         self,
         dres: dict[str, dict[str, Any]],
     ) -> list[dict[str, Any]]:
-        """Ordena DREs, UEs e turmas."""
+        """Ordena DREs, UEs e turmas.
+
+        Args:
+            dres: DREs agrupadas para ordenação.
+
+        Returns:
+            DREs ordenadas.
+        """
         for dre in dres.values():
             ues = cast(list[dict[str, Any]], dre["ues"])
             ues.sort(key=lambda ue: str(ue.get("codigo") or ""))
@@ -393,7 +473,14 @@ class TurmasAtribuidasLegadoSerializer(serializers.Serializer):
         )
 
     def to_representation(self, instance: Any) -> Any:
-        """Agrupa turmas por DRE e UE."""
+        """Agrupa turmas por DRE e UE.
+
+        Args:
+            instance: Dados recebidos para representação.
+
+        Returns:
+            Dados agrupados quando houver lista de entrada.
+        """
         if not isinstance(instance, list):
             return instance
 
@@ -480,11 +567,25 @@ class FuncionarioLegadoSerializer(serializers.Serializer):
     )
 
     def get_cd_Cargo(self, _obj: Any) -> int:  # noqa: N802
-        """Retorna cargo padrão."""
+        """Retorna cargo.
+
+        Args:
+            _obj: Dados do funcionário.
+
+        Returns:
+            Cargo padrão.
+        """
         return 0
 
     def get_codigo_funcao_atividade(self, obj: dict[str, Any]) -> int:
-        """Retorna função de atividade."""
+        """Retorna função de atividade.
+
+        Args:
+            obj: Dados do funcionário.
+
+        Returns:
+            Código da função de atividade.
+        """
         return int(obj.get("codigo_funcao_atividade") or 0)
 
 
@@ -492,7 +593,14 @@ class FuncionarioUeLegadoSerializer(FuncionarioLegadoSerializer):
     """Serializa funcionário por UE no contrato legado."""
 
     def get_codigo_funcao_atividade(self, _obj: dict[str, Any]) -> int:
-        """Retorna função de atividade padrão."""
+        """Retorna função de atividade.
+
+        Args:
+            _obj: Dados do funcionário.
+
+        Returns:
+            Função de atividade padrão.
+        """
         return 0
 
 
@@ -522,13 +630,27 @@ class FuncionarioSgpLegadoSerializer(serializers.Serializer):
     )
 
     def get_cd_Cargo(self, obj: dict[str, Any]) -> int:  # noqa: N802
-        """Retorna cargo do vínculo."""
+        """Retorna cargo do vínculo.
+
+        Args:
+            obj: Dados do funcionário.
+
+        Returns:
+            Código do cargo.
+        """
         return int(obj.get("cd_cargo") or obj.get("codigo_cargo") or 0)
 
     def get_codigoFuncaoAtividade(  # noqa: N802
         self, obj: dict[str, Any]
     ) -> int:
-        """Retorna função de atividade."""
+        """Retorna função de atividade.
+
+        Args:
+            obj: Dados do funcionário.
+
+        Returns:
+            Código da função de atividade.
+        """
         return int(obj.get("codigo_funcao_atividade") or 0)
 
 
@@ -605,12 +727,25 @@ class FuncionarioFuncaoAtividadeUeSerializer(serializers.Serializer):
     tipoFuncaoExterno = serializers.IntegerField(source="tipo_funcao_externo")
 
     def get_login(self, _obj: Any) -> None:
-        """Retorna `login` sempre nulo."""
-        # A consulta legada por função não fornece login.
+        """Retorna login.
+
+        Args:
+            _obj: Dados do funcionário.
+
+        Returns:
+            Valor nulo para o campo.
+        """
         return None
 
     def get_cd_cargo(self, obj: Any) -> int:
-        """Converta o código do cargo para inteiro, usando zero como padrão."""
+        """Retorna código do cargo.
+
+        Args:
+            obj: Dados do funcionário.
+
+        Returns:
+            Código do cargo convertido.
+        """
         valor = obj.get("codigo_cargo") if isinstance(obj, dict) else None
         if valor in (None, ""):
             return 0
