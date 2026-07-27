@@ -30,6 +30,12 @@ class ListaStringSerializer(serializers.ListSerializer):
     """Valida uma lista simples de textos."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Inicializa a lista de textos.
+
+        Args:
+            *args: Argumentos posicionais do campo.
+            **kwargs: Argumentos nomeados do campo.
+        """
         kwargs.setdefault(
             "child",
             TextoEstritoField(allow_blank=False),
@@ -43,6 +49,12 @@ class TurmasIdsSerializer(serializers.ListSerializer):
     """Representa a lista de turmas informadas."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Inicializa a lista de turmas.
+
+        Args:
+            *args: Argumentos posicionais do campo.
+            **kwargs: Argumentos nomeados do campo.
+        """
         kwargs.setdefault(
             "child",
             TextoEstritoField(allow_blank=False),
