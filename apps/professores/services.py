@@ -71,10 +71,10 @@ def _valores_param(
 
 
 def _codigos_ue(data: Any) -> list[str]:
-    """Extrai códigos de UE de um payload do sidecar.
+    """Extrai códigos de UE dos dados recebidos.
 
     Args:
-        data: Payload retornado pelo sidecar de professores.
+        data: Dados consultados.
 
     Returns:
         Códigos EOL das unidades educacionais.
@@ -146,7 +146,7 @@ def _get_funcionarios_escola_por_filtro(
     params: dict[str, str | list[str]],
     nome_param: str,
     nome_campo: str,
-    nome_param_sidecar: str | None = None,
+    nome_param_destino: str | None = None,
 ) -> Any:
     """Lista funcionários de escola para cada valor de filtro.
 
@@ -155,7 +155,7 @@ def _get_funcionarios_escola_por_filtro(
         params: Parâmetros recebidos para a consulta.
         nome_param: Nome do filtro recebido.
         nome_campo: Campo preenchido com o valor do filtro.
-        nome_param_sidecar: Nome alternativo usado na consulta.
+        nome_param_destino: Nome usado ao encaminhar o filtro.
 
     Returns:
         Lista consolidada de funcionários encontrados.
@@ -168,7 +168,7 @@ def _get_funcionarios_escola_por_filtro(
     if not valores:
         return []
 
-    nome_destino = nome_param_sidecar or nome_param
+    nome_destino = nome_param_destino or nome_param
     resultado: list[Any] = []
     for value in valores:
         resp = _client.get(
@@ -196,8 +196,6 @@ def get_codigos_turmas_historicas_professor(
         Códigos de turma sem duplicidade.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
         ValueError: Se a resposta não contiver códigos inteiros.
     """
     resp = _client.get(
@@ -417,7 +415,7 @@ def get_usuarios_sgp_por_perfil(
         params: Filtros enviados no contrato legado.
 
     Returns:
-        Usuários SGP no formato do sidecar ou erro de contrato.
+        Usuários SGP encontrados ou erro de contrato.
     """
     resp = _client.get(
         f"{_BASE_FUNCIONARIOS}/perfis/{id_perfil}/",
@@ -439,7 +437,7 @@ def get_funcionarios_sgp_por_perfil_dre(
         params: Filtros enviados no contrato legado.
 
     Returns:
-        Funcionários SGP no formato do sidecar ou erro de contrato.
+        Funcionários SGP encontrados ou erro de contrato.
     """
     resp = _client.get(
         f"{_BASE_FUNCIONARIOS}/perfis/{id_perfil}/dres/{codigo_dre}/",

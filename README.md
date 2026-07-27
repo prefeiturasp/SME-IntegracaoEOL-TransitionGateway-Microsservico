@@ -17,9 +17,9 @@ sidecar_<domínio>       ← retry, circuit breaker, propagação de X-Request-I
 MS de domínio           ← microserviço proprietário do domínio
 ```
 
-O Gateway expõe os contratos legados (L1–L17) e os mapeia para os endpoints canônicos 
-dos microserviços de domínio. Ele não contém regra de negócio nem lógica de resiliência:
-essas responsabilidades pertencem ao sidecar de cada domínio.
+O Gateway expõe os contratos legados e os traduz para os microserviços de
+domínio. Ele não contém regra de negócio nem lógica de resiliência: essas
+responsabilidades pertencem ao sidecar de cada domínio.
 
 Cada sidecar é um processo Django independente que aplica retry com backoff exponencial,
 circuit breaker e propagação de contexto de rastreamento antes de encaminhar a requisição
@@ -31,9 +31,9 @@ ao microserviço correspondente. Os sidecars residem em repositórios próprios.
 .
 ├── apps/
 │   ├── core/           # cliente HTTP, resiliência (lib dos sidecars), middleware
-│   └── pedagogico/     # domínio pedagógico: views, services, serializers
-│   └── professores/     # domínio professores: views, services, serializers
-│   └── programasedu/   # domínio programas educacionais: views, services, serializers
+│   └── pedagogico/     # adaptação dos contratos do domínio pedagógico
+│   └── professores/     # adaptação dos contratos do domínio professores
+│   └── programasedu/   # adaptação dos contratos de programas educacionais
 ├── config/             # settings, urls, wsgi e autenticação do gateway
 ├── requirements/
 │   ├── base.txt        # dependências de produção
@@ -49,87 +49,31 @@ ao microserviço correspondente. Os sidecars residem em repositórios próprios.
 | `middleware.py` | Propagação de `X-Request-ID` e contexto de logging |
 | `logging_context.py` | `ContextVar` para request ID e serviço |
 
-## Domínio pedagógico
+## Domínios Atendidos
 
-O gateway mapeia 17 rotas legadas para 15 endpoints canônicos do MS Pedagógico:
+### Pedagógico
 
-| Legado | Endpoint canônico |
-|---|---|
-| L1 Componentes do funcionário por turma com agrupamento | EP-1 `GET /funcionarios/{login}` |
-| L2 Componentes do funcionário sem filtro de turma | EP-1 `GET /funcionarios/{login}` |
-| L3 Componentes com planejamento de regência | EP-1 `GET /funcionarios/{login}?planejamento=true` |
-| L4 Componentes de regência por ano de turma | EP-2 `GET /anos/{anoTurma}/regencia` |
-| L5 Verificar componente PAP em turma | EP-3 `GET /turmas/{cod}/pap` |
-| L6 Componentes por UE, modalidade, ano e anos escolares | EP-4 `GET /ues/{id}/modalidades/{mod}/anos/{ano}` |
-| L7 Componentes de turmas programa por UE e modalidade | EP-5 `GET /ues/{id}/modalidades/{mod}/anos/{ano}/turmas-programa` |
-| L8 Componentes por lista de turmas e UE | EP-6 `GET /ues/{id}/turmas` |
-| L9 Componentes para planejamento por lista de turmas | EP-7 `GET /turmas` |
-| L10 Componentes de turmas sem pós-processamento | EP-8 `GET /turmas/brutos` |
-| L11 Catálogo de componentes curriculares | EP-9 `GET /` |
-| L12 Dados de aula por turma (vigência de componentes) | EP-10 `GET /turmas/vigencia` |
-| L13 Agrupamentos correlacionados de Território do Saber por `cod_agrupamento` | EP-13 `GET /{cod}/territorio-saber/agrupamentos-correlacionados` |
-| L14 Agrupamentos correlacionados em lote por `cod_agrupamento` | EP-14 `POST /territorio-saber/agrupamentos-correlacionados` |
-| L15 Agrupamentos de Território do Saber por `cod_agrupamento` | EP-15 `POST /territorio-saber/agrupamentos` |
-| L16 Grade curricular por ano letivo | EP-11 `GET /grade-curricular/{anoLetivo}` |
-| L17 Componentes sem atribuição em uma turma | EP-12 `GET /turmas/{cod}/sem-atribuicao` |
+Preserva contratos legados relacionados a componentes curriculares, turmas,
+grade curricular, regência, planejamento e agrupamentos pedagógicos. A regra de
+composição desses dados permanece no domínio pedagógico; o gateway adapta nomes,
+formatos e parâmetros esperados pelos consumidores legados.
 
-Nas rotas L13, L14 e L15, `{cod}`/body representam `cod_agrupamento`, não código de componente curricular do catálogo. O gateway chama o sidecar com barra final nessas rotas de POST para evitar redirect em chamadas com corpo.
+### Professores
 
+Preserva contratos legados relacionados a professores, funcionários, vínculos
+com unidades, cargos, perfis, supervisores e turmas atribuídas. Alguns fluxos
+orquestram mais de um domínio para montar o contrato final, mantendo no gateway
+apenas a adaptação entre formatos.
 
-## Domínio professores
+### Programas Educacionais
 
-O gateway mapeia 20 rotas legadas cobertas pelo MS-Professores. Os paths canônicos são relativos ao sidecar de professores (`/api/v1/professores`). Endpoints marcados com *(orquestra)* chamam mais de um domínio antes de responder.
+Preserva contratos legados relacionados a turmas e alunos de programas
+educacionais. As decisões de elegibilidade e composição dos dados permanecem
+nos microserviços responsáveis.
 
-### Professor
-
-| Legado | Endpoint canônico |
-|---|---|
-| L1 Retorna o nome do professor pelo RF | EP-1 `GET /{rf_professor}` |
-| L2 Retorna booleano indicando se o professor é válido | EP-2 `GET /{codigo_rf}/validade` |
-| L3 Retorna professor por RF e ano letivo | EP-3 `GET /{codigo_rf}/BuscarPorRf/{ano_letivo}` |
-| L4 Retorna professor por RF, DRE e UE no ano letivo | EP-4 `GET /{codigo_rf}/BuscarPorRfDreUe/{ano_letivo}` |
-| L5 Retorna professores pelos RFs no ano letivo *(orquestra Professores + Institucional)* | EP-5 `POST /{ano_letivo}/BuscarPorListaRF/` |
-| L6 Lista professores para autocomplete por DRE, UE e nome | EP-6 `GET /{ano_letivo}/AutoComplete/{dre_id}` |
-| L7 Retorna booleano indicando se o professor é EMEI *(orquestra Professores + Institucional)* | EP-7 `GET /{codigo_rf}/unidades-atribuicao/` |
-| L8 Retorna turmas atribuídas ao professor *(orquestra Professores + Pedagógico + Institucional)* | EP-8 `GET /{codigo_rf}/turmas/` |
-| L9 Retorna turmas do professor para a disciplina | EP-9 `POST /{codigo_rf}/disciplina/{disciplina_id}/turmas/` |
-
-### Acessos
-
-| Legado | Endpoint canônico |
-|---|---|
-| L10 Retorna booleano indicando se o funcionário está ativo | EP-10 `GET /acessos/funcionario-ativo/{registro_funcional}` |
-
-### Funcionário
-
-| Legado | Endpoint canônico |
-|---|---|
-| L11 Retorna nome e CPF do servidor | EP-11 `GET /funcionarios/nome-servidor/{registro_funcional}` |
-| L12 Retorna o nome de usuário EOL do funcionário | EP-12 `GET /funcionarios/nome-usuario-eol/{registro_funcional}` |
-| L13 Retorna professores pelos RFs informados | EP-13 `POST /funcionarios/BuscarPorListaRF/` |
-
-### Escola
-
-| Legado | Endpoint canônico |
-|---|---|
-| L14 Retorna funcionários vinculados à escola | EP-14 `GET /escolas/{codigo_ue}/funcionarios/` |
-| L15 Retorna funcionários da escola filtrados por cargos | EP-15 `GET /escolas/{codigo_ue}/funcionarios/?cargos={cargo}` (um GET por cargo) |
-| L16 Retorna funcionários da escola filtrados por cargo específico | EP-16 `GET /escolas/{codigo_ue}/funcionarios/?cargos={codigo_cargo}` |
-| L17 Retorna funcionários da escola por funções atividades | EP-17 `GET /escolas/{codigo_ue}/funcionarios/?funcoes_atividades={cod}` (um GET por função) |
-| L18 Retorna funcionários da escola por função atividade específica | EP-18 `GET /escolas/{codigo_ue}/funcionarios/?funcoes_atividades={codigo_funcao_atividade}` |
-| L19 Retorna funcionários da escola por funções externas | EP-19 `GET /escolas/{codigo_ue}/funcionarios/?funcoes_externas={cod}` (um GET por função) |
-| L20 Retorna funcionários da escola por função externa específica | EP-20 `GET /escolas/{codigo_ue}/funcionarios/?funcoes_externas={codigo_funcao_externa}` |
-
-## Domínio programas educacionais
-
-O gateway mapeia 4 rotas legadas para os endpoints canônicos EP-02 a EP-05 do MS-ProgramasEdu. Os paths legados replicam o contrato do `AlunoController` do `SME-Pedagogico-API`, sob o prefixo `/api/alunos/`.
-
-| Legado | Endpoint canônico |
-|---|---|
-| L1 Turmas PAP por ano letivo e UE | EP-02 `GET /alunos/turmas-pap/{anoLetivo}/ues/{codigoEscola}` |
-| L2 Verificar quais alunos pertencem a turmas PAP | EP-03 `GET /alunos/alunos-pap/{anoLetivo}` |
-| L3 Alunos PAP do ano corrente | EP-04 `GET /alunos/pap/ano-corrente` |
-| L4 Alunos PAP por ano letivo | EP-05 `GET /alunos/pap/ano-letivo/{anoLetivo}` |
+Para detalhes de rotas, parâmetros, métodos HTTP e exemplos de resposta,
+consulte o Swagger da aplicação. Essa é a fonte mantida para o contrato
+operacional da API.
 
 ## Requisitos
 
@@ -224,7 +168,7 @@ Todos os logs são emitidos em JSON estruturado. Cada registro inclui os seguint
 | `timestamp` | Data e hora do evento |
 | `level` | Nível do log (`INFO`, `WARNING`, `ERROR`) |
 | `logger` | Nome do módulo que gerou o log |
-| `message` | Mensagem descritiva (ex.: `GET /api/v1/... 200 43ms`) |
+| `message` | Mensagem descritiva da requisição atendida |
 | `request_id` | UUID da requisição, propagado via header `X-Request-ID` |
 | `service` | Nome do serviço (`transitiongateway`) |
 | `transaction_id` | ID da transação APM (correlação com traces) |
@@ -288,4 +232,4 @@ Use `make help` para listar todos os comandos disponíveis. Os principais:
 
 ## Endpoints
 
-Consulte o Swagger em `/api/v1/docs/` para a lista completa de rotas com parâmetros e exemplos de resposta.
+Consulte o Swagger da aplicação para a lista completa de rotas com parâmetros e exemplos de resposta.
