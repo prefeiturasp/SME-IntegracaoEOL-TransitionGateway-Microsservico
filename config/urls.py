@@ -5,6 +5,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.permissions import AllowAny
 
 from apps.alunos.urls import turma_urlpatterns as alunos_turma_urlpatterns
+from apps.matriculas.urls import escola_urlpatterns as matriculas_escola_urlpatterns
 from apps.pedagogico.urls import turma_urlpatterns, ue_urlpatterns
 from config import settings
 
@@ -46,11 +47,16 @@ urlpatterns = [
         "api/turmas/",
         include((alunos_turma_urlpatterns, "alunos-turmas")),
     ),
+    path(
+        "api/escolas/",
+        include((matriculas_escola_urlpatterns, "matriculas-escolas")),
+    ),
     path("api/turmas/", include((turma_urlpatterns, "turmas"))),
     path("api/", include((ue_urlpatterns, "ues"))),
     path("api/", include("apps.professores.urls")),
     path("api/", include("apps.institucional.urls")),
     path("api/", include("apps.programasedu.urls")),
+    path("api/matriculas/", include("apps.matriculas.urls")),
     path(f"{API_PREFIX}alunos/", include("apps.alunos.urls")),
     path(f"{API_PREFIX}matriculas/", include("apps.matriculas.urls")),
 ]

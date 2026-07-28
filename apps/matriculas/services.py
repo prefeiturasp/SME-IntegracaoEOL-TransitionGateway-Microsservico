@@ -7,6 +7,7 @@ from django.conf import settings
 from apps.core.http_client import ServiceClient
 
 _BASE = "/api/v1/alunos/matriculas"
+_BASE_ALUNOS = "/api/v1/alunos"
 
 _client = ServiceClient(
     base_url=settings.SIDECAR_ALUNOS_URL,
@@ -57,6 +58,85 @@ def get_matriculas_anos_anteriores(
     resp = _client.get(
         f"{_BASE}/anos-anteriores",
         params={"ano_letivo": ano_letivo, "ue_codigo": ue_codigo},
+    )
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
+def get_total_matriculas_por_turno_ue(ue_codigo: str) -> Any:
+    """Retorna o total de matrículas por turno da UE.
+
+    Args:
+        ue_codigo: Código da unidade educacional.
+
+    Returns:
+        Objeto agregado no contrato legado com total de matrículas e distribuição por turnos.
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+    """
+    resp = _client.get(f"{_BASE}/escolas/{ue_codigo}/quantidades")
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
+def get_total_matriculas_por_turno_dre(dre_codigo: str) -> Any:
+    """Retorna o total de matrículas por turno da DRE.
+
+    Args:
+        dre_codigo: Código da DRE.
+
+    Returns:
+        Lista agregada por escola no contrato legado, com total de
+        matrículas e distribuição por turnos.
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+    """
+    resp = _client.get(f"{_BASE}/escolas/dre/{dre_codigo}/quantidades")
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
+def get_quantidade_alunos_por_turma_escola(codigo_escola: str) -> Any:
+    """Retorna quantidade de alunos por turma na escola.
+
+    Args:
+        codigo_escola: Código da unidade escolar.
+
+    Returns:
+        Lista agregada por turma.
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+    """
+    resp = _client.get(f"{_BASE_ALUNOS}/escolas/{codigo_escola}/alunos/quantidade")
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
+def get_matriculas_aluno_escola(
+    codigo_escola: str,
+    codigo_aluno: str,
+) -> Any:
+    """Retorna matrículas de um aluno na escola.
+
+    Args:
+        codigo_escola: Código da unidade escolar.
+        codigo_aluno: Código EOL do aluno.
+
+    Returns:
+        Lista de matrículas do aluno na escola.
+
+    Raises:
+        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
+        httpx.RequestError: Se o sidecar estiver inacessível.
+    """
+    resp = _client.get(
+        f"{_BASE_ALUNOS}/escolas/{codigo_escola}/aluno/{codigo_aluno}/matriculas"
     )
     resp.raise_for_status()
     return _client.json_or_none(resp) or []
