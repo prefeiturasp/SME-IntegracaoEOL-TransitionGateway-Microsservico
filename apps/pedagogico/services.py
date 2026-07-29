@@ -1105,3 +1105,30 @@ def post_agrupamentos_territorio(ids: list[int]) -> Any:
         f"{_BASE}/territorio-saber/agrupamentos/",
         payload=ids,
     ).json()
+
+
+def verificar_atriuicao_territorio_saber(
+    codigo_rf: str,
+    codigo_turma: str,
+    disciplina_id: str,
+    data: str,
+) -> bool:
+    """Verifica a atribuição do professor em território do saber.
+
+    Args:
+        codigo_rf: RF do professor usado na consulta.
+        codigo_turma: Código da turma usada na consulta.
+        disciplina_id: Código do componente curricular usado na consulta.
+        data: Data de referência usada na consulta.
+
+    Returns:
+        ``True`` quando o professor possui atribuição válida.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+    """
+    resp = _client.get(
+        f"{_BASE}/{disciplina_id}/turmas/{codigo_turma}/"
+        f"professor/{codigo_rf}/data/{data}/atribuicao/validar/"
+    )
+    return bool(_client.json_or_none(resp))

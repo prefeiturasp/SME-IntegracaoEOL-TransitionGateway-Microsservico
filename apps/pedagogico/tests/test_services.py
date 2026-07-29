@@ -1430,3 +1430,31 @@ class ListagemTurmasComponentesServiceTest(SimpleTestCase):
 
         with self.assertRaises(ValueError):
             services.get_listagem_turmas_componentes("9000", 5, 2024)
+
+
+class VerificarAtribuicaoTerritorioSaberTest(SimpleTestCase):
+    """Valida a atribuição do professor em território do saber."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_chama_sidecar_e_retorna_booleano(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        """Monta o path com os dados da atribuição."""
+        response = MagicMock()
+        mock_client.get.return_value = response
+        mock_client.json_or_none.return_value = True
+
+        result = services.verificar_atriuicao_territorio_saber(
+            "000001",
+            "3032577",
+            "89",
+            "2026-07-28",
+        )
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/89/turmas/3032577/professor/000001/"
+            "data/2026-07-28/atribuicao/validar/"
+        )
+        mock_client.json_or_none.assert_called_once_with(response)
+        self.assertIs(result, True)
