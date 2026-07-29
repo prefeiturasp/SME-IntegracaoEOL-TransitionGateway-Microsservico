@@ -25,10 +25,15 @@ from apps.alunos.serializers import (
     AlunoInformacoesSerializer,
     AlunoMatriculaTurmaSerializer,
     AlunoPorCodigoSerializer,
+    AtualizarResponsavelBuscaAtivaRequestSerializer,
+    AtualizarResponsavelRequestSerializer,
     DadosAcompanhamentoEscolarSerializer,
+    DadosResponsavelSerializer,
     FiliacaoResponsavelSerializer,
     InformacoesAlunoTurmaSerializer,
     NecessidadeEspecialSerializer,
+    NomeAlunoSerializer,
+    ObterNomesAlunosRequestSerializer,
     QuantidadeMatriculadosCCSerializer,
     QuantidadeMatriculadosSerializer,
     ResponsavelResumidoSerializer,
@@ -49,6 +54,9 @@ _MSG_CODIGO_OBRIGATORIO = "É necessário informar o codigo do aluno."
 _MSG_CODIGO_TURMA_OBRIGATORIO = "É necessário informar o codigo da turma."
 _MSG_CODIGO_UE_OBRIGATORIO = "É necessário informar o codigo da UE."
 _MSG_CODIGOS_ALUNOS_OBRIGATORIOS = "Os códigos dos Alunos são obrigatórios."
+_MSG_CODIGOS_ALUNOS_NOMES_OBRIGATORIOS = (
+    "Os códigos dos alunos são obrigatórios."
+)
 _MSG_NOME_ALUNO_MINIMO = "O Nome deve conter no mínimo 3 caracteres."
 _MSG_CPF_RESPONSAVEL_INVALIDO = "CPF do responsável inválido."
 _MSG_CODIGO_TURMA_LEGADO = "O código da turma é obrigatório."
@@ -792,6 +800,175 @@ class ResponsaveisView(APIView):
         except httpx.RequestError as exc:
             return _sidecar_unavailable_response(exc)
         return Response(ResponsavelTurmaSerializer(data, many=True).data)
+
+
+class DadosResponsavelView(APIView):
+    """Lista os dados do responsável e dos alunos vinculados."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Dados do responsável por CPF",
+        parameters=[
+            OpenApiParameter(
+                "cpf_responsavel",
+                str,
+                OpenApiParameter.PATH,
+            )
+        ],
+        responses={200: DadosResponsavelSerializer(many=True)},
+    )
+    def get(self, _request: Request, cpf_responsavel: str) -> Response:
+        """Busca os dados do responsável e dos alunos vinculados.
+
+        Args:
+            cpf_responsavel: CPF do responsável.
+
+        Returns:
+            Vínculos encontrados no contrato legado.
+        """
+        try:
+            data = services.get_dados_responsavel(cpf_responsavel)
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+        return Response(DadosResponsavelSerializer(data, many=True).data)
+
+
+class ResponsavelAlunoView(APIView):
+    """Atualiza dados do responsável vinculado ao aluno."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Atualizar dados do responsável",
+        request=AtualizarResponsavelRequestSerializer,
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.BOOL,
+                examples=[_EXEMPLO_BOOL_LEGADO],
+            )
+        },
+    )
+    def post(
+        self,
+        request: Request,
+        codigo_aluno: str,
+        cpf_responsavel: str,
+    ) -> Response:
+        """Atualiza os dados cadastrais do responsável.
+
+        Args:
+            request: Requisição com os dados cadastrais.
+            codigo_aluno: Código EOL do aluno.
+            cpf_responsavel: CPF do responsável.
+
+        Returns:
+            Indicador de atualização do vínculo.
+
+        Raises:
+            ValidationError: Quando os dados informados são inválidos.
+        """
+        serializer = AtualizarResponsavelRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            atualizado = services.atualizar_dados_responsavel(
+                codigo_aluno,
+                cpf_responsavel,
+                dict(serializer.validated_data),
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+        return Response(atualizado)
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Atualizar contatos do responsável",
+        request=AtualizarResponsavelBuscaAtivaRequestSerializer,
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.BOOL,
+                examples=[_EXEMPLO_BOOL_LEGADO],
+            )
+        },
+    )
+    def put(
+        self,
+        request: Request,
+        codigo_aluno: str,
+        cpf_responsavel: str,
+    ) -> Response:
+        """Atualiza os contatos do responsável.
+
+        Args:
+            request: Requisição com os dados de contato.
+            codigo_aluno: Código EOL do aluno.
+            cpf_responsavel: CPF do responsável.
+
+        Returns:
+            Indicador de atualização do vínculo.
+
+        Raises:
+            ValidationError: Quando os dados informados são inválidos.
+        """
+        serializer = AtualizarResponsavelBuscaAtivaRequestSerializer(
+            data=request.data
+        )
+        serializer.is_valid(raise_exception=True)
+        try:
+            atualizado = services.atualizar_dados_responsavel_busca_ativa(
+                codigo_aluno,
+                cpf_responsavel,
+                dict(serializer.validated_data),
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+        return Response(atualizado)
+
+
+class ObterNomesAlunosView(APIView):
+    """Lista nomes e dados de matrícula-turma dos alunos."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Nomes dos alunos por códigos",
+        request=ObterNomesAlunosRequestSerializer,
+        responses={200: NomeAlunoSerializer(many=True)},
+    )
+    def post(self, request: Request) -> Response:
+        """Busca nomes e vínculos de matrícula-turma dos alunos.
+
+        Args:
+            request: Requisição com códigos de alunos e ano letivo opcional.
+
+        Returns:
+            Nomes e vínculos encontrados no contrato legado.
+
+        Raises:
+            ValidationError: Quando os filtros informados são inválidos.
+        """
+        serializer = ObterNomesAlunosRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        body = serializer.validated_data
+        codigos_alunos = body.get("codigos_alunos") or []
+        if not codigos_alunos:
+            return _legacy_string_response(
+                _MSG_CODIGOS_ALUNOS_NOMES_OBRIGATORIOS,
+                400,
+            )
+        try:
+            data = services.get_nomes_alunos(
+                codigos_alunos=codigos_alunos,
+                ano_letivo=body.get("ano_letivo"),
+            )
+        except httpx.HTTPStatusError as exc:
+            return _sidecar_error_response(exc)
+        except httpx.RequestError as exc:
+            return _sidecar_unavailable_response(exc)
+        return Response(NomeAlunoSerializer(data, many=True).data)
 
 
 class FiliacaoAlunoView(APIView):

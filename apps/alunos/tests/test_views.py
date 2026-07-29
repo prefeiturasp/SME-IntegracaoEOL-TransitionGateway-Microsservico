@@ -195,6 +195,29 @@ class AlunosUrlsTest(SimpleTestCase):
 
         self.assertEqual(match.kwargs, {"cpf_responsavel": "12345678900"})
 
+    def test_rotas_de_responsavel_e_nomes_do_lote_5(self) -> None:
+        """Verifica os parâmetros das novas rotas."""
+        responsavel = resolve(
+            "/api/v1/alunos/responsaveis/12345678900"
+        )
+        escrita = resolve(
+            "/api/v1/alunos/1234567/responsaveis/12345678900"
+        )
+        nomes = resolve("/api/v1/alunos/obter-nomes-alunos")
+
+        self.assertEqual(
+            responsavel.kwargs,
+            {"cpf_responsavel": "12345678900"},
+        )
+        self.assertEqual(
+            escrita.kwargs,
+            {
+                "codigo_aluno": "1234567",
+                "cpf_responsavel": "12345678900",
+            },
+        )
+        self.assertEqual(nomes.kwargs, {})
+
     def test_preserva_codigo_turma_informacoes_alunos_turma(self) -> None:
         match = resolve("/api/v1/alunos/9001/turma/informacoes")
 
@@ -2925,7 +2948,7 @@ class CodigosTurmasRegularesAlunoViewTest(SimpleTestCase):
     def test_200_repassa_filtros_da_query(
         self, mock_service: MagicMock
     ) -> None:
-        """Testa que os filtros da query string são repassados para o serviço."""
+        """Testa o repasse dos filtros da consulta ao serviço."""
         mock_service.return_value = []
         client = _cliente_autenticado()
 
@@ -2948,7 +2971,7 @@ class CodigosTurmasRegularesAlunoViewTest(SimpleTestCase):
     def test_200_lista_vazia_quando_sem_resultado(
         self, mock_service: MagicMock
     ) -> None:
-        """Testa que o endpoint retorna 200 e lista vazia quando o serviço"""
+        """Testa o retorno de lista vazia sem resultado."""
         mock_service.return_value = []
         client = _cliente_autenticado()
 
@@ -2961,7 +2984,7 @@ class CodigosTurmasRegularesAlunoViewTest(SimpleTestCase):
     def test_503_quando_sidecar_indisponivel(
         self, mock_service: MagicMock
     ) -> None:
-        """Testa que o endpoint retorna 503 quando o serviço de alunos está"""
+        """Testa a indisponibilidade do serviço de alunos."""
         mock_service.side_effect = _request_error()
         client = _cliente_autenticado()
 
@@ -3001,7 +3024,7 @@ class CodigoTurmaAlunoComponenteCurricularViewTest(SimpleTestCase):
     def test_200_ignora_componente_e_so_passa_tipos_turma(
         self, mock_service: MagicMock
     ) -> None:
-        """Testa que o endpoint retorna 200 e lista de códigos de turma, ignorando"""
+        """Testa o retorno de turmas sem considerar o componente."""
         mock_service.return_value = [12345]
         client = _cliente_autenticado()
 
@@ -3021,7 +3044,7 @@ class CodigoTurmaAlunoComponenteCurricularViewTest(SimpleTestCase):
     def test_503_quando_sidecar_indisponivel(
         self, mock_service: MagicMock
     ) -> None:
-        """Testa que o endpoint retorna 503 quando o serviço de alunos está"""
+        """Testa a indisponibilidade do serviço de alunos."""
         mock_service.side_effect = _request_error()
         client = _cliente_autenticado()
 
@@ -3245,3 +3268,245 @@ class QuantidadeMatriculadosCCViewTest(SimpleTestCase):
         self.assertEqual(
             resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE
         )
+
+
+class Lote5ResponsaveisENomesViewTest(SimpleTestCase):
+    """Valida os contratos públicos de responsáveis e nomes."""
+
+    @patch("apps.alunos.views.services.get_dados_responsavel")
+    def test_get_responsavel_retorna_os_27_campos(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Verifica nomes, ordem e conversões do contrato legado."""
+        mock_service.return_value = [
+            {
+                "id": 3315866,
+                "cpf": "40312090889",
+                "email": "responsavel@sme.com.br",
+                "nome": "RESPONSAVEL TESTE",
+                "tipo_responsavel": 1,
+                "nome_social_aluno": None,
+                "data_nascimento_aluno": "2011-08-11",
+                "data_nascimento": "1992-01-17",
+                "data_atualizacao": "2021-09-17T12:11:56.807",
+                "nome_mae": "MAE TESTE",
+                "tipo_sigilo": 0,
+                "ddd_celular": "11",
+                "numero_celular": "982741442",
+                "nome_aluno": "ALUNO TESTE",
+                "codigo_aluno": "6343226",
+                "numero_rg": "000000037112360",
+                "digito_rg": "4   ",
+                "uf_rg": "SP",
+                "cpf_confere": "S",
+                "tipo_turno_celular": "1",
+                "ddd_telefone_fixo": "",
+                "numero_telefone_fixo": "",
+                "tipo_turno_telefone_fixo": None,
+                "ddd_telefone_comercial": "",
+                "numero_telefone_comercial": "",
+                "tipo_turno_telefone_comercial": None,
+                "autoriza_envio_sms": "S",
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/v1/alunos/responsaveis/40312090889"
+        )
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(
+            list(resp.json()[0]),
+            [
+                "id",
+                "cpf",
+                "email",
+                "nome",
+                "tipoResponsavel",
+                "nomeSocialAluno",
+                "dataNascimentoAluno",
+                "dataNascimento",
+                "dataAtualizacao",
+                "nomeMae",
+                "tipoSigilo",
+                "dddCelular",
+                "numeroCelular",
+                "nomeAluno",
+                "codigoAluno",
+                "numeroRG",
+                "digitoRG",
+                "ufRG",
+                "cpfConfere",
+                "tipoTurnoCelular",
+                "dddTelefoneFixo",
+                "numeroTelefoneFixo",
+                "tipoTurnoTelefoneFixo",
+                "dddTelefoneComercial",
+                "numeroTelefoneComercial",
+                "tipoTurnoTelefoneComercial",
+                "autorizaEnvioSMS",
+            ],
+        )
+        self.assertEqual(resp.json()[0]["digitoRG"], "4   ")
+        self.assertEqual(
+            resp.json()[0]["dataNascimentoAluno"],
+            "2011-08-11T00:00:00",
+        )
+        mock_service.assert_called_once_with("40312090889")
+
+    @patch("apps.alunos.views.services.atualizar_dados_responsavel")
+    def test_post_responsavel_traduz_camel_case_e_retorna_booleano(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Verifica a atualização cadastral."""
+        mock_service.return_value = True
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/v1/alunos/1234567/responsaveis/12345678901",
+            {
+                "id": 10,
+                "cpf": "12345678901",
+                "email": "novo@sme.com.br",
+                "nome": "RESPONSAVEL",
+                "tipoResponsavel": 1,
+                "dataNascimento": "1980-05-20T00:00:00",
+                "dataAtualizacao": "2026-07-26T10:00:00",
+                "nomeMae": "MAE",
+                "dddCelular": "11",
+                "numeroCelular": "999998888",
+                "codigoAluno": "1234567",
+            },
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertIs(resp.json(), True)
+        mock_service.assert_called_once_with(
+            "1234567",
+            "12345678901",
+            {
+                "id": 10,
+                "cpf": "12345678901",
+                "email": "novo@sme.com.br",
+                "nome": "RESPONSAVEL",
+                "tipo_responsavel": 1,
+                "data_nascimento": "1980-05-20T00:00:00",
+                "data_atualizacao": "2026-07-26T10:00:00",
+                "nome_mae": "MAE",
+                "ddd_celular": "11",
+                "numero_celular": "999998888",
+                "codigo_aluno": "1234567",
+            },
+        )
+
+    @patch(
+        "apps.alunos.views.services.atualizar_dados_responsavel_busca_ativa"
+    )
+    def test_put_responsavel_traduz_telefones(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Verifica a atualização dos contatos."""
+        mock_service.return_value = False
+        client = _cliente_autenticado()
+
+        resp = client.put(
+            "/api/v1/alunos/1234567/responsaveis/00000000000",
+            {
+                "codigoAluno": "1234567",
+                "cpf": "00000000000",
+                "email": "novo@sme.com.br",
+                "dddCelular": "11",
+                "numeroCelular": "999998888",
+                "dddResidencial": "11",
+                "numeroResidencial": "33334444",
+                "dddComercial": "11",
+                "numeroComercial": "55556666",
+            },
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertIs(resp.json(), False)
+        mock_service.assert_called_once_with(
+            "1234567",
+            "00000000000",
+            {
+                "codigo_aluno": "1234567",
+                "cpf": "00000000000",
+                "email": "novo@sme.com.br",
+                "ddd_celular": "11",
+                "numero_celular": "999998888",
+                "ddd_residencial": "11",
+                "numero_residencial": "33334444",
+                "ddd_comercial": "11",
+                "numero_comercial": "55556666",
+            },
+        )
+
+    @patch("apps.alunos.views.services.get_nomes_alunos")
+    def test_obter_nomes_retorna_contrato_legado(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Verifica a consulta por códigos e ano."""
+        mock_service.return_value = [
+            {
+                "nome_aluno": "ALUNO TESTE",
+                "situacao_matricula": "Remanejado Saída",
+                "codigo_escola": "100001",
+                "data_matricula": "2025-11-04T19:48:56.123",
+                "codigo_aluno": 7074492,
+                "codigo_turma": 3038827,
+                "codigo_situacao_matricula": 14,
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/v1/alunos/obter-nomes-alunos",
+            {
+                "codigosAlunos": ["7074492"],
+                "anoLetivo": 2026,
+            },
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(
+            resp.json(),
+            [
+                {
+                    "nomeAluno": "ALUNO TESTE",
+                    "situacaoMatricula": "Remanejado Saída",
+                    "codigoEscola": "100001",
+                    "dataMatricula": "2025-11-04T19:48:56.123",
+                    "codigoAluno": 7074492,
+                    "codigoTurma": 3038827,
+                    "codigoSituacaoMatricula": 14,
+                }
+            ],
+        )
+        mock_service.assert_called_once_with(
+            codigos_alunos=["7074492"],
+            ano_letivo=2026,
+        )
+
+    @patch("apps.alunos.views.services.get_nomes_alunos")
+    def test_obter_nomes_lista_vazia_retorna_400_exato(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Verifica status e texto da validação legada."""
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/v1/alunos/obter-nomes-alunos",
+            {"codigosAlunos": [], "anoLetivo": 2026},
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(
+            resp.json(), "Os códigos dos alunos são obrigatórios."
+        )
+        mock_service.assert_not_called()

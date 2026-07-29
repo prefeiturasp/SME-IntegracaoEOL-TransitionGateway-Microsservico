@@ -334,6 +334,108 @@ def get_responsavel_resumido(cpf_responsavel: str) -> Any:
     return _client.json_or_none(resp)
 
 
+def get_dados_responsavel(cpf_responsavel: str) -> Any:
+    """Retorna os dados do responsável e dos alunos vinculados.
+
+    Args:
+        cpf_responsavel: CPF do responsável.
+
+    Returns:
+        Lista de vínculos encontrados.
+
+    Raises:
+        httpx.HTTPStatusError: Se o serviço retornar status de erro.
+        httpx.RequestError: Se o serviço estiver inacessível.
+    """
+    resp = _client.get(
+        f"{_BASE}/responsaveis/{cpf_responsavel}/contrato"
+    )
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
+def atualizar_dados_responsavel(
+    codigo_aluno: str,
+    cpf_responsavel: str,
+    payload: dict[str, Any],
+) -> bool:
+    """Atualiza os dados cadastrais do responsável.
+
+    Args:
+        codigo_aluno: Código EOL do aluno.
+        cpf_responsavel: CPF do responsável.
+        payload: Dados cadastrais informados para atualização.
+
+    Returns:
+        Indicador de atualização do vínculo.
+
+    Raises:
+        httpx.HTTPStatusError: Se o serviço retornar status de erro.
+        httpx.RequestError: Se o serviço estiver inacessível.
+    """
+    resp = _client.post(
+        f"{_BASE}/{codigo_aluno}/responsaveis/{cpf_responsavel}",
+        payload=payload,
+    )
+    resp.raise_for_status()
+    return bool(_client.json_or_none(resp))
+
+
+def atualizar_dados_responsavel_busca_ativa(
+    codigo_aluno: str,
+    cpf_responsavel: str,
+    payload: dict[str, Any],
+) -> bool:
+    """Atualiza os contatos do responsável no fluxo de busca ativa.
+
+    Args:
+        codigo_aluno: Código EOL do aluno.
+        cpf_responsavel: CPF do responsável.
+        payload: Dados de contato informados para atualização.
+
+    Returns:
+        Indicador de atualização do vínculo.
+
+    Raises:
+        httpx.HTTPStatusError: Se o serviço retornar status de erro.
+        httpx.RequestError: Se o serviço estiver inacessível.
+    """
+    resp = _client.put(
+        f"{_BASE}/{codigo_aluno}/responsaveis/{cpf_responsavel}",
+        payload=payload,
+    )
+    resp.raise_for_status()
+    return bool(_client.json_or_none(resp))
+
+
+def get_nomes_alunos(
+    codigos_alunos: list[str],
+    ano_letivo: int | None = None,
+) -> Any:
+    """Retorna nomes e matrículas-turma dos alunos.
+
+    Args:
+        codigos_alunos: Códigos EOL dos alunos.
+        ano_letivo: Ano letivo usado como filtro opcional.
+
+    Returns:
+        Lista de nomes e vínculos encontrados.
+
+    Raises:
+        httpx.HTTPStatusError: Se o serviço retornar status de erro.
+        httpx.RequestError: Se o serviço estiver inacessível.
+    """
+    payload: dict[str, Any] = {"codigos_alunos": codigos_alunos}
+    if ano_letivo is not None:
+        payload["ano_letivo"] = ano_letivo
+    resp = _client.post(
+        f"{_BASE}/obter-nomes-alunos/contrato",
+        payload=payload,
+    )
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
 def get_responsaveis(
     codigo_dre: str | None = None,
     codigo_ue: str | None = None,
