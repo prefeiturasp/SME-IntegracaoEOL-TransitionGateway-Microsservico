@@ -1,12 +1,13 @@
 """Views do domínio de professores."""
 
-from typing import NamedTuple
+from typing import Any, NamedTuple, cast
 
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
+from apps.core.datetime import validar_data_str, validar_data_tick
 from apps.core.responses import Response, detail_response
 from apps.professores import services
 from apps.professores.serializers import (
@@ -23,13 +24,16 @@ from apps.professores.serializers import (
     FuncionarioUeLegadoSerializer,
     ListaStringSerializer,
     NomeServidorSerializer,
+    ProfessorAtribuicaoTurmaDisciplinaSerializer,
     ProfessorAutoCompleteSerializer,
     ProfessorBuscarPorRfSerializer,
+    ProfessorStatusAtribuicaoSerializer,
     ProfessorTurmaAtribuidaSimplificadaSerializer,
     ProfessorTurmaSerializer,
     SupervisorLegadoSerializer,
     TurmaAtribuidaProfessorSerializer,
     TurmasIdsSerializer,
+    VerificarAtribuicaoDisciplinaQuerySerializer,
 )
 
 _TAG_ACESSOS = ["Acessos"]
@@ -64,6 +68,9 @@ _MSG_LISTA_SUPERVISORES_OBRIGATORIA = (
     "A lista de códigos de supervisores é obrigatória."
 )
 _MSG_SUPERVISORES_NAO_ENCONTRADOS = "Não foram encontrados supervisores."
+_MSG_CODIGO_TURMA_OBRIGATORIO = "É necessário informar o codigoTurma."
+_MSG_DATA_VALIDA = "Deve ser informada uma data valida."
+_MSG_DISCIPLINA_ID_OBRIGATORIO = "É necessário informar o disciplinaId."
 
 # Parâmetros temporários usados enquanto a identidade não informa
 # a abrangência.
@@ -356,6 +363,294 @@ class ValidadeProfessorView(APIView):
         return Response(data)
 
 
+class ProfessorVerificarAtribuicaoDataView(APIView):
+    """Verifica a atribuição do professor em uma data."""
+
+    @extend_schema(
+        tags=_TAG_PROFESSOR,
+        description=(
+            "Verifica se o professor possui atribuição de turma em uma "
+            "data específica."
+        ),
+        responses={200: OpenApiTypes.BOOL, 400: OpenApiTypes.STR},
+        parameters=[
+            OpenApiParameter(
+                "dataConsulta",
+                OpenApiTypes.DATE,
+                OpenApiParameter.QUERY,
+                required=True,
+                description=("Data a ser verificada no formato YYYY-MM-DD."),
+            )
+        ],
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_rf: str,
+        codigo_turma: str,
+    ) -> Response:
+        """Verifica a atribuição do professor em uma data.
+
+        Args:
+            codigo_rf: RF do professor.
+            codigo_turma: Código da turma.
+
+        Returns:
+            Indicador booleano de atribuição do professor na turma.
+        """
+        if not codigo_rf.strip():
+            return Response(_MSG_CODIGO_RF_OBRIGATORIO, status=400)
+        if not codigo_turma.strip():
+            return Response(_MSG_CODIGO_TURMA_OBRIGATORIO, status=400)
+
+        data: str | None = _request.query_params.get("dataConsulta")
+        if not data or validar_data_str(data) is False:
+            return Response(_MSG_DATA_VALIDA, status=400)
+
+        resposta = services.verificar_atribuicao_professor_turma(
+            codigo_rf, codigo_turma, data
+        )
+        return Response(resposta)
+
+
+class ProfessorStatusAtribuicaoView(APIView):
+    """Obtém o status da atribuição do professor em uma turma."""
+
+    @extend_schema(
+        tags=_TAG_PROFESSOR,
+        description=(
+            "Obtém o status da atribuição do professor em uma turma "
+            "específica."
+        ),
+        responses={200: ProfessorStatusAtribuicaoSerializer},
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_rf: str,
+        codigo_turma: str,
+    ) -> Response:
+        """Obtém o status da atribuição do professor em uma turma.
+
+        Args:
+            codigo_rf: RF do professor.
+            codigo_turma: Código da turma.
+
+        Returns:
+            Status da atribuição do professor na turma.
+        """
+        if not codigo_rf.strip():
+            return Response(_MSG_CODIGO_RF_OBRIGATORIO, status=400)
+        if not codigo_turma.strip():
+            return Response(_MSG_CODIGO_TURMA_OBRIGATORIO, status=400)
+
+        resposta = services.get_status_atribuicao_professor_turma(
+            codigo_rf, codigo_turma
+        )
+        return Response(resposta)
+
+
+class ProfessorVerificarAtribuicaoDataTickView(APIView):
+    """Verifica a atribuição do professor em uma data por tick."""
+
+    @extend_schema(
+        tags=_TAG_PROFESSOR,
+        description=(
+            "Verifica se o professor possui atribuição de turma e disciplina "
+            "em uma data específica, informada como tick."
+        ),
+        responses={200: OpenApiTypes.BOOL, 400: OpenApiTypes.STR},
+        parameters=[
+            OpenApiParameter(
+                "dataConsultaTick",
+                OpenApiTypes.INT,
+                OpenApiParameter.QUERY,
+                required=True,
+                description=(
+                    "Data a ser verificada no formato de tick (milissegundos "
+                    "desde 1970-01-01)."
+                ),
+            )
+        ],
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_rf: str,
+        codigo_turma: str,
+        disciplina_id: str,
+    ) -> Response:
+        """Verifica a atribuição do professor em uma data por tick.
+
+        Args:
+            codigo_rf: RF do professor.
+            codigo_turma: Código da turma.
+            disciplina_id: ID da disciplina.
+            dataConsultaTick: Data a ser verificada no formato de tick.
+
+        Returns:
+            Indicador booleano de atribuição do professor na turma
+            e disciplina.
+        """
+        if not codigo_rf.strip():
+            return Response(_MSG_CODIGO_RF_OBRIGATORIO, status=400)
+        if not codigo_turma.strip():
+            return Response(_MSG_CODIGO_TURMA_OBRIGATORIO, status=400)
+        if not disciplina_id.strip():
+            return Response(_MSG_DISCIPLINA_ID_OBRIGATORIO, status=400)
+
+        data_consulta_tick: str | None = _request.query_params.get(
+            "dataConsultaTick"
+        )
+        if (
+            not data_consulta_tick
+            or validar_data_tick(data_consulta_tick) is False
+        ):
+            return Response(_MSG_DATA_VALIDA, status=400)
+
+        resposta = services.verificar_atribuicao_professor_turma_disciplina(
+            codigo_rf, codigo_turma, disciplina_id, data_consulta_tick
+        )
+        return Response(resposta)
+
+
+class ProfessorAtribuicaoTurmaDisciplinaView(APIView):
+    """Obtém a atribuições de uma turma e disciplina."""
+
+    @extend_schema(
+        tags=_TAG_PROFESSOR,
+        description=(
+            "Obtém a atribuições de uma turma e disciplina, filtrando por "
+            "datas informadas como ticks."
+        ),
+        responses={
+            200: ProfessorAtribuicaoTurmaDisciplinaSerializer(many=True),
+            400: OpenApiTypes.STR,
+        },
+        parameters=[
+            OpenApiParameter(
+                "dataTicks",
+                OpenApiTypes.INT,
+                OpenApiParameter.QUERY,
+                required=True,
+                description=(
+                    "Datas a serem verificadas no formato de tick "
+                    "(milissegundos"
+                    "desde 1970-01-01)."
+                ),
+            )
+        ],
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_turma: str,
+        disciplina_id: str,
+    ) -> Response:
+        """Obtém a atribuições de uma turma e disciplina.
+
+        Args:
+            codigo_turma: Código da turma.
+            disciplina_id: ID da disciplina.
+            dataTicks: Data a ser verificada no formato de tick.
+
+        Returns:
+            Atribuições da turma e disciplina.
+        """
+        if not codigo_turma.strip():
+            return Response(_MSG_CODIGO_TURMA_OBRIGATORIO, status=400)
+        if not disciplina_id.strip():
+            return Response(_MSG_DISCIPLINA_ID_OBRIGATORIO, status=400)
+
+        data: str | None = _request.query_params.get("dataTicks")
+        if not data or validar_data_tick(data) is False:
+            return Response(_MSG_DATA_VALIDA, status=400)
+
+        resposta = services.get_atribuicoes_turma_disciplina(
+            codigo_turma, disciplina_id, data
+        )
+        return Response(resposta)
+
+
+class ProfessorVerificarAtribuicaoTurmaDisciplinaDataView(APIView):
+    """Verifica a atribuição do professor em uma turma e disciplina."""
+
+    @extend_schema(
+        tags=_TAG_PROFESSOR,
+        description=(
+            "Verifica se o professor possui atribuição de turma e disciplina "
+            "em uma data específica."
+        ),
+        responses={200: OpenApiTypes.BOOL, 400: OpenApiTypes.STR},
+        parameters=[
+            OpenApiParameter(
+                "dataConsulta",
+                OpenApiTypes.DATE,
+                OpenApiParameter.QUERY,
+                required=True,
+                description=("Data a ser verificada no formato YYYY-MM-DD."),
+            ),
+            OpenApiParameter(
+                "territorioSaber",
+                OpenApiTypes.BOOL,
+                OpenApiParameter.QUERY,
+                required=False,
+                description=(
+                    "Indica se a verificação é para o território saber."
+                ),
+                default=False,
+            ),
+        ],
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_rf: str,
+        codigo_turma: str,
+        disciplina_id: str,
+    ) -> Response:
+        """Verifica a atribuição do professor em uma turma e disciplina.
+
+        Args:
+            codigo_rf: RF do professor.
+            codigo_turma: Código da turma.
+            disciplina_id: ID da disciplina.
+            dataConsulta: Data a ser verificada.
+            territorioSaber: Indica se a verificação é para o território saber.
+
+        Returns:
+            Indicador booleano de atribuição do professor na turma
+            e disciplina.
+        """
+        if not codigo_rf.strip():
+            return Response(_MSG_CODIGO_RF_OBRIGATORIO, status=400)
+        if not codigo_turma.strip():
+            return Response(_MSG_CODIGO_TURMA_OBRIGATORIO, status=400)
+        if not disciplina_id.strip():
+            return Response(_MSG_DISCIPLINA_ID_OBRIGATORIO, status=400)
+
+        data_consulta: str | None = _request.query_params.get("dataConsulta")
+        if not data_consulta or validar_data_str(data_consulta) is False:
+            return Response(_MSG_DATA_VALIDA, status=400)
+
+        query_serializer = VerificarAtribuicaoDisciplinaQuerySerializer(
+            data=_request.query_params
+        )
+        query_serializer.is_valid(raise_exception=True)
+        territorio_saber: bool = query_serializer.validated_data[
+            "territorioSaber"
+        ]
+
+        resposta = services.verificar_atribuicao_disciplina_territorio_saber(
+            codigo_rf,
+            codigo_turma,
+            disciplina_id,
+            data_consulta,
+            territorio_saber,
+        )
+        return Response(resposta)
+
+
 class FuncionarioAtivoView(APIView):
     """Retorna indicação de atividade do funcionário."""
 
@@ -447,7 +742,7 @@ class FuncionarioTurmaDisciplinasView(APIView):
             Disciplinas da turma, ou ausência de conteúdo.
         """
         if not codigo_turma.strip():
-            return detail_response("É necessário informar o codigoTurma.")
+            return detail_response(_MSG_CODIGO_TURMA_OBRIGATORIO)
         data = services.get_disciplinas_turma(codigo_turma)
         if data == []:
             return Response(status=204)
@@ -561,7 +856,7 @@ def _validar_disciplinas_funcionario(
     if not id_perfil.strip():
         return detail_response("É necessário informar o idPerfil.")
     if not codigo_turma.strip():
-        return detail_response("É necessário informar o codigoTurma.")
+        return detail_response(_MSG_CODIGO_TURMA_OBRIGATORIO)
     return None
 
 
@@ -1354,7 +1649,8 @@ class FuncionariosBuscarTurmasElegiveisView(APIView):
         Returns:
             Turmas elegíveis, ou ausência de conteúdo.
         """
-        data = services.get_turmas_elegiveis(request.data)
+        payload = cast(dict[str, Any], request.data)
+        data = services.get_turmas_elegiveis(payload)
         if not data:
             return Response(status=204)
         return Response(data)
@@ -1378,7 +1674,8 @@ class FuncionariosView(APIView):
         Returns:
             Funcionários encontrados, ou ausência de conteúdo.
         """
-        data = services.get_funcionarios(request.data)
+        payload = cast(dict[str, Any], request.data)
+        data = services.get_funcionarios(payload)
         if data is None:
             return Response(status=204)
         if data == []:

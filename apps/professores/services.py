@@ -13,6 +13,8 @@ from apps.professores.serializers import (
     DisciplinaTurmaAgrupamentoSerializer,
     DisciplinaTurmaAtribuidaSerializer,
     FuncionarioLegadoSerializer,
+    ProfessorAtribuicaoTurmaDisciplinaSerializer,
+    ProfessorStatusAtribuicaoSerializer,
     TurmaElegivelLegadoSerializer,
     TurmasAtribuidasLegadoSerializer,
 )
@@ -1223,6 +1225,133 @@ def get_turmas_atribuidas_professor(
         saida.append(_montar_turma_atribuida_professor(turma))
 
     return saida
+
+
+def verificar_atribuicao_professor_turma(
+    codigo_rf: str, codigo_turma: str, data: str
+) -> bool:
+    """Verifica se o professor tem atribuição na turma.
+
+    Args:
+        codigo_rf: RF usado na consulta.
+        codigo_turma: Código da turma usada na consulta.
+        data: Data usada na consulta.
+
+    Returns:
+        ``True`` quando o professor tem atribuição na turma.
+    """
+    resp = _client.get(
+        f"{_BASE}/{codigo_rf}/turmas/{codigo_turma}/verificar-atribuicao/?data_consulta={data}"
+    )
+    return bool(_client.json_or_none(resp))
+
+
+def get_status_atribuicao_professor_turma(
+    codigo_rf: str, codigo_turma: str
+) -> dict[str, Any] | None:
+    """Retorna o status da atribuição do professor na turma.
+
+    Args:
+        codigo_rf: RF usado na consulta.
+        codigo_turma: Código da turma usada na consulta.
+
+    Returns:
+        Status da atribuição ou ausência de conteúdo.
+    """
+    resp = _client.get(
+        f"{_BASE}/{codigo_rf}/turmas/{codigo_turma}/atribuicao/status/"
+    )
+    payload = _client.json_or_none(resp)
+    if payload is None:
+        return None
+
+    serializer = ProfessorStatusAtribuicaoSerializer(payload)
+    return dict(serializer.data)
+
+
+def verificar_atribuicao_professor_turma_disciplina(
+    codigo_rf: str,
+    codigo_turma: str,
+    disciplina_id: str,
+    data: int | str,
+) -> bool:
+    """Verifica se o professor tem atribuição na turma e disciplina.
+
+    Args:
+        codigo_rf: RF usado na consulta.
+        codigo_turma: Código da turma usada na consulta.
+        disciplina_id: ID da disciplina usada na consulta.
+        data : Data tick usada na consulta.
+
+    Returns:
+        ``True`` quando o professor tem atribuição na turma e disciplina.
+    """
+    resp = _client.get(
+        f"{_BASE}/{codigo_rf}/turmas/{codigo_turma}/disciplinas/{disciplina_id}/atribuicao/verificar/datatick/?data_consulta_tick={data}"
+    )
+
+    return bool(_client.json_or_none(resp))
+
+
+def verificar_atribuicao_disciplina_territorio_saber(
+    codigo_rf: str,
+    codigo_turma: str,
+    disciplina_id: str,
+    data: str,
+    territorio_saber: bool = False,
+) -> bool:
+    """Verifica atribuição na disciplina e território do saber.
+
+    Args:
+        codigo_rf: RF usado na consulta.
+        codigo_turma: Código da turma usada na consulta.
+        disciplina_id: ID da disciplina usada na consulta.
+        data: Data usada na consulta.
+        territorio_saber: Indica se a verificação é para território do saber.
+
+    Returns:
+        ``True`` quando o professor tem atribuição na disciplina e
+        território do saber.
+    """
+    if territorio_saber:
+        return pedagogico_services.verificar_atriuicao_territorio_saber(
+            codigo_rf, codigo_turma, disciplina_id, data
+        )
+
+    resp = _client.get(
+        f"{_BASE}/{codigo_rf}/turmas/{codigo_turma}/disciplinas/{disciplina_id}/atribuicao/verificar/data/?data_consulta={data}"
+    )
+
+    return bool(_client.json_or_none(resp))
+
+
+def get_atribuicoes_turma_disciplina(
+    codigo_turma: str, disciplina_id: str, data: str
+) -> list[dict[str, Any]]:
+    """Retorna as atribuições de uma turma e disciplina.
+
+    Args:
+        codigo_turma: Código da turma usada na consulta.
+        disciplina_id: ID da disciplina usada na consulta.
+        data: Data tick usada na consulta.
+
+    Returns:
+        Lista de atribuições ou ausência de conteúdo.
+    """
+    resp = _client.get(
+        f"{_BASE}/{codigo_turma}/disciplinas/{disciplina_id}/"
+        "atribuicao/data/",
+        params={"data_ticks": data},
+    )
+    payload = _client.json_or_none(resp)
+    if not isinstance(payload, list):
+        return []
+
+    serializer = ProfessorAtribuicaoTurmaDisciplinaSerializer(
+        payload,
+        many=True,
+    )
+    return [dict(item) for item in serializer.data]
 
 
 def _montar_turma_atribuida_professor_escola(

@@ -27,6 +27,7 @@ from apps.professores.views import (
     FuncionarioTurmaDisciplinasView,
     NomeServidorView,
     NomeUsuarioEolView,
+    ProfessorAtribuicaoTurmaDisciplinaView,
     ProfessorAutoCompleteView,
     ProfessorBuscarPorRfDreUeView,
     ProfessorBuscarPorRfView,
@@ -35,7 +36,11 @@ from apps.professores.views import (
     ProfessorDisciplinaTurmasView,
     ProfessorEhEmeiView,
     ProfessoresBuscarPorListaRfAnoView,
+    ProfessorStatusAtribuicaoView,
     ProfessorTurmasView,
+    ProfessorVerificarAtribuicaoDataTickView,
+    ProfessorVerificarAtribuicaoDataView,
+    ProfessorVerificarAtribuicaoTurmaDisciplinaDataView,
     ProfessorView,
     ValidadeProfessorView,
 )
@@ -106,6 +111,26 @@ urlpatterns = [
     path(
         "professores/<str:rf_professor>/",
         ProfessorView.as_view(),
+    ),
+    path(
+        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/atribuicao/verificar/data/",
+        ProfessorVerificarAtribuicaoDataView.as_view(),
+    ),
+    path(
+        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/atribuicao/status/",
+        ProfessorStatusAtribuicaoView.as_view(),
+    ),
+    path(
+        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/disciplinas/<str:disciplina_id>/atribuicao/verificar/datatick/",
+        ProfessorVerificarAtribuicaoDataTickView.as_view(),
+    ),
+    path(
+        "professores/<str:codigo_turma>/disciplinas/<str:disciplina_id>/atribuicao/data/",
+        ProfessorAtribuicaoTurmaDisciplinaView.as_view(),
+    ),
+    path(
+        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/disciplinas/<str:disciplina_id>/atribuicao/verificar/data",
+        ProfessorVerificarAtribuicaoTurmaDisciplinaDataView.as_view(),
     ),
     path(
         "acessos/funcionario-ativo/<str:registro_funcional>/",
