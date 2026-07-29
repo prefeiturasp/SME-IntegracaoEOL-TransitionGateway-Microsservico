@@ -539,3 +539,71 @@ class ProfessorTurmaAtribuidaSimplificadaSerializer(serializers.Serializer):
     dataFimAtribuicao = serializers.DateField(allow_null=True)
     ano = serializers.CharField(allow_null=True)
     etapaEnsino = serializers.IntegerField(allow_null=True)
+
+
+class VerificarAtribuicaoDisciplinaQuerySerializer(serializers.Serializer):
+    """Valida os parâmetros da verificação de atribuição por disciplina."""
+
+    territorioSaber = serializers.BooleanField(
+        required=False,
+        default=False,
+    )
+
+
+class ProfessorStatusAtribuicaoSerializer(serializers.Serializer):
+    """Serializa o status de atribuição do professor em uma turma."""
+
+    anoAtribuicao = serializers.IntegerField(
+        source="ano_atribuicao", allow_null=True
+    )
+    dataCancelamento = serializers.DateField(
+        source="data_cancelamento", allow_null=True
+    )
+    dataDisponibilizacao = serializers.DateField(
+        source="data_disponibilizacao", allow_null=True
+    )
+    dataFimTurma = serializers.DateField(
+        source="data_fim_turma", allow_null=True
+    )
+    codigoMotivoDisponibilizacao = serializers.IntegerField(
+        source="codigo_motivo_disponibilizacao", allow_null=True
+    )
+
+
+class ProfessorAtribuicaoTurmaDisciplinaSerializer(serializers.Serializer):
+    """Serializa a atribuição do professor em uma turma e disciplina."""
+
+    codigoTurma = serializers.IntegerField(
+        source="codigo_turma", allow_null=True
+    )
+    anoLetivo = serializers.IntegerField(source="ano_letivo", allow_null=True)
+    nomeTurma = serializers.CharField(source="nome_turma", allow_null=True)
+    dataInicioAtribuicao = serializers.DateField(
+        source="data_inicio_atribuicao", allow_null=True
+    )
+    dataFimAtribuicao = serializers.DateField(
+        source="data_fim_atribuicao", allow_null=True
+    )
+    dataFimTurma = serializers.DateField(
+        source="data_fim_turma", allow_null=True
+    )
+    anoAtribuicao = serializers.IntegerField(
+        source="ano_atribuicao", allow_null=True
+    )
+    codigoRf = serializers.CharField(source="codigo_rf", allow_null=True)
+    disciplinaId = serializers.IntegerField(
+        source="disciplina_id", allow_null=True
+    )
+    disciplinaNome = serializers.CharField(
+        source="disciplina_nome", allow_null=True
+    )
+    disciplinasAgrupadasIds = serializers.ListField(
+        source="disciplinas_agrupadas_ids",
+        child=serializers.IntegerField(),
+        allow_null=True,
+        allow_empty=True,
+        default=list,
+    )
+    nomeProfessor = serializers.CharField(
+        source="nome_professor", allow_null=True
+    )

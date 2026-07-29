@@ -2061,3 +2061,214 @@ class ProfessorBuscarTurmasAtribuidasViewTest(SimpleTestCase):
             {"detail": "É necessário informar o codigoRF."},
         )
         mock_service.assert_not_called()
+
+
+class ProfessorVerificarAtribuicaoDisciplinaViewTest(SimpleTestCase):
+    """Valida os parâmetros da verificação de atribuição por disciplina."""
+
+    _URL = (
+        "/api/professores/000001/turmas/123/disciplinas/456/"
+        "atribuicao/verificar/data"
+    )
+
+    @patch(
+        "apps.professores.views.services."
+        "verificar_atribuicao_disciplina_territorio_saber"
+    )
+    def test_repassa_false_booleano_e_retorno_true(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        mock_service.return_value = True
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            self._URL,
+            {
+                "dataConsulta": "2026-07-28",
+                "territorioSaber": "false",
+            },
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertIs(resp.json(), True)
+        mock_service.assert_called_once_with(
+            "000001",
+            "123",
+            "456",
+            "2026-07-28",
+            False,
+        )
+
+    @patch(
+        "apps.professores.views.services."
+        "verificar_atribuicao_disciplina_territorio_saber"
+    )
+    def test_400_para_data_invalida(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get(self._URL, {"dataConsulta": "28/07/2026"})
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_service.assert_not_called()
+
+
+class ProfessorVerificarAtribuicaoDataViewTest(SimpleTestCase):
+    """Valida a verificação da atribuição por data."""
+
+    _URL = (
+        "/api/professores/000001/turmas/3032577/"
+        "atribuicao/verificar/data/"
+    )
+
+    @patch(
+        "apps.professores.views.services."
+        "verificar_atribuicao_professor_turma"
+    )
+    def test_200_repassa_parametros_e_retorno(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        mock_service.return_value = True
+
+        resp = _cliente_autenticado().get(
+            self._URL,
+            {"dataConsulta": "2026-07-28"},
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertIs(resp.json(), True)
+        mock_service.assert_called_once_with(
+            "000001",
+            "3032577",
+            "2026-07-28",
+        )
+
+    @patch(
+        "apps.professores.views.services."
+        "verificar_atribuicao_professor_turma"
+    )
+    def test_400_quando_data_ausente(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        resp = _cliente_autenticado().get(self._URL)
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_service.assert_not_called()
+
+
+class ProfessorStatusAtribuicaoViewTest(SimpleTestCase):
+    """Valida a consulta do status da atribuição."""
+
+    @patch(
+        "apps.professores.views.services."
+        "get_status_atribuicao_professor_turma"
+    )
+    def test_200_repassa_parametros_e_retorno(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        mock_service.return_value = {"anoAtribuicao": 2026}
+
+        resp = _cliente_autenticado().get(
+            "/api/professores/000001/turmas/3032577/atribuicao/status/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), {"anoAtribuicao": 2026})
+        mock_service.assert_called_once_with("000001", "3032577")
+
+
+class ProfessorVerificarAtribuicaoDataTickViewTest(SimpleTestCase):
+    """Valida a verificação da atribuição por data tick."""
+
+    _URL = (
+        "/api/professores/000001/turmas/3032577/disciplinas/89/"
+        "atribuicao/verificar/datatick/"
+    )
+
+    @patch(
+        "apps.professores.views.services."
+        "verificar_atribuicao_professor_turma_disciplina"
+    )
+    def test_200_repassa_tick_e_retorno(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        mock_service.return_value = True
+
+        resp = _cliente_autenticado().get(
+            self._URL,
+            {"dataConsultaTick": "639207072000000000"},
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertIs(resp.json(), True)
+        mock_service.assert_called_once_with(
+            "000001",
+            "3032577",
+            "89",
+            "639207072000000000",
+        )
+
+    @patch(
+        "apps.professores.views.services."
+        "verificar_atribuicao_professor_turma_disciplina"
+    )
+    def test_400_quando_tick_invalido(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        resp = _cliente_autenticado().get(
+            self._URL,
+            {"dataConsultaTick": "invalido"},
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_service.assert_not_called()
+
+
+class ProfessorAtribuicaoTurmaDisciplinaViewTest(SimpleTestCase):
+    """Valida a consulta das atribuições por disciplina."""
+
+    _URL = (
+        "/api/professores/3032577/disciplinas/89/atribuicao/data/"
+    )
+
+    @patch(
+        "apps.professores.views.services.get_atribuicoes_turma_disciplina"
+    )
+    def test_200_repassa_tick_e_retorna_lista(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        mock_service.return_value = [{"codigoTurma": 3032577}]
+
+        resp = _cliente_autenticado().get(
+            self._URL,
+            {"dataTicks": "639207072000000000"},
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [{"codigoTurma": 3032577}])
+        mock_service.assert_called_once_with(
+            "3032577",
+            "89",
+            "639207072000000000",
+        )
+
+    @patch(
+        "apps.professores.views.services.get_atribuicoes_turma_disciplina"
+    )
+    def test_400_quando_tick_ausente(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        resp = _cliente_autenticado().get(self._URL)
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_service.assert_not_called()
