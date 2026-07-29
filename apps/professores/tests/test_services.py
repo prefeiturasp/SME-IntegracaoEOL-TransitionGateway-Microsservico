@@ -57,7 +57,7 @@ class GetStatusAtribuicaoProfessorTurmaTest(SimpleTestCase):
         )
 
         mock_client.get.assert_called_once_with(
-            "/api/v1/professores/000001/turmas/3032577/" "atribuicao/status/"
+            "/api/v1/professores/000001/turmas/3032577/atribuicao/status/"
         )
         self.assertEqual(result["anoAtribuicao"], 2026)
 
@@ -177,7 +177,7 @@ class GetAtribuicoesTurmaDisciplinaTest(SimpleTestCase):
         )
 
         mock_client.get.assert_called_once_with(
-            "/api/v1/professores/3032577/disciplinas/89/" "atribuicao/data/",
+            "/api/v1/professores/3032577/disciplinas/89/atribuicao/data/",
             params={"data_ticks": "639207072000000000"},
         )
         self.assertEqual(len(result), 1)
