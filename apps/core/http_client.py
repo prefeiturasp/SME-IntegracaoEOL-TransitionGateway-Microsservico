@@ -105,6 +105,32 @@ class ServiceClient:
             params=params,
         )
 
+    def put(
+        self,
+        path: str,
+        payload: dict | list | None = None,
+        params: dict | None = None,
+    ) -> httpx.Response:
+        """Executa uma requisição PUT.
+
+        Args:
+            path: Caminho relativo da requisição.
+            payload: Corpo JSON enviado na requisição.
+            params: Parâmetros de query enviados na requisição.
+
+        Returns:
+            Resposta HTTP recebida do serviço externo.
+
+        Raises:
+            httpx.HTTPError: Em caso de falha de transporte ou timeout.
+        """
+        return self._http_client().put(
+            f"{self.base_url}{path}",
+            headers=self._headers(),
+            json=payload,
+            params=params,
+        )
+
     def json_or_none(self, resp: httpx.Response) -> Any:
         """Retorna JSON ou None para respostas sem conteúdo.
 

@@ -3,6 +3,7 @@
 from typing import Any, cast
 
 from django.utils import timezone
+from drf_spectacular.utils import OpenApiTypes, extend_schema_field
 from rest_framework import serializers
 
 from apps.core.datetime import datetime_legado, parse_date
@@ -32,6 +33,7 @@ class NumeroAlunoChamadaField(serializers.CharField):
         return "0" if value in (None, "") else str(value)
 
 
+@extend_schema_field(OpenApiTypes.DATETIME)
 class DatetimeLegadoField(serializers.Field):
     """Serializa data/hora no formato ISO do contrato legado."""
 
@@ -41,6 +43,13 @@ class DatetimeLegadoField(serializers.Field):
 
     def to_representation(self, value: Any) -> str | None:
         return datetime_legado(value)
+
+
+class DatetimeLegadoNaoNuloField(DatetimeLegadoField):
+    """Serializa data/hora com o valor mínimo adotado pelo legado."""
+
+    def to_representation(self, value: Any) -> str:
+        return datetime_legado(value) or _DATA_PADRAO_LEGADO
 
 
 class StringOrNoneField(serializers.Field):
@@ -621,6 +630,217 @@ class ResponsavelResumidoSerializer(serializers.Serializer):
     codigoAluno = serializers.CharField(
         source="codigo_aluno", allow_null=True
     )  # NOSONAR
+
+
+class DadosResponsavelSerializer(serializers.Serializer):
+    """Serializa dados do responsável e dos alunos vinculados."""
+
+    id = serializers.IntegerField()
+    cpf = serializers.CharField(allow_null=True)
+    email = serializers.CharField(allow_null=True)
+    nome = serializers.CharField(allow_null=True)
+    tipoResponsavel = serializers.IntegerField(  # NOSONAR
+        source="tipo_responsavel"
+    )
+    nomeSocialAluno = serializers.CharField(  # NOSONAR
+        source="nome_social_aluno", allow_null=True
+    )
+    dataNascimentoAluno = DatetimeLegadoNaoNuloField(  # NOSONAR
+        source="data_nascimento_aluno"
+    )
+    dataNascimento = DatetimeLegadoField(  # NOSONAR
+        source="data_nascimento"
+    )
+    dataAtualizacao = DatetimeLegadoNaoNuloField(  # NOSONAR
+        source="data_atualizacao"
+    )
+    nomeMae = serializers.CharField(  # NOSONAR
+        source="nome_mae", allow_null=True
+    )
+    tipoSigilo = serializers.IntegerField(source="tipo_sigilo")  # NOSONAR
+    dddCelular = serializers.CharField(  # NOSONAR
+        source="ddd_celular", allow_null=True
+    )
+    numeroCelular = serializers.CharField(  # NOSONAR
+        source="numero_celular", allow_null=True
+    )
+    nomeAluno = serializers.CharField(source="nome_aluno")  # NOSONAR
+    codigoAluno = serializers.CharField(source="codigo_aluno")  # NOSONAR
+    numeroRG = serializers.CharField(  # NOSONAR
+        source="numero_rg", allow_null=True
+    )
+    digitoRG = serializers.CharField(  # NOSONAR
+        source="digito_rg", allow_null=True
+    )
+    ufRG = serializers.CharField(source="uf_rg", allow_null=True)  # NOSONAR
+    cpfConfere = serializers.CharField(  # NOSONAR
+        source="cpf_confere", allow_null=True
+    )
+    tipoTurnoCelular = serializers.CharField(  # NOSONAR
+        source="tipo_turno_celular", allow_null=True
+    )
+    dddTelefoneFixo = serializers.CharField(  # NOSONAR
+        source="ddd_telefone_fixo", allow_blank=True
+    )
+    numeroTelefoneFixo = serializers.CharField(  # NOSONAR
+        source="numero_telefone_fixo", allow_blank=True
+    )
+    tipoTurnoTelefoneFixo = serializers.CharField(  # NOSONAR
+        source="tipo_turno_telefone_fixo", allow_null=True
+    )
+    dddTelefoneComercial = serializers.CharField(  # NOSONAR
+        source="ddd_telefone_comercial", allow_blank=True
+    )
+    numeroTelefoneComercial = serializers.CharField(  # NOSONAR
+        source="numero_telefone_comercial", allow_blank=True
+    )
+    tipoTurnoTelefoneComercial = serializers.CharField(  # NOSONAR
+        source="tipo_turno_telefone_comercial", allow_null=True
+    )
+    autorizaEnvioSMS = serializers.CharField(  # NOSONAR
+        source="autoriza_envio_sms", allow_null=True
+    )
+
+
+class AtualizarResponsavelRequestSerializer(serializers.Serializer):
+    """Serializa dados cadastrais para atualização de responsável."""
+
+    id = serializers.IntegerField(required=False, allow_null=True)
+    cpf = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True
+    )
+    email = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True
+    )
+    nome = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True
+    )
+    tipoResponsavel = serializers.IntegerField(  # NOSONAR
+        source="tipo_responsavel",
+        required=False,
+        allow_null=True,
+    )
+    dataNascimento = serializers.CharField(  # NOSONAR
+        source="data_nascimento",
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+    )
+    dataAtualizacao = serializers.CharField(  # NOSONAR
+        source="data_atualizacao",
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+    )
+    nomeMae = serializers.CharField(  # NOSONAR
+        source="nome_mae",
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+    )
+    dddCelular = serializers.CharField(  # NOSONAR
+        source="ddd_celular",
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+    )
+    numeroCelular = serializers.CharField(  # NOSONAR
+        source="numero_celular",
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+    )
+    codigoAluno = serializers.CharField(  # NOSONAR
+        source="codigo_aluno",
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+    )
+
+
+class AtualizarResponsavelBuscaAtivaRequestSerializer(serializers.Serializer):
+    """Serializa dados de contato para atualização de responsável."""
+
+    codigoAluno = serializers.CharField(  # NOSONAR
+        source="codigo_aluno",
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+    )
+    cpf = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True
+    )
+    email = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True
+    )
+    dddCelular = serializers.CharField(  # NOSONAR
+        source="ddd_celular",
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+    )
+    numeroCelular = serializers.CharField(  # NOSONAR
+        source="numero_celular",
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+    )
+    dddResidencial = serializers.CharField(  # NOSONAR
+        source="ddd_residencial",
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+    )
+    numeroResidencial = serializers.CharField(  # NOSONAR
+        source="numero_residencial",
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+    )
+    dddComercial = serializers.CharField(  # NOSONAR
+        source="ddd_comercial",
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+    )
+    numeroComercial = serializers.CharField(  # NOSONAR
+        source="numero_comercial",
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+    )
+
+
+class ObterNomesAlunosRequestSerializer(serializers.Serializer):
+    """Serializa os filtros da consulta de nomes de alunos."""
+
+    codigosAlunos = serializers.ListField(  # NOSONAR
+        source="codigos_alunos",
+        child=serializers.CharField(),
+        required=False,
+        allow_null=True,
+    )
+    anoLetivo = serializers.IntegerField(  # NOSONAR
+        source="ano_letivo", required=False, allow_null=True
+    )
+
+
+class NomeAlunoSerializer(serializers.Serializer):
+    """Serializa nomes e dados de matrícula-turma dos alunos."""
+
+    nomeAluno = serializers.CharField(source="nome_aluno")  # NOSONAR
+    situacaoMatricula = serializers.CharField(  # NOSONAR
+        source="situacao_matricula"
+    )
+    codigoEscola = serializers.CharField(source="codigo_escola")  # NOSONAR
+    dataMatricula = DatetimeLegadoNaoNuloField(  # NOSONAR
+        source="data_matricula"
+    )
+    codigoAluno = serializers.IntegerField(source="codigo_aluno")  # NOSONAR
+    codigoTurma = serializers.IntegerField(source="codigo_turma")  # NOSONAR
+    codigoSituacaoMatricula = serializers.IntegerField(  # NOSONAR
+        source="codigo_situacao_matricula"
+    )
 
 
 class ResponsavelTurmaSerializer(serializers.Serializer):
