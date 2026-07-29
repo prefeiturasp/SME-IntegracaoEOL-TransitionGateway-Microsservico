@@ -113,23 +113,23 @@ urlpatterns = [
         ProfessorView.as_view(),
     ),
     path(
-        "professores/<str:codigoRF>/turmas/<str:codigoTurma>/atribuicao/verificar/data/",
+        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/atribuicao/verificar/data/",
         ProfessorVerificarAtribuicaoDataView.as_view(),
     ),
     path(
-        "professores/<str:codigoRF>/turmas/<str:codigoTurma>/atribuicao/status/",
+        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/atribuicao/status/",
         ProfessorStatusAtribuicaoView.as_view(),
     ),
     path(
-        "professores/<str:codigoRF>/turmas/<str:codigoTurma>/disciplinas/<str:disciplinaId>/atribuicao/verificar/datatick/",
+        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/disciplinas/<str:disciplina_id>/atribuicao/verificar/datatick/",
         ProfessorVerificarAtribuicaoDataTickView.as_view(),
     ),
     path(
-        "professores/<str:codigoTurma>/disciplinas/<str:disciplinaId>/atribuicao/data/",
+        "professores/<str:codigo_turma>/disciplinas/<str:disciplina_id>/atribuicao/data/",
         ProfessorAtribuicaoTurmaDisciplinaView.as_view(),
     ),
     path(
-        "professores/<str:codigoRF>/turmas/<str:codigoTurma>/disciplinas/<str:disciplinaId>/atribuicao/verificar/data",
+        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/disciplinas/<str:disciplina_id>/atribuicao/verificar/data",
         ProfessorVerificarAtribuicaoTurmaDisciplinaDataView.as_view(),
     ),
     path(
