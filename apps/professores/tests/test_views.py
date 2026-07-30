@@ -2566,9 +2566,8 @@ class ProfessorVerificarAtribuicaoDisciplinaViewTest(SimpleTestCase):
 class ProfessorVerificarAtribuicaoDataViewTest(SimpleTestCase):
     """Valida a verificação da atribuição por data."""
 
-    _URL = (
-        "/api/professores/000001/turmas/3032577/" "atribuicao/verificar/data/"
-    )
+    _URL_BASE = "/api/professores/000001/turmas/3032577/"
+    _URL = _URL_BASE + "atribuicao/verificar/data/"
 
     @patch(
         "apps.professores.views.services."
@@ -2632,10 +2631,8 @@ class ProfessorStatusAtribuicaoViewTest(SimpleTestCase):
 class ProfessorVerificarAtribuicaoDataTickViewTest(SimpleTestCase):
     """Valida a verificação da atribuição por data tick."""
 
-    _URL = (
-        "/api/professores/000001/turmas/3032577/disciplinas/89/"
-        "atribuicao/verificar/datatick/"
-    )
+    _URL_BASE = "/api/professores/000001/turmas/3032577/disciplinas/89/"
+    _URL = _URL_BASE + "atribuicao/verificar/datatick/"
 
     @patch(
         "apps.professores.views.services."
