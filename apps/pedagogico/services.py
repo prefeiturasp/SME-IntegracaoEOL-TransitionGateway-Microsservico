@@ -20,10 +20,10 @@ _ETAPAS_TURMAS_HISTORICAS = frozenset(
 _TIPOS_ESCOLA_TURMAS_HISTORICAS = frozenset({1, 2, 3, 4, 16, 28, 31})
 
 _client = ServiceClient(
-    base_url=settings.SIDECAR_PEDAGOGICO_URL,
+    base_url=settings.PEDAGOGICO_API_URL,
     dominio="pedagogico",
-    api_key=settings.SIDECAR_PEDAGOGICO_API_KEY,
-    api_key_header=settings.SIDECAR_PEDAGOGICO_API_KEY_HEADER,
+    api_key=settings.PEDAGOGICO_API_KEY,
+    api_key_header=settings.PEDAGOGICO_API_KEY_HEADER,
 )
 
 
@@ -34,7 +34,7 @@ def listar_turmas(codigos: list[int]) -> Any:
         codigos: Códigos das turmas consultadas.
 
     Returns:
-        Lista de turmas retornada pelo sidecar (inclui ``nome_turma``,
+        Lista de turmas retornada pela API (inclui ``nome_turma``,
         ``tipo_turno``, ``codigo_etapa_ensino`` e ``codigo_ciclo_ensino``).
 
     Raises:
@@ -54,7 +54,7 @@ def get_turmas_atribuidas_dre_ue(
         codigos_ue: Códigos das unidades educacionais.
 
     Returns:
-        Turmas atribuídas retornadas pelo sidecar.
+        Turmas atribuídas retornadas pela API.
 
     Raises:
         httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
@@ -73,7 +73,7 @@ def get_todas_turmas_atribuidas_dre_ue() -> Any:
     """Retorna a abrangência SME já agrupada por DRE/UE.
 
     Returns:
-        Abrangência de turmas atribuídas retornada pelo sidecar.
+        Abrangência de turmas atribuídas retornada pela API.
 
     Raises:
         httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
@@ -90,7 +90,7 @@ def get_turmas_elegiveis(payload: dict[str, Any]) -> list[dict[str, Any]]:
         payload: Dados no contrato legado.
 
     Returns:
-        Turmas elegíveis retornadas pelo sidecar.
+        Turmas elegíveis retornadas pela API.
 
     Raises:
         httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
@@ -114,7 +114,7 @@ def get_turmas_recorte_fund_medio_eja(
         codigos: Códigos das turmas a consultar.
 
     Returns:
-        Turmas no recorte de etapa retornadas pelo sidecar.
+        Turmas no recorte de etapa retornadas pela API.
 
     Raises:
         httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
@@ -380,11 +380,11 @@ def get_alunos_ativos_turma_sem_redis(codigo_turma: str) -> Any:
         codigo_turma: Código da turma recebida no contrato legado.
 
     Returns:
-        Lista de alunos ativos retornada pelo sidecar pedagógico.
+        Lista de alunos ativos retornada pelo API pedagógica.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     return alunos_services.get_alunos_por_turma(
         codigo_turma,
@@ -400,11 +400,11 @@ def get_alunos_ativos_turma_redis_multplex(codigo_turma: str) -> Any:
         codigo_turma: Código da turma recebida no contrato legado.
 
     Returns:
-        Lista de alunos ativos retornada pelo sidecar pedagógico.
+        Lista de alunos ativos retornada pelo API pedagógica.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     return alunos_services.get_alunos_por_turma(
         codigo_turma,
@@ -422,11 +422,11 @@ def get_alunos_turma_considera_inativos(
         considera_inativos: Considera ativos ou inativos na turma.
 
     Returns:
-        Lista de alunos ativos ou inativos retornada pelo sidecar pedagógico.
+        Lista de alunos ativos ou inativos retornada pelo API pedagógica.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     return alunos_services.get_alunos_por_turma(
         codigo_turma,
@@ -452,8 +452,8 @@ def get_turmas_historicas_gerais_professor(
         Turmas históricas com os atributos do domínio pedagógico.
 
     Raises:
-        httpx.HTTPStatusError: Se algum sidecar retornar status de erro.
-        httpx.RequestError: Se algum sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se alguma API retornar status de erro.
+        httpx.RequestError: Se alguma API estiver inacessível.
         ValueError: Se alguma resposta não tiver o formato esperado.
     """
     codigos = professores_services.get_codigos_turmas_historicas_professor(
@@ -534,8 +534,8 @@ def get_listagem_turmas_componentes(
         Envelope paginado (`items`, `total_registros`, `total_paginas`).
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
         ValueError: Se a resposta não representar um objeto.
         OverflowError: Se os ticks excederem o limite do datetime.
     """
@@ -584,8 +584,8 @@ def get_sincronizacao_institucional_turma(
         Dados institucionais da turma.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
         ValueError: Se a resposta não representar um objeto.
     """
     response = _client.get(
@@ -613,8 +613,8 @@ def get_sincronizacoes_institucionais_anos_letivos(
         Códigos das turmas encontradas.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
         ValueError: Se a resposta não for uma lista de inteiros.
     """
     params = None
@@ -645,8 +645,8 @@ def get_itinerarios_ensino_medio() -> list[dict[str, Any]]:
         Itinerários retornados pelo serviço pedagógico.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
         ValueError: Se a resposta não for uma lista de objetos.
     """
     response = _client.get(f"{_BASE_TURMAS}/itinerario/ensino-medio/")

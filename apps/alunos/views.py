@@ -43,8 +43,8 @@ from apps.alunos.serializers import (
 )
 from apps.core.responses import (
     Response,
+    api_error_response_status_livre,
     detail_response,
-    sidecar_error_response_status_livre,
 )
 from apps.institucional import services as institucional_services
 from apps.pedagogico import services as pedagogico_services
@@ -68,21 +68,21 @@ _MSG_ANO_MODALIDADE_OBRIGATORIOS = (
 _MSG_DATA_TICKS_OBRIGATORIA = (
     "O código da turma e data da aula são obrigatórios"
 )
-_MSG_SIDECAR_INDISPONIVEL = "Servico de alunos indisponivel."
+_MSG_API_INDISPONIVEL = "Servico de alunos indisponivel."
 _MSG_LEGADO_ERRO_INESPERADO = (
     "Houve um comportamento inesperado do sistema. Por favor, contate a SME."
 )
 _EXEMPLO_BOOL_LEGADO = OpenApiExample("Padrão do legado", value=True)
 
 
-def _sidecar_error_response(exc: httpx.HTTPStatusError) -> Response:
+def _api_error_response(exc: httpx.HTTPStatusError) -> Response:
     """Monta resposta de erro a partir da exceção HTTP recebida.
 
     Args:
         exc: Exceção HTTP lançada pelo cliente externo.
 
     Returns:
-        Resposta com o corpo e status retornados pelo sidecar.
+        Resposta com o corpo e status retornados pela API.
     """
     try:
         body: Any = exc.response.json()
@@ -92,17 +92,17 @@ def _sidecar_error_response(exc: httpx.HTTPStatusError) -> Response:
     return Response(body, status=exc.response.status_code)
 
 
-def _sidecar_unavailable_response(_exc: httpx.RequestError) -> Response:
-    """Monta resposta de indisponibilidade do sidecar.
+def _api_unavailable_response(_exc: httpx.RequestError) -> Response:
+    """Monta resposta de indisponibilidade da API.
 
     Args:
-        _exc: Exceção de comunicação com o sidecar.
+        _exc: Exceção de comunicação com a API.
 
     Returns:
         Resposta de indisponibilidade no formato do gateway.
     """
     return Response(
-        {"detail": _MSG_SIDECAR_INDISPONIVEL},
+        {"detail": _MSG_API_INDISPONIVEL},
         status=503,
     )
 
@@ -143,7 +143,7 @@ def _para_inteiro(value: str) -> int | None:
 
 
 def _codigos_ue_da_dre(payload: Any) -> list[str]:
-    """Extrai os códigos de UE do payload do sidecar institucional.
+    """Extrai os códigos de UE do payload do API institucional.
 
     Args:
         payload: Resposta do serviço institucional para as UEs da DRE.
@@ -343,9 +343,9 @@ class AlunoAutocompleteAtivosView(APIView):
                 limite=limite,
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         return Response(AlunoAutocompleteSerializer(data, many=True).data)
 
 
@@ -405,12 +405,10 @@ class AlunoAutocompleteUeView(APIView):
                 limite=limite,
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
-        return Response(
-            AlunoAutocompleteUeSerializer(data, many=True).data
-        )
+            return _api_unavailable_response(exc)
+        return Response(AlunoAutocompleteUeSerializer(data, many=True).data)
 
 
 class DadosAcompanhamentoEscolarView(APIView):
@@ -447,9 +445,9 @@ class DadosAcompanhamentoEscolarView(APIView):
                 cpf_responsavel=_query_value(request, "cpf_responsavel"),
             )
         except httpx.HTTPStatusError as exc:
-            return sidecar_error_response_status_livre(exc)
+            return api_error_response_status_livre(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         return Response(
             DadosAcompanhamentoEscolarSerializer(data, many=True).data
         )
@@ -518,9 +516,9 @@ class AlunoTurmasComHistoricoView(APIView):
                 tipo_turma,
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         return Response(TurmaDoAlunoSerializer(data, many=True).data)
 
 
@@ -563,9 +561,9 @@ class AlunosPorAnoView(APIView):
         try:
             data = services.listar_alunos_por_ano(ano_letivo, codigos_aluno)
         except httpx.HTTPStatusError as exc:
-            return sidecar_error_response_status_livre(exc)
+            return api_error_response_status_livre(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         return Response(AlunoPorCodigoSerializer(data, many=True).data)
 
 
@@ -613,9 +611,9 @@ class QuantidadeMatriculadosCCView(APIView):
                 ue_id=_query_value(request, "ue_id"),
             )
         except httpx.HTTPStatusError as exc:
-            return sidecar_error_response_status_livre(exc)
+            return api_error_response_status_livre(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         return Response(
             QuantidadeMatriculadosCCSerializer(data, many=True).data
         )
@@ -662,12 +660,10 @@ class QuantidadeMatriculadosView(APIView):
                 turma=request.query_params.getlist("turma"),
             )
         except httpx.HTTPStatusError as exc:
-            return sidecar_error_response_status_livre(exc)
+            return api_error_response_status_livre(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
-        return Response(
-            QuantidadeMatriculadosSerializer(data, many=True).data
-        )
+            return _api_unavailable_response(exc)
+        return Response(QuantidadeMatriculadosSerializer(data, many=True).data)
 
 
 class AlunoInformacoesView(APIView):
@@ -706,9 +702,9 @@ class AlunoInformacoesView(APIView):
         except httpx.HTTPStatusError as exc:
             if _is_not_found(exc):
                 return Response(status=204)
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         if data is None:
             return Response(status=204)
         return Response(AlunoInformacoesSerializer(data).data)
@@ -751,9 +747,9 @@ class ResponsavelResumidoView(APIView):
                 # TODO(149612): responder 404 aqui  # NOSONAR
                 # quando o contrato legado for descontinuado.
                 return Response(status=204)
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         if data is None:
             # TODO(149612): responder 404 aqui  # NOSONAR
             # quando o contrato legado for descontinuado.
@@ -796,9 +792,9 @@ class ResponsaveisView(APIView):
                 ano_letivo=ano_letivo,
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         return Response(ResponsavelTurmaSerializer(data, many=True).data)
 
 
@@ -829,9 +825,9 @@ class DadosResponsavelView(APIView):
         try:
             data = services.get_dados_responsavel(cpf_responsavel)
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         return Response(DadosResponsavelSerializer(data, many=True).data)
 
 
@@ -877,9 +873,9 @@ class ResponsavelAlunoView(APIView):
                 dict(serializer.validated_data),
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         return Response(atualizado)
 
     @extend_schema(
@@ -923,9 +919,9 @@ class ResponsavelAlunoView(APIView):
                 dict(serializer.validated_data),
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         return Response(atualizado)
 
 
@@ -965,9 +961,9 @@ class ObterNomesAlunosView(APIView):
                 ano_letivo=body.get("ano_letivo"),
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         return Response(NomeAlunoSerializer(data, many=True).data)
 
 
@@ -999,9 +995,9 @@ class FiliacaoAlunoView(APIView):
         try:
             data = services.get_filiacao_aluno(codigo_aluno)
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         return Response(FiliacaoResponsavelSerializer(data, many=True).data)
 
 
@@ -1047,9 +1043,9 @@ class InformacoesAlunosTurmaView(APIView):
         try:
             data = services.get_informacoes_alunos_turma(codigo_turma)
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         return Response(InformacoesAlunoTurmaSerializer(data, many=True).data)
 
 
@@ -1104,9 +1100,9 @@ class AlunosAtivosDataAulaTicksView(APIView):
                 data_ticks=data_ticks,
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         data = [{**aluno, "numero_aluno_chamada": "000"} for aluno in data]
         serializer = AlunoMatriculaTurmaSerializer(data, many=True)
         return Response(serializer.data)
@@ -1153,9 +1149,9 @@ class AlunosDataMatriculaTicksView(APIView):
                 data_matricula_ticks=data_matricula_ticks,
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
 
         serializer = AlunoMatriculaTurmaSerializer(
             data,
@@ -1224,9 +1220,9 @@ class AlunoTurmaConsideraInativosView(APIView):
                 codigo_aluno=codigo_aluno,
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
 
         if not data:
             return Response(status=204)
@@ -1278,9 +1274,9 @@ class AlunoMatriculasTurmaView(APIView):
                 codigo_aluno=codigo_aluno,
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
 
         return Response(AlunoMatriculaTurmaSerializer(data, many=True).data)
 
@@ -1365,9 +1361,9 @@ class TotalAlunosTurmasPeriodoView(APIView):
                 codigos_turmas, data_fim_ticks
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
 
         if not quantidade:
             return Response(status=204)
@@ -1414,9 +1410,9 @@ class AcompanhamentoEscolarTurmaView(APIView):
         try:
             data = services.get_acompanhamento_escolar_turma(codigo_turma)
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
 
         return Response(
             AlunoAcompanhamentoEscolarSerializer(data, many=True).data
@@ -1473,9 +1469,9 @@ class TodosAlunosTurmaView(APIView):
                 codigo_aluno=codigo_aluno,
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
 
         return Response(TodosAlunosTurmaSerializer(data, many=True).data)
 
@@ -1533,9 +1529,9 @@ class MatriculasTurmasAlunoView(APIView):
                 ano_letivo=ano_letivo,
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
 
         return Response(AlunoMatriculaTurmaSerializer(data, many=True).data)
 
@@ -1596,9 +1592,9 @@ class AlunosTurmaAnoLetivoView(APIView):
                 ano_letivo=ano_letivo_int,
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
 
         if not data:
             return Response(status=204)
@@ -1643,9 +1639,9 @@ class AlunosCalculoFrequenciaTurmaView(APIView):
                 codigo_turma, considerar_inativos=True
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         # O UNION (distinct) não tem ORDER BY, mas o SQL Server devolve o
         # resultado ordenado ascendente como efeito colateral da
         # deduplicação. Espelhamos: dedup + ordenação numérica ascendente.
@@ -1753,9 +1749,9 @@ class CodigosTurmasRegularesAlunoView(APIView):
                 semestre=semestre,
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         # Os códigos são devolvidos como string (IReadOnlyList<string>).
         return Response([str(codigo) for codigo in codigos])
 
@@ -1820,9 +1816,9 @@ class CodigoTurmaAlunoComponenteCurricularView(APIView):
                 tipos_turma=tipos_turma,
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         # Os códigos são devolvidos como string (IReadOnlyList<string>).
         return Response([str(codigo) for codigo in codigos])
 
@@ -1852,9 +1848,9 @@ class AlunoNecessidadesEspeciaisView(APIView):
         except httpx.HTTPStatusError as exc:
             if _is_not_found(exc):
                 return Response(status=204)
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         if not data:
             return Response(status=204)
         if isinstance(data, list):
@@ -1882,9 +1878,9 @@ class AlunoTurmasView(APIView):
         try:
             data = services.get_turmas_aluno(codigo_aluno)
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         return Response(TurmaDoAlunoSerializer(data, many=True).data)
 
 
@@ -1929,9 +1925,9 @@ class AlunosDaUeView(APIView):
                 _query_value(request, "codigo_eol"),
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         return Response(AlunoPorCodigoSerializer(data, many=True).data)
 
 
@@ -1994,9 +1990,9 @@ class AlunoTurmasPorSituacaoView(APIView):
                 tipo_turma,
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         return Response(TurmaDoAlunoSerializer(data, many=True).data)
 
 
@@ -2026,9 +2022,9 @@ class AlunosAtivosTurmaView(APIView):
         try:
             data = services.get_alunos_ativos_turma(codigo_turma)
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         return Response(AlunoAtivoTurmaSerializer(data, many=True).data)
 
 
@@ -2079,9 +2075,9 @@ class AlunosAtivosPeriodoTurmaView(APIView):
                 _query_value(request, "data_referencia_inicio"),
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         return Response(AlunoAtivoTurmaSerializer(data, many=True).data)
 
 
@@ -2136,9 +2132,9 @@ class TotalAlunosAtivosPeriodoView(APIView):
                 modalidades=request.query_params.getlist("modalidades"),
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         return Response(data["quantidade"])
 
 
@@ -2179,7 +2175,7 @@ class AlunosListView(APIView):
         try:
             data = services.listar_alunos(codigos_aluno)
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         return Response(AlunoPorCodigoSerializer(data, many=True).data)

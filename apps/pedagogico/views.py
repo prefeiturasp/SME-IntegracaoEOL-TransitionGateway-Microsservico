@@ -84,7 +84,7 @@ def _ordem_numero_chamada(aluno: dict[str, Any]) -> tuple[int, int]:
     """Chave de ordenação ascendente por número de chamada do aluno.
 
     Args:
-        aluno: Registro de aluno retornado pelo sidecar.
+        aluno: Registro de aluno retornado pela API.
 
     Returns:
         Tupla em que registros sem número de chamada válido vêm primeiro e
@@ -96,7 +96,7 @@ def _ordem_numero_chamada(aluno: dict[str, Any]) -> tuple[int, int]:
         return (0, 0)
 
 
-def _sidecar_error_response(exc: httpx.HTTPStatusError) -> Response:
+def _api_error_response(exc: httpx.HTTPStatusError) -> Response:
     """Monta resposta de erro a partir da exceção HTTP recebida."""
     try:
         body = exc.response.json()
@@ -294,7 +294,7 @@ class AlunosAtivosTurmaSemRedisViewSet(APIView):
                 codigo_turma=codigo_turma,
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError:
             return detail_response(_SERVICO_PEDAGOGICO_INDISPONIVEL, 503)
         if not data:
@@ -346,7 +346,7 @@ class AlunosAtivosTurmaRedisMultplexViewSet(APIView):
                 codigo_turma=codigo_turma,
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError:
             return detail_response(_SERVICO_PEDAGOGICO_INDISPONIVEL, 503)
         if not data:
@@ -409,7 +409,7 @@ class AlunosTurmaConsideraInativosViewSet(APIView):
                 considera_inativos=considera_inativos,
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError:
             return detail_response(_SERVICO_PEDAGOGICO_INDISPONIVEL, 503)
         serializer = AlunoMatriculaTurmaSerializer(data, many=True)
@@ -579,9 +579,7 @@ class ListagemTurmasComponentesViewSet(APIView):
         Returns:
             Resposta HTTP com o envelope paginado de componentes.
         """
-        eh_professor = _query_bool(
-            request, "ehProfessor", "eh_professor"
-        )
+        eh_professor = _query_bool(request, "ehProfessor", "eh_professor")
         codigo_rf = request.query_params.get(
             "codigoRf", request.query_params.get("codigo_rf")
         )
@@ -615,7 +613,7 @@ class ListagemTurmasComponentesViewSet(APIView):
                 anos_infantil_desconsiderar=anos_infantil,
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError:
             return detail_response(_SERVICO_PEDAGOGICO_INDISPONIVEL, 503)
         except (ValueError, OverflowError):

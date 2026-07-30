@@ -44,10 +44,10 @@ _TIPOS_ABRANGENCIA_VINCULO_UE = frozenset(
 )
 
 _client = ServiceClient(
-    base_url=settings.SIDECAR_PROFESSORES_URL,
+    base_url=settings.PROFESSORES_API_URL,
     dominio="professores",
-    api_key=settings.SIDECAR_PROFESSORES_API_KEY,
-    api_key_header=settings.SIDECAR_PROFESSORES_API_KEY_HEADER,
+    api_key=settings.PROFESSORES_API_KEY,
+    api_key_header=settings.PROFESSORES_API_KEY_HEADER,
 )
 
 

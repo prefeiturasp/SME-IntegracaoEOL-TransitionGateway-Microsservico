@@ -9,18 +9,18 @@ from apps.core.http_client import ServiceClient
 _BASE = "/api/v1/institucional"
 
 _client = ServiceClient(
-    base_url=settings.SIDECAR_INSTITUCIONAL_URL,
+    base_url=settings.INSTITUCIONAL_API_URL,
     dominio="institucional",
-    api_key=settings.SIDECAR_INSTITUCIONAL_API_KEY,
-    api_key_header=settings.SIDECAR_INSTITUCIONAL_API_KEY_HEADER,
+    api_key=settings.INSTITUCIONAL_API_KEY,
+    api_key_header=settings.INSTITUCIONAL_API_KEY_HEADER,
 )
 
 
 def _codigos_ue(data: Any) -> list[str]:
-    """Extrai códigos de UE de um payload do sidecar.
+    """Extrai códigos de UE de um payload da API.
 
     Args:
-        data: Payload retornado pelo sidecar institucional.
+        data: Payload retornado pelo API institucional.
 
     Returns:
         Códigos EOL das unidades educacionais.
@@ -119,7 +119,8 @@ def get_escolas_sigpae_por_dre(codigo_dre: str) -> Any:
         Escolas vinculadas à DRE no formato do contrato D09.
 
     Raises:
-        httpx.HTTPStatusError: Quando o serviço externo retorna status HTTP de erro.
+        httpx.HTTPStatusError: Quando o serviço externo retorna status HTTP
+            de erro.
     """
     resp = _client.get(f"{_BASE}/dres/{codigo_dre}/escola/Sigpae/")
     resp.raise_for_status()
@@ -187,7 +188,9 @@ def get_unidades_codigo_integracao_por_dre(codigo_dre: str) -> Any:
         httpx.HTTPStatusError: Quando o serviço externo retorna status
             HTTP de erro.
     """
-    resp = _client.get(f"{_BASE}/dres/{codigo_dre}/unidades/codigo-integracao/")
+    resp = _client.get(
+        f"{_BASE}/dres/{codigo_dre}/unidades/codigo-integracao/"
+    )
     resp.raise_for_status()
     return resp.json()
 
@@ -220,7 +223,8 @@ def post_escolas(codigos: list[str]) -> Any:
         Lista de escolas encontradas.
 
     Raises:
-        httpx.HTTPStatusError: Quando o serviço externo retorna status HTTP de erro.
+        httpx.HTTPStatusError: Quando o serviço externo retorna status HTTP
+            de erro.
     """
     resp = _client.post(f"{_BASE}/escolas/", payload=codigos)
     resp.raise_for_status()
@@ -258,7 +262,6 @@ def get_unidade_eol(codigo_eol: str) -> Any:
         httpx.HTTPStatusError: Quando o serviço externo retorna status
             HTTP de erro.
     """
-
     resp = _client.get(f"{_BASE}/escolas/unidade-eol/{codigo_eol}/")
     resp.raise_for_status()
     return _client.json_or_none(resp)
@@ -292,7 +295,6 @@ def get_sincronizacoes_institucionais(codigo_ue: str) -> Any:
         httpx.HTTPStatusError: Quando o serviço externo retorna status
             HTTP de erro.
     """
-
     resp = _client.get(
         f"{_BASE}/escolas/{codigo_ue}/sincronizacoes-institucionais/"
     )
@@ -304,7 +306,7 @@ def get_tipos_escolas() -> Any:
     """Lista tipos de escola cadastrados.
 
     Returns:
-        Tipos de escola cadastrados no sidecar institucional.
+        Tipos de escola cadastrados no API institucional.
     """
     resp = _client.get(f"{_BASE}/escolas/tiposEscolas/")
     resp.raise_for_status()
@@ -321,9 +323,9 @@ def post_unidades_parceiras(codigos: list[str]) -> Any:
         Lista de unidades parceiras encontradas.
 
     Raises:
-        httpx.HTTPStatusError: Quando o serviço externo retorna status HTTP de erro.
+        httpx.HTTPStatusError: Quando o serviço externo retorna status HTTP
+            de erro.
     """
-
     resp = _client.post(f"{_BASE}/escolas/unidades-parceiras/", codigos)
     resp.raise_for_status()
     return resp.json()
@@ -382,7 +384,7 @@ def get_ues_recorte_fund_medio(
         codigos: Códigos EOL das unidades educacionais a consultar.
 
     Returns:
-        UEs no recorte de tipo de escola retornadas pelo sidecar.
+        UEs no recorte de tipo de escola retornadas pela API.
     """
     if not codigos:
         return []
@@ -432,9 +434,9 @@ def get_codigos_ue_tipo_sgp(codigos: list[str]) -> list[str]:
 def get_todas_unidades() -> Any:
     """Lista todas as unidades educacionais.
 
-    Retorna dados paginados no formato {"count": int, "results": list}, percorrendo 
-    as páginas usando ``limite`` e ``offset`` e consolida todos os itens em uma 
-    lista única antes de responder.
+    Retorna dados paginados no formato {"count": int, "results": list},
+    percorrendo as páginas usando ``limite`` e ``offset`` e consolida todos
+    os itens em uma lista única antes de responder.
 
     Returns:
         Todas as unidades educacionais cadastradas.

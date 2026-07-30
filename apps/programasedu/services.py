@@ -33,10 +33,10 @@ _DESC_ETAPA_ENSINO = {
 }
 
 _client = ServiceClient(
-    base_url=settings.SIDECAR_PROGRAMASEDU_URL,
+    base_url=settings.PROGRAMASEDU_API_URL,
     dominio="programasedu",
-    api_key=settings.SIDECAR_PROGRAMASEDU_API_KEY,
-    api_key_header=settings.SIDECAR_PROGRAMASEDU_API_KEY_HEADER,
+    api_key=settings.PROGRAMASEDU_API_KEY,
+    api_key_header=settings.PROGRAMASEDU_API_KEY_HEADER,
 )
 
 

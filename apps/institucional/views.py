@@ -14,10 +14,10 @@ from apps.institucional.serializers import (
     DadosEscolaSerializer,
     DRESerializer,
     EquipamentoSerializer,
-    EscolaSigpaeSerializer,
     EscolaPorDreETipoSerializer,
     EscolaResumoSerializer,
     EscolaSerializer,
+    EscolaSigpaeSerializer,
     SincronizacaoInstitucionalSerializer,
     SubprefeiturasSerializer,
     TipoEscolaSerializer,
@@ -29,7 +29,7 @@ from apps.institucional.serializers import (
 
 _TAG_DRE = ["DiretoriaRegionalEducacao"]
 _TAG_ESCOLA = ["Escola"]
-_SIDECAR_INDISPONIVEL_DETAIL = "Serviço institucional indisponível"
+_API_INDISPONIVEL_DETAIL = "Serviço institucional indisponível"
 
 _ESCOLA_RESUMO_CAMPOS = {
     "codigoEscola",
@@ -144,9 +144,7 @@ def _filtrar_escola_sigpae(item: dict) -> dict:
 
 def _filtrar_unidade_codigo_integracao(item: dict) -> dict:
     return {
-        k: v
-        for k, v in item.items()
-        if k in _UNIDADE_CODIGO_INTEGRACAO_CAMPOS
+        k: v for k, v in item.items() if k in _UNIDADE_CODIGO_INTEGRACAO_CAMPOS
     }
 
 
@@ -301,16 +299,18 @@ class EscolasSigpaePorDREView(APIView):
                 return Response(status=status.HTTP_404_NOT_FOUND)
             raise
         except httpx.RequestError:
-            return _sidecar_unavailable_response()
+            return _api_unavailable_response()
 
         if not data:
             return Response([])
         if isinstance(data, list):
-            return Response([
-                _filtrar_escola_sigpae(item)
-                for item in data
-                if isinstance(item, dict)
-            ])
+            return Response(
+                [
+                    _filtrar_escola_sigpae(item)
+                    for item in data
+                    if isinstance(item, dict)
+                ]
+            )
         if isinstance(data, dict):
             return Response([_filtrar_escola_sigpae(data)])
         return Response([])
@@ -477,7 +477,10 @@ class UnidadeCodigoIntegracaoPorDREView(APIView):
                 type=str,
             )
         ],
-        responses={200: UnidadeCodigoIntegracaoSerializer(many=True), 404: None},
+        responses={
+            200: UnidadeCodigoIntegracaoSerializer(many=True),
+            404: None,
+        },
     )
     def get(self, _request: Request, dre_codigo: str) -> Response:
         """Retorna UEs com código de integração da DRE."""
@@ -488,15 +491,17 @@ class UnidadeCodigoIntegracaoPorDREView(APIView):
                 return Response(status=status.HTTP_404_NOT_FOUND)
             raise
         except httpx.RequestError:
-            return _sidecar_unavailable_response()
+            return _api_unavailable_response()
         if not data:
             return Response([])
         if isinstance(data, list):
-            return Response([
-                _filtrar_unidade_codigo_integracao(item)
-                for item in data
-                if isinstance(item, dict)
-            ])
+            return Response(
+                [
+                    _filtrar_unidade_codigo_integracao(item)
+                    for item in data
+                    if isinstance(item, dict)
+                ]
+            )
         if isinstance(data, dict):
             return Response([_filtrar_unidade_codigo_integracao(data)])
         return Response([])
@@ -570,13 +575,12 @@ class SubprefeiturasPorEscolaView(APIView):
                 return Response(status=status.HTTP_404_NOT_FOUND)
             raise
         except httpx.RequestError:
-            return _sidecar_unavailable_response()
+            return _api_unavailable_response()
         return Response(data)
 
 
-def _sidecar_error_response(exc: httpx.HTTPStatusError) -> Response:
-    """Converte erro HTTP do sidecar em resposta do gateway."""
-
+def _api_error_response(exc: httpx.HTTPStatusError) -> Response:
+    """Converta erro HTTP da API em resposta do gateway."""
     try:
         body: Any = exc.response.json()
     except ValueError:
@@ -585,11 +589,10 @@ def _sidecar_error_response(exc: httpx.HTTPStatusError) -> Response:
     return Response(body, status=exc.response.status_code)
 
 
-def _sidecar_unavailable_response() -> Response:
-    """Resposta padrão quando o sidecar institucional não responde."""
-
+def _api_unavailable_response() -> Response:
+    """Resposta padrão quando a API institucional não responde."""
     return Response(
-        {"detail": _SIDECAR_INDISPONIVEL_DETAIL},
+        {"detail": _API_INDISPONIVEL_DETAIL},
         status=status.HTTP_502_BAD_GATEWAY,
     )
 
@@ -627,31 +630,34 @@ class EscolasListPostView(APIView):
     )
     def post(self, request: Request) -> Response:
         """Retorna escolas encontradas para os códigos informados."""
-
         try:
             codigos = cast(list[str], request.data)
             data = services.post_escolas(codigos)
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError:
-            return _sidecar_unavailable_response()
+            return _api_unavailable_response()
 
         if not data:
             return Response([])
         if isinstance(data, list):
-            return Response([
-                _filtrar_toda_unidade(item)
-                for item in data
-                if isinstance(item, dict)
-            ])
+            return Response(
+                [
+                    _filtrar_toda_unidade(item)
+                    for item in data
+                    if isinstance(item, dict)
+                ]
+            )
         if isinstance(data, dict):
             resultados = data.get("results")
             if isinstance(resultados, list):
-                return Response([
-                    _filtrar_toda_unidade(item)
-                    for item in resultados
-                    if isinstance(item, dict)
-                ])
+                return Response(
+                    [
+                        _filtrar_toda_unidade(item)
+                        for item in resultados
+                        if isinstance(item, dict)
+                    ]
+                )
         return Response([])
 
 
@@ -662,7 +668,8 @@ class EscolaDetalheView(APIView):
         tags=_TAG_ESCOLA,
         summary="Detalhe de uma escola",
         description=(
-            "Retorna dados da unidade educacional identificada pelo `codigoEscolaEol`."
+            "Retorna dados da unidade educacional identificada pelo "
+            "`codigoEscolaEol`."
         ),
         parameters=[
             OpenApiParameter(
@@ -682,7 +689,7 @@ class EscolaDetalheView(APIView):
             if exc.response.status_code == 404:
                 return Response(status=status.HTTP_404_NOT_FOUND)
             raise
-        # Sidecar retorna array; extrai o primeiro item para o contrato E02.
+        # API retorna array; extrai o primeiro item para o contrato E02.
         item = data[0] if isinstance(data, list) and data else data
         if not item:
             return Response(status=status.HTTP_404_NOT_FOUND)
@@ -696,7 +703,8 @@ class UnidadeEolView(APIView):
         tags=_TAG_ESCOLA,
         summary="Unidade por código EOL",
         description=(
-            "Retorna os dados resumidos da unidade educacional identificada pelo `codigoEol`"
+            "Retorna os dados resumidos da unidade educacional identificada "
+            "pelo `codigoEol`"
         ),
         parameters=[
             OpenApiParameter(
@@ -711,15 +719,14 @@ class UnidadeEolView(APIView):
     )
     def get(self, _request: Request, codigo_eol: str) -> Response:
         """Retorna dados resumidos da unidade por código EOL."""
-
         try:
             data = services.get_unidade_eol(codigo_eol)
         except httpx.HTTPStatusError as exc:
             if exc.response.status_code == status.HTTP_404_NOT_FOUND:
                 return Response(status=status.HTTP_204_NO_CONTENT)
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError:
-            return _sidecar_unavailable_response()
+            return _api_unavailable_response()
 
         if not data:
             return Response(status=status.HTTP_204_NO_CONTENT)
@@ -751,15 +758,14 @@ class SincronizacoesInstitucionaisView(APIView):
     )
     def get(self, _request: Request, ue_codigo: str) -> Response:
         """Retorna sincronização institucional ou 204 quando ausente."""
-
         try:
             data = services.get_sincronizacoes_institucionais(ue_codigo)
         except httpx.HTTPStatusError as exc:
             if exc.response.status_code == status.HTTP_404_NOT_FOUND:
                 return Response(status=status.HTTP_204_NO_CONTENT)
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError:
-            return _sidecar_unavailable_response()
+            return _api_unavailable_response()
 
         if not data:
             return Response(status=status.HTTP_204_NO_CONTENT)
@@ -775,7 +781,8 @@ class UnidadesParceirasView(APIView):
         tags=_TAG_ESCOLA,
         summary="Unidades parceiras",
         description=(
-            "Retorna a lista de unidades parceiras informadas no corpo da requisição."
+            "Retorna a lista de unidades parceiras informadas no corpo da "
+            "requisição."
         ),
         request={
             "application/json": {"type": "array", "items": {"type": "string"}}
@@ -784,14 +791,13 @@ class UnidadesParceirasView(APIView):
     )
     def post(self, request: Request) -> Response:
         """Retorna unidades parceiras compatíveis com o legado."""
-
         try:
             codigos = cast(list[str], request.data)
             data = services.post_unidades_parceiras(codigos)
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError:
-            return _sidecar_unavailable_response()
+            return _api_unavailable_response()
 
         return Response(data or [])
 
@@ -843,7 +849,7 @@ class EquipamentosView(APIView):
         description=(
             "Retorna lista de equipamentos cadastrados nas unidades "
             "educacionais. Todos os filtros são opcionais; sem nenhum o "
-            "sidecar executa query irrestrita e pode gerar timeout.\n\n"
+            "a API executa query irrestrita e pode gerar timeout.\n\n"
             "Contrato E25: `GET /api/escolas/equipamentos`."
         ),
         parameters=_EQUIPAMENTOS_PARAMS,
@@ -880,15 +886,19 @@ class TodasUnidadesView(APIView):
             data = services.get_todas_unidades()
         except httpx.RequestError:
             return Response(
-                {"detail": _SIDECAR_INDISPONIVEL_DETAIL},
+                {"detail": _API_INDISPONIVEL_DETAIL},
                 status=status.HTTP_502_BAD_GATEWAY,
             )
         resultados = data.get("results") if isinstance(data, dict) else data
         if not resultados:
             return Response([])
-        return Response([
-            _filtrar_toda_unidade(item) for item in resultados if isinstance(item, dict)
-        ])
+        return Response(
+            [
+                _filtrar_toda_unidade(item)
+                for item in resultados
+                if isinstance(item, dict)
+            ]
+        )
 
 
 class TiposUnidadeEducacaoView(APIView):
@@ -907,7 +917,7 @@ class TiposUnidadeEducacaoView(APIView):
             data = services.get_tipos_unidade_educacao()
         except httpx.RequestError:
             return Response(
-                {"detail": _SIDECAR_INDISPONIVEL_DETAIL},
+                {"detail": _API_INDISPONIVEL_DETAIL},
                 status=status.HTTP_502_BAD_GATEWAY,
             )
         return Response(data)

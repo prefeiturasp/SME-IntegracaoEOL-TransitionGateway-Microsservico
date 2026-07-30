@@ -57,7 +57,7 @@ _MSG_DRE_ID_OBRIGATORIO = "É necessário informar o dreId."
 _MSG_UE_ID_OBRIGATORIO = "É necessário informar o ueId."
 _MSG_NOME_OBRIGATORIO = "É necessário informar o nome."
 _TAMANHO_MINIMO_NOME = 2
-_MSG_RESPOSTA_INVALIDA_SIDECAR = "Resposta inválida do sidecar de professores."
+_MSG_RESPOSTA_INVALIDA_API = "Resposta inválida da API de professores."
 _CAMPOS_TURMA = {
     "codigo_turma",
     "data_disponibilizacao_aulas",
@@ -1018,7 +1018,7 @@ class EscolaFuncionariosCargosView(APIView):
         if data is None:
             return Response(status=204)
         if not _is_lista_dicionarios(data):
-            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(FuncionarioCargoSerializer(data, many=True).data)
 
 
@@ -1072,7 +1072,7 @@ class EscolaFuncionariosFuncoesAtividadesView(APIView):
         if data is None:
             return Response(status=204)
         if not _is_lista_dicionarios(data):
-            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(
             FuncionarioFuncaoAtividadeSerializer(data, many=True).data
         )
@@ -1126,7 +1126,7 @@ class EscolaFuncionariosFuncoesExternasView(APIView):
         if data is None:
             return Response(status=204)
         if not _is_lista_dicionarios(data):
-            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(
             FuncionarioFuncaoExternaSerializer(data, many=True).data
         )
@@ -1166,7 +1166,7 @@ class EscolaFuncionariosFuncaoExternaView(APIView):
         if not data:
             return Response(status=204)
         if not _is_lista_dicionarios(data):
-            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(FuncionarioEscolaSerializer(data, many=True).data)
 
 
@@ -1210,7 +1210,7 @@ class EscolaFuncionariosFuncaoAtividadeView(APIView):
         if not data:
             return Response(status=204)
         if not _is_lista_dicionarios(data):
-            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(
             FuncionarioFuncaoAtividadeUeSerializer(data, many=True).data
         )
@@ -1277,7 +1277,7 @@ class FuncionariosUeView(APIView):
         if data is None:
             return Response(status=204)
         if not isinstance(data, list):
-            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         if not data:
             return Response(
                 "Não foram encontrados funcionários.",
@@ -1309,7 +1309,7 @@ class FuncionariosCargoView(APIView):
         if data is None:
             return Response(status=204)
         if not isinstance(data, list):
-            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(FuncionarioEscolaSerializer(data, many=True).data)
 
 
@@ -1351,8 +1351,8 @@ class FuncionariosSupervisoresView(APIView):
         if not isinstance(data, list):
             return Response(
                 {
-                    "detail": _MSG_RESPOSTA_INVALIDA_SIDECAR,
-                    "sidecar": data,
+                    "detail": _MSG_RESPOSTA_INVALIDA_API,
+                    "api": data,
                 },
                 status=502,
             )
@@ -1528,7 +1528,7 @@ class ProfessorDisciplinaTurmasView(APIView):
         if data is None:
             return Response(status=204)
         if not _is_lista_turmas(data):
-            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(ProfessorTurmaSerializer(data, many=True).data)
 
 
@@ -1865,7 +1865,7 @@ class ProfessorAutoCompleteView(APIView):
         if not data:
             return Response([])
         if not _is_lista_dicionarios(data):
-            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(ProfessorAutoCompleteSerializer(data, many=True).data)
 
 

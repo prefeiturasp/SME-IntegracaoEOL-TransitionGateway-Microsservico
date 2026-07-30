@@ -8,29 +8,26 @@ Gateway de transição entre os contratos legados do EOL e os novos microserviç
 Cliente externo
       │
       ▼
-  Gateway (8000)        ← tradução de contrato e início do trace distribuído
+  Gateway (8000)        ← tradução de contrato e uso do SME Sidecar SDK in-process
       │
       ▼
-sidecar_<domínio>       ← continua traceparent e aplica resiliência
-      │
-      ▼
-MS de domínio           ← microserviço proprietário do domínio
+API do microserviço     ← microserviço proprietário do domínio
 ```
 
 O Gateway expõe os contratos legados e os traduz para os microserviços de
-domínio. Ele não contém regra de negócio nem lógica de resiliência: essas
-responsabilidades pertencem ao sidecar de cada domínio.
+domínio. Ele não contém regra de negócio: essa responsabilidade permanece nos
+microserviços de domínio.
 
-Cada sidecar é um processo Django independente que aplica retry com backoff exponencial,
-circuit breaker e propagação de contexto de rastreamento antes de encaminhar a requisição
-ao microserviço correspondente. Os sidecars residem em repositórios próprios.
+O SME Sidecar SDK é usado como runtime in-process no gateway para aplicar
+recursos transversais como timeout, retry, circuit breaker, logs estruturados e
+propagação de contexto de rastreamento.
 
 ## Estrutura do repositório
 
 ```
 .
 ├── apps/
-│   ├── core/           # cliente HTTP, resiliência (lib dos sidecars), middleware
+│   ├── core/           # cliente HTTP, runtime do SDK e middleware
 │   └── pedagogico/     # adaptação dos contratos do domínio pedagógico
 │   └── professores/     # adaptação dos contratos do domínio professores
 │   └── programasedu/   # adaptação dos contratos de programas educacionais
@@ -119,19 +116,25 @@ make run
 | `API_KEY_HEADER`       | `X-API-Key`                  | Nome do header de autenticação de entrada          |
 | `PORT_WEB`             | `8002` (dev) / `8000` (prod) | Porta exposta pelo container                       |
 
-**Sidecars**
+**APIs dos microserviços**
 
-| Variável                              | Padrão                  | Descrição                                                               |
-| ------------------------------------- | ----------------------- | ----------------------------------------------------------------------- |
-| `SIDECAR_PEDAGOGICO_URL`              | `http://localhost:9004` | URL do sidecar pedagógico                                               |
-| `SIDECAR_PEDAGOGICO_API_KEY`          | —                       | API Key enviada ao sidecar pedagógico                                   |
-| `SIDECAR_PEDAGOGICO_API_KEY_HEADER`   | `X-API-Key`             | Nome do header de autenticação para o sidecar pedagógico                |
-| `SIDECAR_PROFESSORES_URL`             | `http://localhost:9005` | URL do sidecar professores                                              |
-| `SIDECAR_PROFESSORES_API_KEY`         | —                       | API Key enviada ao sidecar professores                                  |
-| `SIDECAR_PROFESSORES_API_KEY_HEADER`  | `X-API-Key`             | Nome do header de autenticação para o sidecar professores               |
-| `SIDECAR_PROGRAMASEDU_URL`            | `http://localhost:9006` | URL do sidecar de programas educacionais                                |
-| `SIDECAR_PROGRAMASEDU_API_KEY`        | —                       | API Key enviada ao sidecar de programas educacionais                    |
-| `SIDECAR_PROGRAMASEDU_API_KEY_HEADER` | `X-API-Key`             | Nome do header de autenticação para o sidecar de programas educacionais |
+| Variável                        | Padrão                  | Descrição                                                              |
+| ------------------------------- | ----------------------- | ---------------------------------------------------------------------- |
+| `PEDAGOGICO_API_URL`            | `http://localhost:9004` | URL da API do microserviço pedagógico                                  |
+| `PEDAGOGICO_API_KEY`            | —                       | API Key enviada à API do microserviço pedagógico                       |
+| `PEDAGOGICO_API_KEY_HEADER`     | `X-API-Key`             | Nome do header de autenticação para a API do microserviço pedagógico   |
+| `PROFESSORES_API_URL`           | `http://localhost:9005` | URL da API do microserviço professores                                 |
+| `PROFESSORES_API_KEY`           | —                       | API Key enviada à API do microserviço professores                      |
+| `PROFESSORES_API_KEY_HEADER`    | `X-API-Key`             | Nome do header de autenticação para a API do microserviço professores  |
+| `INSTITUCIONAL_API_URL`         | `http://localhost:9006` | URL da API do microserviço institucional                               |
+| `INSTITUCIONAL_API_KEY`         | —                       | API Key enviada à API do microserviço institucional                    |
+| `INSTITUCIONAL_API_KEY_HEADER`  | `X-API-Key`             | Nome do header de autenticação para a API do microserviço institucional |
+| `PROGRAMASEDU_API_URL`          | `http://localhost:9006` | URL da API do microserviço de programas educacionais                   |
+| `PROGRAMASEDU_API_KEY`          | —                       | API Key enviada à API do microserviço de programas educacionais        |
+| `PROGRAMASEDU_API_KEY_HEADER`   | `X-API-Key`             | Nome do header de autenticação para programas educacionais             |
+| `ALUNOS_API_URL`                | `http://localhost:9007` | URL da API do microserviço alunos                                      |
+| `ALUNOS_API_KEY`                | —                       | API Key enviada à API do microserviço alunos                           |
+| `ALUNOS_API_KEY_HEADER`         | `X-API-Key`             | Nome do header de autenticação para a API do microserviço alunos       |
 
 **SME Sidecar SDK**
 
@@ -140,7 +143,7 @@ make run
 | `SME_SERVICE_NAME`                | `transition-gateway`    | Nome do serviço nos logs e traces               |
 | `SME_SERVICE_VERSION`             | `unknown`               | Versão publicada na telemetria                  |
 | `SME_ENVIRONMENT`                 | `dev`                   | Ambiente de execução                            |
-| `SME_TIMEOUT_SECONDS`             | `10`                    | Timeout das chamadas aos sidecars               |
+| `SME_TIMEOUT_SECONDS`             | `10`                    | Timeout das chamadas às APIs dos microserviços  |
 | `SME_LOG_LEVEL`                   | `ERROR`                 | Nível mínimo dos logs                           |
 | `SME_LOG_FORMAT`                  | `json`                  | Formato `json` ou `console`                     |
 | `SME_CORRELATION_ID_HEADER`       | `X-Request-ID`          | Header de correlação                            |
@@ -194,7 +197,7 @@ indexar os eventos no Elasticsearch.
 ### Rastreamento distribuído
 
 O SME Sidecar SDK cria um span `django.request` na entrada do gateway e
-instrumenta o cliente HTTPX. As chamadas aos sidecars recebem
+instrumenta o cliente HTTPX. As chamadas às APIs dos microserviços recebem
 automaticamente `traceparent`, preservando um único trace desde o gateway
 até os serviços de domínio. Os spans são enviados por OTLP ao Elastic APM
 ou a um OpenTelemetry Collector.

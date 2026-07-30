@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import httpx
 from sme_sidecar_sdk import CircuitOpenError, build_http_client
@@ -71,10 +71,13 @@ class ServiceClient:
             httpx.HTTPError: Em caso de falha de transporte ou timeout.
         """
         try:
-            return self._http_client().get(
-                path,
-                headers=self._headers(),
-                params=params,
+            return cast(
+                httpx.Response,
+                self._http_client().get(
+                    path,
+                    headers=self._headers(),
+                    params=params,
+                ),
             )
         except CircuitOpenError as exc:
             raise self._unavailable_error("GET", path) from exc
@@ -99,11 +102,14 @@ class ServiceClient:
             httpx.HTTPError: Em caso de falha de transporte ou timeout.
         """
         try:
-            return self._http_client().post(
-                path,
-                headers=self._headers(),
-                json=payload,
-                params=params,
+            return cast(
+                httpx.Response,
+                self._http_client().post(
+                    path,
+                    headers=self._headers(),
+                    json=payload,
+                    params=params,
+                ),
             )
         except CircuitOpenError as exc:
             raise self._unavailable_error("POST", path) from exc
@@ -127,11 +133,14 @@ class ServiceClient:
         Raises:
             httpx.HTTPError: Em caso de falha de transporte ou timeout.
         """
-        return self._http_client().put(
-            f"{self.base_url}{path}",
-            headers=self._headers(),
-            json=payload,
-            params=params,
+        return cast(
+            httpx.Response,
+            self._http_client().put(
+                f"{self.base_url}{path}",
+                headers=self._headers(),
+                json=payload,
+                params=params,
+            ),
         )
 
     def json_or_none(self, resp: httpx.Response) -> Any:
@@ -157,9 +166,12 @@ class ServiceClient:
             `True` quando o serviço responde sem erro de servidor.
         """
         try:
-            response = self._http_client().get(
-                "/health/",
-                headers=self._headers(),
+            response = cast(
+                httpx.Response,
+                self._http_client().get(
+                    "/health/",
+                    headers=self._headers(),
+                ),
             )
             return response.status_code < 500
         except httpx.HTTPStatusError as exc:
@@ -178,7 +190,7 @@ class ServiceClient:
 
         Args:
             method: Método HTTP da chamada original.
-            path: Caminho relativo chamado no sidecar.
+            path: Caminho relativo chamado na API.
 
         Returns:
             Erro compatível com os handlers já existentes nas views.
