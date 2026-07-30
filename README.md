@@ -15,12 +15,10 @@ API do microserviço     ← microserviço proprietário do domínio
 ```
 
 O Gateway expõe os contratos legados e os traduz para os microserviços de
-domínio. Ele não contém regra de negócio: essa responsabilidade permanece nos
-microserviços de domínio.
+domínio. Ele não contém regra de negócio: essa responsabilidade permanece nos microserviços de domínio.
 
 O SME Sidecar SDK é usado como runtime in-process no gateway para aplicar
-recursos transversais como timeout, retry, circuit breaker, logs estruturados e
-propagação de contexto de rastreamento.
+recursos transversais como timeout, retry, circuit breaker, logs estruturados e propagação de contexto de rastreamento.
 
 ## Estrutura do repositório
 
@@ -118,23 +116,23 @@ make run
 
 **APIs dos microserviços**
 
-| Variável                        | Padrão                  | Descrição                                                              |
-| ------------------------------- | ----------------------- | ---------------------------------------------------------------------- |
-| `PEDAGOGICO_API_URL`            | `http://localhost:9004` | URL da API do microserviço pedagógico                                  |
-| `PEDAGOGICO_API_KEY`            | —                       | API Key enviada à API do microserviço pedagógico                       |
-| `PEDAGOGICO_API_KEY_HEADER`     | `X-API-Key`             | Nome do header de autenticação para a API do microserviço pedagógico   |
-| `PROFESSORES_API_URL`           | `http://localhost:9005` | URL da API do microserviço professores                                 |
-| `PROFESSORES_API_KEY`           | —                       | API Key enviada à API do microserviço professores                      |
-| `PROFESSORES_API_KEY_HEADER`    | `X-API-Key`             | Nome do header de autenticação para a API do microserviço professores  |
-| `INSTITUCIONAL_API_URL`         | `http://localhost:9006` | URL da API do microserviço institucional                               |
-| `INSTITUCIONAL_API_KEY`         | —                       | API Key enviada à API do microserviço institucional                    |
-| `INSTITUCIONAL_API_KEY_HEADER`  | `X-API-Key`             | Nome do header de autenticação para a API do microserviço institucional |
-| `PROGRAMASEDU_API_URL`          | `http://localhost:9006` | URL da API do microserviço de programas educacionais                   |
-| `PROGRAMASEDU_API_KEY`          | —                       | API Key enviada à API do microserviço de programas educacionais        |
-| `PROGRAMASEDU_API_KEY_HEADER`   | `X-API-Key`             | Nome do header de autenticação para programas educacionais             |
-| `ALUNOS_API_URL`                | `http://localhost:9007` | URL da API do microserviço alunos                                      |
-| `ALUNOS_API_KEY`                | —                       | API Key enviada à API do microserviço alunos                           |
-| `ALUNOS_API_KEY_HEADER`         | `X-API-Key`             | Nome do header de autenticação para a API do microserviço alunos       |
+| Variável                       | Padrão                  | Descrição                                                               |
+| ------------------------------ | ----------------------- | ----------------------------------------------------------------------- |
+| `PEDAGOGICO_API_URL`           | `http://localhost:9004` | URL da API do microserviço pedagógico                                   |
+| `PEDAGOGICO_API_KEY`           | —                       | API Key enviada à API do microserviço pedagógico                        |
+| `PEDAGOGICO_API_KEY_HEADER`    | `X-API-Key`             | Nome do header de autenticação para a API do microserviço pedagógico    |
+| `PROFESSORES_API_URL`          | `http://localhost:9005` | URL da API do microserviço professores                                  |
+| `PROFESSORES_API_KEY`          | —                       | API Key enviada à API do microserviço professores                       |
+| `PROFESSORES_API_KEY_HEADER`   | `X-API-Key`             | Nome do header de autenticação para a API do microserviço professores   |
+| `INSTITUCIONAL_API_URL`        | `http://localhost:9006` | URL da API do microserviço institucional                                |
+| `INSTITUCIONAL_API_KEY`        | —                       | API Key enviada à API do microserviço institucional                     |
+| `INSTITUCIONAL_API_KEY_HEADER` | `X-API-Key`             | Nome do header de autenticação para a API do microserviço institucional |
+| `PROGRAMASEDU_API_URL`         | `http://localhost:9006` | URL da API do microserviço de programas educacionais                    |
+| `PROGRAMASEDU_API_KEY`         | —                       | API Key enviada à API do microserviço de programas educacionais         |
+| `PROGRAMASEDU_API_KEY_HEADER`  | `X-API-Key`             | Nome do header de autenticação para programas educacionais              |
+| `ALUNOS_API_URL`               | `http://localhost:9007` | URL da API do microserviço alunos                                       |
+| `ALUNOS_API_KEY`               | —                       | API Key enviada à API do microserviço alunos                            |
+| `ALUNOS_API_KEY_HEADER`        | `X-API-Key`             | Nome do header de autenticação para a API do microserviço alunos        |
 
 **SME Sidecar SDK**
 
