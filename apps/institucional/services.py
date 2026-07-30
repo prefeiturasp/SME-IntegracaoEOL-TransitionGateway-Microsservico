@@ -2,18 +2,11 @@
 
 from typing import Any
 
-from django.conf import settings
-
-from apps.core.http_client import ServiceClient
+from apps.core.api_clients import get_api_client
 
 _BASE = "/api/v1/institucional"
 
-_client = ServiceClient(
-    base_url=settings.INSTITUCIONAL_API_URL,
-    dominio="institucional",
-    api_key=settings.INSTITUCIONAL_API_KEY,
-    api_key_header=settings.INSTITUCIONAL_API_KEY_HEADER,
-)
+_client = get_api_client("institucional")
 
 
 def _codigos_ue(data: Any) -> list[str]:

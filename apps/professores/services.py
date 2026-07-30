@@ -2,10 +2,8 @@
 
 from typing import Any
 
-from django.conf import settings
-
+from apps.core.api_clients import get_api_client
 from apps.core.datetime import datetime_legado
-from apps.core.http_client import ServiceClient
 from apps.institucional import services as institucional_services
 from apps.pedagogico import services as pedagogico_services
 from apps.professores.serializers import (
@@ -43,12 +41,7 @@ _TIPOS_ABRANGENCIA_VINCULO_UE = frozenset(
     }
 )
 
-_client = ServiceClient(
-    base_url=settings.PROFESSORES_API_URL,
-    dominio="professores",
-    api_key=settings.PROFESSORES_API_KEY,
-    api_key_header=settings.PROFESSORES_API_KEY_HEADER,
-)
+_client = get_api_client("professores")
 
 
 def _valores_param(

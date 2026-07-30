@@ -3,11 +3,9 @@
 from datetime import datetime, timedelta
 from typing import Any, cast
 
-from django.conf import settings
-
 from apps.alunos import services as alunos_services
+from apps.core.api_clients import get_api_client
 from apps.core.datetime import formatar_datetime_legado
-from apps.core.http_client import ServiceClient
 from apps.professores import services as professores_services
 
 _BASE = "/api/v1/pedagogico/componentes-curriculares"
@@ -19,12 +17,7 @@ _ETAPAS_TURMAS_HISTORICAS = frozenset(
 )
 _TIPOS_ESCOLA_TURMAS_HISTORICAS = frozenset({1, 2, 3, 4, 16, 28, 31})
 
-_client = ServiceClient(
-    base_url=settings.PEDAGOGICO_API_URL,
-    dominio="pedagogico",
-    api_key=settings.PEDAGOGICO_API_KEY,
-    api_key_header=settings.PEDAGOGICO_API_KEY_HEADER,
-)
+_client = get_api_client("pedagogico")
 
 
 def listar_turmas(codigos: list[int]) -> Any:

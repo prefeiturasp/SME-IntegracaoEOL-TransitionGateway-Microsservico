@@ -2,10 +2,8 @@
 
 from typing import Any
 
-from django.conf import settings
-
 from apps.alunos import services as alunos_services
-from apps.core.http_client import ServiceClient
+from apps.core.api_clients import get_api_client
 from apps.pedagogico import services as pedagogico_services
 
 _BASE = "/api/v1/programasedu/alunos"
@@ -32,12 +30,7 @@ _DESC_ETAPA_ENSINO = {
     17: "EMESP",
 }
 
-_client = ServiceClient(
-    base_url=settings.PROGRAMASEDU_API_URL,
-    dominio="programasedu",
-    api_key=settings.PROGRAMASEDU_API_KEY,
-    api_key_header=settings.PROGRAMASEDU_API_KEY_HEADER,
-)
+_client = get_api_client("programasedu")
 
 
 def listar_turmas_pap(ano_letivo: int, codigo_escola: str) -> Any:

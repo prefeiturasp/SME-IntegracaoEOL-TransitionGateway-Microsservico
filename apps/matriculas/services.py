@@ -2,19 +2,12 @@
 
 from typing import Any
 
-from django.conf import settings
-
-from apps.core.http_client import ServiceClient
+from apps.core.api_clients import get_api_client
 
 _BASE = "/api/v1/alunos/matriculas"
 _BASE_ALUNOS = "/api/v1/alunos"
 
-_client = ServiceClient(
-    base_url=settings.ALUNOS_API_URL,
-    dominio="matriculas",
-    api_key=settings.ALUNOS_API_KEY,
-    api_key_header=settings.ALUNOS_API_KEY_HEADER,
-)
+_client = get_api_client("alunos")
 
 
 def get_matriculas_ano_atual(ano_letivo: int, ue_codigo: str) -> Any:

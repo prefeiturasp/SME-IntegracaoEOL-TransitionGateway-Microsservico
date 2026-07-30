@@ -110,16 +110,21 @@ class ServiceClientRequestTest(SimpleTestCase):
 
         mock_client.return_value.close.assert_called_once_with()
 
-    @patch("apps.core.http_client.httpx.Client")
+    @patch("apps.core.http_client.build_http_client")
     def test_put_envia_payload_json(self, mock_client: MagicMock) -> None:
         """Verifica o envio de corpo JSON em requisições PUT."""
         svc = _make_client()
 
         svc.put("/recurso", payload={"ativo": True})
 
+        mock_client.assert_called_once_with(
+            "test",
+            base_url="https://fake-sidecar",
+            follow_redirects=True,
+        )
         mock_client.return_value.put.assert_called_once_with(
             "https://fake-sidecar/recurso",
-            headers={"Accept": "application/json", "X-Request-ID": "-"},
+            headers={"Accept": "application/json"},
             json={"ativo": True},
             params=None,
         )
