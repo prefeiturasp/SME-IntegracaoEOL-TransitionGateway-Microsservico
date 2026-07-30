@@ -135,25 +135,25 @@ Funcionalidade: API - Turmas
     Então retorna o status 200
     E o retorno deve ser uma lista vazia
 
-  # Cenário: Validar turma inexistente em redis multplex
-  #   Dado que possuo acesso à API de turmas
-  #   Quando realizo consulta de dados redis multplex da turma inexistente
-  #   Então retorna o status 204
+  Cenário: Validar turma inexistente em redis multplex
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de dados redis multplex da turma inexistente
+    Então retorna o status 204
 
-  # Cenário: Validar aluno inexistente em componentes curriculares da turma
-  #   Dado que possuo acesso à API de turmas
-  #   Quando realizo consulta de componentes curriculares do aluno da turma com aluno inexistente
-  #   Então retorna o status 200
-  #   E o retorno deve ser uma lista vazia
+  Cenário: Validar aluno inexistente em componentes curriculares da turma
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de componentes curriculares do aluno da turma com aluno inexistente
+    Então retorna o status 200
+    E o retorno deve ser uma lista vazia
 
-  # Cenário: Validar aluno inexistente em turmas regulares do aluno por ano letivo
-  #   Dado que possuo acesso à API de turmas
-  #   Quando realizo consulta de turmas regulares do aluno por ano letivo com aluno inexistente
-  #   Então retorna o status 200
-  #   E o retorno deve ser uma lista vazia
+  Cenário: Validar aluno inexistente em turmas regulares do aluno por ano letivo
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de turmas regulares do aluno por ano letivo com aluno inexistente
+    Então retorna o status 200
+    E o retorno deve ser uma lista vazia
 
-  # Cenário: Validar professor inexistente em turmas históricas gerais
-  #   Dado que possuo acesso à API de turmas
-  #   Quando realizo consulta de turmas historicas gerais do professor inexistente
-  #   Então retorna o status 200
-  #   E o retorno deve ser uma lista vazia
+  Cenário: Validar professor inexistente em turmas históricas gerais
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de turmas historicas gerais do professor inexistente
+    Então retorna o status 200
+    E o retorno deve ser uma lista vazia
