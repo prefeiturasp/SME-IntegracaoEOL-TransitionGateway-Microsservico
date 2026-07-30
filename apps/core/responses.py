@@ -7,9 +7,15 @@ from rest_framework.response import Response
 
 __all__ = [
     "Response",
+    "api_unavailable_response",
     "detail_response",
     "api_error_response_status_livre",
 ]
+
+
+def api_unavailable_response(domain: str, status_code: int = 503) -> Response:
+    """Retorna resposta padronizada para API temporariamente indisponível."""
+    return detail_response(f"Serviço de {domain} indisponível.", status_code)
 
 
 def detail_response(detail: str, status_code: int = 400) -> Response:

@@ -14,7 +14,6 @@ from drf_spectacular.utils import (
     extend_schema,
 )
 from rest_framework.request import Request
-from rest_framework.views import APIView
 
 from apps.alunos import services
 from apps.alunos.serializers import (
@@ -44,8 +43,10 @@ from apps.alunos.serializers import (
 from apps.core.responses import (
     Response,
     api_error_response_status_livre,
+    api_unavailable_response,
     detail_response,
 )
+from apps.core.views import DomainAPIView
 from apps.institucional import services as institucional_services
 from apps.pedagogico import services as pedagogico_services
 
@@ -68,7 +69,7 @@ _MSG_ANO_MODALIDADE_OBRIGATORIOS = (
 _MSG_DATA_TICKS_OBRIGATORIA = (
     "O código da turma e data da aula são obrigatórios"
 )
-_MSG_API_INDISPONIVEL = "Servico de alunos indisponivel."
+_DOMINIO_ALUNOS = "alunos"
 _MSG_LEGADO_ERRO_INESPERADO = (
     "Houve um comportamento inesperado do sistema. Por favor, contate a SME."
 )
@@ -101,10 +102,13 @@ def _api_unavailable_response(_exc: httpx.RequestError) -> Response:
     Returns:
         Resposta de indisponibilidade no formato do gateway.
     """
-    return Response(
-        {"detail": _MSG_API_INDISPONIVEL},
-        status=503,
-    )
+    return api_unavailable_response(_DOMINIO_ALUNOS)
+
+
+class AlunosAPIView(DomainAPIView):
+    """APIView base que padroniza falhas de comunicação com alunos."""
+
+    api_domain = _DOMINIO_ALUNOS
 
 
 def _is_not_found(exc: httpx.HTTPStatusError) -> bool:
@@ -285,7 +289,7 @@ def _path_bool(value: str) -> bool | None:
     return None
 
 
-class AlunoAutocompleteAtivosView(APIView):
+class AlunoAutocompleteAtivosView(AlunosAPIView):
     """Lista alunos ativos para autocomplete."""
 
     @extend_schema(
@@ -349,7 +353,7 @@ class AlunoAutocompleteAtivosView(APIView):
         return Response(AlunoAutocompleteSerializer(data, many=True).data)
 
 
-class AlunoAutocompleteUeView(APIView):
+class AlunoAutocompleteUeView(AlunosAPIView):
     """Lista alunos da UE/ano para autocomplete."""
 
     @extend_schema(
@@ -411,7 +415,7 @@ class AlunoAutocompleteUeView(APIView):
         return Response(AlunoAutocompleteUeSerializer(data, many=True).data)
 
 
-class DadosAcompanhamentoEscolarView(APIView):
+class DadosAcompanhamentoEscolarView(AlunosAPIView):
     """Lista dados de acompanhamento escolar dos alunos."""
 
     @extend_schema(
@@ -453,7 +457,7 @@ class DadosAcompanhamentoEscolarView(APIView):
         )
 
 
-class AlunoTurmasComHistoricoView(APIView):
+class AlunoTurmasComHistoricoView(AlunosAPIView):
     """Lista turmas do aluno com origem histórica explícita."""
 
     @extend_schema(
@@ -522,7 +526,7 @@ class AlunoTurmasComHistoricoView(APIView):
         return Response(TurmaDoAlunoSerializer(data, many=True).data)
 
 
-class AlunosPorAnoView(APIView):
+class AlunosPorAnoView(AlunosAPIView):
     """Lista alunos pelos códigos restritos a um ano letivo."""
 
     @extend_schema(
@@ -567,7 +571,7 @@ class AlunosPorAnoView(APIView):
         return Response(AlunoPorCodigoSerializer(data, many=True).data)
 
 
-class QuantidadeMatriculadosCCView(APIView):
+class QuantidadeMatriculadosCCView(AlunosAPIView):
     """Lista matriculados por componente curricular e ano letivo."""
 
     @extend_schema(
@@ -619,7 +623,7 @@ class QuantidadeMatriculadosCCView(APIView):
         )
 
 
-class QuantidadeMatriculadosView(APIView):
+class QuantidadeMatriculadosView(AlunosAPIView):
     """Lista a quantidade de alunos matriculados por ano letivo."""
 
     @extend_schema(
@@ -666,7 +670,7 @@ class QuantidadeMatriculadosView(APIView):
         return Response(QuantidadeMatriculadosSerializer(data, many=True).data)
 
 
-class AlunoInformacoesView(APIView):
+class AlunoInformacoesView(AlunosAPIView):
     """Retorna informações completas do aluno."""
 
     @extend_schema(
@@ -710,7 +714,7 @@ class AlunoInformacoesView(APIView):
         return Response(AlunoInformacoesSerializer(data).data)
 
 
-class ResponsavelResumidoView(APIView):
+class ResponsavelResumidoView(AlunosAPIView):
     """Retorna dados resumidos de responsável."""
 
     @extend_schema(
@@ -757,7 +761,7 @@ class ResponsavelResumidoView(APIView):
         return Response(ResponsavelResumidoSerializer(data).data)
 
 
-class ResponsaveisView(APIView):
+class ResponsaveisView(AlunosAPIView):
     """Lista responsáveis aptos ao acompanhamento por turma."""
 
     @extend_schema(
@@ -798,7 +802,7 @@ class ResponsaveisView(APIView):
         return Response(ResponsavelTurmaSerializer(data, many=True).data)
 
 
-class DadosResponsavelView(APIView):
+class DadosResponsavelView(AlunosAPIView):
     """Lista os dados do responsável e dos alunos vinculados."""
 
     @extend_schema(
@@ -831,7 +835,7 @@ class DadosResponsavelView(APIView):
         return Response(DadosResponsavelSerializer(data, many=True).data)
 
 
-class ResponsavelAlunoView(APIView):
+class ResponsavelAlunoView(AlunosAPIView):
     """Atualiza dados do responsável vinculado ao aluno."""
 
     @extend_schema(
@@ -925,7 +929,7 @@ class ResponsavelAlunoView(APIView):
         return Response(atualizado)
 
 
-class ObterNomesAlunosView(APIView):
+class ObterNomesAlunosView(AlunosAPIView):
     """Lista nomes e dados de matrícula-turma dos alunos."""
 
     @extend_schema(
@@ -967,7 +971,7 @@ class ObterNomesAlunosView(APIView):
         return Response(NomeAlunoSerializer(data, many=True).data)
 
 
-class FiliacaoAlunoView(APIView):
+class FiliacaoAlunoView(AlunosAPIView):
     """Lista os dados de filiação do aluno."""
 
     @extend_schema(
@@ -1001,7 +1005,7 @@ class FiliacaoAlunoView(APIView):
         return Response(FiliacaoResponsavelSerializer(data, many=True).data)
 
 
-class InformacoesAlunosTurmaView(APIView):
+class InformacoesAlunosTurmaView(AlunosAPIView):
     """Lista informações dos alunos de uma turma."""
 
     @extend_schema(
@@ -1049,7 +1053,7 @@ class InformacoesAlunosTurmaView(APIView):
         return Response(InformacoesAlunoTurmaSerializer(data, many=True).data)
 
 
-class AlunosAtivosDataAulaTicksView(APIView):
+class AlunosAtivosDataAulaTicksView(AlunosAPIView):
     """Lista alunos ativos de uma turma na data da aula."""
 
     @extend_schema(
@@ -1108,7 +1112,7 @@ class AlunosAtivosDataAulaTicksView(APIView):
         return Response(serializer.data)
 
 
-class AlunosDataMatriculaTicksView(APIView):
+class AlunosDataMatriculaTicksView(AlunosAPIView):
     """Lista alunos de uma turma por data de matricula."""
 
     @extend_schema(
@@ -1162,7 +1166,7 @@ class AlunosDataMatriculaTicksView(APIView):
         return Response(serializer.data)
 
 
-class AlunoTurmaConsideraInativosView(APIView):
+class AlunoTurmaConsideraInativosView(AlunosAPIView):
     """Retorna dados de um aluno em uma turma."""
 
     @extend_schema(
@@ -1229,7 +1233,7 @@ class AlunoTurmaConsideraInativosView(APIView):
         return Response(AlunoMatriculaTurmaSerializer(data[0]).data)
 
 
-class AlunoMatriculasTurmaView(APIView):
+class AlunoMatriculasTurmaView(AlunosAPIView):
     """Lista as matrículas de um aluno em uma turma."""
 
     @extend_schema(
@@ -1281,7 +1285,7 @@ class AlunoMatriculasTurmaView(APIView):
         return Response(AlunoMatriculaTurmaSerializer(data, many=True).data)
 
 
-class TotalAlunosTurmasPeriodoView(APIView):
+class TotalAlunosTurmasPeriodoView(AlunosAPIView):
     """Conta alunos por ano da turma, modalidade, DRE e período."""
 
     @extend_schema(
@@ -1370,7 +1374,7 @@ class TotalAlunosTurmasPeriodoView(APIView):
         return Response(quantidade)
 
 
-class AcompanhamentoEscolarTurmaView(APIView):
+class AcompanhamentoEscolarTurmaView(AlunosAPIView):
     """Lista alunos e responsáveis vigentes de uma turma de acompanhamento."""
 
     @extend_schema(
@@ -1419,7 +1423,7 @@ class AcompanhamentoEscolarTurmaView(APIView):
         )
 
 
-class TodosAlunosTurmaView(APIView):
+class TodosAlunosTurmaView(AlunosAPIView):
     """Lista o histórico de vínculos dos alunos com a turma."""
 
     @extend_schema(
@@ -1476,7 +1480,7 @@ class TodosAlunosTurmaView(APIView):
         return Response(TodosAlunosTurmaSerializer(data, many=True).data)
 
 
-class MatriculasTurmasAlunoView(APIView):
+class MatriculasTurmasAlunoView(AlunosAPIView):
     """Lista as matrículas-turma do aluno em todas as turmas e anos."""
 
     @extend_schema(
@@ -1536,7 +1540,7 @@ class MatriculasTurmasAlunoView(APIView):
         return Response(AlunoMatriculaTurmaSerializer(data, many=True).data)
 
 
-class AlunosTurmaAnoLetivoView(APIView):
+class AlunosTurmaAnoLetivoView(AlunosAPIView):
     """Lista os alunos de uma turma em um ano letivo."""
 
     @extend_schema(
@@ -1601,7 +1605,7 @@ class AlunosTurmaAnoLetivoView(APIView):
         return Response(AlunoMatriculaTurmaSerializer(data, many=True).data)
 
 
-class AlunosCalculoFrequenciaTurmaView(APIView):
+class AlunosCalculoFrequenciaTurmaView(AlunosAPIView):
     """Lista os códigos de aluno de uma turma para cálculo de frequência."""
 
     @extend_schema(
@@ -1685,7 +1689,7 @@ def _query_int_opt(request: Request, nome: str) -> int | None:
     return None
 
 
-class CodigosTurmasRegularesAlunoView(APIView):
+class CodigosTurmasRegularesAlunoView(AlunosAPIView):
     """Lista códigos de turma regulares do aluno no ano letivo."""
 
     @extend_schema(
@@ -1756,7 +1760,7 @@ class CodigosTurmasRegularesAlunoView(APIView):
         return Response([str(codigo) for codigo in codigos])
 
 
-class CodigoTurmaAlunoComponenteCurricularView(APIView):
+class CodigoTurmaAlunoComponenteCurricularView(AlunosAPIView):
     """Lista códigos de turma do aluno por componente curricular.
 
     Alias do endpoint ``.../regulares``: o componente curricular é aceito
@@ -1823,7 +1827,7 @@ class CodigoTurmaAlunoComponenteCurricularView(APIView):
         return Response([str(codigo) for codigo in codigos])
 
 
-class AlunoNecessidadesEspeciaisView(APIView):
+class AlunoNecessidadesEspeciaisView(AlunosAPIView):
     """Retorna necessidades especiais do aluno."""
 
     @extend_schema(
@@ -1860,7 +1864,7 @@ class AlunoNecessidadesEspeciaisView(APIView):
         return Response(NecessidadeEspecialSerializer(data).data)
 
 
-class AlunoTurmasView(APIView):
+class AlunoTurmasView(AlunosAPIView):
     """Retorna turmas do aluno."""
 
     @extend_schema(exclude=True)
@@ -1884,7 +1888,7 @@ class AlunoTurmasView(APIView):
         return Response(TurmaDoAlunoSerializer(data, many=True).data)
 
 
-class AlunosDaUeView(APIView):
+class AlunosDaUeView(AlunosAPIView):
     """Lista alunos matriculados em uma unidade educacional."""
 
     @extend_schema(
@@ -1931,7 +1935,7 @@ class AlunosDaUeView(APIView):
         return Response(AlunoPorCodigoSerializer(data, many=True).data)
 
 
-class AlunoTurmasPorSituacaoView(APIView):
+class AlunoTurmasPorSituacaoView(AlunosAPIView):
     """Lista turmas do aluno filtradas por situação de matrícula e tipo."""
 
     @extend_schema(
@@ -1996,7 +2000,7 @@ class AlunoTurmasPorSituacaoView(APIView):
         return Response(TurmaDoAlunoSerializer(data, many=True).data)
 
 
-class AlunosAtivosTurmaView(APIView):
+class AlunosAtivosTurmaView(AlunosAPIView):
     """Lista alunos ativos de uma turma."""
 
     @extend_schema(
@@ -2028,7 +2032,7 @@ class AlunosAtivosTurmaView(APIView):
         return Response(AlunoAtivoTurmaSerializer(data, many=True).data)
 
 
-class AlunosAtivosPeriodoTurmaView(APIView):
+class AlunosAtivosPeriodoTurmaView(AlunosAPIView):
     """Lista alunos ativos de uma turma em um período."""
 
     @extend_schema(
@@ -2081,7 +2085,7 @@ class AlunosAtivosPeriodoTurmaView(APIView):
         return Response(AlunoAtivoTurmaSerializer(data, many=True).data)
 
 
-class TotalAlunosAtivosPeriodoView(APIView):
+class TotalAlunosAtivosPeriodoView(AlunosAPIView):
     """Retorna o total de alunos ativos em um período."""
 
     @extend_schema(
@@ -2138,7 +2142,7 @@ class TotalAlunosAtivosPeriodoView(APIView):
         return Response(data["quantidade"])
 
 
-class AlunosListView(APIView):
+class AlunosListView(AlunosAPIView):
     """Lista alunos."""
 
     @extend_schema(

@@ -9,9 +9,13 @@ from drf_spectacular.utils import (
     extend_schema,
 )
 from rest_framework.request import Request
-from rest_framework.views import APIView
 
-from apps.core.responses import Response, detail_response
+from apps.core.responses import (
+    Response,
+    api_unavailable_response,
+    detail_response,
+)
+from apps.core.views import DomainAPIView
 from apps.matriculas import services
 from apps.matriculas.serializers import (
     MatriculaAlunoEscolaSerializer,
@@ -21,7 +25,7 @@ from apps.matriculas.serializers import (
 
 _TAG = ["Aluno"]
 _MSG_ANO_LETIVO_INVALIDO = "ano_letivo deve ser um inteiro válido."
-_MSG_API_INDISPONIVEL = "Servico de matriculas indisponivel."
+_DOMINIO_MATRICULAS = "matriculas"
 _MSG_CODIGO_UE_OBRIGATORIO = "Código da UE obrigatório."
 _MSG_CODIGO_DRE_OBRIGATORIO = "Código da DRE obrigatório."
 _MSG_CODIGO_ESCOLA_OBRIGATORIO = "Código da escola obrigatório."
@@ -56,7 +60,13 @@ def _api_unavailable_response(_exc: httpx.RequestError) -> Response:
     Returns:
         Resposta de indisponibilidade no formato do gateway.
     """
-    return Response({"detail": _MSG_API_INDISPONIVEL}, status=503)
+    return api_unavailable_response(_DOMINIO_MATRICULAS)
+
+
+class MatriculasAPIView(DomainAPIView):
+    """APIView base que padroniza falhas de comunicação com matrículas."""
+
+    api_domain = _DOMINIO_MATRICULAS
 
 
 def _query_alias(request: Request, *names: str) -> str | None:
@@ -76,7 +86,7 @@ def _query_alias(request: Request, *names: str) -> str | None:
     return None
 
 
-class MatriculasAnoAtualView(APIView):
+class MatriculasAnoAtualView(MatriculasAPIView):
     """Lista matrículas consolidadas do ano letivo."""
 
     @extend_schema(
@@ -122,7 +132,7 @@ class MatriculasAnoAtualView(APIView):
         return Response(MatriculaSerializer(data, many=True).data)
 
 
-class MatriculasAnosAnterioresView(APIView):
+class MatriculasAnosAnterioresView(MatriculasAPIView):
     """Lista matrículas históricas consolidadas por turma."""
 
     @extend_schema(
@@ -164,7 +174,7 @@ class MatriculasAnosAnterioresView(APIView):
         return Response(MatriculaSerializer(data, many=True).data)
 
 
-class TotalMatriculasPorTurnoUeView(APIView):
+class TotalMatriculasPorTurnoUeView(MatriculasAPIView):
     """Lista o total de matrículas por turno na UE."""
 
     @extend_schema(
@@ -199,7 +209,7 @@ class TotalMatriculasPorTurnoUeView(APIView):
         return Response(data)
 
 
-class TotalMatriculasPorTurnoDreView(APIView):
+class TotalMatriculasPorTurnoDreView(MatriculasAPIView):
     """Lista o total de matrículas por turno na DRE."""
 
     @extend_schema(
@@ -234,7 +244,7 @@ class TotalMatriculasPorTurnoDreView(APIView):
         return Response(data)
 
 
-class QuantidadeAlunosPorTurmaEscolaView(APIView):
+class QuantidadeAlunosPorTurmaEscolaView(MatriculasAPIView):
     """Lista a quantidade de alunos por turma na escola."""
 
     @extend_schema(
@@ -271,7 +281,7 @@ class QuantidadeAlunosPorTurmaEscolaView(APIView):
         )
 
 
-class MatriculasAlunoEscolaView(APIView):
+class MatriculasAlunoEscolaView(MatriculasAPIView):
     """Lista matrículas de um aluno na escola."""
 
     @extend_schema(

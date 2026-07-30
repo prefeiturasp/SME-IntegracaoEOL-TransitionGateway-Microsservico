@@ -2,6 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
+import httpx
 from django.contrib.auth.models import User
 from django.test import SimpleTestCase
 from django.urls import resolve
@@ -933,6 +934,27 @@ class FuncionariosPerfisViewTest(SimpleTestCase):
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(resp.json(), "erro")
+
+    @patch(
+        "apps.professores.views.services.get_funcionarios_sgp_por_perfil_dre"
+    )
+    def test_503_quando_api_indisponivel(
+        self, mock_service: MagicMock
+    ) -> None:
+        request = httpx.Request("GET", "https://professores.local/test")
+        mock_service.side_effect = httpx.ConnectError(
+            "Circuit breaker aberto para professores",
+            request=request,
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/perfis/perfil-x/dres/108200/")
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "Serviço de professores indisponível."},
+        )
 
 
 class FuncionariosPerfisDreViewTest(SimpleTestCase):

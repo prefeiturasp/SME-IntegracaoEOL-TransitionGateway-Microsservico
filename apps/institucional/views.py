@@ -7,8 +7,9 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
+from apps.core.responses import api_unavailable_response
+from apps.core.views import DomainAPIView
 from apps.institucional import services
 from apps.institucional.serializers import (
     DadosEscolaSerializer,
@@ -29,7 +30,7 @@ from apps.institucional.serializers import (
 
 _TAG_DRE = ["DiretoriaRegionalEducacao"]
 _TAG_ESCOLA = ["Escola"]
-_API_INDISPONIVEL_DETAIL = "Serviço institucional indisponível"
+_DOMINIO_INSTITUCIONAL = "institucional"
 
 _ESCOLA_RESUMO_CAMPOS = {
     "codigoEscola",
@@ -126,6 +127,12 @@ _SINCRONIZACAO_INSTITUCIONAL_CAMPOS = {
 }
 
 
+class InstitucionalAPIView(DomainAPIView):
+    """APIView base que padroniza falhas de comunicação institucional."""
+
+    api_domain = _DOMINIO_INSTITUCIONAL
+
+
 def _filtrar_escola_resumo(item: dict) -> dict:
     return {k: v for k, v in item.items() if k in _ESCOLA_RESUMO_CAMPOS}
 
@@ -164,7 +171,7 @@ def _filtrar_sincronizacao_institucional(item: dict) -> dict:
     }
 
 
-class DREListView(APIView):
+class DREListView(InstitucionalAPIView):
     """Lista Diretorias Regionais de Educação."""
 
     @extend_schema(
@@ -199,7 +206,7 @@ class DREListView(APIView):
         return Response(data)
 
 
-class DREDetalheView(APIView):
+class DREDetalheView(InstitucionalAPIView):
     """Retorna dados de uma Diretoria Regional de Educação."""
 
     @extend_schema(
@@ -233,7 +240,7 @@ class DREDetalheView(APIView):
         return Response(data if isinstance(data, list) else [data])
 
 
-class EscolasPorDREView(APIView):
+class EscolasPorDREView(InstitucionalAPIView):
     """Lista escolas vinculadas a uma DRE."""
 
     @extend_schema(
@@ -265,7 +272,7 @@ class EscolasPorDREView(APIView):
         return Response([_filtrar_escola_resumo(e) for e in data])
 
 
-class EscolasSigpaePorDREView(APIView):
+class EscolasSigpaePorDREView(InstitucionalAPIView):
     """Lista escolas de uma DRE no formato SIGPAE."""
 
     @extend_schema(
@@ -316,7 +323,7 @@ class EscolasSigpaePorDREView(APIView):
         return Response([])
 
 
-class SubprefeiturasPorDREView(APIView):
+class SubprefeiturasPorDREView(InstitucionalAPIView):
     """Lista subprefeituras vinculadas à DRE."""
 
     @extend_schema(
@@ -348,7 +355,7 @@ class SubprefeiturasPorDREView(APIView):
         return Response(data)
 
 
-class EscolasPorDREeTipoView(APIView):
+class EscolasPorDREeTipoView(InstitucionalAPIView):
     """Lista escolas de uma DRE por tipo."""
 
     @extend_schema(
@@ -392,7 +399,7 @@ class EscolasPorDREeTipoView(APIView):
         return Response([_filtrar_escola_por_dre_tipo(e) for e in data])
 
 
-class UesPorDREView(APIView):
+class UesPorDREView(InstitucionalAPIView):
     """Lista códigos de UEs vinculadas à DRE."""
 
     @extend_schema(
@@ -424,7 +431,7 @@ class UesPorDREView(APIView):
         return Response(data)
 
 
-class UnidadesPorDREView(APIView):
+class UnidadesPorDREView(InstitucionalAPIView):
     """Lista unidades administrativas vinculadas à DRE."""
 
     @extend_schema(
@@ -456,7 +463,7 @@ class UnidadesPorDREView(APIView):
         return Response(data)
 
 
-class UnidadeCodigoIntegracaoPorDREView(APIView):
+class UnidadeCodigoIntegracaoPorDREView(InstitucionalAPIView):
     """Lista UEs com código de integração por DRE."""
 
     @extend_schema(
@@ -507,7 +514,7 @@ class UnidadeCodigoIntegracaoPorDREView(APIView):
         return Response([])
 
 
-class DadosEscolaView(APIView):
+class DadosEscolaView(InstitucionalAPIView):
     """Retorna dados completos de uma escola."""
 
     @extend_schema(
@@ -544,7 +551,7 @@ class DadosEscolaView(APIView):
         return Response(item)
 
 
-class SubprefeiturasPorEscolaView(APIView):
+class SubprefeiturasPorEscolaView(InstitucionalAPIView):
     """Lista subprefeituras vinculadas à escola."""
 
     @extend_schema(
@@ -591,13 +598,10 @@ def _api_error_response(exc: httpx.HTTPStatusError) -> Response:
 
 def _api_unavailable_response() -> Response:
     """Resposta padrão quando a API institucional não responde."""
-    return Response(
-        {"detail": _API_INDISPONIVEL_DETAIL},
-        status=status.HTTP_502_BAD_GATEWAY,
-    )
+    return api_unavailable_response(_DOMINIO_INSTITUCIONAL)
 
 
-class TiposEscolasView(APIView):
+class TiposEscolasView(InstitucionalAPIView):
     """Lista tipos de escola cadastrados."""
 
     @extend_schema(
@@ -613,7 +617,7 @@ class TiposEscolasView(APIView):
         return Response(services.get_tipos_escolas())
 
 
-class EscolasListPostView(APIView):
+class EscolasListPostView(InstitucionalAPIView):
     """Lista escolas pelos códigos informados no corpo da requisição."""
 
     @extend_schema(
@@ -661,7 +665,7 @@ class EscolasListPostView(APIView):
         return Response([])
 
 
-class EscolaDetalheView(APIView):
+class EscolaDetalheView(InstitucionalAPIView):
     """Retorna dados de uma escola."""
 
     @extend_schema(
@@ -696,7 +700,7 @@ class EscolaDetalheView(APIView):
         return Response(_filtrar_escola_detalhe(item))
 
 
-class UnidadeEolView(APIView):
+class UnidadeEolView(InstitucionalAPIView):
     """Retorna dados resumidos de uma unidade pelo código EOL."""
 
     @extend_schema(
@@ -733,7 +737,7 @@ class UnidadeEolView(APIView):
         return Response(data)
 
 
-class SincronizacoesInstitucionaisView(APIView):
+class SincronizacoesInstitucionaisView(InstitucionalAPIView):
     """Retorna a sincronização institucional de uma UE."""
 
     @extend_schema(
@@ -774,7 +778,7 @@ class SincronizacoesInstitucionaisView(APIView):
         return Response(data)
 
 
-class UnidadesParceirasView(APIView):
+class UnidadesParceirasView(InstitucionalAPIView):
     """Retorna unidades parceiras pelos códigos informados."""
 
     @extend_schema(
@@ -840,7 +844,7 @@ _EQUIPAMENTOS_PARAMS = [
 ]
 
 
-class EquipamentosView(APIView):
+class EquipamentosView(InstitucionalAPIView):
     """Lista equipamentos das unidades educacionais."""
 
     @extend_schema(
@@ -869,7 +873,7 @@ class EquipamentosView(APIView):
         return Response(serializer.data)
 
 
-class TodasUnidadesView(APIView):
+class TodasUnidadesView(InstitucionalAPIView):
     """Lista todas as unidades educacionais."""
 
     @extend_schema(
@@ -885,10 +889,7 @@ class TodasUnidadesView(APIView):
         try:
             data = services.get_todas_unidades()
         except httpx.RequestError:
-            return Response(
-                {"detail": _API_INDISPONIVEL_DETAIL},
-                status=status.HTTP_502_BAD_GATEWAY,
-            )
+            return _api_unavailable_response()
         resultados = data.get("results") if isinstance(data, dict) else data
         if not resultados:
             return Response([])
@@ -901,7 +902,7 @@ class TodasUnidadesView(APIView):
         )
 
 
-class TiposUnidadeEducacaoView(APIView):
+class TiposUnidadeEducacaoView(InstitucionalAPIView):
     """Lista tipos de unidade educacional."""
 
     @extend_schema(
@@ -916,8 +917,5 @@ class TiposUnidadeEducacaoView(APIView):
         try:
             data = services.get_tipos_unidade_educacao()
         except httpx.RequestError:
-            return Response(
-                {"detail": _API_INDISPONIVEL_DETAIL},
-                status=status.HTTP_502_BAD_GATEWAY,
-            )
+            return _api_unavailable_response()
         return Response(data)
