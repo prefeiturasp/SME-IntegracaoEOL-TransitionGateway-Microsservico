@@ -262,19 +262,15 @@ class TurmaHistoricaGeralSerializer(serializers.Serializer):
 
     def to_representation(self, instance: Any) -> dict[str, Any]:
         """Fixa os campos sem dados do legado com valores padrão."""
-        representacao = super().to_representation(instance)
-        representacao.update(
-            {
-                "dataFim": None,
-                "dataInicioTurma": None,
-                "duracaoTurno": 0,
-                "serieEnsino": None,
-                "situacao": None,
-                "tipoTurma": 0,
-                "tipoTurno": 0,
-                "ueCodigo": None,
-            }
-        )
+        representacao = dict(super().to_representation(instance))
+        representacao["dataFim"] = None
+        representacao["dataInicioTurma"] = None
+        representacao["duracaoTurno"] = 0
+        representacao["serieEnsino"] = None
+        representacao["situacao"] = None
+        representacao["tipoTurma"] = 0
+        representacao["tipoTurno"] = 0
+        representacao["ueCodigo"] = None
         return representacao
 
 
