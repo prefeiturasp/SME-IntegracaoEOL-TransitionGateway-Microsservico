@@ -237,8 +237,13 @@ class TotalMatriculasPorTurnoUeViewTest(SimpleTestCase):
 
     _URL = "/api/matriculas/escolas/100001/quantidades"
 
+    @patch("apps.matriculas.views._fallback_total_matriculas_por_turno_ue")
     @patch("apps.matriculas.views.services.get_total_matriculas_por_turno_ue")
-    def test_200_retorna_objeto_contrato(self, mock_service: MagicMock) -> None:
+    def test_200_retorna_objeto_contrato(
+        self,
+        mock_service: MagicMock,
+        mock_fallback: MagicMock,
+    ) -> None:
         mock_service.return_value = {
             "totalMatricula": 72,
             "turnos": [
@@ -268,15 +273,49 @@ class TotalMatriculasPorTurnoUeViewTest(SimpleTestCase):
             },
         )
         mock_service.assert_called_once_with("100001")
+        mock_fallback.assert_not_called()
 
+    @patch("apps.matriculas.views._fallback_total_matriculas_por_turno_ue")
     @patch("apps.matriculas.views.services.get_total_matriculas_por_turno_ue")
-    def test_204_quando_sem_dados(self, mock_service: MagicMock) -> None:
+    def test_204_quando_sem_dados(
+        self,
+        mock_service: MagicMock,
+        mock_fallback: MagicMock,
+    ) -> None:
         mock_service.return_value = []
+        mock_fallback.return_value = None
         client = _cliente_autenticado()
 
         resp = client.get(self._URL)
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        mock_fallback.assert_called_once_with("100001")
+
+    @patch("apps.matriculas.views._fallback_total_matriculas_por_turno_ue")
+    @patch("apps.matriculas.views.services.get_total_matriculas_por_turno_ue")
+    def test_200_quando_fallback_monta_contrato(
+        self,
+        mock_service: MagicMock,
+        mock_fallback: MagicMock,
+    ) -> None:
+        mock_service.return_value = []
+        mock_fallback.return_value = {
+            "totalMatricula": 72,
+            "turnos": [
+                {
+                    "turno": "Integral",
+                    "tipoTurno": 6,
+                    "quantidade": 72,
+                }
+            ],
+        }
+        client = _cliente_autenticado()
+
+        resp = client.get(self._URL)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()["totalMatricula"], 72)
+        mock_fallback.assert_called_once_with("100001")
 
     @patch("apps.matriculas.views.services.get_total_matriculas_por_turno_ue")
     def test_503_quando_sidecar_indisponivel(
@@ -295,8 +334,13 @@ class TotalMatriculasPorTurnoDreViewTest(SimpleTestCase):
 
     _URL = "/api/matriculas/escolas/dre/108800/quantidades"
 
+    @patch("apps.matriculas.views._fallback_total_matriculas_por_turno_dre")
     @patch("apps.matriculas.views.services.get_total_matriculas_por_turno_dre")
-    def test_200_retorna_lista_contrato(self, mock_service: MagicMock) -> None:
+    def test_200_retorna_lista_contrato(
+        self,
+        mock_service: MagicMock,
+        mock_fallback: MagicMock,
+    ) -> None:
         mock_service.return_value = [
             {
                 "totalMatriculas": 922,
@@ -332,15 +376,52 @@ class TotalMatriculasPorTurnoDreViewTest(SimpleTestCase):
             ],
         )
         mock_service.assert_called_once_with("108800")
+        mock_fallback.assert_not_called()
 
+    @patch("apps.matriculas.views._fallback_total_matriculas_por_turno_dre")
     @patch("apps.matriculas.views.services.get_total_matriculas_por_turno_dre")
-    def test_204_quando_sem_dados(self, mock_service: MagicMock) -> None:
+    def test_204_quando_sem_dados(
+        self,
+        mock_service: MagicMock,
+        mock_fallback: MagicMock,
+    ) -> None:
         mock_service.return_value = []
+        mock_fallback.return_value = []
         client = _cliente_autenticado()
 
         resp = client.get(self._URL)
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        mock_fallback.assert_called_once_with("108800")
+
+    @patch("apps.matriculas.views._fallback_total_matriculas_por_turno_dre")
+    @patch("apps.matriculas.views.services.get_total_matriculas_por_turno_dre")
+    def test_200_quando_fallback_monta_contrato(
+        self,
+        mock_service: MagicMock,
+        mock_fallback: MagicMock,
+    ) -> None:
+        mock_service.return_value = []
+        mock_fallback.return_value = [
+            {
+                "codigoEolEscola": "100001",
+                "totalMatriculas": 72,
+                "turnos": [
+                    {
+                        "turno": "Integral",
+                        "tipoTurno": 6,
+                        "quantidade": 72,
+                    }
+                ],
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(self._URL)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()[0]["totalMatriculas"], 72)
+        mock_fallback.assert_called_once_with("108800")
 
     @patch("apps.matriculas.views.services.get_total_matriculas_por_turno_dre")
     def test_503_quando_sidecar_indisponivel(
