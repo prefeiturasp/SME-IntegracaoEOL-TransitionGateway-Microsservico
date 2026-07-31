@@ -8,3 +8,9 @@ class CoreConfig(AppConfig):
 
     name = "apps.core"
     label = "core"
+
+    def ready(self) -> None:
+        """Inicializa resiliência e observabilidade no boot do processo."""
+        from sme_sidecar_sdk import runtime
+
+        runtime.configure()

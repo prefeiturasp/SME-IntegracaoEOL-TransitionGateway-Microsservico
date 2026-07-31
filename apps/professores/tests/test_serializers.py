@@ -12,12 +12,17 @@ from apps.professores.serializers import (
     FuncionarioFuncaoAtividadeSerializer,
     FuncionarioFuncaoExternaSerializer,
     FuncionarioLegadoSerializer,
+    FuncionarioSgpLegadoSerializer,
+    ProfessorAtribuicaoTurmaDisciplinaSerializer,
     ProfessorAutoCompleteSerializer,
+    ProfessorStatusAtribuicaoSerializer,
     ProfessorTurmaAtribuidaSimplificadaSerializer,
+    SupervisorLegadoSerializer,
     TextoEstritoField,
     TurmaAtribuidaProfessorSerializer,
     TurmaElegivelLegadoSerializer,
     TurmasAtribuidasLegadoSerializer,
+    VerificarAtribuicaoDisciplinaQuerySerializer,
 )
 
 
@@ -36,6 +41,82 @@ class TextoEstritoFieldTest(SimpleTestCase):
             self.assertRaises(serializers.ValidationError),
         ):
             field.to_internal_value("abc")
+
+
+class VerificarAtribuicaoDisciplinaQuerySerializerTest(SimpleTestCase):
+    """Valida a conversão do indicador de território do saber."""
+
+    def test_converte_false_textual_em_booleano(self) -> None:
+        serializer = VerificarAtribuicaoDisciplinaQuerySerializer(
+            data={"territorioSaber": "false"}
+        )
+
+        self.assertTrue(serializer.is_valid())
+        self.assertIs(serializer.validated_data["territorioSaber"], False)
+
+    def test_aplica_false_quando_parametro_ausente(self) -> None:
+        serializer = VerificarAtribuicaoDisciplinaQuerySerializer(data={})
+
+        self.assertTrue(serializer.is_valid())
+        self.assertIs(serializer.validated_data["territorioSaber"], False)
+
+    def test_rejeita_booleano_invalido(self) -> None:
+        serializer = VerificarAtribuicaoDisciplinaQuerySerializer(
+            data={"territorioSaber": "talvez"}
+        )
+
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("territorioSaber", serializer.errors)
+
+
+class ProfessorStatusAtribuicaoSerializerTest(SimpleTestCase):
+    """Valida o contrato legado do status da atribuição."""
+
+    def test_mapeia_campos_do_sidecar(self) -> None:
+        payload = {
+            "ano_atribuicao": 2026,
+            "data_cancelamento": None,
+            "data_disponibilizacao": "2026-07-28",
+            "data_fim_turma": "2026-12-22",
+            "codigo_motivo_disponibilizacao": None,
+        }
+
+        self.assertEqual(
+            ProfessorStatusAtribuicaoSerializer(payload).data,
+            {
+                "anoAtribuicao": 2026,
+                "dataCancelamento": None,
+                "dataDisponibilizacao": "2026-07-28",
+                "dataFimTurma": "2026-12-22",
+                "codigoMotivoDisponibilizacao": None,
+            },
+        )
+
+
+class ProfessorAtribuicaoTurmaDisciplinaSerializerTest(SimpleTestCase):
+    """Valida o contrato legado da atribuição por disciplina."""
+
+    def test_mapeia_campos_e_aceita_lista_agrupada_nula(self) -> None:
+        payload = {
+            "codigo_turma": "3032577",
+            "ano_letivo": None,
+            "nome_turma": "7A",
+            "data_inicio_atribuicao": "2026-06-09",
+            "data_fim_atribuicao": "2026-12-22",
+            "data_fim_turma": "2026-12-22",
+            "ano_atribuicao": 2026,
+            "codigo_rf": "6230504",
+            "disciplina_id": "89",
+            "disciplina_nome": "CIENCIAS",
+            "disciplinas_agrupadas_ids": None,
+            "nome_professor": "LAZARO PRETEL",
+        }
+
+        data = ProfessorAtribuicaoTurmaDisciplinaSerializer(payload).data
+
+        self.assertEqual(data["codigoTurma"], 3032577)
+        self.assertEqual(data["disciplinaId"], 89)
+        self.assertIsNone(data["disciplinasAgrupadasIds"])
 
 
 class FuncionarioSerializerTest(SimpleTestCase):
@@ -70,6 +151,17 @@ class FuncionarioSerializerTest(SimpleTestCase):
                 {"cpf": "11610699840", "funcao_externo": 5},
                 {"funcionarioCpf": "11610699840", "funcaoExternaId": 5},
             ),
+            (
+                SupervisorLegadoSerializer,
+                {
+                    "codigo_rf": "000001",
+                    "nome_servidor": "NOME SERVIDOR",
+                },
+                {
+                    "codigoRF": "000001",
+                    "nomeServidor": "NOME SERVIDOR",
+                },
+            ),
         ]
         for serializer_cls, payload, esperado in casos:
             with self.subTest(serializer=serializer_cls.__name__):
@@ -96,6 +188,34 @@ class FuncionarioLegadoSerializerTest(SimpleTestCase):
                 "codigoRf": "000001",
                 "funcaoExterno": 5,
                 "login": "000001",
+                "nomeServidor": "ANA",
+                "tipoFuncaoExterno": 7,
+            },
+        )
+
+
+class FuncionarioSgpLegadoSerializerTest(SimpleTestCase):
+    """Valida serialização de funcionário SGP no contrato legado."""
+
+    def test_serializa_campos(self) -> None:
+        payload = {
+            "cd_cargo": "3360",
+            "codigo_funcao_atividade": 30,
+            "codigo_rf": "000001",
+            "funcao_externo": 5,
+            "login": None,
+            "nome_servidor": "ANA",
+            "tipo_funcao_externo": 7,
+        }
+
+        self.assertEqual(
+            FuncionarioSgpLegadoSerializer(payload).data,
+            {
+                "cd_Cargo": 3360,
+                "codigoFuncaoAtividade": 30,
+                "codigoRf": "000001",
+                "funcaoExterno": 5,
+                "login": None,
                 "nomeServidor": "ANA",
                 "tipoFuncaoExterno": 7,
             },
@@ -190,6 +310,60 @@ class TurmasAtribuidasLegadoSerializerTest(SimpleTestCase):
             data["dres"][0]["ues"][0]["turmas"][0]["codigoModalidade"],
             0,
         )
+
+    def test_aceita_campos_da_composicao_de_professor(self) -> None:
+        payload = [
+            {
+                "cod_dre": "109200",
+                "dre": "DIRETORIA REGIONAL DE EDUCACAO SAO MATEUS",
+                "dre_abrev": "DRE - SM",
+                "cod_escola": "013803",
+                "ue": "JULIO DE GRAMMONT",
+                "cod_tipo_escola": 1,
+                "cod_turma": 3018605,
+                "ano": "7",
+                "ano_letivo": 2026,
+                "modalidade": "Fundamental",
+                "cod_modalidade": 5,
+                "nome_turma": "7B",
+                "semestre": 0,
+                "duracao_turno": 5,
+                "tipo_turno": 1,
+            },
+            {
+                "cod_dre": "109200",
+                "dre": "DIRETORIA REGIONAL DE EDUCACAO SAO MATEUS",
+                "dre_abrev": "DRE - SM",
+                "cod_escola": "013803",
+                "ue": "JULIO DE GRAMMONT",
+                "cod_tipo_escola": 1,
+                "cod_turma": 3018602,
+                "ano": "7",
+                "ano_letivo": 2026,
+                "modalidade": "Fundamental",
+                "cod_modalidade": 5,
+                "nome_turma": "7A",
+                "semestre": 0,
+                "duracao_turno": 5,
+                "tipo_turno": 1,
+            },
+        ]
+
+        data = TurmasAtribuidasLegadoSerializer(payload).data
+        dre = data["dres"][0]
+        ue = dre["ues"][0]
+
+        self.assertEqual(dre["codigo"], "109200")
+        self.assertEqual(dre["abreviacao"], "DRE - SM")
+        self.assertEqual(ue["codigo"], "013803")
+        self.assertEqual(ue["codTipoEscola"], 1)
+        self.assertEqual(
+            [turma["codigo"] for turma in ue["turmas"]],
+            [3018602, 3018605],
+        )
+        self.assertEqual(ue["turmas"][0]["modalidade"], "Fundamental")
+        self.assertEqual(ue["turmas"][0]["codigoModalidade"], 5)
+        self.assertEqual(ue["turmas"][0]["duracaoTurno"], 5)
 
     def test_retorna_payload_nao_lista_sem_transformar(self) -> None:
         payload = {"abrangencia": None}

@@ -147,7 +147,7 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertEqual(
             resp.json(),
-            {"detail": "Servico de matriculas indisponivel."},
+            {"detail": "Serviço de matriculas indisponível."},
         )
 
     @patch("apps.matriculas.views.services.get_matriculas_ano_atual")
@@ -210,9 +210,7 @@ class MatriculasAnosAnterioresViewTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get(
-            "/api/v1/matriculas/anos-anteriores?ano_letivo=2025"
-        )
+        resp = client.get("/api/v1/matriculas/anos-anteriores?ano_letivo=2025")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
@@ -508,11 +506,15 @@ class QuantidadeAlunosPorTurmaEscolaViewTest(SimpleTestCase):
 
     _URL = "/api/escolas/100001/alunos/quantidade/"
 
-    @patch("apps.matriculas.views.services.get_quantidade_alunos_por_turma_escola")
+    @patch(
+        "apps.matriculas.views.services.get_quantidade_alunos_por_turma_escola"
+    )
     def test_200_retorna_contrato_legado(
         self, mock_service: MagicMock
     ) -> None:
-        mock_service.return_value = [{"turma_codigo": "54321", "quantidade": 27}]
+        mock_service.return_value = [
+            {"turma_codigo": "54321", "quantidade": 27}
+        ]
         client = _cliente_autenticado()
 
         resp = client.get(self._URL)

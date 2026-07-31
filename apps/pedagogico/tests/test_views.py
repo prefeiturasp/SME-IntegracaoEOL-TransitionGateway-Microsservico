@@ -480,7 +480,7 @@ class AlunosAtivosTurmaSemRedisViewSetTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertEqual(
             resp.data,
-            {"detail": "Servico pedagogico indisponivel."},
+            {"detail": "Serviço de pedagogico indisponível."},
         )
 
     def test_403_sem_autenticacao(self) -> None:
@@ -618,7 +618,7 @@ class AlunosAtivosTurmaRedisMultplexViewSetTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertEqual(
             resp.data,
-            {"detail": "Servico pedagogico indisponivel."},
+            {"detail": "Serviço de pedagogico indisponível."},
         )
 
     def test_403_sem_autenticacao(self) -> None:
@@ -781,7 +781,7 @@ class AlunosTurmaConsideraInativosViewSetTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertEqual(
             resp.data,
-            {"detail": "Servico pedagogico indisponivel."},
+            {"detail": "Serviço de pedagogico indisponível."},
         )
 
     def test_403_sem_autenticacao(self) -> None:
@@ -940,7 +940,7 @@ class TurmasHistoricasGeraisProfessorViewSetTest(SimpleTestCase):
         )
         self.assertEqual(
             response.data,
-            {"detail": "Servico pedagogico indisponivel."},
+            {"detail": "Serviço de pedagogico indisponível."},
         )
 
     @patch(
@@ -1155,7 +1155,7 @@ class SincronizacaoInstitucionalTurmaViewSetTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertEqual(
             resp.data,
-            {"detail": "Servico pedagogico indisponivel."},
+            {"detail": "Serviço de pedagogico indisponível."},
         )
 
 
@@ -1344,7 +1344,7 @@ class SincronizacoesInstitucionaisAnosLetivosViewSetTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertEqual(
             resp.data,
-            {"detail": "Servico pedagogico indisponivel."},
+            {"detail": "Serviço de pedagogico indisponível."},
         )
 
 
@@ -1468,7 +1468,7 @@ class ItinerariosEnsinoMedioViewSetTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertEqual(
             resp.data,
-            {"detail": "Servico pedagogico indisponivel."},
+            {"detail": "Serviço de pedagogico indisponível."},
         )
 
     @patch("apps.pedagogico.views.services.get_itinerarios_ensino_medio")
@@ -2353,9 +2353,7 @@ class ListagemTurmasComponentesViewSetTest(SimpleTestCase):
         self.assertEqual(legado["tipoTurma"], 1)
         self.assertEqual(legado["duracaoTurno"], 5)
         self.assertEqual(legado["codigoEscola"], "9000")
-        self.assertEqual(
-            legado["descricaoGradePrograma"], "EJA FINAL II"
-        )
+        self.assertEqual(legado["descricaoGradePrograma"], "EJA FINAL II")
         # bool -> int.
         self.assertEqual(legado["ensinoEspecial"], 1)
         self.assertEqual(legado["extinta"], 0)

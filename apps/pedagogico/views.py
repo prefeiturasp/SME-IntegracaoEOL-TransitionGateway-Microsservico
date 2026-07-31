@@ -8,10 +8,10 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from apps.alunos.serializers import AlunoMatriculaTurmaSerializer
-from apps.core.responses import detail_response
+from apps.core.responses import api_unavailable_response, detail_response
+from apps.core.views import DomainAPIView
 from apps.pedagogico import services
 from apps.pedagogico.serializers import (
     AnosLetivosVigentesQuerySerializer,
@@ -32,7 +32,7 @@ from apps.pedagogico.serializers import (
 
 _TAG = ["ComponenteCurricular"]
 _TAG_TURMA = ["Turma"]
-_SERVICO_PEDAGOGICO_INDISPONIVEL = "Servico pedagogico indisponivel."
+_DOMINIO_PEDAGOGICO = "pedagogico"
 _RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA = (
     "Resposta do servico pedagogico invalida."
 )
@@ -50,6 +50,17 @@ _IDS_REQUEST_SCHEMA = {
     "items": {"type": "integer"},
     "description": "Lista JSON de `cod_agrupamento` de Território do Saber.",
 }
+
+
+class PedagogicoAPIView(DomainAPIView):
+    """APIView base que padroniza falhas de comunicação com pedagógico."""
+
+    api_domain = _DOMINIO_PEDAGOGICO
+
+
+def _api_unavailable_response() -> Response:
+    """Retorna indisponibilidade padronizada da API pedagógica."""
+    return api_unavailable_response(_DOMINIO_PEDAGOGICO)
 
 
 def _obter_data_base_tick(request: Request) -> int | None:
@@ -84,7 +95,7 @@ def _ordem_numero_chamada(aluno: dict[str, Any]) -> tuple[int, int]:
     """Chave de ordenação ascendente por número de chamada do aluno.
 
     Args:
-        aluno: Registro de aluno retornado pelo sidecar.
+        aluno: Registro de aluno retornado pela API.
 
     Returns:
         Tupla em que registros sem número de chamada válido vêm primeiro e
@@ -96,7 +107,7 @@ def _ordem_numero_chamada(aluno: dict[str, Any]) -> tuple[int, int]:
         return (0, 0)
 
 
-def _sidecar_error_response(exc: httpx.HTTPStatusError) -> Response:
+def _api_error_response(exc: httpx.HTTPStatusError) -> Response:
     """Monta resposta de erro a partir da exceção HTTP recebida."""
     try:
         body = exc.response.json()
@@ -133,7 +144,7 @@ def _obter_lista_query(request: Request, nome: str) -> list[str]:
     return [str(valor) for valor in valor_json]
 
 
-class TurmasRegularesViewSet(APIView):
+class TurmasRegularesViewSet(PedagogicoAPIView):
     """Lista turmas regulares existentes."""
 
     @extend_schema(
@@ -167,7 +178,7 @@ class TurmasRegularesViewSet(APIView):
         return Response(CodigoTurmaListSerializer(data).data)
 
 
-class TurmasProgramaViewSet(APIView):
+class TurmasProgramaViewSet(PedagogicoAPIView):
     """Lista turmas programa existentes."""
 
     @extend_schema(
@@ -201,7 +212,7 @@ class TurmasProgramaViewSet(APIView):
         return Response(CodigoTurmaListSerializer(data).data)
 
 
-class ListarTurmasViewSet(APIView):
+class ListarTurmasViewSet(PedagogicoAPIView):
     """Lista dados de turmas existentes."""
 
     @extend_schema(
@@ -232,7 +243,7 @@ class ListarTurmasViewSet(APIView):
         return Response(TurmaDadosSerializer(data, many=True).data)
 
 
-class DadosTurmaViewSet(APIView):
+class DadosTurmaViewSet(PedagogicoAPIView):
     """Retorna dados de uma turma."""
 
     @extend_schema(
@@ -258,7 +269,7 @@ class DadosTurmaViewSet(APIView):
         return Response(TurmaDadosSerializer(data).data)
 
 
-class AlunosAtivosTurmaSemRedisViewSet(APIView):
+class AlunosAtivosTurmaSemRedisViewSet(PedagogicoAPIView):
     """Lista alunos da turma reproduzindo o contrato legado sem Redis."""
 
     @extend_schema(
@@ -294,9 +305,9 @@ class AlunosAtivosTurmaSemRedisViewSet(APIView):
                 codigo_turma=codigo_turma,
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError:
-            return detail_response(_SERVICO_PEDAGOGICO_INDISPONIVEL, 503)
+            return _api_unavailable_response()
         if not data:
             return Response(status=204)
         data = sorted(data, key=_ordem_numero_chamada)
@@ -306,7 +317,7 @@ class AlunosAtivosTurmaSemRedisViewSet(APIView):
         return Response(serializer.data)
 
 
-class AlunosAtivosTurmaRedisMultplexViewSet(APIView):
+class AlunosAtivosTurmaRedisMultplexViewSet(PedagogicoAPIView):
     """Lista alunos da turma no contrato legado Redis Multplex."""
 
     @extend_schema(
@@ -346,9 +357,9 @@ class AlunosAtivosTurmaRedisMultplexViewSet(APIView):
                 codigo_turma=codigo_turma,
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError:
-            return detail_response(_SERVICO_PEDAGOGICO_INDISPONIVEL, 503)
+            return _api_unavailable_response()
         if not data:
             return Response(status=204)
         data = sorted(data, key=_ordem_numero_chamada)
@@ -356,7 +367,7 @@ class AlunosAtivosTurmaRedisMultplexViewSet(APIView):
         return Response(serializer.data)
 
 
-class AlunosTurmaConsideraInativosViewSet(APIView):
+class AlunosTurmaConsideraInativosViewSet(PedagogicoAPIView):
     """Lista alunos ativos de uma turma considerando ativos ou inativos."""
 
     @extend_schema(
@@ -409,14 +420,14 @@ class AlunosTurmaConsideraInativosViewSet(APIView):
                 considera_inativos=considera_inativos,
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError:
-            return detail_response(_SERVICO_PEDAGOGICO_INDISPONIVEL, 503)
+            return _api_unavailable_response()
         serializer = AlunoMatriculaTurmaSerializer(data, many=True)
         return Response(serializer.data)
 
 
-class TurmasHistoricasGeraisProfessorViewSet(APIView):
+class TurmasHistoricasGeraisProfessorViewSet(PedagogicoAPIView):
     """Lista turmas históricas gerais de um professor."""
 
     @extend_schema(
@@ -458,10 +469,7 @@ class TurmasHistoricasGeraisProfessorViewSet(APIView):
                 body = {"detail": detail}
             return Response(body, status=exc.response.status_code)
         except httpx.RequestError:
-            return detail_response(
-                _SERVICO_PEDAGOGICO_INDISPONIVEL,
-                503,
-            )
+            return _api_unavailable_response()
         except ValueError:
             return detail_response(
                 _RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA,
@@ -493,7 +501,7 @@ def _query_bool(request: Request, *nomes: str) -> bool:
     for nome in nomes:
         valor = request.query_params.get(nome)
         if valor is not None:
-            return valor.lower() == "true"
+            return str(valor).lower() == "true"
     return False
 
 
@@ -517,7 +525,7 @@ def _query_int(request: Request, *nomes: str) -> int | None:
     return None
 
 
-class ListagemTurmasComponentesViewSet(APIView):
+class ListagemTurmasComponentesViewSet(PedagogicoAPIView):
     """Lista turmas e componentes por UE, modalidade e ano letivo."""
 
     @extend_schema(
@@ -579,9 +587,7 @@ class ListagemTurmasComponentesViewSet(APIView):
         Returns:
             Resposta HTTP com o envelope paginado de componentes.
         """
-        eh_professor = _query_bool(
-            request, "ehProfessor", "eh_professor"
-        )
+        eh_professor = _query_bool(request, "ehProfessor", "eh_professor")
         codigo_rf = request.query_params.get(
             "codigoRf", request.query_params.get("codigo_rf")
         )
@@ -615,9 +621,9 @@ class ListagemTurmasComponentesViewSet(APIView):
                 anos_infantil_desconsiderar=anos_infantil,
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError:
-            return detail_response(_SERVICO_PEDAGOGICO_INDISPONIVEL, 503)
+            return _api_unavailable_response()
         except (ValueError, OverflowError):
             return detail_response(_RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA, 502)
 
@@ -625,7 +631,7 @@ class ListagemTurmasComponentesViewSet(APIView):
         return Response(serializer.data)
 
 
-class SincronizacaoInstitucionalTurmaViewSet(APIView):
+class SincronizacaoInstitucionalTurmaViewSet(PedagogicoAPIView):
     """Retorna os dados institucionais de uma turma."""
 
     @extend_schema(
@@ -667,14 +673,11 @@ class SincronizacaoInstitucionalTurmaViewSet(APIView):
                 body = {"detail": detail}
             return Response(body, status=exc.response.status_code)
         except httpx.RequestError:
-            return Response(
-                {"detail": _SERVICO_PEDAGOGICO_INDISPONIVEL},
-                status=503,
-            )
+            return _api_unavailable_response()
         return Response(SincronizacaoInstitucionalTurmaSerializer(data).data)
 
 
-class SincronizacoesInstitucionaisAnosLetivosViewSet(APIView):
+class SincronizacoesInstitucionaisAnosLetivosViewSet(PedagogicoAPIView):
     """Lista turmas institucionais da UE por anos letivos."""
 
     @extend_schema(
@@ -734,15 +737,12 @@ class SincronizacoesInstitucionaisAnosLetivosViewSet(APIView):
                 body = {"detail": detail}
             return Response(body, status=exc.response.status_code)
         except httpx.RequestError:
-            return Response(
-                {"detail": _SERVICO_PEDAGOGICO_INDISPONIVEL},
-                status=503,
-            )
+            return _api_unavailable_response()
 
         return Response(CodigoTurmaInteiroListSerializer(data).data)
 
 
-class ItinerariosEnsinoMedioViewSet(APIView):
+class ItinerariosEnsinoMedioViewSet(PedagogicoAPIView):
     """Lista os itinerários do ensino médio."""
 
     @extend_schema(
@@ -771,10 +771,7 @@ class ItinerariosEnsinoMedioViewSet(APIView):
                 body = {"detail": detail}
             return Response(body, status=exc.response.status_code)
         except httpx.RequestError:
-            return detail_response(
-                _SERVICO_PEDAGOGICO_INDISPONIVEL,
-                503,
-            )
+            return _api_unavailable_response()
         except ValueError:
             return detail_response(
                 _RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA,
@@ -793,7 +790,7 @@ class ItinerariosEnsinoMedioViewSet(APIView):
         return Response(serializer.validated_data)
 
 
-class ComponentesCurricularesViewSet(APIView):
+class ComponentesCurricularesViewSet(PedagogicoAPIView):
     """Lista componentes curriculares ativos."""
 
     @extend_schema(
@@ -821,7 +818,7 @@ class ComponentesCurricularesViewSet(APIView):
         return Response(ComponenteBaseSerializer(data, many=True).data)
 
 
-class ComponentesTurmaViewSet(APIView):
+class ComponentesTurmaViewSet(PedagogicoAPIView):
     """Lista componentes das turmas de uma UE."""
 
     @extend_schema(
@@ -865,7 +862,7 @@ class ComponentesTurmaViewSet(APIView):
         return Response(ComponenteBaseSerializer(data, many=True).data)
 
 
-class ComponentesTurmaProgramaViewSet(APIView):
+class ComponentesTurmaProgramaViewSet(PedagogicoAPIView):
     """Lista componentes de turmas programa."""
 
     @extend_schema(
@@ -914,7 +911,7 @@ class ComponentesTurmaProgramaViewSet(APIView):
         return Response(ComponenteCurricularSerializer(data, many=True).data)
 
 
-class ComponentesRegenciaViewSet(APIView):
+class ComponentesRegenciaViewSet(PedagogicoAPIView):
     """Lista componentes de regência por ano de turma."""
 
     @extend_schema(
@@ -943,7 +940,7 @@ class ComponentesRegenciaViewSet(APIView):
         return Response(ComponenteRegenciaSerializer(data, many=True).data)
 
 
-class ValidarComponentePapViewSet(APIView):
+class ValidarComponentePapViewSet(PedagogicoAPIView):
     """Verifica se a turma possui componente curricular PAP."""
 
     @extend_schema(
@@ -982,7 +979,7 @@ class ValidarComponentePapViewSet(APIView):
         return Response(data)
 
 
-class ComponentesFuncionarioViewSet(APIView):
+class ComponentesFuncionarioViewSet(PedagogicoAPIView):
     """Lista componentes curriculares do funcionário."""
 
     @extend_schema(
@@ -1023,7 +1020,7 @@ class ComponentesFuncionarioViewSet(APIView):
         return Response(ComponenteCurricularSerializer(data, many=True).data)
 
 
-class ComponentesTurmaFuncionarioViewSet(APIView):
+class ComponentesTurmaFuncionarioViewSet(PedagogicoAPIView):
     """Lista componentes do funcionário em uma turma."""
 
     @extend_schema(
@@ -1118,7 +1115,7 @@ class ComponentesTurmaFuncionarioViewSet(APIView):
         return Response(ComponenteCurricularSerializer(data, many=True).data)
 
 
-class ComponentesPlanejamentoViewSet(APIView):
+class ComponentesPlanejamentoViewSet(PedagogicoAPIView):
     """Lista componentes de planejamento do funcionário em uma turma."""
 
     @extend_schema(
@@ -1165,7 +1162,7 @@ class ComponentesPlanejamentoViewSet(APIView):
         return Response(ComponenteCurricularSerializer(data, many=True).data)
 
 
-class ComponentesPorListaTurmasViewSet(APIView):
+class ComponentesPorListaTurmasViewSet(PedagogicoAPIView):
     """Lista componentes para planejamento por lista de turmas."""
 
     @extend_schema(
@@ -1223,7 +1220,7 @@ class ComponentesPorListaTurmasViewSet(APIView):
         return Response(ComponenteCurricularSerializer(data, many=True).data)
 
 
-class ComponentesTurmasRegularesViewSet(APIView):
+class ComponentesTurmasRegularesViewSet(PedagogicoAPIView):
     """Lista componentes de turmas regulares."""
 
     @extend_schema(
@@ -1266,7 +1263,7 @@ class ComponentesTurmasRegularesViewSet(APIView):
         return Response(ComponenteCurricularSerializer(data, many=True).data)
 
 
-class DadosAulaTurmaViewSet(APIView):
+class DadosAulaTurmaViewSet(PedagogicoAPIView):
     """Lista dados de aula por turma e componente curricular."""
 
     @extend_schema(
@@ -1342,7 +1339,7 @@ class DadosAulaTurmaViewSet(APIView):
         return Response(DadosAulaTurmaSerializer(data, many=True).data)
 
 
-class ComponentesSemAtribuicaoViewSet(APIView):
+class ComponentesSemAtribuicaoViewSet(PedagogicoAPIView):
     """Lista componentes sem atribuição em uma turma."""
 
     @extend_schema(
@@ -1384,7 +1381,7 @@ class ComponentesSemAtribuicaoViewSet(APIView):
         return Response(data)
 
 
-class ComponentesTurmaAnoViewSet(APIView):
+class ComponentesTurmaAnoViewSet(PedagogicoAPIView):
     """Lista componentes por anos escolares."""
 
     @extend_schema(
@@ -1442,7 +1439,7 @@ class ComponentesTurmaAnoViewSet(APIView):
         return Response(ComponenteCurricularSerializer(data, many=True).data)
 
 
-class GradeComponentesCurricularesViewSet(APIView):
+class GradeComponentesCurricularesViewSet(PedagogicoAPIView):
     """Retorna a grade curricular por ano letivo."""
 
     @extend_schema(
@@ -1474,7 +1471,7 @@ class GradeComponentesCurricularesViewSet(APIView):
         return Response(GradeCurricularSerializer(data, many=True).data)
 
 
-class AgrupamentosCorrelacionadosViewSet(APIView):
+class AgrupamentosCorrelacionadosViewSet(PedagogicoAPIView):
     """Lista agrupamentos de Território do Saber correlacionados."""
 
     @extend_schema(
@@ -1519,7 +1516,7 @@ class AgrupamentosCorrelacionadosViewSet(APIView):
         return Response(ComponenteCurricularSerializer(data, many=True).data)
 
 
-class AgrupamentosCorrelacionadosLoteViewSet(APIView):
+class AgrupamentosCorrelacionadosLoteViewSet(PedagogicoAPIView):
     """Lista agrupamentos de Território do Saber correlacionados em lote."""
 
     @extend_schema(
@@ -1569,7 +1566,7 @@ class AgrupamentosCorrelacionadosLoteViewSet(APIView):
         return Response(ComponenteCurricularSerializer(data, many=True).data)
 
 
-class AgrupamentosTerritorioViewSet(APIView):
+class AgrupamentosTerritorioViewSet(PedagogicoAPIView):
     """Lista agrupamentos de Território do Saber por IDs."""
 
     @extend_schema(

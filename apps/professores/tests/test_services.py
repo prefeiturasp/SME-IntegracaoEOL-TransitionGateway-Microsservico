@@ -7,6 +7,199 @@ from django.test import SimpleTestCase
 from apps.professores import services
 
 
+class VerificarAtribuicaoProfessorTurmaTest(SimpleTestCase):
+    """Valida a verificação de atribuição do professor na turma."""
+
+    @patch("apps.professores.services._client")
+    def test_chama_sidecar_e_retorna_booleano(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        mock_response = MagicMock()
+        mock_client.get.return_value = mock_response
+        mock_client.json_or_none.return_value = True
+
+        result = services.verificar_atribuicao_professor_turma(
+            "000001",
+            "3032577",
+            "2026-07-28",
+        )
+
+        mock_client.get.assert_called_once_with(
+            "/api/v1/professores/000001/turmas/3032577/"
+            "verificar-atribuicao/?data_consulta=2026-07-28"
+        )
+        mock_client.json_or_none.assert_called_once_with(mock_response)
+        self.assertIs(result, True)
+
+
+class GetStatusAtribuicaoProfessorTurmaTest(SimpleTestCase):
+    """Valida a consulta do status da atribuição."""
+
+    @patch("apps.professores.services._client")
+    def test_chama_sidecar_e_serializa_status(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        mock_response = MagicMock()
+        mock_client.get.return_value = mock_response
+        mock_client.json_or_none.return_value = {
+            "ano_atribuicao": 2026,
+            "data_cancelamento": None,
+            "data_disponibilizacao": "2026-07-28",
+            "data_fim_turma": "2026-12-22",
+            "codigo_motivo_disponibilizacao": None,
+        }
+
+        result = services.get_status_atribuicao_professor_turma(
+            "000001",
+            "3032577",
+        )
+
+        mock_client.get.assert_called_once_with(
+            "/api/v1/professores/000001/turmas/3032577/atribuicao/status/"
+        )
+        self.assertEqual(result["anoAtribuicao"], 2026)
+
+
+class VerificarAtribuicaoProfessorTurmaDisciplinaTest(SimpleTestCase):
+    """Valida a verificação por disciplina e data tick."""
+
+    @patch("apps.professores.services._client")
+    def test_chama_sidecar_e_retorna_booleano(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        mock_response = MagicMock()
+        mock_client.get.return_value = mock_response
+        mock_client.json_or_none.return_value = True
+
+        result = services.verificar_atribuicao_professor_turma_disciplina(
+            "000001",
+            "3032577",
+            "89",
+            639207072000000000,
+        )
+
+        mock_client.get.assert_called_once_with(
+            "/api/v1/professores/000001/turmas/3032577/disciplinas/89/"
+            "atribuicao/verificar/datatick/"
+            "?data_consulta_tick=639207072000000000"
+        )
+        self.assertIs(result, True)
+
+
+class VerificarAtribuicaoDisciplinaTerritorioSaberTest(SimpleTestCase):
+    """Valida a verificação por data e território do saber."""
+
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "verificar_atriuicao_territorio_saber"
+    )
+    def test_delega_consulta_de_territorio_ao_servico_pedagogico(
+        self,
+        mock_verificar: MagicMock,
+    ) -> None:
+        """Repassa os dados da consulta ao domínio pedagógico."""
+        mock_verificar.return_value = True
+
+        result = services.verificar_atribuicao_disciplina_territorio_saber(
+            "000001",
+            "3032577",
+            "89",
+            "2026-07-28",
+            True,
+        )
+
+        mock_verificar.assert_called_once_with(
+            "000001",
+            "3032577",
+            "89",
+            "2026-07-28",
+        )
+        self.assertIs(result, True)
+
+    @patch("apps.professores.services._client")
+    def test_repassa_retorno_do_sidecar_quando_nao_e_territorio(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        mock_response = MagicMock()
+        mock_client.get.return_value = mock_response
+        mock_client.json_or_none.return_value = True
+
+        result = services.verificar_atribuicao_disciplina_territorio_saber(
+            "000001",
+            "3032577",
+            "89",
+            "2026-07-28",
+            False,
+        )
+
+        mock_client.get.assert_called_once_with(
+            "/api/v1/professores/000001/turmas/3032577/disciplinas/89/"
+            "atribuicao/verificar/data/?data_consulta=2026-07-28"
+        )
+        self.assertIs(result, True)
+
+
+class GetAtribuicoesTurmaDisciplinaTest(SimpleTestCase):
+    """Valida a consulta de atribuições da turma e disciplina."""
+
+    @patch("apps.professores.services._client")
+    def test_serializa_lista_retornada_pelo_sidecar(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        mock_response = MagicMock()
+        mock_client.get.return_value = mock_response
+        mock_client.json_or_none.return_value = [
+            {
+                "codigo_turma": "3032577",
+                "ano_letivo": None,
+                "nome_turma": "7A",
+                "data_inicio_atribuicao": "2026-06-09T00:00:00",
+                "data_fim_atribuicao": "2026-12-22T00:00:00",
+                "data_fim_turma": "2026-12-22T00:00:00",
+                "ano_atribuicao": 2026,
+                "codigo_rf": "6230504",
+                "disciplina_id": "89",
+                "disciplina_nome": "CIENCIAS",
+                "disciplinas_agrupadas_ids": None,
+                "nome_professor": "LAZARO PRETEL",
+            }
+        ]
+
+        result = services.get_atribuicoes_turma_disciplina(
+            "3032577",
+            "89",
+            "639207072000000000",
+        )
+
+        mock_client.get.assert_called_once_with(
+            "/api/v1/professores/3032577/disciplinas/89/atribuicao/data/",
+            params={"data_ticks": "639207072000000000"},
+        )
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["codigoTurma"], 3032577)
+        self.assertEqual(result[0]["disciplinaNome"], "CIENCIAS")
+
+    @patch("apps.professores.services._client")
+    def test_retorna_lista_vazia_quando_payload_nao_e_lista(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        mock_client.json_or_none.return_value = "Not Found"
+
+        result = services.get_atribuicoes_turma_disciplina(
+            "3032577",
+            "89",
+            "639207072000000000",
+        )
+
+        self.assertEqual(result, [])
+
+
 class GetProfessorTest(SimpleTestCase):
     """Valida a extração do nome do professor."""
 
@@ -258,6 +451,98 @@ class GetFuncionariosEscolaTest(SimpleTestCase):
         self.assertEqual(result, payload)
 
 
+class GetFuncionariosUeTest(SimpleTestCase):
+    """Valida a busca de funcionários por unidade educacional."""
+
+    @patch.object(services._client, "post")
+    def test_chama_path_correto(self, mock_post: MagicMock) -> None:
+        payload = [
+            {
+                "codigo_rf": "000001",
+                "nome": "NOME SERVIDOR",
+                "data_inicio": "03/19/2024 00:00:00",
+                "data_fim": None,
+                "cargo": "DIRETOR",
+                "codigo_tipo_funcao_atividade": 0,
+                "esta_afastado": False,
+                "funcao_externo": 0,
+                "tipo_funcao_externo": 0,
+            },
+        ]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[{}]"
+        mock_resp.json.return_value = payload
+        mock_post.return_value = mock_resp
+        body = {"codigosRfs": ["000001"], "filtro": ""}
+
+        result = services.get_funcionarios_ue("000123", body)
+
+        mock_post.assert_called_once_with(
+            "/api/v1/professores/funcionarios/ue/000123/",
+            payload=body,
+        )
+        self.assertEqual(result, payload)
+
+
+class GetFuncionariosPorCargoTest(SimpleTestCase):
+    """Valida a busca de funcionários por cargo."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_correto(self, mock_get: MagicMock) -> None:
+        payload = [
+            {
+                "codigo_rf": "000001",
+                "nome": "NOME SERVIDOR",
+                "data_inicio": "03/19/2024 00:00:00",
+                "data_fim": None,
+                "cargo": "DIRETOR",
+                "codigo_tipo_funcao_atividade": 0,
+                "esta_afastado": False,
+                "funcao_externo": 0,
+                "tipo_funcao_externo": 0,
+            },
+        ]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[{}]"
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_funcionarios_por_cargo("3360")
+
+        mock_get.assert_called_once_with(
+            "/api/v1/professores/funcionarios/cargos/3360/"
+        )
+        self.assertEqual(result, payload)
+
+
+class GetSupervisoresPorDreTest(SimpleTestCase):
+    """Valida a busca de supervisores por DRE."""
+
+    @patch.object(services._client, "post")
+    def test_chama_path_correto(self, mock_post: MagicMock) -> None:
+        payload = [
+            {
+                "codigo_rf": "000001",
+                "nome_servidor": "NOME SERVIDOR",
+            },
+        ]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[{}]"
+        mock_resp.json.return_value = payload
+        mock_post.return_value = mock_resp
+
+        result = services.get_supervisores_por_dre("108100", ["000001"])
+
+        mock_post.assert_called_once_with(
+            "/api/v1/professores/funcionarios/supervisores/108100/",
+            payload=["000001"],
+        )
+        self.assertEqual(result, payload)
+
+
 class GetFuncionariosEscolaPorCargoTest(SimpleTestCase):
     """Valida a busca de funcionários por escola e cargo."""
 
@@ -387,6 +672,55 @@ class GetFuncionariosEscolaCargosTest(SimpleTestCase):
 
         mock_get.assert_not_called()
         self.assertEqual(result, [])
+
+
+class GetUsuariosSgpPorPerfilTest(SimpleTestCase):
+    """Valida busca de usuários SGP por perfil."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_correto_com_params(self, mock_get: MagicMock) -> None:
+        payload = [{"codigo_rf": "000001"}]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[{}]"
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_usuarios_sgp_por_perfil(
+            "perfil-x",
+            {"codigo_dre": "108100"},
+        )
+
+        mock_get.assert_called_once_with(
+            "/api/v1/professores/funcionarios/perfis/perfil-x/",
+            params={"codigo_dre": "108100"},
+        )
+        self.assertEqual(result, payload)
+
+
+class GetFuncionariosSgpPorPerfilDreTest(SimpleTestCase):
+    """Valida busca de funcionários SGP por perfil e DRE."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_correto_com_params(self, mock_get: MagicMock) -> None:
+        payload = [{"codigo_rf": "000001"}]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[{}]"
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_funcionarios_sgp_por_perfil_dre(
+            "perfil-x",
+            "108100",
+            {"codigo_ue": "000532"},
+        )
+
+        mock_get.assert_called_once_with(
+            "/api/v1/professores/funcionarios/perfis/perfil-x/dres/108100/",
+            params={"codigo_ue": "000532"},
+        )
+        self.assertEqual(result, payload)
 
 
 class GetFuncionariosEscolaFuncoesAtividadesTest(SimpleTestCase):
@@ -1596,6 +1930,59 @@ class GetAbrangenciaFuncionarioPerfilTest(SimpleTestCase):
             "/api/v1/funcionarios/000001/perfis/perfil-x/turmas/"
         )
         self.assertIsNone(data["abrangencia"])
+
+    @patch("apps.professores.services._client")
+    @patch("apps.professores.services.montar_turmas_atribuidas_professor")
+    def test_abrangencia_professor_usa_composicao_enriquecida(
+        self,
+        mock_montar_turmas: MagicMock,
+        mock_client: MagicMock,
+    ) -> None:
+        mock_montar_turmas.return_value = [
+            {
+                "cod_dre": "109200",
+                "dre": "DIRETORIA REGIONAL DE EDUCACAO SAO MATEUS",
+                "dre_abrev": "DRE - SM",
+                "cod_escola": "013803",
+                "ue": "JULIO DE GRAMMONT",
+                "cod_tipo_escola": 1,
+                "cod_turma": 3018602,
+                "ano": "7",
+                "ano_letivo": 2026,
+                "modalidade": "Fundamental",
+                "cod_modalidade": 5,
+                "nome_turma": "7A",
+                "semestre": 0,
+                "duracao_turno": 5,
+                "tipo_turno": 1,
+            }
+        ]
+
+        data = services.get_abrangencia_funcionario_perfil(
+            "9364137",
+            "perfil-professor",
+            abrangencia=2,
+            cargos=[3280],
+            grupo=6,
+        )
+
+        mock_montar_turmas.assert_called_once_with("9364137")
+        mock_client.get.assert_not_called()
+        turma = data["dres"][0]["ues"][0]["turmas"][0]
+        self.assertEqual(data["dres"][0]["codigo"], "109200")
+        self.assertEqual(turma["modalidade"], "Fundamental")
+        self.assertEqual(turma["duracaoTurno"], 5)
+        self.assertEqual(
+            data["abrangencia"],
+            {
+                "grupoID": "perfil-professor",
+                "cargosId": [3280],
+                "funcoesId": [],
+                "grupo": 6,
+                "abrangencia": 2,
+                "ehPerfilManual": False,
+            },
+        )
 
     @patch("apps.professores.services.pedagogico_services")
     def test_abrangencia_sme_faz_proxy_e_monta_bloco(

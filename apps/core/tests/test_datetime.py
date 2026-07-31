@@ -8,6 +8,8 @@ from apps.core.datetime import (
     datetime_legado,
     formatar_datetime_legado,
     parse_date,
+    validar_data_str,
+    validar_data_tick,
 )
 
 
@@ -56,3 +58,31 @@ class DatetimeLegadoTest(SimpleTestCase):
         result = datetime_legado(datetime(2026, 2, 4, 3, 0, tzinfo=UTC))
 
         self.assertEqual(result, "2026-02-04T00:00:00")
+
+
+class ValidarDataStrTest(SimpleTestCase):
+    """Valida datas recebidas como texto."""
+
+    def test_retorna_true_para_data_valida(self) -> None:
+        self.assertTrue(validar_data_str("2026-07-28"))
+
+    def test_retorna_false_para_data_inexistente(self) -> None:
+        self.assertFalse(validar_data_str("2026-02-30"))
+
+    def test_retorna_false_para_formato_invalido(self) -> None:
+        self.assertFalse(validar_data_str("28/07/2026"))
+
+
+class ValidarDataTickTest(SimpleTestCase):
+    """Valida ticks no formato DateTime do .NET."""
+
+    def test_aceita_tick_inteiro_e_string_numerica(self) -> None:
+        self.assertTrue(validar_data_tick(639207072000000000))
+        self.assertTrue(validar_data_tick("639207072000000000"))
+
+    def test_rejeita_valores_fora_do_intervalo(self) -> None:
+        self.assertFalse(validar_data_tick(-1))
+        self.assertFalse(validar_data_tick(3155378976000000000))
+
+    def test_rejeita_valor_nao_numerico(self) -> None:
+        self.assertFalse(validar_data_tick("tick-invalido"))

@@ -3,6 +3,7 @@
 from django.urls import path
 
 from apps.alunos.views import (
+    AcompanhamentoEscolarTurmaView,
     AlunoAutocompleteAtivosView,
     AlunoAutocompleteUeView,
     AlunoInformacoesView,
@@ -15,27 +16,46 @@ from apps.alunos.views import (
     AlunosDataMatriculaTicksView,
     AlunosDaUeView,
     AlunosListView,
-    AlunoTurmaConsideraInativosView,
-    AlunoTurmasPorSituacaoView,
-    AlunoTurmasView,
-    CodigosTurmasRegularesAlunoView,
-    CodigoTurmaAlunoComponenteCurricularView,
     AlunosPorAnoView,
+    AlunosTurmaAnoLetivoView,
     AlunoTurmaConsideraInativosView,
     AlunoTurmasComHistoricoView,
     AlunoTurmasPorSituacaoView,
     AlunoTurmasView,
+    CodigosTurmasRegularesAlunoView,
+    CodigoTurmaAlunoComponenteCurricularView,
     DadosAcompanhamentoEscolarView,
+    DadosResponsavelView,
     FiliacaoAlunoView,
     InformacoesAlunosTurmaView,
+    MatriculasTurmasAlunoView,
+    ObterNomesAlunosView,
     QuantidadeMatriculadosCCView,
     QuantidadeMatriculadosView,
-    ResponsavelResumidoView,
     ResponsaveisView,
+    ResponsavelAlunoView,
+    ResponsavelResumidoView,
+    TodosAlunosTurmaView,
     TotalAlunosAtivosPeriodoView,
+    TotalAlunosTurmasPeriodoView,
 )
 
 turma_urlpatterns = [
+    # Rotas de 1º segmento literal vêm antes das que abrem com
+    # <str:codigo_turma>, senão o código da turma capturaria o literal.
+    path(
+        "todos-alunos/anoTurma/<str:ano_turma>/"
+        "modalidade/<str:modalidade_turma>/"
+        "anoLetivo/<str:ano_letivo>/dre/<str:codigo_dre>/"
+        "inicio/<str:data_inicio_ticks>/fim/<str:data_fim_ticks>",
+        TotalAlunosTurmasPeriodoView.as_view(),
+        name="total-alunos-turmas-periodo",
+    ),
+    path(
+        "alunos/<str:codigo_aluno>",
+        MatriculasTurmasAlunoView.as_view(),
+        name="matriculas-turmas-aluno",
+    ),
     path(
         "<str:codigo_turma>/alunos-ativos/"
         "data-aula-ticks/<str:data_ticks>/",
@@ -63,6 +83,21 @@ turma_urlpatterns = [
         "<str:codigo_turma>/calculo-frequencia/",
         AlunosCalculoFrequenciaTurmaView.as_view(),
         name="alunos-calculo-frequencia-turma",
+    ),
+    path(
+        "<str:codigo_turma>/acompanhamento-escolar/todos-alunos",
+        AcompanhamentoEscolarTurmaView.as_view(),
+        name="acompanhamento-escolar-turma",
+    ),
+    path(
+        "<str:codigo_turma>/todos-alunos",
+        TodosAlunosTurmaView.as_view(),
+        name="todos-alunos-turma",
+    ),
+    path(
+        "<str:codigo_turma>/alunos/anosLetivos/<str:ano_letivo>",
+        AlunosTurmaAnoLetivoView.as_view(),
+        name="alunos-turma-ano-letivo",
     ),
     path(
         "anos-letivos/<str:ano_letivo>/alunos/<str:codigo_aluno>/"
@@ -126,9 +161,24 @@ urlpatterns = [
         name="aluno-responsavel-resumido",
     ),
     path(
+        "responsaveis/<str:cpf_responsavel>",
+        DadosResponsavelView.as_view(),
+        name="aluno-dados-responsavel",
+    ),
+    path(
+        "obter-nomes-alunos",
+        ObterNomesAlunosView.as_view(),
+        name="alunos-obter-nomes",
+    ),
+    path(
         "<str:codigo_aluno>/responsaveis/filiacao",
         FiliacaoAlunoView.as_view(),
         name="aluno-filiacao",
+    ),
+    path(
+        "<str:codigo_aluno>/responsaveis/<str:cpf_responsavel>",
+        ResponsavelAlunoView.as_view(),
+        name="aluno-atualizar-responsavel",
     ),
     path(
         "<str:codigo_turma>/turma/informacoes",

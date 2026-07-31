@@ -2,6 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
+import httpx
 from django.contrib.auth.models import User
 from django.test import SimpleTestCase
 from django.urls import resolve
@@ -71,6 +72,26 @@ class ProfessoresUrlsTest(SimpleTestCase):
         match = resolve("/api/funcionarios/BuscarPorListaRF/")
 
         self.assertEqual(match.kwargs, {})
+
+    def test_preserva_codigo_ue_funcionarios_ue(self) -> None:
+        match = resolve("/api/funcionarios/ue/000123/")
+
+        self.assertEqual(match.kwargs, {"codigo_ue": "000123"})
+
+    def test_preserva_codigo_cargo_funcionarios_cargos(self) -> None:
+        match = resolve("/api/funcionarios/cargos/3360/")
+
+        self.assertEqual(match.kwargs, {"codigo_cargo": "3360"})
+
+    def test_preserva_codigo_dre_funcionarios_supervisores(self) -> None:
+        match = resolve("/api/funcionarios/supervisores/108100/")
+
+        self.assertEqual(match.kwargs, {"codigo_dre": "108100"})
+
+    def test_preserva_id_perfil_funcionarios_perfis(self) -> None:
+        match = resolve("/api/funcionarios/perfis/perfil-x/")
+
+        self.assertEqual(match.kwargs, {"id_perfil": "perfil-x"})
 
     def test_preserva_codigo_ue_funcionarios_escola(self) -> None:
         match = resolve("/api/escolas/000123/funcionarios/")
@@ -587,6 +608,432 @@ class EscolaFuncionariosViewTest(SimpleTestCase):
         )
 
 
+class FuncionariosUeViewTest(SimpleTestCase):
+    """Valida a busca de funcionários por unidade educacional."""
+
+    @patch("apps.professores.views.services.get_funcionarios_ue")
+    def test_200_retorna_funcionarios(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [
+            {
+                "codigo_rf": "000001",
+                "nome": "NOME SERVIDOR",
+                "data_inicio": "03/19/2024 00:00:00",
+                "data_fim": None,
+                "cargo": "DIRETOR",
+                "codigo_tipo_funcao_atividade": 0,
+                "esta_afastado": False,
+                "funcao_externo": 0,
+                "tipo_funcao_externo": 0,
+            },
+        ]
+        client = _cliente_autenticado()
+        payload = {"codigosRfs": ["000001"], "filtro": ""}
+
+        resp = client.post(
+            "/api/funcionarios/ue/000123/",
+            data=payload,
+            content_type="application/json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.json()[0],
+            {
+                "cd_Cargo": 0,
+                "codigoFuncaoAtividade": 0,
+                "codigoRf": "000001",
+                "funcaoExterno": 0,
+                "login": "000001",
+                "nomeServidor": "NOME SERVIDOR",
+                "tipoFuncaoExterno": 0,
+            },
+        )
+        mock_service.assert_called_once_with("000123", payload)
+
+    @patch("apps.professores.views.services.get_funcionarios_ue")
+    def test_204_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = None
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/ue/000123/",
+            data={"codigosRfs": [], "filtro": ""},
+            content_type="application/json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch("apps.professores.views.services.get_funcionarios_ue")
+    def test_404_quando_lista_vazia(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/ue/000123/",
+            data={"codigosRfs": [], "filtro": ""},
+            content_type="application/json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(resp.json(), "Não foram encontrados funcionários.")
+
+    @patch("apps.professores.views.services.get_funcionarios_ue")
+    def test_502_quando_sidecar_retorna_objeto(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = {"codigo_rf": "000001"}
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/ue/000123/",
+            data={"codigosRfs": [], "filtro": ""},
+            content_type="application/json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "Resposta inválida da API de professores."},
+        )
+
+    def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/ue/%20/",
+            data={"codigosRfs": [], "filtro": ""},
+            content_type="application/json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "É necessário informar o codigoUE."},
+        )
+
+    def test_400_quando_body_invalido(self) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/ue/000123/",
+            data={"codigosRfs": "000001"},
+            content_type="application/json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("codigosRfs", resp.json())
+
+
+class FuncionariosCargoViewTest(SimpleTestCase):
+    """Valida a busca de funcionários por cargo."""
+
+    @patch("apps.professores.views.services.get_funcionarios_por_cargo")
+    def test_200_retorna_funcionarios(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [
+            {
+                "codigo_rf": "000001",
+                "nome": "NOME SERVIDOR",
+                "data_inicio": "03/19/2024 00:00:00",
+                "data_fim": None,
+                "cargo": "DIRETOR",
+                "codigo_tipo_funcao_atividade": 0,
+                "esta_afastado": False,
+                "funcao_externo": 0,
+                "tipo_funcao_externo": 0,
+            },
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/cargos/3360/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()[0]["codigoRF"], "000001")
+        self.assertEqual(resp.json()[0]["cargo"], "DIRETOR")
+        mock_service.assert_called_once_with("3360")
+
+    @patch("apps.professores.views.services.get_funcionarios_por_cargo")
+    def test_204_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = None
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/cargos/3360/")
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch("apps.professores.views.services.get_funcionarios_por_cargo")
+    def test_502_quando_sidecar_retorna_objeto(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = {"codigo_rf": "000001"}
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/cargos/3360/")
+
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+
+    def test_400_quando_codigo_cargo_e_somente_espacos(self) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/cargos/%20/")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "É necessário informar o codigoCargo."},
+        )
+
+
+class FuncionariosSupervisoresViewTest(SimpleTestCase):
+    """Valida a busca de supervisores por DRE."""
+
+    @patch("apps.professores.views.services.get_supervisores_por_dre")
+    def test_200_retorna_supervisores(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [
+            {
+                "codigo_rf": "000001",
+                "nome_servidor": "NOME SERVIDOR",
+            },
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/supervisores/108100/",
+            data=["000001"],
+            content_type="application/json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()[0]["codigoRF"], "000001")
+        self.assertEqual(resp.json()[0]["nomeServidor"], "NOME SERVIDOR")
+        mock_service.assert_called_once_with("108100", ["000001"])
+
+    @patch("apps.professores.views.services.get_supervisores_por_dre")
+    def test_404_quando_sem_supervisores(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/supervisores/108100/",
+            data=["000001"],
+            content_type="application/json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(resp.json(), "Não foram encontrados supervisores.")
+
+    def test_400_quando_lista_vazia(self) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/supervisores/108100/",
+            data=[],
+            content_type="application/json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            "A lista de códigos de supervisores é obrigatória.",
+        )
+
+    @patch("apps.professores.views.services.get_supervisores_por_dre")
+    def test_502_quando_sidecar_retorna_objeto(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = {"codigo_rf": "000001"}
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/supervisores/108100/",
+            data=["000001"],
+            content_type="application/json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+
+
+class FuncionariosPerfisViewTest(SimpleTestCase):
+    """Valida usuários SGP por perfil."""
+
+    @patch("apps.professores.views.services.get_usuarios_sgp_por_perfil")
+    def test_200_com_codigo_dre_legado(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [
+            {
+                "cd_cargo": "3360",
+                "codigo_funcao_atividade": 0,
+                "codigo_rf": "000001",
+                "funcao_externo": 0,
+                "login": None,
+                "nome_servidor": "ANA",
+                "tipo_funcao_externo": 0,
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/funcionarios/perfis/perfil-x/?CodigoDre=108100"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.json(),
+            [
+                {
+                    "cd_Cargo": 3360,
+                    "codigoFuncaoAtividade": 0,
+                    "codigoRf": "000001",
+                    "funcaoExterno": 0,
+                    "login": None,
+                    "nomeServidor": "ANA",
+                    "tipoFuncaoExterno": 0,
+                }
+            ],
+        )
+        mock_service.assert_called_once_with(
+            "perfil-x",
+            {"codigo_dre": "108100"},
+        )
+
+    @patch("apps.professores.views.services.get_usuarios_sgp_por_perfil")
+    def test_200_com_codigo_rf_legado(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [
+            {
+                "cd_cargo": "3379",
+                "codigo_funcao_atividade": 0,
+                "codigo_rf": "7654321",
+                "funcao_externo": 0,
+                "login": None,
+                "nome_servidor": "ANA",
+                "tipo_funcao_externo": 0,
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/funcionarios/perfis/perfil-x/?CodigoRf=7654321"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()[0]["codigoRf"], "7654321")
+        self.assertEqual(resp.json()[0]["login"], None)
+        mock_service.assert_called_once_with(
+            "perfil-x",
+            {"codigo_rf": "7654321"},
+        )
+
+    @patch("apps.professores.views.services.get_usuarios_sgp_por_perfil")
+    def test_400_quando_sidecar_retorna_texto(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = "erro"
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/perfis/perfil-x/")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(resp.json(), "erro")
+
+    @patch(
+        "apps.professores.views.services.get_funcionarios_sgp_por_perfil_dre"
+    )
+    def test_503_quando_api_indisponivel(
+        self, mock_service: MagicMock
+    ) -> None:
+        request = httpx.Request("GET", "https://professores.local/test")
+        mock_service.side_effect = httpx.ConnectError(
+            "Circuit breaker aberto para professores",
+            request=request,
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/perfis/perfil-x/dres/108200/")
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "Serviço de professores indisponível."},
+        )
+
+
+class FuncionariosPerfisDreViewTest(SimpleTestCase):
+    """Valida funcionários SGP por perfil e DRE."""
+
+    @patch(
+        "apps.professores.views.services.get_funcionarios_sgp_por_perfil_dre"
+    )
+    def test_200_com_filtros_legado(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [
+            {
+                "cd_cargo": "3352",
+                "codigo_funcao_atividade": 0,
+                "codigo_rf": "6657109",
+                "funcao_externo": 0,
+                "login": None,
+                "nome_servidor": "CRISTINA",
+                "tipo_funcao_externo": 0,
+            }
+        ]
+        client = _cliente_autenticado()
+        path = "/api/funcionarios/perfis/perfil-x/dres/108200/"
+        query = "?CodigoUe=000532&CodigoRf=6657109&NomeServidor=CRISTINA"
+
+        resp = client.get(f"{path}{query}")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.json(),
+            [
+                {
+                    "cd_Cargo": 3352,
+                    "codigoFuncaoAtividade": 0,
+                    "codigoRf": "6657109",
+                    "funcaoExterno": 0,
+                    "login": None,
+                    "nomeServidor": "CRISTINA",
+                    "tipoFuncaoExterno": 0,
+                }
+            ],
+        )
+        mock_service.assert_called_once_with(
+            "perfil-x",
+            "108200",
+            {
+                "codigo_ue": "000532",
+                "codigo_rf": "6657109",
+                "nome_servidor": "CRISTINA",
+            },
+        )
+
+    @patch(
+        "apps.professores.views.services.get_funcionarios_sgp_por_perfil_dre"
+    )
+    def test_204_quando_sidecar_retorna_none(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = None
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/perfis/perfil-x/dres/108200/")
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch(
+        "apps.professores.views.services.get_funcionarios_sgp_por_perfil_dre"
+    )
+    def test_400_quando_sidecar_retorna_texto(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = "erro"
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/perfis/perfil-x/dres/108200/")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(resp.json(), "erro")
+
+
 class EscolaFuncionariosCargoViewTest(SimpleTestCase):
     """Valida a busca de funcionários por escola e cargo."""
 
@@ -719,7 +1166,7 @@ class EscolaFuncionariosCargosViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(
             resp.json(),
-            {"detail": "Resposta inválida do sidecar de professores."},
+            {"detail": "Resposta inválida da API de professores."},
         )
 
     def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
@@ -825,7 +1272,7 @@ class EscolaFuncionariosFuncoesAtividadesViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(
             resp.json(),
-            {"detail": "Resposta inválida do sidecar de professores."},
+            {"detail": "Resposta inválida da API de professores."},
         )
 
     def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
@@ -949,7 +1396,7 @@ class EscolaFuncionariosFuncoesExternasViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(
             resp.json(),
-            {"detail": "Resposta inválida do sidecar de professores."},
+            {"detail": "Resposta inválida da API de professores."},
         )
 
     def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
@@ -1049,7 +1496,7 @@ class EscolaFuncionariosFuncaoExternaViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(
             resp.json(),
-            {"detail": "Resposta inválida do sidecar de professores."},
+            {"detail": "Resposta inválida da API de professores."},
         )
 
     def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
@@ -1155,7 +1602,7 @@ class EscolaFuncionariosFuncaoAtividadeViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(
             resp.json(),
-            {"detail": "Resposta inválida do sidecar de professores."},
+            {"detail": "Resposta inválida da API de professores."},
         )
 
     def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
@@ -1213,7 +1660,7 @@ class ProfessorDisciplinaTurmasViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(
             resp.json(),
-            {"detail": "Resposta inválida do sidecar de professores."},
+            {"detail": "Resposta inválida da API de professores."},
         )
         mock_service.assert_called_once_with("000001", "5", ["3030050"])
 
@@ -1853,7 +2300,7 @@ class ProfessorAutoCompleteViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(
             resp.json(),
-            {"detail": "Resposta inválida do sidecar de professores."},
+            {"detail": "Resposta inválida da API de professores."},
         )
 
     def test_400_quando_dre_id_e_somente_espacos(self) -> None:
@@ -2060,4 +2507,205 @@ class ProfessorBuscarTurmasAtribuidasViewTest(SimpleTestCase):
             resp.json(),
             {"detail": "É necessário informar o codigoRF."},
         )
+        mock_service.assert_not_called()
+
+
+class ProfessorVerificarAtribuicaoDisciplinaViewTest(SimpleTestCase):
+    """Valida os parâmetros da verificação de atribuição por disciplina."""
+
+    _URL = (
+        "/api/professores/000001/turmas/123/disciplinas/456/"
+        "atribuicao/verificar/data"
+    )
+
+    @patch(
+        "apps.professores.views.services."
+        "verificar_atribuicao_disciplina_territorio_saber"
+    )
+    def test_repassa_false_booleano_e_retorno_true(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        mock_service.return_value = True
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            self._URL,
+            {
+                "dataConsulta": "2026-07-28",
+                "territorioSaber": "false",
+            },
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertIs(resp.json(), True)
+        mock_service.assert_called_once_with(
+            "000001",
+            "123",
+            "456",
+            "2026-07-28",
+            False,
+        )
+
+    @patch(
+        "apps.professores.views.services."
+        "verificar_atribuicao_disciplina_territorio_saber"
+    )
+    def test_400_para_data_invalida(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get(self._URL, {"dataConsulta": "28/07/2026"})
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_service.assert_not_called()
+
+
+class ProfessorVerificarAtribuicaoDataViewTest(SimpleTestCase):
+    """Valida a verificação da atribuição por data."""
+
+    _URL_BASE = "/api/professores/000001/turmas/3032577/"
+    _URL = _URL_BASE + "atribuicao/verificar/data/"
+
+    @patch(
+        "apps.professores.views.services."
+        "verificar_atribuicao_professor_turma"
+    )
+    def test_200_repassa_parametros_e_retorno(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        mock_service.return_value = True
+
+        resp = _cliente_autenticado().get(
+            self._URL,
+            {"dataConsulta": "2026-07-28"},
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertIs(resp.json(), True)
+        mock_service.assert_called_once_with(
+            "000001",
+            "3032577",
+            "2026-07-28",
+        )
+
+    @patch(
+        "apps.professores.views.services."
+        "verificar_atribuicao_professor_turma"
+    )
+    def test_400_quando_data_ausente(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        resp = _cliente_autenticado().get(self._URL)
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_service.assert_not_called()
+
+
+class ProfessorStatusAtribuicaoViewTest(SimpleTestCase):
+    """Valida a consulta do status da atribuição."""
+
+    @patch(
+        "apps.professores.views.services."
+        "get_status_atribuicao_professor_turma"
+    )
+    def test_200_repassa_parametros_e_retorno(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        mock_service.return_value = {"anoAtribuicao": 2026}
+
+        resp = _cliente_autenticado().get(
+            "/api/professores/000001/turmas/3032577/atribuicao/status/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), {"anoAtribuicao": 2026})
+        mock_service.assert_called_once_with("000001", "3032577")
+
+
+class ProfessorVerificarAtribuicaoDataTickViewTest(SimpleTestCase):
+    """Valida a verificação da atribuição por data tick."""
+
+    _URL_BASE = "/api/professores/000001/turmas/3032577/disciplinas/89/"
+    _URL = _URL_BASE + "atribuicao/verificar/datatick/"
+
+    @patch(
+        "apps.professores.views.services."
+        "verificar_atribuicao_professor_turma_disciplina"
+    )
+    def test_200_repassa_tick_e_retorno(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        mock_service.return_value = True
+
+        resp = _cliente_autenticado().get(
+            self._URL,
+            {"dataConsultaTick": "639207072000000000"},
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertIs(resp.json(), True)
+        mock_service.assert_called_once_with(
+            "000001",
+            "3032577",
+            "89",
+            "639207072000000000",
+        )
+
+    @patch(
+        "apps.professores.views.services."
+        "verificar_atribuicao_professor_turma_disciplina"
+    )
+    def test_400_quando_tick_invalido(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        resp = _cliente_autenticado().get(
+            self._URL,
+            {"dataConsultaTick": "invalido"},
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_service.assert_not_called()
+
+
+class ProfessorAtribuicaoTurmaDisciplinaViewTest(SimpleTestCase):
+    """Valida a consulta das atribuições por disciplina."""
+
+    _URL = "/api/professores/3032577/disciplinas/89/atribuicao/data/"
+
+    @patch("apps.professores.views.services.get_atribuicoes_turma_disciplina")
+    def test_200_repassa_tick_e_retorna_lista(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        mock_service.return_value = [{"codigoTurma": 3032577}]
+
+        resp = _cliente_autenticado().get(
+            self._URL,
+            {"dataTicks": "639207072000000000"},
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [{"codigoTurma": 3032577}])
+        mock_service.assert_called_once_with(
+            "3032577",
+            "89",
+            "639207072000000000",
+        )
+
+    @patch("apps.professores.views.services.get_atribuicoes_turma_disciplina")
+    def test_400_quando_tick_ausente(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        resp = _cliente_autenticado().get(self._URL)
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         mock_service.assert_not_called()
