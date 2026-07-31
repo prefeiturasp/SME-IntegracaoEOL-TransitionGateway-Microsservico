@@ -352,6 +352,60 @@ class AlunoMatriculaTurmaSerializer(serializers.Serializer):
         return data
 
 
+class TodosAlunosTurmaSerializer(AlunoMatriculaTurmaSerializer):
+    """Serializa o histórico de vínculos do aluno com a turma.
+
+    O retorno é apenas a identificação da turma e da matrícula: 
+    os campos de localização da unidade (``ano``, ``codigoDre`` e 
+    ``codigoEscola``) não são publicados. ``codigoTurma``
+    continua preenchido, ao contrário do modo de campos parciais.
+    """
+
+    def to_representation(self, instance: Any) -> dict[str, Any]:
+        """Serializa o vínculo omitindo a localização da unidade.
+
+        Args:
+            instance: Dados do aluno e do vínculo com a turma.
+
+        Returns:
+            Campos publicados com a localização da unidade zerada.
+        """
+        data = cast(dict[str, Any], super().to_representation(instance))
+        data["ano"] = 0
+        data["codigoDre"] = None
+        data["codigoEscola"] = None
+        return data
+
+
+class AlunoAcompanhamentoEscolarSerializer(serializers.Serializer):
+    """Serializa alunos e responsáveis para acompanhamento escolar."""
+
+    numeroChamada = StringOrNoneField(source="numero_chamada")
+    nomeAluno = serializers.CharField(source="nome_aluno", allow_null=True)
+    codigoEOLAluno = serializers.IntegerField(
+        source="codigo_eol_aluno", allow_null=True
+    )
+    cpf = serializers.IntegerField(default=0)
+    nomeResponsavel = serializers.CharField(
+        source="nome_responsavel", allow_null=True
+    )
+    tipoResponsavel = serializers.IntegerField(
+        source="tipo_responsavel", allow_null=True
+    )
+    dddCelular = serializers.CharField(source="ddd_celular", allow_null=True)
+    celular = serializers.CharField(allow_null=True)
+    dddFixo = serializers.CharField(source="ddd_fixo", allow_null=True)
+    telefoneFixo = serializers.CharField(
+        source="telefone_fixo", allow_null=True
+    )
+    situacaoAluno = serializers.IntegerField(
+        source="situacao_aluno", allow_null=True
+    )
+    # DateTime sem timezone: publicado sem o sufixo Z, ao contrário dos
+    # demais endpoints de aluno.
+    dataSituacaoAluno = DatetimeLegadoField(source="data_situacao_aluno")
+
+
 class NecessidadeEspecialSerializer(serializers.Serializer):
     """Serializa necessidade especial do aluno."""
 

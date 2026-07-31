@@ -300,6 +300,159 @@ class GetAlunosPorTurmaTest(SimpleTestCase):
             },
         )
 
+    @patch.object(services._client, "post")
+    def test_quantidade_matriculas_turmas_periodo(
+        self, mock_post: MagicMock
+    ) -> None:
+        """Valida a consulta de quantidade de matrículas em turmas no período."""
+        mock_resp = MagicMock()
+        mock_resp.content = b'{"quantidade": 3827}'
+        mock_resp.json.return_value = {"quantidade": 3827}
+        mock_post.return_value = mock_resp
+
+        total = services.post_quantidade_matriculas_turmas_periodo(
+            [3011258, 3071054], "200"
+        )
+
+        self.assertEqual(total, 3827)
+        mock_post.assert_called_once_with(
+            f"{_BASE}/matriculas-turmas/quantidade",
+            payload={"codigos_turmas": [3011258, 3071054], "data_fim": "200"},
+        )
+
+    @patch.object(services._client, "post")
+    def test_quantidade_sem_turmas_nao_chama_sidecar(
+        self, mock_post: MagicMock
+    ) -> None:
+        """Valida que a quantidade de matrículas em turmas quando não houver turmas."""
+        total = services.post_quantidade_matriculas_turmas_periodo([], "200")
+
+        self.assertEqual(total, 0)
+        mock_post.assert_not_called()
+
+    @patch.object(services._client, "get")
+    def test_acompanhamento_escolar_turma(self, mock_get: MagicMock) -> None:
+        """Valida a consulta de acompanhamento escolar da turma."""
+        mock_resp = MagicMock()
+        mock_resp.content = b"[]"
+        mock_resp.json.return_value = []
+        mock_get.return_value = mock_resp
+
+        services.get_acompanhamento_escolar_turma("3123349")
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/turmas/3123349/acompanhamento-escolar"
+        )
+
+    @patch.object(services._client, "get")
+    def test_todos_alunos_turma_sem_filtro(self, mock_get: MagicMock) -> None:
+        """Valida a consulta de todos os alunos da turma sem filtro de aluno."""
+        mock_resp = MagicMock()
+        mock_resp.content = b"[]"
+        mock_resp.json.return_value = []
+        mock_get.return_value = mock_resp
+
+        services.get_todos_alunos_turma("3123349")
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/turmas/3123349/todos-alunos",
+            params={},
+        )
+
+    @patch.object(services._client, "get")
+    def test_todos_alunos_turma_com_aluno(self, mock_get: MagicMock) -> None:
+        """Valida a consulta de todos os alunos da turma com filtro de aluno."""
+        mock_resp = MagicMock()
+        mock_resp.content = b"[]"
+        mock_resp.json.return_value = []
+        mock_get.return_value = mock_resp
+
+        services.get_todos_alunos_turma("3123349", codigo_aluno="7345634")
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/turmas/3123349/todos-alunos",
+            params={"codigo_aluno": "7345634"},
+        )
+
+    @patch.object(services._client, "get")
+    def test_matriculas_turmas_aluno_sem_filtros(
+        self, mock_get: MagicMock
+    ) -> None:
+        """Valida a consulta de matrículas em turmas do aluno sem filtros."""
+        mock_resp = MagicMock()
+        mock_resp.content = b"[]"
+        mock_resp.json.return_value = []
+        mock_get.return_value = mock_resp
+
+        services.get_matriculas_turmas_aluno("7345634")
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/7345634/matriculas-turmas",
+            params={},
+        )
+
+    @patch.object(services._client, "get")
+    def test_matriculas_turmas_aluno_envia_ticks_zero(
+        self, mock_get: MagicMock
+    ) -> None:
+        """Ticks zero é repassado: restringe o resultado em vez de sumir."""
+        mock_resp = MagicMock()
+        mock_resp.content = b"[]"
+        mock_resp.json.return_value = []
+        mock_get.return_value = mock_resp
+
+        services.get_matriculas_turmas_aluno(
+            "7345634", data_aula_ticks="0", ano_letivo="0"
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/7345634/matriculas-turmas",
+            params={"data_aula_ticks": "0"},
+        )
+
+    @patch.object(services._client, "get")
+    def test_envia_ano_letivo_quando_informado(
+        self, mock_get: MagicMock
+    ) -> None:
+        """Valida a consulta de alunos por turma com ano letivo."""
+        mock_resp = MagicMock()
+        mock_resp.content = b"[]"
+        mock_resp.json.return_value = []
+        mock_get.return_value = mock_resp
+
+        services.get_alunos_por_turma(
+            "3123349",
+            considerar_inativos=True,
+            ano_letivo=2025,
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/turmas/3123349/",
+            params={
+                "considerar_inativos": True,
+                "ano_letivo": 2025,
+            },
+        )
+
+    @patch.object(services._client, "get")
+    def test_omite_ano_letivo_quando_zero(self, mock_get: MagicMock) -> None:
+        """``ano_letivo`` igual a 0 não é enviado ao microsserviço."""
+        mock_resp = MagicMock()
+        mock_resp.content = b"[]"
+        mock_resp.json.return_value = []
+        mock_get.return_value = mock_resp
+
+        services.get_alunos_por_turma(
+            "3123349",
+            considerar_inativos=True,
+            ano_letivo=0,
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/turmas/3123349/",
+            params={"considerar_inativos": True},
+        )
+
     @patch.object(services._client, "get")
     def test_envia_data_matricula_ticks_quando_informada(
         self, mock_get: MagicMock

@@ -409,6 +409,7 @@ def get_alunos_por_turma(
     data_aula_ticks: str | int | None = None,
     data_matricula_ticks: str | int | None = None,
     sequencia: int | None = None,
+    ano_letivo: str | int | None = None,
 ) -> Any:
     """Retorna os alunos de uma turma consultando o endpoint canônico.
 
@@ -419,6 +420,8 @@ def get_alunos_por_turma(
         data_aula_ticks: Data de referência em ticks de DateTime do .NET.
             Omitido quando ``None`` ou ``0``.
         sequencia: Sequência da matrícula a filtrar, quando aplicável.
+        ano_letivo: Ano letivo da turma usado no filtro. Omitido quando
+            ``None`` ou ``0``.
 
     Returns:
         Lista de alunos, ou lista vazia quando não houver registros.
@@ -436,8 +439,126 @@ def get_alunos_por_turma(
         params["data_matricula_ticks"] = data_matricula_ticks
     if sequencia is not None:
         params["sequencia"] = sequencia
+    if ano_letivo is not None and int(ano_letivo) != 0:
+        params["ano_letivo"] = ano_letivo
 
     resp = _client.get(f"{_BASE}/turmas/{codigo_turma}/", params=params)
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
+def post_quantidade_matriculas_turmas_periodo(
+    codigos_turmas: list[int],
+    data_fim_ticks: str | int,
+) -> int:
+    """Retorna a quantidade de alocações válidas nas turmas até a data.
+
+    Args:
+        codigos_turmas: Códigos EOL das turmas consideradas.
+        data_fim_ticks: Data limite em ticks de DateTime do .NET.
+
+    Returns:
+        Quantidade de alocações no período, ou ``0`` quando não houver
+        turmas.
+
+    Raises:
+        httpx.HTTPStatusError: Se o serviço externo retornar status de erro.
+        httpx.RequestError: Se o serviço externo estiver inacessível.
+    """
+    if not codigos_turmas:
+        return 0
+    resp = _client.post(
+        f"{_BASE}/matriculas-turmas/quantidade",
+        payload={
+            "codigos_turmas": codigos_turmas,
+            "data_fim": data_fim_ticks,
+        },
+    )
+    resp.raise_for_status()
+    corpo = _client.json_or_none(resp) or {}
+    return int(corpo.get("quantidade", 0))
+
+
+def get_acompanhamento_escolar_turma(codigo_turma: str) -> Any:
+    """Retorna alunos e responsáveis vigentes de uma turma de acompanhamento.
+
+    Args:
+        codigo_turma: Código EOL da turma.
+
+    Returns:
+        Lista de alunos com responsável vigente, ou lista vazia quando não
+        houver registros.
+
+    Raises:
+        httpx.HTTPStatusError: Se o serviço externo retornar status de erro.
+        httpx.RequestError: Se o serviço externo estiver inacessível.
+    """
+    resp = _client.get(f"{_BASE}/turmas/{codigo_turma}/acompanhamento-escolar")
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
+def get_todos_alunos_turma(
+    codigo_turma: str,
+    *,
+    codigo_aluno: str | None = None,
+) -> Any:
+    """Retorna o histórico de vínculos dos alunos com a turma.
+
+    Args:
+        codigo_turma: Código EOL da turma.
+        codigo_aluno: Código EOL do aluno usado no filtro.
+
+    Returns:
+        Lista de vínculos, ou lista vazia quando não houver registros.
+
+    Raises:
+        httpx.HTTPStatusError: Se o serviço externo retornar status de erro.
+        httpx.RequestError: Se o serviço externo estiver inacessível.
+    """
+    params: dict[str, Any] = {}
+    if codigo_aluno is not None:
+        params["codigo_aluno"] = codigo_aluno
+
+    resp = _client.get(
+        f"{_BASE}/turmas/{codigo_turma}/todos-alunos", params=params
+    )
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
+def get_matriculas_turmas_aluno(
+    codigo_aluno: str,
+    *,
+    data_aula_ticks: str | int | None = None,
+    ano_letivo: str | int | None = None,
+) -> Any:
+    """Retorna as matrículas-turma do aluno consultando o sidecar.
+
+    Args:
+        codigo_aluno: Código EOL do aluno.
+        data_aula_ticks: Data de referência em ticks de DateTime do .NET.
+            Enviado mesmo quando ``0``, que restringe o resultado a vazio.
+        ano_letivo: Ano letivo da turma usado no filtro. Omitido quando
+            ``None`` ou ``0``.
+
+    Returns:
+        Lista de matrículas-turma, ou lista vazia quando não houver
+        registros.
+
+    Raises:
+        httpx.HTTPStatusError: Se o serviço externo retornar status de erro.
+        httpx.RequestError: Se o serviço externo estiver inacessível.
+    """
+    params: dict[str, Any] = {}
+    if data_aula_ticks is not None:
+        params["data_aula_ticks"] = data_aula_ticks
+    if ano_letivo is not None and int(ano_letivo) != 0:
+        params["ano_letivo"] = ano_letivo
+
+    resp = _client.get(
+        f"{_BASE}/{codigo_aluno}/matriculas-turmas", params=params
+    )
     resp.raise_for_status()
     return _client.json_or_none(resp) or []
 

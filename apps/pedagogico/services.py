@@ -223,6 +223,44 @@ def _turma_legado(item: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def post_codigos_turmas_contagem(
+    ues_codigos: list[str],
+    ano_turma: str | None = None,
+    codigo_modalidade: str | int | None = None,
+    ano_letivo: str | int | None = None,
+) -> list[int]:
+    """Retorna códigos de turmas vigentes para a contagem de alunos.
+
+    Args:
+        ues_codigos: Códigos EOL das UEs consideradas.
+        ano_turma: Primeiro caractere da nomenclatura da turma.
+        codigo_modalidade: Modalidade materializada.
+        ano_letivo: Ano letivo da chamada.
+
+    Returns:
+        Códigos das turmas que atendem ao recorte, ou lista vazia.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+    """
+    if not ues_codigos:
+        return []
+    params: dict[str, Any] = {}
+    if ano_turma:
+        params["ano_turma"] = ano_turma
+    if codigo_modalidade is not None:
+        params["codigo_modalidade"] = codigo_modalidade
+    if ano_letivo is not None:
+        params["ano_letivo"] = ano_letivo
+    resp = _client.post(
+        f"{_BASE_TURMAS}/codigos-turmas-contagem/",
+        payload=ues_codigos,
+        params=params,
+    )
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
 def post_turmas_regulares(codigos: list[str]) -> list[str]:
     """Retorna codigos de turmas regulares existentes.
 
