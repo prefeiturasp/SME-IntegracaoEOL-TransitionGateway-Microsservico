@@ -2,19 +2,12 @@
 
 from typing import Any
 
-from django.conf import settings
-
-from apps.core.http_client import ServiceClient
+from apps.core.api_clients import get_api_client
 
 _BASE = "/api/v1/alunos/matriculas"
 _BASE_ALUNOS = "/api/v1/alunos"
 
-_client = ServiceClient(
-    base_url=settings.SIDECAR_ALUNOS_URL,
-    dominio="matriculas",
-    api_key=settings.SIDECAR_ALUNOS_API_KEY,
-    api_key_header=settings.SIDECAR_ALUNOS_API_KEY_HEADER,
-)
+_client = get_api_client("alunos")
 
 
 def get_matriculas_ano_atual(ano_letivo: int, ue_codigo: str) -> Any:
@@ -28,8 +21,8 @@ def get_matriculas_ano_atual(ano_letivo: int, ue_codigo: str) -> Any:
         Lista de matrículas consolidadas por turma.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     resp = _client.get(
         _BASE,
@@ -39,9 +32,7 @@ def get_matriculas_ano_atual(ano_letivo: int, ue_codigo: str) -> Any:
     return _client.json_or_none(resp) or []
 
 
-def get_matriculas_anos_anteriores(
-    ano_letivo: int, ue_codigo: str
-) -> Any:
+def get_matriculas_anos_anteriores(ano_letivo: int, ue_codigo: str) -> Any:
     """Retorna matrículas históricas consolidadas por turma.
 
     Args:
@@ -52,8 +43,8 @@ def get_matriculas_anos_anteriores(
         Lista de matrículas históricas consolidadas por turma.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     resp = _client.get(
         f"{_BASE}/anos-anteriores",
@@ -70,11 +61,12 @@ def get_total_matriculas_por_turno_ue(ue_codigo: str) -> Any:
         ue_codigo: Código da unidade educacional.
 
     Returns:
-        Objeto agregado no contrato legado com total de matrículas e distribuição por turnos.
+        Objeto agregado no contrato legado com total de matrículas e
+        distribuição por turnos.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     resp = _client.get(f"{_BASE}/escolas/{ue_codigo}/quantidades")
     resp.raise_for_status()
@@ -92,8 +84,8 @@ def get_total_matriculas_por_turno_dre(dre_codigo: str) -> Any:
         matrículas e distribuição por turnos.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     resp = _client.get(f"{_BASE}/escolas/dre/{dre_codigo}/quantidades")
     resp.raise_for_status()
@@ -110,10 +102,12 @@ def get_quantidade_alunos_por_turma_escola(codigo_escola: str) -> Any:
         Lista agregada por turma.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
-    resp = _client.get(f"{_BASE_ALUNOS}/escolas/{codigo_escola}/alunos/quantidade")
+    resp = _client.get(
+        f"{_BASE_ALUNOS}/escolas/{codigo_escola}/alunos/quantidade"
+    )
     resp.raise_for_status()
     return _client.json_or_none(resp) or []
 
@@ -132,8 +126,8 @@ def get_matriculas_aluno_escola(
         Lista de matrículas do aluno na escola.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     resp = _client.get(
         f"{_BASE_ALUNOS}/escolas/{codigo_escola}/aluno/{codigo_aluno}/matriculas"

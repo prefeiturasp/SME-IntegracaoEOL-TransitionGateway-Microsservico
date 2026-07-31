@@ -9,9 +9,13 @@ from drf_spectacular.utils import (
     extend_schema,
 )
 from rest_framework.request import Request
-from rest_framework.views import APIView
 
-from apps.core.responses import Response, detail_response
+from apps.core.responses import (
+    Response,
+    api_unavailable_response,
+    detail_response,
+)
+from apps.core.views import DomainAPIView
 from apps.matriculas import services
 from apps.matriculas.serializers import (
     MatriculaAlunoEscolaSerializer,
@@ -21,7 +25,7 @@ from apps.matriculas.serializers import (
 
 _TAG = ["Aluno"]
 _MSG_ANO_LETIVO_INVALIDO = "ano_letivo deve ser um inteiro válido."
-_MSG_SIDECAR_INDISPONIVEL = "Servico de matriculas indisponivel."
+_DOMINIO_MATRICULAS = "matriculas"
 _MSG_CODIGO_UE_OBRIGATORIO = "Código da UE obrigatório."
 _MSG_CODIGO_DRE_OBRIGATORIO = "Código da DRE obrigatório."
 _MSG_CODIGO_ESCOLA_OBRIGATORIO = "Código da escola obrigatório."
@@ -30,14 +34,14 @@ _MSG_CODIGO_ESCOLA_ALUNO_OBRIGATORIO = (
 )
 
 
-def _sidecar_error_response(exc: httpx.HTTPStatusError) -> Response:
-    """Monta resposta do gateway para erro HTTP do sidecar.
+def _api_error_response(exc: httpx.HTTPStatusError) -> Response:
+    """Monta resposta do gateway para erro HTTP da API.
 
     Args:
-        exc: Exceção HTTP lançada pelo cliente do sidecar.
+        exc: Exceção HTTP lançada pelo cliente da API.
 
     Returns:
-        Resposta com o corpo e status retornados pelo sidecar.
+        Resposta com o corpo e status retornados pela API.
     """
     try:
         body: Any = exc.response.json()
@@ -47,16 +51,22 @@ def _sidecar_error_response(exc: httpx.HTTPStatusError) -> Response:
     return Response(body, status=exc.response.status_code)
 
 
-def _sidecar_unavailable_response(_exc: httpx.RequestError) -> Response:
-    """Monta resposta de indisponibilidade do sidecar.
+def _api_unavailable_response(_exc: httpx.RequestError) -> Response:
+    """Monta resposta de indisponibilidade da API.
 
     Args:
-        _exc: Exceção de comunicação com o sidecar.
+        _exc: Exceção de comunicação com a API.
 
     Returns:
         Resposta de indisponibilidade no formato do gateway.
     """
-    return Response({"detail": _MSG_SIDECAR_INDISPONIVEL}, status=503)
+    return api_unavailable_response(_DOMINIO_MATRICULAS)
+
+
+class MatriculasAPIView(DomainAPIView):
+    """APIView base que padroniza falhas de comunicação com matrículas."""
+
+    api_domain = _DOMINIO_MATRICULAS
 
 
 def _query_alias(request: Request, *names: str) -> str | None:
@@ -76,7 +86,7 @@ def _query_alias(request: Request, *names: str) -> str | None:
     return None
 
 
-class MatriculasAnoAtualView(APIView):
+class MatriculasAnoAtualView(MatriculasAPIView):
     """Lista matrículas consolidadas do ano letivo."""
 
     @extend_schema(
@@ -116,13 +126,13 @@ class MatriculasAnoAtualView(APIView):
                 ue_codigo=ue_codigo,
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         return Response(MatriculaSerializer(data, many=True).data)
 
 
-class MatriculasAnosAnterioresView(APIView):
+class MatriculasAnosAnterioresView(MatriculasAPIView):
     """Lista matrículas históricas consolidadas por turma."""
 
     @extend_schema(
@@ -158,13 +168,13 @@ class MatriculasAnosAnterioresView(APIView):
                 ue_codigo=ue_codigo,
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         return Response(MatriculaSerializer(data, many=True).data)
 
 
-class TotalMatriculasPorTurnoUeView(APIView):
+class TotalMatriculasPorTurnoUeView(MatriculasAPIView):
     """Lista o total de matrículas por turno na UE."""
 
     @extend_schema(
@@ -183,22 +193,23 @@ class TotalMatriculasPorTurnoUeView(APIView):
             ue_codigo: Código da unidade educacional.
 
         Returns:
-            Objeto com total de matrículas e turnos quando houver dados ou 204 quando não houver registros.
+            Objeto com total de matrículas e turnos quando houver dados ou
+            204 quando não houver registros.
         """
         if not ue_codigo.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
         try:
             data = services.get_total_matriculas_por_turno_ue(ue_codigo)
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         if not data:
             return Response(status=204)
         return Response(data)
 
 
-class TotalMatriculasPorTurnoDreView(APIView):
+class TotalMatriculasPorTurnoDreView(MatriculasAPIView):
     """Lista o total de matrículas por turno na DRE."""
 
     @extend_schema(
@@ -217,22 +228,23 @@ class TotalMatriculasPorTurnoDreView(APIView):
             dre_codigo: Código da DRE.
 
         Returns:
-            Lista com totais por escola quando houver dados, ou 204 quando não houver registros.
+            Lista com totais por escola quando houver dados, ou 204 quando
+            não houver registros.
         """
         if not dre_codigo.strip():
             return detail_response(_MSG_CODIGO_DRE_OBRIGATORIO)
         try:
             data = services.get_total_matriculas_por_turno_dre(dre_codigo)
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         if not data:
             return Response(status=204)
         return Response(data)
 
 
-class QuantidadeAlunosPorTurmaEscolaView(APIView):
+class QuantidadeAlunosPorTurmaEscolaView(MatriculasAPIView):
     """Lista a quantidade de alunos por turma na escola."""
 
     @extend_schema(
@@ -251,7 +263,8 @@ class QuantidadeAlunosPorTurmaEscolaView(APIView):
             codigo_escola: Código da escola.
 
         Returns:
-            Quantidades agregadas por turma no contrato legado. Quando não houver dados, retorna 200 com lista vazia.
+            Quantidades agregadas por turma no contrato legado. Quando não
+            houver dados, retorna 200 com lista vazia.
         """
         if not codigo_escola.strip():
             return detail_response(_MSG_CODIGO_ESCOLA_OBRIGATORIO)
@@ -260,15 +273,15 @@ class QuantidadeAlunosPorTurmaEscolaView(APIView):
                 codigo_escola
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         return Response(
             QuantidadeAlunosPorTurmaEscolaSerializer(data, many=True).data
         )
 
 
-class MatriculasAlunoEscolaView(APIView):
+class MatriculasAlunoEscolaView(MatriculasAPIView):
     """Lista matrículas de um aluno na escola."""
 
     @extend_schema(
@@ -294,7 +307,8 @@ class MatriculasAlunoEscolaView(APIView):
             codigo_aluno: Código EOL do aluno.
 
         Returns:
-            Matrículas do aluno na escola no contrato legado. Quando não houver dados, retorna 200 com lista vazia.
+            Matrículas do aluno na escola no contrato legado. Quando não
+            houver dados, retorna 200 com lista vazia.
         """
         if not codigo_escola.strip() or not codigo_aluno.strip():
             return detail_response(_MSG_CODIGO_ESCOLA_ALUNO_OBRIGATORIO)
@@ -308,7 +322,7 @@ class MatriculasAlunoEscolaView(APIView):
                 codigo_aluno,
             )
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError as exc:
-            return _sidecar_unavailable_response(exc)
+            return _api_unavailable_response(exc)
         return Response(MatriculaAlunoEscolaSerializer(data, many=True).data)

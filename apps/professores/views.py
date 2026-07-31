@@ -5,10 +5,13 @@ from typing import Any, NamedTuple, cast
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.request import Request
-from rest_framework.views import APIView
 
 from apps.core.datetime import validar_data_str, validar_data_tick
-from apps.core.responses import Response, detail_response
+from apps.core.responses import (
+    Response,
+    detail_response,
+)
+from apps.core.views import DomainAPIView
 from apps.professores import services
 from apps.professores.serializers import (
     BuscarFuncionariosPorUeSerializer,
@@ -57,7 +60,8 @@ _MSG_DRE_ID_OBRIGATORIO = "É necessário informar o dreId."
 _MSG_UE_ID_OBRIGATORIO = "É necessário informar o ueId."
 _MSG_NOME_OBRIGATORIO = "É necessário informar o nome."
 _TAMANHO_MINIMO_NOME = 2
-_MSG_RESPOSTA_INVALIDA_SIDECAR = "Resposta inválida do sidecar de professores."
+_MSG_RESPOSTA_INVALIDA_API = "Resposta inválida da API de professores."
+_DOMINIO_PROFESSORES = "professores"
 _CAMPOS_TURMA = {
     "codigo_turma",
     "data_disponibilizacao_aulas",
@@ -224,6 +228,12 @@ def _inteiros_param(request: Request, nome: str) -> list[int] | None:
     return [int(item) for item in valores] or None
 
 
+class ProfessoresAPIView(DomainAPIView):
+    """APIView base que padroniza falhas de comunicação com professores."""
+
+    api_domain = _DOMINIO_PROFESSORES
+
+
 def _abrangencia_temporaria(request: Request) -> _AbrangenciaTemporaria:
     """Lê os parâmetros temporários que substituem os dados do CoreSSO."""
     return _AbrangenciaTemporaria(
@@ -313,7 +323,7 @@ def _is_lista_dicionarios(data: object) -> bool:
     )
 
 
-class ProfessorView(APIView):
+class ProfessorView(ProfessoresAPIView):
     """Retorna o nome do professor pelo RF."""
 
     @extend_schema(
@@ -340,7 +350,7 @@ class ProfessorView(APIView):
         return Response(data)
 
 
-class ValidadeProfessorView(APIView):
+class ValidadeProfessorView(ProfessoresAPIView):
     """Retorna indicação de validade do professor."""
 
     @extend_schema(
@@ -363,7 +373,7 @@ class ValidadeProfessorView(APIView):
         return Response(data)
 
 
-class ProfessorVerificarAtribuicaoDataView(APIView):
+class ProfessorVerificarAtribuicaoDataView(ProfessoresAPIView):
     """Verifica a atribuição do professor em uma data."""
 
     @extend_schema(
@@ -413,7 +423,7 @@ class ProfessorVerificarAtribuicaoDataView(APIView):
         return Response(resposta)
 
 
-class ProfessorStatusAtribuicaoView(APIView):
+class ProfessorStatusAtribuicaoView(ProfessoresAPIView):
     """Obtém o status da atribuição do professor em uma turma."""
 
     @extend_schema(
@@ -450,7 +460,7 @@ class ProfessorStatusAtribuicaoView(APIView):
         return Response(resposta)
 
 
-class ProfessorVerificarAtribuicaoDataTickView(APIView):
+class ProfessorVerificarAtribuicaoDataTickView(ProfessoresAPIView):
     """Verifica a atribuição do professor em uma data por tick."""
 
     @extend_schema(
@@ -514,7 +524,7 @@ class ProfessorVerificarAtribuicaoDataTickView(APIView):
         return Response(resposta)
 
 
-class ProfessorAtribuicaoTurmaDisciplinaView(APIView):
+class ProfessorAtribuicaoTurmaDisciplinaView(ProfessoresAPIView):
     """Obtém a atribuições de uma turma e disciplina."""
 
     @extend_schema(
@@ -572,7 +582,7 @@ class ProfessorAtribuicaoTurmaDisciplinaView(APIView):
         return Response(resposta)
 
 
-class ProfessorVerificarAtribuicaoTurmaDisciplinaDataView(APIView):
+class ProfessorVerificarAtribuicaoTurmaDisciplinaDataView(ProfessoresAPIView):
     """Verifica a atribuição do professor em uma turma e disciplina."""
 
     @extend_schema(
@@ -651,7 +661,7 @@ class ProfessorVerificarAtribuicaoTurmaDisciplinaDataView(APIView):
         return Response(resposta)
 
 
-class FuncionarioAtivoView(APIView):
+class FuncionarioAtivoView(ProfessoresAPIView):
     """Retorna indicação de atividade do funcionário."""
 
     @extend_schema(
@@ -676,7 +686,7 @@ class FuncionarioAtivoView(APIView):
         return Response(data)
 
 
-class NomeServidorView(APIView):
+class NomeServidorView(ProfessoresAPIView):
     """Retorna nome e CPF do servidor."""
 
     @extend_schema(
@@ -699,7 +709,7 @@ class NomeServidorView(APIView):
         return Response(NomeServidorSerializer(data).data)
 
 
-class NomeUsuarioEolView(APIView):
+class NomeUsuarioEolView(ProfessoresAPIView):
     """Retorna nome de usuário EOL do funcionário."""
 
     @extend_schema(
@@ -724,7 +734,7 @@ class NomeUsuarioEolView(APIView):
         return Response(data)
 
 
-class FuncionarioTurmaDisciplinasView(APIView):
+class FuncionarioTurmaDisciplinasView(ProfessoresAPIView):
     """Retorna disciplinas da turma."""
 
     @extend_schema(
@@ -749,7 +759,7 @@ class FuncionarioTurmaDisciplinasView(APIView):
         return Response(data)
 
 
-class FuncionarioPerfilTurmaDisciplinasView(APIView):
+class FuncionarioPerfilTurmaDisciplinasView(ProfessoresAPIView):
     """Retorna disciplinas do funcionário na turma."""
 
     @extend_schema(
@@ -796,7 +806,7 @@ class FuncionarioPerfilTurmaDisciplinasView(APIView):
         return Response(data)
 
 
-class FuncionarioPerfilTurmaDisciplinasPlanejamentoView(APIView):
+class FuncionarioPerfilTurmaDisciplinasPlanejamentoView(ProfessoresAPIView):
     """Retorna disciplinas de planejamento do funcionário na turma."""
 
     @extend_schema(
@@ -860,7 +870,7 @@ def _validar_disciplinas_funcionario(
     return None
 
 
-class ProfessorBuscarPorRfView(APIView):
+class ProfessorBuscarPorRfView(ProfessoresAPIView):
     """Retorna dados resumidos de professor."""
 
     @extend_schema(
@@ -913,7 +923,7 @@ class ProfessorBuscarPorRfView(APIView):
         return Response(ProfessorBuscarPorRfSerializer(data).data)
 
 
-class FuncionariosBuscarPorListaRfView(APIView):
+class FuncionariosBuscarPorListaRfView(ProfessoresAPIView):
     """Retorna professores pelos RFs informados."""
 
     @extend_schema(
@@ -942,7 +952,7 @@ class FuncionariosBuscarPorListaRfView(APIView):
         return Response(ProfessorBuscarPorRfSerializer(data, many=True).data)
 
 
-class EscolaFuncionariosCargoView(APIView):
+class EscolaFuncionariosCargoView(ProfessoresAPIView):
     """Retorna funcionários da escola filtrados por cargo."""
 
     @extend_schema(
@@ -978,7 +988,7 @@ class EscolaFuncionariosCargoView(APIView):
         return Response(FuncionarioEscolaSerializer(data, many=True).data)
 
 
-class EscolaFuncionariosCargosView(APIView):
+class EscolaFuncionariosCargosView(ProfessoresAPIView):
     """Retorna funcionários da escola filtrados por cargos."""
 
     @extend_schema(
@@ -1018,11 +1028,11 @@ class EscolaFuncionariosCargosView(APIView):
         if data is None:
             return Response(status=204)
         if not _is_lista_dicionarios(data):
-            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(FuncionarioCargoSerializer(data, many=True).data)
 
 
-class EscolaFuncionariosFuncoesAtividadesView(APIView):
+class EscolaFuncionariosFuncoesAtividadesView(ProfessoresAPIView):
     """Retorna funcionários da escola por funções atividades."""
 
     @extend_schema(
@@ -1072,13 +1082,13 @@ class EscolaFuncionariosFuncoesAtividadesView(APIView):
         if data is None:
             return Response(status=204)
         if not _is_lista_dicionarios(data):
-            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(
             FuncionarioFuncaoAtividadeSerializer(data, many=True).data
         )
 
 
-class EscolaFuncionariosFuncoesExternasView(APIView):
+class EscolaFuncionariosFuncoesExternasView(ProfessoresAPIView):
     """Retorna funcionários da escola por funções externas."""
 
     @extend_schema(
@@ -1126,13 +1136,13 @@ class EscolaFuncionariosFuncoesExternasView(APIView):
         if data is None:
             return Response(status=204)
         if not _is_lista_dicionarios(data):
-            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(
             FuncionarioFuncaoExternaSerializer(data, many=True).data
         )
 
 
-class EscolaFuncionariosFuncaoExternaView(APIView):
+class EscolaFuncionariosFuncaoExternaView(ProfessoresAPIView):
     """Retorna funcionários da escola por uma função externa específica."""
 
     @extend_schema(
@@ -1166,11 +1176,11 @@ class EscolaFuncionariosFuncaoExternaView(APIView):
         if not data:
             return Response(status=204)
         if not _is_lista_dicionarios(data):
-            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(FuncionarioEscolaSerializer(data, many=True).data)
 
 
-class EscolaFuncionariosFuncaoAtividadeView(APIView):
+class EscolaFuncionariosFuncaoAtividadeView(ProfessoresAPIView):
     """Retorna funcionários da escola por uma função atividade específica."""
 
     @extend_schema(
@@ -1210,13 +1220,13 @@ class EscolaFuncionariosFuncaoAtividadeView(APIView):
         if not data:
             return Response(status=204)
         if not _is_lista_dicionarios(data):
-            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(
             FuncionarioFuncaoAtividadeUeSerializer(data, many=True).data
         )
 
 
-class EscolaFuncionariosView(APIView):
+class EscolaFuncionariosView(ProfessoresAPIView):
     """Retorna funcionários vinculados à escola."""
 
     @extend_schema(
@@ -1241,7 +1251,7 @@ class EscolaFuncionariosView(APIView):
         return Response(FuncionarioEscolaSerializer(data, many=True).data)
 
 
-class FuncionariosUeView(APIView):
+class FuncionariosUeView(ProfessoresAPIView):
     """Retorna funcionários vinculados à unidade educacional."""
 
     @extend_schema(
@@ -1277,7 +1287,7 @@ class FuncionariosUeView(APIView):
         if data is None:
             return Response(status=204)
         if not isinstance(data, list):
-            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         if not data:
             return Response(
                 "Não foram encontrados funcionários.",
@@ -1286,7 +1296,7 @@ class FuncionariosUeView(APIView):
         return Response(FuncionarioUeLegadoSerializer(data, many=True).data)
 
 
-class FuncionariosCargoView(APIView):
+class FuncionariosCargoView(ProfessoresAPIView):
     """Retorna funcionários vinculados ao cargo."""
 
     @extend_schema(
@@ -1309,11 +1319,11 @@ class FuncionariosCargoView(APIView):
         if data is None:
             return Response(status=204)
         if not isinstance(data, list):
-            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(FuncionarioEscolaSerializer(data, many=True).data)
 
 
-class FuncionariosSupervisoresView(APIView):
+class FuncionariosSupervisoresView(ProfessoresAPIView):
     """Retorna supervisores vinculados à DRE."""
 
     @extend_schema(
@@ -1351,8 +1361,8 @@ class FuncionariosSupervisoresView(APIView):
         if not isinstance(data, list):
             return Response(
                 {
-                    "detail": _MSG_RESPOSTA_INVALIDA_SIDECAR,
-                    "sidecar": data,
+                    "detail": _MSG_RESPOSTA_INVALIDA_API,
+                    "api": data,
                 },
                 status=502,
             )
@@ -1361,7 +1371,7 @@ class FuncionariosSupervisoresView(APIView):
         return Response(SupervisorLegadoSerializer(data, many=True).data)
 
 
-class FuncionariosPerfisView(APIView):
+class FuncionariosPerfisView(ProfessoresAPIView):
     """Retorna usuários SGP por perfil."""
 
     @extend_schema(
@@ -1413,7 +1423,7 @@ class FuncionariosPerfisView(APIView):
         return Response(FuncionarioSgpLegadoSerializer(data, many=True).data)
 
 
-class FuncionariosPerfisDreView(APIView):
+class FuncionariosPerfisDreView(ProfessoresAPIView):
     """Retorna funcionários SGP por perfil e DRE."""
 
     @extend_schema(
@@ -1477,7 +1487,7 @@ class FuncionariosPerfisDreView(APIView):
         return Response(FuncionarioSgpLegadoSerializer(data, many=True).data)
 
 
-class ProfessorDisciplinaTurmasView(APIView):
+class ProfessorDisciplinaTurmasView(ProfessoresAPIView):
     """Retorna turmas atribuídas ao professor."""
 
     @extend_schema(
@@ -1528,11 +1538,11 @@ class ProfessorDisciplinaTurmasView(APIView):
         if data is None:
             return Response(status=204)
         if not _is_lista_turmas(data):
-            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(ProfessorTurmaSerializer(data, many=True).data)
 
 
-class ProfessorTurmasView(APIView):
+class ProfessorTurmasView(ProfessoresAPIView):
     """Retorna turmas atribuídas ao professor."""
 
     @extend_schema(
@@ -1562,7 +1572,7 @@ class ProfessorTurmasView(APIView):
         )
 
 
-class FuncionarioPerfilTurmasView(APIView):
+class FuncionarioPerfilTurmasView(ProfessoresAPIView):
     """Retorna abrangência de turmas do funcionário."""
 
     @extend_schema(
@@ -1602,7 +1612,7 @@ class FuncionarioPerfilTurmasView(APIView):
         return Response(data)
 
 
-class FuncionariosTurmasView(APIView):
+class FuncionariosTurmasView(ProfessoresAPIView):
     """Retorna abrangência de turmas para unidades."""
 
     @extend_schema(
@@ -1631,7 +1641,7 @@ class FuncionariosTurmasView(APIView):
         return Response(data)
 
 
-class FuncionariosBuscarTurmasElegiveisView(APIView):
+class FuncionariosBuscarTurmasElegiveisView(ProfessoresAPIView):
     """Retorna turmas elegíveis para cópia."""
 
     @extend_schema(
@@ -1656,7 +1666,7 @@ class FuncionariosBuscarTurmasElegiveisView(APIView):
         return Response(data)
 
 
-class FuncionariosView(APIView):
+class FuncionariosView(ProfessoresAPIView):
     """Retorna funcionários por filtros básicos."""
 
     @extend_schema(
@@ -1686,7 +1696,7 @@ class FuncionariosView(APIView):
         return Response(data)
 
 
-class ProfessorBuscarPorRfDreUeView(APIView):
+class ProfessorBuscarPorRfDreUeView(ProfessoresAPIView):
     """Retorna dados resumidos de professor por RF, DRE e UE."""
 
     @extend_schema(
@@ -1747,7 +1757,7 @@ class ProfessorBuscarPorRfDreUeView(APIView):
         return Response(ProfessorBuscarPorRfSerializer(data).data)
 
 
-class ProfessoresBuscarPorListaRfAnoView(APIView):
+class ProfessoresBuscarPorListaRfAnoView(ProfessoresAPIView):
     """Retorna professores pelos RFs informados no ano letivo."""
 
     @extend_schema(
@@ -1782,7 +1792,7 @@ class ProfessoresBuscarPorListaRfAnoView(APIView):
         return Response(ProfessorBuscarPorRfSerializer(data, many=True).data)
 
 
-class ProfessorEhEmeiView(APIView):
+class ProfessorEhEmeiView(ProfessoresAPIView):
     """Retorna indicação de vínculo do professor com EMEI."""
 
     @extend_schema(
@@ -1805,7 +1815,7 @@ class ProfessorEhEmeiView(APIView):
         return Response(data)
 
 
-class ProfessorAutoCompleteView(APIView):
+class ProfessorAutoCompleteView(ProfessoresAPIView):
     """Lista professores para autocomplete por DRE e ano letivo."""
 
     @extend_schema(
@@ -1865,11 +1875,11 @@ class ProfessorAutoCompleteView(APIView):
         if not data:
             return Response([])
         if not _is_lista_dicionarios(data):
-            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(ProfessorAutoCompleteSerializer(data, many=True).data)
 
 
-class ProfessorBuscaTurmasAtribuidasEscolaView(APIView):
+class ProfessorBuscaTurmasAtribuidasEscolaView(ProfessoresAPIView):
     """Retorna turmas atribuídas ao professor na escola."""
 
     @extend_schema(
@@ -1917,7 +1927,7 @@ class ProfessorBuscaTurmasAtribuidasEscolaView(APIView):
         )
 
 
-class BuscaTurmasAtribuidasProfessoresEscolaView(APIView):
+class BuscaTurmasAtribuidasProfessoresEscolaView(ProfessoresAPIView):
     """Retorna turmas atribuídas a professores na escola."""
 
     @extend_schema(
@@ -1957,7 +1967,7 @@ class BuscaTurmasAtribuidasProfessoresEscolaView(APIView):
         )
 
 
-class ProfessorBuscarTurmasAtribuidasView(APIView):
+class ProfessorBuscarTurmasAtribuidasView(ProfessoresAPIView):
     """Retorna turmas atribuídas ao professor."""
 
     @extend_schema(

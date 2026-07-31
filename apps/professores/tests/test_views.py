@@ -2,6 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
+import httpx
 from django.contrib.auth.models import User
 from django.test import SimpleTestCase
 from django.urls import resolve
@@ -692,7 +693,7 @@ class FuncionariosUeViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(
             resp.json(),
-            {"detail": "Resposta inválida do sidecar de professores."},
+            {"detail": "Resposta inválida da API de professores."},
         )
 
     def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
@@ -934,6 +935,27 @@ class FuncionariosPerfisViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(resp.json(), "erro")
 
+    @patch(
+        "apps.professores.views.services.get_funcionarios_sgp_por_perfil_dre"
+    )
+    def test_503_quando_api_indisponivel(
+        self, mock_service: MagicMock
+    ) -> None:
+        request = httpx.Request("GET", "https://professores.local/test")
+        mock_service.side_effect = httpx.ConnectError(
+            "Circuit breaker aberto para professores",
+            request=request,
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/perfis/perfil-x/dres/108200/")
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "Serviço de professores indisponível."},
+        )
+
 
 class FuncionariosPerfisDreViewTest(SimpleTestCase):
     """Valida funcionários SGP por perfil e DRE."""
@@ -1144,7 +1166,7 @@ class EscolaFuncionariosCargosViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(
             resp.json(),
-            {"detail": "Resposta inválida do sidecar de professores."},
+            {"detail": "Resposta inválida da API de professores."},
         )
 
     def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
@@ -1250,7 +1272,7 @@ class EscolaFuncionariosFuncoesAtividadesViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(
             resp.json(),
-            {"detail": "Resposta inválida do sidecar de professores."},
+            {"detail": "Resposta inválida da API de professores."},
         )
 
     def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
@@ -1374,7 +1396,7 @@ class EscolaFuncionariosFuncoesExternasViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(
             resp.json(),
-            {"detail": "Resposta inválida do sidecar de professores."},
+            {"detail": "Resposta inválida da API de professores."},
         )
 
     def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
@@ -1474,7 +1496,7 @@ class EscolaFuncionariosFuncaoExternaViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(
             resp.json(),
-            {"detail": "Resposta inválida do sidecar de professores."},
+            {"detail": "Resposta inválida da API de professores."},
         )
 
     def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
@@ -1580,7 +1602,7 @@ class EscolaFuncionariosFuncaoAtividadeViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(
             resp.json(),
-            {"detail": "Resposta inválida do sidecar de professores."},
+            {"detail": "Resposta inválida da API de professores."},
         )
 
     def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
@@ -1638,7 +1660,7 @@ class ProfessorDisciplinaTurmasViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(
             resp.json(),
-            {"detail": "Resposta inválida do sidecar de professores."},
+            {"detail": "Resposta inválida da API de professores."},
         )
         mock_service.assert_called_once_with("000001", "5", ["3030050"])
 
@@ -2278,7 +2300,7 @@ class ProfessorAutoCompleteViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(
             resp.json(),
-            {"detail": "Resposta inválida do sidecar de professores."},
+            {"detail": "Resposta inválida da API de professores."},
         )
 
     def test_400_quando_dre_id_e_somente_espacos(self) -> None:
@@ -2544,10 +2566,8 @@ class ProfessorVerificarAtribuicaoDisciplinaViewTest(SimpleTestCase):
 class ProfessorVerificarAtribuicaoDataViewTest(SimpleTestCase):
     """Valida a verificação da atribuição por data."""
 
-    _URL = (
-        "/api/professores/000001/turmas/3032577/"
-        "atribuicao/verificar/data/"
-    )
+    _URL_BASE = "/api/professores/000001/turmas/3032577/"
+    _URL = _URL_BASE + "atribuicao/verificar/data/"
 
     @patch(
         "apps.professores.views.services."
@@ -2611,10 +2631,8 @@ class ProfessorStatusAtribuicaoViewTest(SimpleTestCase):
 class ProfessorVerificarAtribuicaoDataTickViewTest(SimpleTestCase):
     """Valida a verificação da atribuição por data tick."""
 
-    _URL = (
-        "/api/professores/000001/turmas/3032577/disciplinas/89/"
-        "atribuicao/verificar/datatick/"
-    )
+    _URL_BASE = "/api/professores/000001/turmas/3032577/disciplinas/89/"
+    _URL = _URL_BASE + "atribuicao/verificar/datatick/"
 
     @patch(
         "apps.professores.views.services."
@@ -2660,13 +2678,9 @@ class ProfessorVerificarAtribuicaoDataTickViewTest(SimpleTestCase):
 class ProfessorAtribuicaoTurmaDisciplinaViewTest(SimpleTestCase):
     """Valida a consulta das atribuições por disciplina."""
 
-    _URL = (
-        "/api/professores/3032577/disciplinas/89/atribuicao/data/"
-    )
+    _URL = "/api/professores/3032577/disciplinas/89/atribuicao/data/"
 
-    @patch(
-        "apps.professores.views.services.get_atribuicoes_turma_disciplina"
-    )
+    @patch("apps.professores.views.services.get_atribuicoes_turma_disciplina")
     def test_200_repassa_tick_e_retorna_lista(
         self,
         mock_service: MagicMock,
@@ -2686,9 +2700,7 @@ class ProfessorAtribuicaoTurmaDisciplinaViewTest(SimpleTestCase):
             "639207072000000000",
         )
 
-    @patch(
-        "apps.professores.views.services.get_atribuicoes_turma_disciplina"
-    )
+    @patch("apps.professores.views.services.get_atribuicoes_turma_disciplina")
     def test_400_quando_tick_ausente(
         self,
         mock_service: MagicMock,

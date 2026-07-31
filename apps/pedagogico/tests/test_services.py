@@ -1283,7 +1283,8 @@ class GetCatalogoComponentesTest(SimpleTestCase):
 
         result = services.get_componentes_curriculares()
 
-        mock_client.get.assert_called_once_with(_BASE)
+        mock_client.get.assert_called_once_with(f"{_BASE}/")
+        mock_client.get.return_value.raise_for_status.assert_called_once_with()
 
         self.assertEqual(result, [])
 

@@ -8,29 +8,24 @@ Gateway de transição entre os contratos legados do EOL e os novos microserviç
 Cliente externo
       │
       ▼
-  Gateway (8000)        ← tradução de contrato legado → novo, sem regra de negócio
+  Gateway (8000)        ← tradução de contrato e uso do SME Sidecar SDK in-process
       │
       ▼
-sidecar_<domínio>       ← retry, circuit breaker, propagação de X-Request-ID
-      │
-      ▼
-MS de domínio           ← microserviço proprietário do domínio
+API do microserviço     ← microserviço proprietário do domínio
 ```
 
 O Gateway expõe os contratos legados e os traduz para os microserviços de
-domínio. Ele não contém regra de negócio nem lógica de resiliência: essas
-responsabilidades pertencem ao sidecar de cada domínio.
+domínio. Ele não contém regra de negócio: essa responsabilidade permanece nos microserviços de domínio.
 
-Cada sidecar é um processo Django independente que aplica retry com backoff exponencial,
-circuit breaker e propagação de contexto de rastreamento antes de encaminhar a requisição
-ao microserviço correspondente. Os sidecars residem em repositórios próprios.
+O SME Sidecar SDK é usado como runtime in-process no gateway para aplicar
+recursos transversais como timeout, retry, circuit breaker, logs estruturados e propagação de contexto de rastreamento.
 
 ## Estrutura do repositório
 
 ```
 .
 ├── apps/
-│   ├── core/           # cliente HTTP, resiliência (lib dos sidecars), middleware
+│   ├── core/           # cliente HTTP, runtime do SDK e middleware
 │   └── pedagogico/     # adaptação dos contratos do domínio pedagógico
 │   └── professores/     # adaptação dos contratos do domínio professores
 │   └── programasedu/   # adaptação dos contratos de programas educacionais
@@ -43,11 +38,10 @@ ao microserviço correspondente. Os sidecars residem em repositórios próprios.
 
 ### apps/core
 
-| Módulo | Responsabilidade |
-|---|---|
-| `http_client.py` | `ServiceClient` — cliente HTTP simples com timeout (usado pelo gateway) |
-| `middleware.py` | Propagação de `X-Request-ID` e contexto de logging |
-| `logging_context.py` | `ContextVar` para request ID e serviço |
+| Módulo           | Responsabilidade                                        |
+| ---------------- | ------------------------------------------------------- |
+| `http_client.py` | `ServiceClient` baseado no cliente instrumentado do SDK |
+| `apps.py`        | Inicialização do runtime do SDK no boot do Django       |
 
 ## Domínios Atendidos
 
@@ -111,51 +105,52 @@ make run
 
 **Geral**
 
-| Variável | Padrão | Descrição |
-|---|---|---|
-| `DJANGO_SECRET_KEY` | — | Chave secreta do Django |
-| `DJANGO_DEBUG` | `1` | Ativa o modo debug (`0` em produção) |
-| `DJANGO_ALLOWED_HOSTS` | `*` | Hosts permitidos, separados por vírgula |
-| `API_KEY` | — | Chave usada para autenticar requisições de entrada |
-| `API_KEY_HEADER` | `X-API-Key` | Nome do header de autenticação de entrada |
-| `GATEWAY_TIMEOUT_SECONDS` | `10` | Timeout das chamadas do gateway aos sidecars |
-| `PORT_WEB` | `8002` (dev) / `8000` (prod) | Porta exposta pelo container |
+| Variável               | Padrão                       | Descrição                                          |
+| ---------------------- | ---------------------------- | -------------------------------------------------- |
+| `DJANGO_SECRET_KEY`    | —                            | Chave secreta do Django                            |
+| `DJANGO_DEBUG`         | `1`                          | Ativa o modo debug (`0` em produção)               |
+| `DJANGO_ALLOWED_HOSTS` | `*`                          | Hosts permitidos, separados por vírgula            |
+| `API_KEY`              | —                            | Chave usada para autenticar requisições de entrada |
+| `API_KEY_HEADER`       | `X-API-Key`                  | Nome do header de autenticação de entrada          |
+| `PORT_WEB`             | `8002` (dev) / `8000` (prod) | Porta exposta pelo container                       |
 
-**Sidecars**
+**APIs dos microserviços**
 
-| Variável | Padrão | Descrição |
-|---|---|---|
-| `SIDECAR_PEDAGOGICO_URL` | `http://localhost:9004` | URL do sidecar pedagógico |
-| `SIDECAR_PEDAGOGICO_API_KEY` | — | API Key enviada ao sidecar pedagógico |
-| `SIDECAR_PEDAGOGICO_API_KEY_HEADER` | `X-API-Key` | Nome do header de autenticação para o sidecar pedagógico |
-| `SIDECAR_PROFESSORES_URL` | `http://localhost:9005` | URL do sidecar professores |
-| `SIDECAR_PROFESSORES_API_KEY` | — | API Key enviada ao sidecar professores |
-| `SIDECAR_PROFESSORES_API_KEY_HEADER` | `X-API-Key` | Nome do header de autenticação para o sidecar professores |
-| `SIDECAR_PROGRAMASEDU_URL` | `http://localhost:9006` | URL do sidecar de programas educacionais |
-| `SIDECAR_PROGRAMASEDU_API_KEY` | — | API Key enviada ao sidecar de programas educacionais |
-| `SIDECAR_PROGRAMASEDU_API_KEY_HEADER` | `X-API-Key` | Nome do header de autenticação para o sidecar de programas educacionais |
+| Variável                       | Padrão                  | Descrição                                                               |
+| ------------------------------ | ----------------------- | ----------------------------------------------------------------------- |
+| `PEDAGOGICO_API_URL`           | `http://localhost:9004` | URL da API do microserviço pedagógico                                   |
+| `PEDAGOGICO_API_KEY`           | —                       | API Key enviada à API do microserviço pedagógico                        |
+| `PEDAGOGICO_API_KEY_HEADER`    | `X-API-Key`             | Nome do header de autenticação para a API do microserviço pedagógico    |
+| `PROFESSORES_API_URL`          | `http://localhost:9005` | URL da API do microserviço professores                                  |
+| `PROFESSORES_API_KEY`          | —                       | API Key enviada à API do microserviço professores                       |
+| `PROFESSORES_API_KEY_HEADER`   | `X-API-Key`             | Nome do header de autenticação para a API do microserviço professores   |
+| `INSTITUCIONAL_API_URL`        | `http://localhost:9006` | URL da API do microserviço institucional                                |
+| `INSTITUCIONAL_API_KEY`        | —                       | API Key enviada à API do microserviço institucional                     |
+| `INSTITUCIONAL_API_KEY_HEADER` | `X-API-Key`             | Nome do header de autenticação para a API do microserviço institucional |
+| `PROGRAMASEDU_API_URL`         | `http://localhost:9006` | URL da API do microserviço de programas educacionais                    |
+| `PROGRAMASEDU_API_KEY`         | —                       | API Key enviada à API do microserviço de programas educacionais         |
+| `PROGRAMASEDU_API_KEY_HEADER`  | `X-API-Key`             | Nome do header de autenticação para programas educacionais              |
+| `ALUNOS_API_URL`               | `http://localhost:9007` | URL da API do microserviço alunos                                       |
+| `ALUNOS_API_KEY`               | —                       | API Key enviada à API do microserviço alunos                            |
+| `ALUNOS_API_KEY_HEADER`        | `X-API-Key`             | Nome do header de autenticação para a API do microserviço alunos        |
 
-**Elastic APM**
+**SME Sidecar SDK**
 
-| Variável | Padrão | Descrição |
-|---|---|---|
-| `ELASTIC_APM_SERVICE_NAME` | `transition-gateway` | Nome do serviço no APM |
-| `ELASTIC_APM_SERVER_URL` | `http://localhost:8200` | URL do servidor APM |
-| `ELASTIC_APM_SECRET_TOKEN` | — | Token de autenticação do APM |
-| `ELASTIC_APM_ENVIRONMENT` | `local` | Ambiente (`local`, `staging`, `production`) |
-| `ELASTIC_APM_ENABLED` | `1` | Ativa (`1`) ou desativa (`0`) o agente APM |
-
-**RabbitMQ (logging)**
-
-| Variável | Padrão | Descrição |
-|---|---|---|
-| `ENABLE_RABBITMQ_LOGGING` | `0` | Ativa (`1`) o envio de logs ao RabbitMQ |
-| `RABBITMQ_HOST` | — | Host do RabbitMQ |
-| `RABBITMQ_VIRTUAL_HOST` | `/` | Virtual host do RabbitMQ |
-| `RABBITMQ_LOG_QUEUE` | — | Nome da fila de destino dos logs |
-| `RABBITMQ_LOG_LEVEL` | `INFO` | Nível mínimo de log enviado ao RabbitMQ |
-| `RABBITMQ_USERNAME` | — | Usuário do RabbitMQ |
-| `RABBITMQ_PASSWORD` | — | Senha do RabbitMQ |
+| Variável                          | Padrão                  | Descrição                                       |
+| --------------------------------- | ----------------------- | ----------------------------------------------- |
+| `SME_SERVICE_NAME`                | `transition-gateway`    | Nome do serviço nos logs e traces               |
+| `SME_SERVICE_VERSION`             | `unknown`               | Versão publicada na telemetria                  |
+| `SME_ENVIRONMENT`                 | `dev`                   | Ambiente de execução                            |
+| `SME_TIMEOUT_SECONDS`             | `10`                    | Timeout das chamadas às APIs dos microserviços  |
+| `SME_LOG_LEVEL`                   | `ERROR`                 | Nível mínimo dos logs                           |
+| `SME_LOG_FORMAT`                  | `json`                  | Formato `json` ou `console`                     |
+| `SME_CORRELATION_ID_HEADER`       | `X-Request-ID`          | Header de correlação                            |
+| `SME_OTEL_ENABLED`                | `false`                 | Ativa tracing OpenTelemetry                     |
+| `SME_OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4317` | URL OTLP gRPC configurada diretamente no `.env` |
+| `SME_OTEL_EXPORTER_OTLP_HEADERS`  | —                       | Headers do exporter em `chave=valor`            |
+| `SME_OTEL_EXPORTER_OTLP_INSECURE` | `true`                  | Desabilita TLS no transporte OTLP               |
+| `SME_RABBITMQ_URL`                | —                       | URL AMQP para transporte opcional de logs       |
+| `SME_LOG_RABBITMQ_QUEUE`          | —                       | Fila RabbitMQ de logs                           |
 
 ## Observabilidade
 
@@ -163,18 +158,20 @@ make run
 
 Todos os logs são emitidos em JSON estruturado. Cada registro inclui os seguintes campos:
 
-| Campo | Descrição |
-|---|---|
-| `timestamp` | Data e hora do evento |
-| `level` | Nível do log (`INFO`, `WARNING`, `ERROR`) |
-| `logger` | Nome do módulo que gerou o log |
-| `message` | Mensagem descritiva da requisição atendida |
-| `request_id` | UUID da requisição, propagado via header `X-Request-ID` |
-| `service` | Nome do serviço (`transitiongateway`) |
-| `transaction_id` | ID da transação APM (correlação com traces) |
-| `trace_id` | ID do trace APM (correlação fim a fim) |
+| Campo        | Descrição                                                  |
+| ------------ | ---------------------------------------------------------- |
+| `timestamp`  | Data e hora do evento                                      |
+| `level`      | Nível do log (`INFO`, `WARNING`, `ERROR`)                  |
+| `logger`     | Nome do módulo que gerou o log                             |
+| `message`    | Mensagem descritiva da requisição atendida                 |
+| `event`      | Nome do evento estruturado (ex.: `http_request_completed`) |
+| `request_id` | UUID da requisição, propagado via header `X-Request-ID`    |
+| `service`    | Nome do serviço (`transitiongateway`)                      |
+| `span_id`    | ID da operação atual                                       |
+| `trace_id`   | ID do trace distribuído fim a fim                          |
 
-O middleware `LoggingContextMiddleware` emite um registro por requisição HTTP com método, path, status code e duração em milissegundos.
+O `ObservabilityMiddleware` do SDK emite um evento por requisição HTTP
+com método, path, status code e duração em milissegundos.
 
 ### Pipeline de logs
 
@@ -184,20 +181,27 @@ Aplicação
    ├── stdout (sempre)
    │     JSON estruturado lido pelo runtime do container
    │
-   └── RabbitMQ (quando ENABLE_RABBITMQ_LOGGING=1)
+   └── RabbitMQ (quando SME_LOG_RABBITMQ_QUEUE está configurada)
          │
          └── Consumer (Logstash)
                │
                └── Elasticsearch → Kibana (Logs)
 ```
 
-Para ver logs no Kibana, `ENABLE_RABBITMQ_LOGGING` deve estar ativo e o consumer Logstash precisa estar configurado para ler da fila `RABBITMQ_LOG_QUEUE` e indexar no Elasticsearch.
+Para ver logs no Kibana via RabbitMQ, configure `SME_RABBITMQ_URL` e
+`SME_LOG_RABBITMQ_QUEUE`. O consumer Logstash deve ler essa fila e
+indexar os eventos no Elasticsearch.
 
-### Rastreamento APM (Elastic APM)
+### Rastreamento distribuído
 
-O agente APM (`elasticapm.contrib.django`) instrumenta automaticamente cada requisição Django, criando transações e spans visíveis em **Kibana → Observability → APM**.
+O SME Sidecar SDK cria um span `django.request` na entrada do gateway e
+instrumenta o cliente HTTPX. As chamadas às APIs dos microserviços recebem
+automaticamente `traceparent`, preservando um único trace desde o gateway
+até os serviços de domínio. Os spans são enviados por OTLP ao Elastic APM
+ou a um OpenTelemetry Collector.
 
-Os campos `transaction_id` e `trace_id` presentes em cada log permitem correlacionar um registro de log com a transação APM correspondente diretamente na interface do Kibana.
+Os campos `trace_id` e `span_id` presentes em cada log permitem abrir o
+trace correspondente diretamente na interface de observabilidade.
 
 ## Atalhos Make
 
@@ -205,30 +209,30 @@ Use `make help` para listar todos os comandos disponíveis. Os principais:
 
 **Ambiente**
 
-| Comando | Descrição |
-|---|---|
-| `make run` | Sobe o gateway em modo dev (porta 8002) |
-| `make build` | Rebuild da imagem dev |
-| `make stop` | Para e remove containers |
+| Comando      | Descrição                               |
+| ------------ | --------------------------------------- |
+| `make run`   | Sobe o gateway em modo dev (porta 8002) |
+| `make build` | Rebuild da imagem dev                   |
+| `make stop`  | Para e remove containers                |
 
 **Testes**
 
-| Comando | Descrição |
-|---|---|
-| `make test` | Suite completa com cobertura ≥ 80% |
-| `make test-core` | Apenas `apps.core` |
-| `make test-pedagogico` | Apenas `apps.pedagogico` |
-| `make test-professores` | Apenas `apps.professores` |
-| `make test-institucional` | Apenas `apps.institucional` |
+| Comando                   | Descrição                          |
+| ------------------------- | ---------------------------------- |
+| `make test`               | Suite completa com cobertura ≥ 80% |
+| `make test-core`          | Apenas `apps.core`                 |
+| `make test-pedagogico`    | Apenas `apps.pedagogico`           |
+| `make test-professores`   | Apenas `apps.professores`          |
+| `make test-institucional` | Apenas `apps.institucional`        |
 
 **Qualidade**
 
-| Comando | Descrição |
-|---|---|
-| `make lint` | ruff + black + isort + mypy |
-| `make coverage` | Relatório HTML em `docs/_cov/` |
-| `make schema` | Gera schema OpenAPI em `schema.yml` |
-| `make docs` | Gera documentação Sphinx em `docs/_build/html/` |
+| Comando         | Descrição                                       |
+| --------------- | ----------------------------------------------- |
+| `make lint`     | ruff + black + isort + mypy                     |
+| `make coverage` | Relatório HTML em `docs/_cov/`                  |
+| `make schema`   | Gera schema OpenAPI em `schema.yml`             |
+| `make docs`     | Gera documentação Sphinx em `docs/_build/html/` |
 
 ## Endpoints
 
