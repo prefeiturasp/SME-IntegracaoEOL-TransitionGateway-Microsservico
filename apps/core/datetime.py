@@ -1,6 +1,6 @@
 """Helpers para datas usadas em contratos legados."""
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -76,3 +76,45 @@ def formatar_datetime_legado(value: Any) -> Any:
         return value
 
     return normalizar_datetime_legado(value)
+
+
+def validar_data_str(data_str: str) -> bool:
+    """Valida se uma string representa uma data no formato YYYY-MM-DD.
+
+    Args:
+        data_str: String contendo a data a ser validada.
+
+    Returns:
+        ``True`` se a string estiver no formato ``YYYY-MM-DD`` e representar
+        uma data válida. Caso contrário, retorna ``False``.
+    """
+    try:
+        datetime.strptime(data_str, "%Y-%m-%d")
+        return True
+    except (ValueError, TypeError):
+        return False
+
+
+def validar_data_tick(ticks: int | str) -> bool:
+    """Valida se um valor representa um ``DateTime.Ticks`` válido do .NET.
+
+    Args:
+        ticks: Valor correspondente à quantidade de ticks do ``DateTime`` do
+            .NET (100 nanossegundos desde ``0001-01-01 00:00:00``). Aceita um
+            inteiro ou uma string numérica.
+
+    Returns:
+        ``True`` se o valor representar um ``DateTime.Ticks`` válido. Caso
+        contrário, retorna ``False``.
+    """
+    try:
+        ticks = int(ticks)
+
+        # Intervalo válido para o DateTime do .NET
+        if ticks < 0 or ticks > 3155378975999999999:
+            return False
+
+        datetime.min + timedelta(microseconds=ticks / 10)
+        return True
+    except (ValueError, TypeError, OverflowError):
+        return False
