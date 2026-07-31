@@ -10,12 +10,26 @@ _SENTINELA_DATA = "0001-01-01T00:00:00"
 
 
 def _int_ou_zero(valor: Any) -> int:
-    """Coalesce inteiro do legado (campos não-anuláveis viram 0)."""
+    """Retorna inteiro ou zero quando ausente.
+
+    Args:
+        valor: Valor recebido para conversão.
+
+    Returns:
+        Valor convertido para inteiro.
+    """
     return int(valor) if valor is not None else 0
 
 
 def _data_legado_ou_sentinela(valor: Any) -> str:
-    """Data no formato .NET; sentinela quando ausente (campo não-anulável)."""
+    """Retorna data formatada ou valor padrão quando ausente.
+
+    Args:
+        valor: Data recebida para formatação.
+
+    Returns:
+        Data formatada para resposta.
+    """
     return datetime_legado(valor) or _SENTINELA_DATA
 
 
@@ -23,7 +37,14 @@ class CodigoTurmaField(serializers.CharField):
     """Valida codigo de turma numerico em texto."""
 
     def to_internal_value(self, data: Any) -> str:
-        """Valida o codigo informado."""
+        """Valida o codigo informado.
+
+        Args:
+            data: Valor recebido para validação.
+
+        Returns:
+            Codigo validado como texto.
+        """
         if not isinstance(data, str):
             self.fail("invalid")
         value = cast(str, super().to_internal_value(data))
@@ -38,6 +59,12 @@ class CodigoTurmaListSerializer(serializers.ListSerializer):
     """Serializa lista de codigos de turma."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Inicializa a lista de códigos de turma.
+
+        Args:
+            *args: Argumentos posicionais do campo.
+            **kwargs: Argumentos nomeados do campo.
+        """
         kwargs.setdefault("child", CodigoTurmaField(allow_blank=False))
         kwargs.setdefault("allow_empty", True)
         super().__init__(*args, **kwargs)
@@ -57,6 +84,12 @@ class CodigoTurmaInteiroListSerializer(serializers.ListSerializer):
     """Serializa uma lista de códigos inteiros de turmas."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Inicializa a lista de códigos inteiros de turmas.
+
+        Args:
+            *args: Argumentos posicionais do campo.
+            **kwargs: Argumentos nomeados do campo.
+        """
         kwargs.setdefault("child", serializers.IntegerField())
         kwargs.setdefault("allow_empty", True)
         super().__init__(*args, **kwargs)
@@ -66,6 +99,12 @@ class CodigoComponenteListSerializer(serializers.ListSerializer):
     """Serializa uma lista de IDs de agrupamento."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Inicializa a lista de códigos de agrupamento.
+
+        Args:
+            *args: Argumentos posicionais do campo.
+            **kwargs: Argumentos nomeados do campo.
+        """
         kwargs.setdefault("child", serializers.IntegerField())
         kwargs.setdefault("allow_empty", True)
         super().__init__(*args, **kwargs)
@@ -223,19 +262,15 @@ class TurmaHistoricaGeralSerializer(serializers.Serializer):
 
     def to_representation(self, instance: Any) -> dict[str, Any]:
         """Fixa os campos sem dados do legado com valores padrão."""
-        representacao = super().to_representation(instance)
-        representacao.update(
-            {
-                "dataFim": None,
-                "dataInicioTurma": None,
-                "duracaoTurno": 0,
-                "serieEnsino": None,
-                "situacao": None,
-                "tipoTurma": 0,
-                "tipoTurno": 0,
-                "ueCodigo": None,
-            }
-        )
+        representacao = dict(super().to_representation(instance))
+        representacao["dataFim"] = None
+        representacao["dataInicioTurma"] = None
+        representacao["duracaoTurno"] = 0
+        representacao["serieEnsino"] = None
+        representacao["situacao"] = None
+        representacao["tipoTurma"] = 0
+        representacao["tipoTurno"] = 0
+        representacao["ueCodigo"] = None
         return representacao
 
 

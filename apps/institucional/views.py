@@ -7,17 +7,18 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
+from apps.core.responses import api_unavailable_response
+from apps.core.views import DomainAPIView
 from apps.institucional import services
 from apps.institucional.serializers import (
     DadosEscolaSerializer,
     DRESerializer,
     EquipamentoSerializer,
-    EscolaSigpaeSerializer,
     EscolaPorDreETipoSerializer,
     EscolaResumoSerializer,
     EscolaSerializer,
+    EscolaSigpaeSerializer,
     SincronizacaoInstitucionalSerializer,
     SubprefeiturasSerializer,
     TipoEscolaSerializer,
@@ -29,7 +30,7 @@ from apps.institucional.serializers import (
 
 _TAG_DRE = ["DiretoriaRegionalEducacao"]
 _TAG_ESCOLA = ["Escola"]
-_SIDECAR_INDISPONIVEL_DETAIL = "Serviço institucional indisponível"
+_DOMINIO_INSTITUCIONAL = "institucional"
 
 _ESCOLA_RESUMO_CAMPOS = {
     "codigoEscola",
@@ -126,6 +127,12 @@ _SINCRONIZACAO_INSTITUCIONAL_CAMPOS = {
 }
 
 
+class InstitucionalAPIView(DomainAPIView):
+    """APIView base que padroniza falhas de comunicação institucional."""
+
+    api_domain = _DOMINIO_INSTITUCIONAL
+
+
 def _filtrar_escola_resumo(item: dict) -> dict:
     return {k: v for k, v in item.items() if k in _ESCOLA_RESUMO_CAMPOS}
 
@@ -144,9 +151,7 @@ def _filtrar_escola_sigpae(item: dict) -> dict:
 
 def _filtrar_unidade_codigo_integracao(item: dict) -> dict:
     return {
-        k: v
-        for k, v in item.items()
-        if k in _UNIDADE_CODIGO_INTEGRACAO_CAMPOS
+        k: v for k, v in item.items() if k in _UNIDADE_CODIGO_INTEGRACAO_CAMPOS
     }
 
 
@@ -166,7 +171,7 @@ def _filtrar_sincronizacao_institucional(item: dict) -> dict:
     }
 
 
-class DREListView(APIView):
+class DREListView(InstitucionalAPIView):
     """Lista Diretorias Regionais de Educação."""
 
     @extend_schema(
@@ -201,7 +206,7 @@ class DREListView(APIView):
         return Response(data)
 
 
-class DREDetalheView(APIView):
+class DREDetalheView(InstitucionalAPIView):
     """Retorna dados de uma Diretoria Regional de Educação."""
 
     @extend_schema(
@@ -235,7 +240,7 @@ class DREDetalheView(APIView):
         return Response(data if isinstance(data, list) else [data])
 
 
-class EscolasPorDREView(APIView):
+class EscolasPorDREView(InstitucionalAPIView):
     """Lista escolas vinculadas a uma DRE."""
 
     @extend_schema(
@@ -267,7 +272,7 @@ class EscolasPorDREView(APIView):
         return Response([_filtrar_escola_resumo(e) for e in data])
 
 
-class EscolasSigpaePorDREView(APIView):
+class EscolasSigpaePorDREView(InstitucionalAPIView):
     """Lista escolas de uma DRE no formato SIGPAE."""
 
     @extend_schema(
@@ -301,22 +306,24 @@ class EscolasSigpaePorDREView(APIView):
                 return Response(status=status.HTTP_404_NOT_FOUND)
             raise
         except httpx.RequestError:
-            return _sidecar_unavailable_response()
+            return _api_unavailable_response()
 
         if not data:
             return Response([])
         if isinstance(data, list):
-            return Response([
-                _filtrar_escola_sigpae(item)
-                for item in data
-                if isinstance(item, dict)
-            ])
+            return Response(
+                [
+                    _filtrar_escola_sigpae(item)
+                    for item in data
+                    if isinstance(item, dict)
+                ]
+            )
         if isinstance(data, dict):
             return Response([_filtrar_escola_sigpae(data)])
         return Response([])
 
 
-class SubprefeiturasPorDREView(APIView):
+class SubprefeiturasPorDREView(InstitucionalAPIView):
     """Lista subprefeituras vinculadas à DRE."""
 
     @extend_schema(
@@ -348,7 +355,7 @@ class SubprefeiturasPorDREView(APIView):
         return Response(data)
 
 
-class EscolasPorDREeTipoView(APIView):
+class EscolasPorDREeTipoView(InstitucionalAPIView):
     """Lista escolas de uma DRE por tipo."""
 
     @extend_schema(
@@ -392,7 +399,7 @@ class EscolasPorDREeTipoView(APIView):
         return Response([_filtrar_escola_por_dre_tipo(e) for e in data])
 
 
-class UesPorDREView(APIView):
+class UesPorDREView(InstitucionalAPIView):
     """Lista códigos de UEs vinculadas à DRE."""
 
     @extend_schema(
@@ -424,7 +431,7 @@ class UesPorDREView(APIView):
         return Response(data)
 
 
-class UnidadesPorDREView(APIView):
+class UnidadesPorDREView(InstitucionalAPIView):
     """Lista unidades administrativas vinculadas à DRE."""
 
     @extend_schema(
@@ -456,7 +463,7 @@ class UnidadesPorDREView(APIView):
         return Response(data)
 
 
-class UnidadeCodigoIntegracaoPorDREView(APIView):
+class UnidadeCodigoIntegracaoPorDREView(InstitucionalAPIView):
     """Lista UEs com código de integração por DRE."""
 
     @extend_schema(
@@ -477,7 +484,10 @@ class UnidadeCodigoIntegracaoPorDREView(APIView):
                 type=str,
             )
         ],
-        responses={200: UnidadeCodigoIntegracaoSerializer(many=True), 404: None},
+        responses={
+            200: UnidadeCodigoIntegracaoSerializer(many=True),
+            404: None,
+        },
     )
     def get(self, _request: Request, dre_codigo: str) -> Response:
         """Retorna UEs com código de integração da DRE."""
@@ -488,21 +498,23 @@ class UnidadeCodigoIntegracaoPorDREView(APIView):
                 return Response(status=status.HTTP_404_NOT_FOUND)
             raise
         except httpx.RequestError:
-            return _sidecar_unavailable_response()
+            return _api_unavailable_response()
         if not data:
             return Response([])
         if isinstance(data, list):
-            return Response([
-                _filtrar_unidade_codigo_integracao(item)
-                for item in data
-                if isinstance(item, dict)
-            ])
+            return Response(
+                [
+                    _filtrar_unidade_codigo_integracao(item)
+                    for item in data
+                    if isinstance(item, dict)
+                ]
+            )
         if isinstance(data, dict):
             return Response([_filtrar_unidade_codigo_integracao(data)])
         return Response([])
 
 
-class DadosEscolaView(APIView):
+class DadosEscolaView(InstitucionalAPIView):
     """Retorna dados completos de uma escola."""
 
     @extend_schema(
@@ -539,7 +551,7 @@ class DadosEscolaView(APIView):
         return Response(item)
 
 
-class SubprefeiturasPorEscolaView(APIView):
+class SubprefeiturasPorEscolaView(InstitucionalAPIView):
     """Lista subprefeituras vinculadas à escola."""
 
     @extend_schema(
@@ -570,13 +582,12 @@ class SubprefeiturasPorEscolaView(APIView):
                 return Response(status=status.HTTP_404_NOT_FOUND)
             raise
         except httpx.RequestError:
-            return _sidecar_unavailable_response()
+            return _api_unavailable_response()
         return Response(data)
 
 
-def _sidecar_error_response(exc: httpx.HTTPStatusError) -> Response:
-    """Converte erro HTTP do sidecar em resposta do gateway."""
-
+def _api_error_response(exc: httpx.HTTPStatusError) -> Response:
+    """Converta erro HTTP da API em resposta do gateway."""
     try:
         body: Any = exc.response.json()
     except ValueError:
@@ -585,16 +596,12 @@ def _sidecar_error_response(exc: httpx.HTTPStatusError) -> Response:
     return Response(body, status=exc.response.status_code)
 
 
-def _sidecar_unavailable_response() -> Response:
-    """Resposta padrão quando o sidecar institucional não responde."""
-
-    return Response(
-        {"detail": _SIDECAR_INDISPONIVEL_DETAIL},
-        status=status.HTTP_502_BAD_GATEWAY,
-    )
+def _api_unavailable_response() -> Response:
+    """Resposta padrão quando a API institucional não responde."""
+    return api_unavailable_response(_DOMINIO_INSTITUCIONAL)
 
 
-class TiposEscolasView(APIView):
+class TiposEscolasView(InstitucionalAPIView):
     """Lista tipos de escola cadastrados."""
 
     @extend_schema(
@@ -610,7 +617,7 @@ class TiposEscolasView(APIView):
         return Response(services.get_tipos_escolas())
 
 
-class EscolasListPostView(APIView):
+class EscolasListPostView(InstitucionalAPIView):
     """Lista escolas pelos códigos informados no corpo da requisição."""
 
     @extend_schema(
@@ -627,42 +634,46 @@ class EscolasListPostView(APIView):
     )
     def post(self, request: Request) -> Response:
         """Retorna escolas encontradas para os códigos informados."""
-
         try:
             codigos = cast(list[str], request.data)
             data = services.post_escolas(codigos)
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError:
-            return _sidecar_unavailable_response()
+            return _api_unavailable_response()
 
         if not data:
             return Response([])
         if isinstance(data, list):
-            return Response([
-                _filtrar_toda_unidade(item)
-                for item in data
-                if isinstance(item, dict)
-            ])
+            return Response(
+                [
+                    _filtrar_toda_unidade(item)
+                    for item in data
+                    if isinstance(item, dict)
+                ]
+            )
         if isinstance(data, dict):
             resultados = data.get("results")
             if isinstance(resultados, list):
-                return Response([
-                    _filtrar_toda_unidade(item)
-                    for item in resultados
-                    if isinstance(item, dict)
-                ])
+                return Response(
+                    [
+                        _filtrar_toda_unidade(item)
+                        for item in resultados
+                        if isinstance(item, dict)
+                    ]
+                )
         return Response([])
 
 
-class EscolaDetalheView(APIView):
+class EscolaDetalheView(InstitucionalAPIView):
     """Retorna dados de uma escola."""
 
     @extend_schema(
         tags=_TAG_ESCOLA,
         summary="Detalhe de uma escola",
         description=(
-            "Retorna dados da unidade educacional identificada pelo `codigoEscolaEol`."
+            "Retorna dados da unidade educacional identificada pelo "
+            "`codigoEscolaEol`."
         ),
         parameters=[
             OpenApiParameter(
@@ -682,21 +693,22 @@ class EscolaDetalheView(APIView):
             if exc.response.status_code == 404:
                 return Response(status=status.HTTP_404_NOT_FOUND)
             raise
-        # Sidecar retorna array; extrai o primeiro item para o contrato E02.
+        # API retorna array; extrai o primeiro item para o contrato E02.
         item = data[0] if isinstance(data, list) and data else data
         if not item:
             return Response(status=status.HTTP_404_NOT_FOUND)
         return Response(_filtrar_escola_detalhe(item))
 
 
-class UnidadeEolView(APIView):
+class UnidadeEolView(InstitucionalAPIView):
     """Retorna dados resumidos de uma unidade pelo código EOL."""
 
     @extend_schema(
         tags=_TAG_ESCOLA,
         summary="Unidade por código EOL",
         description=(
-            "Retorna os dados resumidos da unidade educacional identificada pelo `codigoEol`"
+            "Retorna os dados resumidos da unidade educacional identificada "
+            "pelo `codigoEol`"
         ),
         parameters=[
             OpenApiParameter(
@@ -711,22 +723,21 @@ class UnidadeEolView(APIView):
     )
     def get(self, _request: Request, codigo_eol: str) -> Response:
         """Retorna dados resumidos da unidade por código EOL."""
-
         try:
             data = services.get_unidade_eol(codigo_eol)
         except httpx.HTTPStatusError as exc:
             if exc.response.status_code == status.HTTP_404_NOT_FOUND:
                 return Response(status=status.HTTP_204_NO_CONTENT)
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError:
-            return _sidecar_unavailable_response()
+            return _api_unavailable_response()
 
         if not data:
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(data)
 
 
-class SincronizacoesInstitucionaisView(APIView):
+class SincronizacoesInstitucionaisView(InstitucionalAPIView):
     """Retorna a sincronização institucional de uma UE."""
 
     @extend_schema(
@@ -751,15 +762,14 @@ class SincronizacoesInstitucionaisView(APIView):
     )
     def get(self, _request: Request, ue_codigo: str) -> Response:
         """Retorna sincronização institucional ou 204 quando ausente."""
-
         try:
             data = services.get_sincronizacoes_institucionais(ue_codigo)
         except httpx.HTTPStatusError as exc:
             if exc.response.status_code == status.HTTP_404_NOT_FOUND:
                 return Response(status=status.HTTP_204_NO_CONTENT)
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError:
-            return _sidecar_unavailable_response()
+            return _api_unavailable_response()
 
         if not data:
             return Response(status=status.HTTP_204_NO_CONTENT)
@@ -768,14 +778,15 @@ class SincronizacoesInstitucionaisView(APIView):
         return Response(data)
 
 
-class UnidadesParceirasView(APIView):
+class UnidadesParceirasView(InstitucionalAPIView):
     """Retorna unidades parceiras pelos códigos informados."""
 
     @extend_schema(
         tags=_TAG_ESCOLA,
         summary="Unidades parceiras",
         description=(
-            "Retorna a lista de unidades parceiras informadas no corpo da requisição."
+            "Retorna a lista de unidades parceiras informadas no corpo da "
+            "requisição."
         ),
         request={
             "application/json": {"type": "array", "items": {"type": "string"}}
@@ -784,14 +795,13 @@ class UnidadesParceirasView(APIView):
     )
     def post(self, request: Request) -> Response:
         """Retorna unidades parceiras compatíveis com o legado."""
-
         try:
             codigos = cast(list[str], request.data)
             data = services.post_unidades_parceiras(codigos)
         except httpx.HTTPStatusError as exc:
-            return _sidecar_error_response(exc)
+            return _api_error_response(exc)
         except httpx.RequestError:
-            return _sidecar_unavailable_response()
+            return _api_unavailable_response()
 
         return Response(data or [])
 
@@ -834,7 +844,7 @@ _EQUIPAMENTOS_PARAMS = [
 ]
 
 
-class EquipamentosView(APIView):
+class EquipamentosView(InstitucionalAPIView):
     """Lista equipamentos das unidades educacionais."""
 
     @extend_schema(
@@ -843,7 +853,7 @@ class EquipamentosView(APIView):
         description=(
             "Retorna lista de equipamentos cadastrados nas unidades "
             "educacionais. Todos os filtros são opcionais; sem nenhum o "
-            "sidecar executa query irrestrita e pode gerar timeout.\n\n"
+            "a API executa query irrestrita e pode gerar timeout.\n\n"
             "Contrato E25: `GET /api/escolas/equipamentos`."
         ),
         parameters=_EQUIPAMENTOS_PARAMS,
@@ -863,7 +873,7 @@ class EquipamentosView(APIView):
         return Response(serializer.data)
 
 
-class TodasUnidadesView(APIView):
+class TodasUnidadesView(InstitucionalAPIView):
     """Lista todas as unidades educacionais."""
 
     @extend_schema(
@@ -879,19 +889,20 @@ class TodasUnidadesView(APIView):
         try:
             data = services.get_todas_unidades()
         except httpx.RequestError:
-            return Response(
-                {"detail": _SIDECAR_INDISPONIVEL_DETAIL},
-                status=status.HTTP_502_BAD_GATEWAY,
-            )
+            return _api_unavailable_response()
         resultados = data.get("results") if isinstance(data, dict) else data
         if not resultados:
             return Response([])
-        return Response([
-            _filtrar_toda_unidade(item) for item in resultados if isinstance(item, dict)
-        ])
+        return Response(
+            [
+                _filtrar_toda_unidade(item)
+                for item in resultados
+                if isinstance(item, dict)
+            ]
+        )
 
 
-class TiposUnidadeEducacaoView(APIView):
+class TiposUnidadeEducacaoView(InstitucionalAPIView):
     """Lista tipos de unidade educacional."""
 
     @extend_schema(
@@ -906,8 +917,5 @@ class TiposUnidadeEducacaoView(APIView):
         try:
             data = services.get_tipos_unidade_educacao()
         except httpx.RequestError:
-            return Response(
-                {"detail": _SIDECAR_INDISPONIVEL_DETAIL},
-                status=status.HTTP_502_BAD_GATEWAY,
-            )
+            return _api_unavailable_response()
         return Response(data)

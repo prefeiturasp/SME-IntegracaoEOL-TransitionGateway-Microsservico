@@ -2,10 +2,8 @@
 
 from typing import Any
 
-from django.conf import settings
-
+from apps.core.api_clients import get_api_client
 from apps.core.datetime import datetime_legado
-from apps.core.http_client import ServiceClient
 from apps.institucional import services as institucional_services
 from apps.pedagogico import services as pedagogico_services
 from apps.professores.serializers import (
@@ -43,12 +41,7 @@ _TIPOS_ABRANGENCIA_VINCULO_UE = frozenset(
     }
 )
 
-_client = ServiceClient(
-    base_url=settings.SIDECAR_PROFESSORES_URL,
-    dominio="professores",
-    api_key=settings.SIDECAR_PROFESSORES_API_KEY,
-    api_key_header=settings.SIDECAR_PROFESSORES_API_KEY_HEADER,
-)
+_client = get_api_client("professores")
 
 
 def _valores_param(
@@ -73,10 +66,10 @@ def _valores_param(
 
 
 def _codigos_ue(data: Any) -> list[str]:
-    """Extrai códigos de UE de um payload do sidecar.
+    """Extrai códigos de UE dos dados recebidos.
 
     Args:
-        data: Payload retornado pelo sidecar de professores.
+        data: Dados consultados.
 
     Returns:
         Códigos EOL das unidades educacionais.
@@ -148,7 +141,7 @@ def _get_funcionarios_escola_por_filtro(
     params: dict[str, str | list[str]],
     nome_param: str,
     nome_campo: str,
-    nome_param_sidecar: str | None = None,
+    nome_param_destino: str | None = None,
 ) -> Any:
     """Lista funcionários de escola para cada valor de filtro.
 
@@ -157,7 +150,7 @@ def _get_funcionarios_escola_por_filtro(
         params: Parâmetros recebidos para a consulta.
         nome_param: Nome do filtro recebido.
         nome_campo: Campo preenchido com o valor do filtro.
-        nome_param_sidecar: Nome alternativo usado na consulta.
+        nome_param_destino: Nome usado ao encaminhar o filtro.
 
     Returns:
         Lista consolidada de funcionários encontrados.
@@ -170,7 +163,7 @@ def _get_funcionarios_escola_por_filtro(
     if not valores:
         return []
 
-    nome_destino = nome_param_sidecar or nome_param
+    nome_destino = nome_param_destino or nome_param
     resultado: list[Any] = []
     for value in valores:
         resp = _client.get(
@@ -198,8 +191,6 @@ def get_codigos_turmas_historicas_professor(
         Códigos de turma sem duplicidade.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
         ValueError: Se a resposta não contiver códigos inteiros.
     """
     resp = _client.get(
@@ -355,6 +346,98 @@ def get_funcionarios_escola(codigo_ue: str) -> Any:
         Lista de funcionários da escola ou ausência de conteúdo.
     """
     resp = _client.get(f"{_BASE_ESCOLAS}/{codigo_ue}/funcionarios/")
+    return _client.json_or_none(resp)
+
+
+def get_funcionarios_ue(codigo_ue: str, payload: dict[str, Any]) -> Any:
+    """Retorna funcionários vinculados à unidade educacional.
+
+    Args:
+        codigo_ue: Código da unidade educacional usada na consulta.
+        payload: Filtros enviados no contrato legado.
+
+    Returns:
+        Lista de funcionários da unidade ou ausência de conteúdo.
+    """
+    resp = _client.post(
+        f"{_BASE_FUNCIONARIOS}/ue/{codigo_ue}/",
+        payload=payload,
+    )
+    return _client.json_or_none(resp)
+
+
+def get_funcionarios_por_cargo(codigo_cargo: str) -> Any:
+    """Retorna funcionários vinculados ao cargo.
+
+    Args:
+        codigo_cargo: Código do cargo usado na consulta.
+
+    Returns:
+        Lista de funcionários do cargo ou ausência de conteúdo.
+    """
+    resp = _client.get(f"{_BASE_FUNCIONARIOS}/cargos/{codigo_cargo}/")
+    return _client.json_or_none(resp)
+
+
+def get_supervisores_por_dre(
+    codigo_dre: str,
+    codigos_supervisores: list[str],
+) -> Any:
+    """Retorna supervisores vinculados à DRE.
+
+    Args:
+        codigo_dre: Código EOL da DRE consultada.
+        codigos_supervisores: Registros funcionais considerados na busca.
+
+    Returns:
+        Lista de supervisores ou ausência de conteúdo.
+    """
+    resp = _client.post(
+        f"{_BASE_FUNCIONARIOS}/supervisores/{codigo_dre}/",
+        payload=codigos_supervisores,
+    )
+    return _client.json_or_none(resp)
+
+
+def get_usuarios_sgp_por_perfil(
+    id_perfil: str,
+    params: dict[str, Any],
+) -> Any:
+    """Retorna usuários SGP por perfil.
+
+    Args:
+        id_perfil: Perfil usado na consulta.
+        params: Filtros enviados no contrato legado.
+
+    Returns:
+        Usuários SGP encontrados ou erro de contrato.
+    """
+    resp = _client.get(
+        f"{_BASE_FUNCIONARIOS}/perfis/{id_perfil}/",
+        params=params or None,
+    )
+    return _client.json_or_none(resp)
+
+
+def get_funcionarios_sgp_por_perfil_dre(
+    id_perfil: str,
+    codigo_dre: str,
+    params: dict[str, Any],
+) -> Any:
+    """Retorna funcionários SGP por perfil e DRE.
+
+    Args:
+        id_perfil: Perfil usado na consulta.
+        codigo_dre: DRE usada na consulta.
+        params: Filtros enviados no contrato legado.
+
+    Returns:
+        Funcionários SGP encontrados ou erro de contrato.
+    """
+    resp = _client.get(
+        f"{_BASE_FUNCIONARIOS}/perfis/{id_perfil}/dres/{codigo_dre}/",
+        params=params or None,
+    )
     return _client.json_or_none(resp)
 
 
@@ -700,6 +783,10 @@ def get_abrangencia_funcionario_perfil(
     """
     if abrangencia == _TIPO_ABRANGENCIA_SME:
         data = get_todas_turmas_atribuidas_dre_ue()
+    elif abrangencia == _TIPO_ABRANGENCIA_PROFESSOR:
+        data = TurmasAtribuidasLegadoSerializer(
+            montar_turmas_atribuidas_professor(login)
+        ).data
     elif abrangencia in _TIPOS_ABRANGENCIA_VINCULO_UE:
         dre = dre_codigo if abrangencia in _TIPOS_ABRANGENCIA_DRE else None
         cargos_filtro = (

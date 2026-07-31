@@ -3,8 +3,12 @@
 from django.urls import path
 
 from apps.matriculas.views import (
+    MatriculasAlunoEscolaView,
     MatriculasAnoAtualView,
     MatriculasAnosAnterioresView,
+    QuantidadeAlunosPorTurmaEscolaView,
+    TotalMatriculasPorTurnoDreView,
+    TotalMatriculasPorTurnoUeView,
 )
 
 urlpatterns = [
@@ -13,5 +17,49 @@ urlpatterns = [
         "anos-anteriores",
         MatriculasAnosAnterioresView.as_view(),
         name="matriculas-anos-anteriores",
+    ),
+    path(
+        "escolas/<str:ue_codigo>/quantidades",
+        TotalMatriculasPorTurnoUeView.as_view(),
+        name="matriculas-quantidades-ue",
+    ),
+    path(
+        "escolas/dre/<str:dre_codigo>/quantidades",
+        TotalMatriculasPorTurnoDreView.as_view(),
+        name="matriculas-quantidades-dre",
+    ),
+]
+
+
+escola_urlpatterns = [
+    path(
+        "<str:codigo_escola>/alunos/quantidade",
+        QuantidadeAlunosPorTurmaEscolaView.as_view(),
+        name="quantidade-alunos-por-turma-escola-sem-barra",
+    ),
+    path(
+        "<str:codigo_escola>/alunos/quantidade/",
+        QuantidadeAlunosPorTurmaEscolaView.as_view(),
+        name="quantidade-alunos-por-turma-escola",
+    ),
+    path(
+        "<str:codigo_escola>/aluno/<str:codigo_aluno>/matriculas/",
+        MatriculasAlunoEscolaView.as_view(),
+        name="matriculas-aluno-escola",
+    ),
+    path(
+        "<str:codigo_escola>/aluno/<str:codigo_aluno>/matriculas",
+        MatriculasAlunoEscolaView.as_view(),
+        name="matriculas-aluno-escola-sem-barra",
+    ),
+    path(
+        "<str:codigo_escola>/alunos/<str:codigo_aluno>/matriculas/",
+        MatriculasAlunoEscolaView.as_view(),
+        name="matriculas-aluno-escola-plural",
+    ),
+    path(
+        "<str:codigo_escola>/alunos/<str:codigo_aluno>/matriculas",
+        MatriculasAlunoEscolaView.as_view(),
+        name="matriculas-aluno-escola-plural-sem-barra",
     ),
 ]

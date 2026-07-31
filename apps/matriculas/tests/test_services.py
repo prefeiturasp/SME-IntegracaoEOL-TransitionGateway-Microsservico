@@ -60,3 +60,91 @@ class GetMatriculasAnosAnterioresTest(SimpleTestCase):
         )
         mock_resp.raise_for_status.assert_called_once_with()
         self.assertEqual(result, payload)
+
+
+class GetTotalMatriculasPorTurnoUeTest(SimpleTestCase):
+    """Valida a consulta de totais de matrículas por turno na UE."""
+
+    @patch.object(services._client, "get")
+    def test_chama_sidecar_com_path_correto(
+        self, mock_get: MagicMock
+    ) -> None:
+        payload = [{"turno": "MANHA", "quantidade": 125}]
+        mock_resp = MagicMock()
+        mock_resp.content = b"[]"
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_total_matriculas_por_turno_ue("100001")
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/escolas/100001/quantidades"
+        )
+        mock_resp.raise_for_status.assert_called_once_with()
+        self.assertEqual(result, payload)
+
+
+class GetTotalMatriculasPorTurnoDreTest(SimpleTestCase):
+    """Valida a consulta de totais de matrículas por turno na DRE."""
+
+    @patch.object(services._client, "get")
+    def test_chama_sidecar_com_path_correto(
+        self, mock_get: MagicMock
+    ) -> None:
+        payload = [{"turno": "TARDE", "quantidade": 300}]
+        mock_resp = MagicMock()
+        mock_resp.content = b"[]"
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_total_matriculas_por_turno_dre("108800")
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/escolas/dre/108800/quantidades"
+        )
+        mock_resp.raise_for_status.assert_called_once_with()
+        self.assertEqual(result, payload)
+
+
+class GetQuantidadeAlunosPorTurmaEscolaTest(SimpleTestCase):
+    """Valida a consulta de quantidade de alunos por turma na escola."""
+
+    @patch.object(services._client, "get")
+    def test_chama_sidecar_com_path_correto(
+        self, mock_get: MagicMock
+    ) -> None:
+        payload = [{"turma_codigo": "9001", "quantidade": 35}]
+        mock_resp = MagicMock()
+        mock_resp.content = b"[]"
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_quantidade_alunos_por_turma_escola("100001")
+
+        mock_get.assert_called_once_with(
+            "/api/v1/alunos/escolas/100001/alunos/quantidade"
+        )
+        mock_resp.raise_for_status.assert_called_once_with()
+        self.assertEqual(result, payload)
+
+
+class GetMatriculasAlunoEscolaTest(SimpleTestCase):
+    """Valida a consulta de matrículas de aluno na escola."""
+
+    @patch.object(services._client, "get")
+    def test_chama_sidecar_com_path_correto(
+        self, mock_get: MagicMock
+    ) -> None:
+        payload = [{"codigo_matricula": 998877, "codigo_aluno": 1234567}]
+        mock_resp = MagicMock()
+        mock_resp.content = b"[]"
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_matriculas_aluno_escola("100001", "1234567")
+
+        mock_get.assert_called_once_with(
+            "/api/v1/alunos/escolas/100001/aluno/1234567/matriculas"
+        )
+        mock_resp.raise_for_status.assert_called_once_with()
+        self.assertEqual(result, payload)

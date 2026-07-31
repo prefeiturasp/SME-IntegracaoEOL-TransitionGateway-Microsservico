@@ -17,7 +17,12 @@ from apps.professores.views import (
     FuncionarioPerfilTurmasView,
     FuncionariosBuscarPorListaRfView,
     FuncionariosBuscarTurmasElegiveisView,
+    FuncionariosCargoView,
+    FuncionariosPerfisDreView,
+    FuncionariosPerfisView,
+    FuncionariosSupervisoresView,
     FuncionariosTurmasView,
+    FuncionariosUeView,
     FuncionariosView,
     FuncionarioTurmaDisciplinasView,
     NomeServidorView,
@@ -142,6 +147,26 @@ urlpatterns = [
     path(
         "funcionarios/BuscarPorListaRF/",
         FuncionariosBuscarPorListaRfView.as_view(),
+    ),
+    path(
+        "funcionarios/ue/<str:codigo_ue>/",
+        FuncionariosUeView.as_view(),
+    ),
+    path(
+        "funcionarios/cargos/<str:codigo_cargo>/",
+        FuncionariosCargoView.as_view(),
+    ),
+    path(
+        "funcionarios/perfis/<str:id_perfil>/",
+        FuncionariosPerfisView.as_view(),
+    ),
+    path(
+        "funcionarios/perfis/<str:id_perfil>/dres/<str:codigo_dre>/",
+        FuncionariosPerfisDreView.as_view(),
+    ),
+    path(
+        "funcionarios/supervisores/<str:codigo_dre>/",
+        FuncionariosSupervisoresView.as_view(),
     ),
     path(
         "escolas/<str:codigo_ue>/funcionarios/funcoes-atividades/"

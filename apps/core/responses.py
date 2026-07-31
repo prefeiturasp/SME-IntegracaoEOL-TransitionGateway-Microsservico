@@ -7,9 +7,15 @@ from rest_framework.response import Response
 
 __all__ = [
     "Response",
+    "api_unavailable_response",
     "detail_response",
-    "sidecar_error_response_status_livre",
+    "api_error_response_status_livre",
 ]
+
+
+def api_unavailable_response(domain: str, status_code: int = 503) -> Response:
+    """Retorna resposta padronizada para API temporariamente indisponível."""
+    return detail_response(f"Serviço de {domain} indisponível.", status_code)
 
 
 def detail_response(detail: str, status_code: int = 400) -> Response:
@@ -17,7 +23,7 @@ def detail_response(detail: str, status_code: int = 400) -> Response:
     return Response({"detail": detail}, status=status_code)
 
 
-def sidecar_error_response_status_livre(
+def api_error_response_status_livre(
     exc: httpx.HTTPStatusError,
 ) -> Response:
     """Monta resposta de erro preservando status fora do intervalo padrão.
@@ -29,7 +35,7 @@ def sidecar_error_response_status_livre(
         exc: Exceção HTTP lançada pelo cliente externo.
 
     Returns:
-        Resposta com o corpo e o status originais do sidecar.
+        Resposta com o corpo e o status originais da API.
     """
     try:
         body: Any = exc.response.json()

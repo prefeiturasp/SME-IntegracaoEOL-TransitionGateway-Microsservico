@@ -8,32 +8,27 @@ Gateway de transição entre os contratos legados do EOL e os novos microserviç
 Cliente externo
       │
       ▼
-  Gateway (8000)        ← tradução de contrato legado → novo, sem regra de negócio
+  Gateway (8000)        ← tradução de contrato e uso do SME Sidecar SDK in-process
       │
       ▼
-sidecar_<domínio>       ← retry, circuit breaker, propagação de X-Request-ID
-      │
-      ▼
-MS de domínio           ← microserviço proprietário do domínio
+API do microserviço     ← microserviço proprietário do domínio
 ```
 
-O Gateway expõe os contratos legados (L1–L17) e os mapeia para os endpoints canônicos 
-dos microserviços de domínio. Ele não contém regra de negócio nem lógica de resiliência:
-essas responsabilidades pertencem ao sidecar de cada domínio.
+O Gateway expõe os contratos legados e os traduz para os microserviços de
+domínio. Ele não contém regra de negócio: essa responsabilidade permanece nos microserviços de domínio.
 
-Cada sidecar é um processo Django independente que aplica retry com backoff exponencial,
-circuit breaker e propagação de contexto de rastreamento antes de encaminhar a requisição
-ao microserviço correspondente. Os sidecars residem em repositórios próprios.
+O SME Sidecar SDK é usado como runtime in-process no gateway para aplicar
+recursos transversais como timeout, retry, circuit breaker, logs estruturados e propagação de contexto de rastreamento.
 
 ## Estrutura do repositório
 
 ```
 .
 ├── apps/
-│   ├── core/           # cliente HTTP, resiliência (lib dos sidecars), middleware
-│   └── pedagogico/     # domínio pedagógico: views, services, serializers
-│   └── professores/     # domínio professores: views, services, serializers
-│   └── programasedu/   # domínio programas educacionais: views, services, serializers
+│   ├── core/           # cliente HTTP, runtime do SDK e middleware
+│   └── pedagogico/     # adaptação dos contratos do domínio pedagógico
+│   └── professores/     # adaptação dos contratos do domínio professores
+│   └── programasedu/   # adaptação dos contratos de programas educacionais
 ├── config/             # settings, urls, wsgi e autenticação do gateway
 ├── requirements/
 │   ├── base.txt        # dependências de produção
@@ -43,93 +38,36 @@ ao microserviço correspondente. Os sidecars residem em repositórios próprios.
 
 ### apps/core
 
-| Módulo | Responsabilidade |
-|---|---|
-| `http_client.py` | `ServiceClient` — cliente HTTP simples com timeout (usado pelo gateway) |
-| `middleware.py` | Propagação de `X-Request-ID` e contexto de logging |
-| `logging_context.py` | `ContextVar` para request ID e serviço |
+| Módulo           | Responsabilidade                                        |
+| ---------------- | ------------------------------------------------------- |
+| `http_client.py` | `ServiceClient` baseado no cliente instrumentado do SDK |
+| `apps.py`        | Inicialização do runtime do SDK no boot do Django       |
 
-## Domínio pedagógico
+## Domínios Atendidos
 
-O gateway mapeia 17 rotas legadas para 15 endpoints canônicos do MS Pedagógico:
+### Pedagógico
 
-| Legado | Endpoint canônico |
-|---|---|
-| L1 Componentes do funcionário por turma com agrupamento | EP-1 `GET /funcionarios/{login}` |
-| L2 Componentes do funcionário sem filtro de turma | EP-1 `GET /funcionarios/{login}` |
-| L3 Componentes com planejamento de regência | EP-1 `GET /funcionarios/{login}?planejamento=true` |
-| L4 Componentes de regência por ano de turma | EP-2 `GET /anos/{anoTurma}/regencia` |
-| L5 Verificar componente PAP em turma | EP-3 `GET /turmas/{cod}/pap` |
-| L6 Componentes por UE, modalidade, ano e anos escolares | EP-4 `GET /ues/{id}/modalidades/{mod}/anos/{ano}` |
-| L7 Componentes de turmas programa por UE e modalidade | EP-5 `GET /ues/{id}/modalidades/{mod}/anos/{ano}/turmas-programa` |
-| L8 Componentes por lista de turmas e UE | EP-6 `GET /ues/{id}/turmas` |
-| L9 Componentes para planejamento por lista de turmas | EP-7 `GET /turmas` |
-| L10 Componentes de turmas sem pós-processamento | EP-8 `GET /turmas/brutos` |
-| L11 Catálogo de componentes curriculares | EP-9 `GET /` |
-| L12 Dados de aula por turma (vigência de componentes) | EP-10 `GET /turmas/vigencia` |
-| L13 Agrupamentos correlacionados de Território do Saber por `cod_agrupamento` | EP-13 `GET /{cod}/territorio-saber/agrupamentos-correlacionados` |
-| L14 Agrupamentos correlacionados em lote por `cod_agrupamento` | EP-14 `POST /territorio-saber/agrupamentos-correlacionados` |
-| L15 Agrupamentos de Território do Saber por `cod_agrupamento` | EP-15 `POST /territorio-saber/agrupamentos` |
-| L16 Grade curricular por ano letivo | EP-11 `GET /grade-curricular/{anoLetivo}` |
-| L17 Componentes sem atribuição em uma turma | EP-12 `GET /turmas/{cod}/sem-atribuicao` |
+Preserva contratos legados relacionados a componentes curriculares, turmas,
+grade curricular, regência, planejamento e agrupamentos pedagógicos. A regra de
+composição desses dados permanece no domínio pedagógico; o gateway adapta nomes,
+formatos e parâmetros esperados pelos consumidores legados.
 
-Nas rotas L13, L14 e L15, `{cod}`/body representam `cod_agrupamento`, não código de componente curricular do catálogo. O gateway chama o sidecar com barra final nessas rotas de POST para evitar redirect em chamadas com corpo.
+### Professores
 
+Preserva contratos legados relacionados a professores, funcionários, vínculos
+com unidades, cargos, perfis, supervisores e turmas atribuídas. Alguns fluxos
+orquestram mais de um domínio para montar o contrato final, mantendo no gateway
+apenas a adaptação entre formatos.
 
-## Domínio professores
+### Programas Educacionais
 
-O gateway mapeia 20 rotas legadas cobertas pelo MS-Professores. Os paths canônicos são relativos ao sidecar de professores (`/api/v1/professores`). Endpoints marcados com *(orquestra)* chamam mais de um domínio antes de responder.
+Preserva contratos legados relacionados a turmas e alunos de programas
+educacionais. As decisões de elegibilidade e composição dos dados permanecem
+nos microserviços responsáveis.
 
-### Professor
-
-| Legado | Endpoint canônico |
-|---|---|
-| L1 Retorna o nome do professor pelo RF | EP-1 `GET /{rf_professor}` |
-| L2 Retorna booleano indicando se o professor é válido | EP-2 `GET /{codigo_rf}/validade` |
-| L3 Retorna professor por RF e ano letivo | EP-3 `GET /{codigo_rf}/BuscarPorRf/{ano_letivo}` |
-| L4 Retorna professor por RF, DRE e UE no ano letivo | EP-4 `GET /{codigo_rf}/BuscarPorRfDreUe/{ano_letivo}` |
-| L5 Retorna professores pelos RFs no ano letivo *(orquestra Professores + Institucional)* | EP-5 `POST /{ano_letivo}/BuscarPorListaRF/` |
-| L6 Lista professores para autocomplete por DRE, UE e nome | EP-6 `GET /{ano_letivo}/AutoComplete/{dre_id}` |
-| L7 Retorna booleano indicando se o professor é EMEI *(orquestra Professores + Institucional)* | EP-7 `GET /{codigo_rf}/unidades-atribuicao/` |
-| L8 Retorna turmas atribuídas ao professor *(orquestra Professores + Pedagógico + Institucional)* | EP-8 `GET /{codigo_rf}/turmas/` |
-| L9 Retorna turmas do professor para a disciplina | EP-9 `POST /{codigo_rf}/disciplina/{disciplina_id}/turmas/` |
-
-### Acessos
-
-| Legado | Endpoint canônico |
-|---|---|
-| L10 Retorna booleano indicando se o funcionário está ativo | EP-10 `GET /acessos/funcionario-ativo/{registro_funcional}` |
-
-### Funcionário
-
-| Legado | Endpoint canônico |
-|---|---|
-| L11 Retorna nome e CPF do servidor | EP-11 `GET /funcionarios/nome-servidor/{registro_funcional}` |
-| L12 Retorna o nome de usuário EOL do funcionário | EP-12 `GET /funcionarios/nome-usuario-eol/{registro_funcional}` |
-| L13 Retorna professores pelos RFs informados | EP-13 `POST /funcionarios/BuscarPorListaRF/` |
-
-### Escola
-
-| Legado | Endpoint canônico |
-|---|---|
-| L14 Retorna funcionários vinculados à escola | EP-14 `GET /escolas/{codigo_ue}/funcionarios/` |
-| L15 Retorna funcionários da escola filtrados por cargos | EP-15 `GET /escolas/{codigo_ue}/funcionarios/?cargos={cargo}` (um GET por cargo) |
-| L16 Retorna funcionários da escola filtrados por cargo específico | EP-16 `GET /escolas/{codigo_ue}/funcionarios/?cargos={codigo_cargo}` |
-| L17 Retorna funcionários da escola por funções atividades | EP-17 `GET /escolas/{codigo_ue}/funcionarios/?funcoes_atividades={cod}` (um GET por função) |
-| L18 Retorna funcionários da escola por função atividade específica | EP-18 `GET /escolas/{codigo_ue}/funcionarios/?funcoes_atividades={codigo_funcao_atividade}` |
-| L19 Retorna funcionários da escola por funções externas | EP-19 `GET /escolas/{codigo_ue}/funcionarios/?funcoes_externas={cod}` (um GET por função) |
-| L20 Retorna funcionários da escola por função externa específica | EP-20 `GET /escolas/{codigo_ue}/funcionarios/?funcoes_externas={codigo_funcao_externa}` |
-
-## Domínio programas educacionais
-
-O gateway mapeia 4 rotas legadas para os endpoints canônicos EP-02 a EP-05 do MS-ProgramasEdu. Os paths legados replicam o contrato do `AlunoController` do `SME-Pedagogico-API`, sob o prefixo `/api/alunos/`.
-
-| Legado | Endpoint canônico |
-|---|---|
-| L1 Turmas PAP por ano letivo e UE | EP-02 `GET /alunos/turmas-pap/{anoLetivo}/ues/{codigoEscola}` |
-| L2 Verificar quais alunos pertencem a turmas PAP | EP-03 `GET /alunos/alunos-pap/{anoLetivo}` |
-| L3 Alunos PAP do ano corrente | EP-04 `GET /alunos/pap/ano-corrente` |
-| L4 Alunos PAP por ano letivo | EP-05 `GET /alunos/pap/ano-letivo/{anoLetivo}` |
+Para detalhes de rotas, parâmetros, métodos HTTP e exemplos de resposta,
+consulte o Swagger da aplicação. Essa é a fonte mantida para o contrato
+operacional da API.
 
 ## Requisitos
 
@@ -167,51 +105,52 @@ make run
 
 **Geral**
 
-| Variável | Padrão | Descrição |
-|---|---|---|
-| `DJANGO_SECRET_KEY` | — | Chave secreta do Django |
-| `DJANGO_DEBUG` | `1` | Ativa o modo debug (`0` em produção) |
-| `DJANGO_ALLOWED_HOSTS` | `*` | Hosts permitidos, separados por vírgula |
-| `API_KEY` | — | Chave usada para autenticar requisições de entrada |
-| `API_KEY_HEADER` | `X-API-Key` | Nome do header de autenticação de entrada |
-| `GATEWAY_TIMEOUT_SECONDS` | `10` | Timeout das chamadas do gateway aos sidecars |
-| `PORT_WEB` | `8002` (dev) / `8000` (prod) | Porta exposta pelo container |
+| Variável               | Padrão                       | Descrição                                          |
+| ---------------------- | ---------------------------- | -------------------------------------------------- |
+| `DJANGO_SECRET_KEY`    | —                            | Chave secreta do Django                            |
+| `DJANGO_DEBUG`         | `1`                          | Ativa o modo debug (`0` em produção)               |
+| `DJANGO_ALLOWED_HOSTS` | `*`                          | Hosts permitidos, separados por vírgula            |
+| `API_KEY`              | —                            | Chave usada para autenticar requisições de entrada |
+| `API_KEY_HEADER`       | `X-API-Key`                  | Nome do header de autenticação de entrada          |
+| `PORT_WEB`             | `8002` (dev) / `8000` (prod) | Porta exposta pelo container                       |
 
-**Sidecars**
+**APIs dos microserviços**
 
-| Variável | Padrão | Descrição |
-|---|---|---|
-| `SIDECAR_PEDAGOGICO_URL` | `http://localhost:9004` | URL do sidecar pedagógico |
-| `SIDECAR_PEDAGOGICO_API_KEY` | — | API Key enviada ao sidecar pedagógico |
-| `SIDECAR_PEDAGOGICO_API_KEY_HEADER` | `X-API-Key` | Nome do header de autenticação para o sidecar pedagógico |
-| `SIDECAR_PROFESSORES_URL` | `http://localhost:9005` | URL do sidecar professores |
-| `SIDECAR_PROFESSORES_API_KEY` | — | API Key enviada ao sidecar professores |
-| `SIDECAR_PROFESSORES_API_KEY_HEADER` | `X-API-Key` | Nome do header de autenticação para o sidecar professores |
-| `SIDECAR_PROGRAMASEDU_URL` | `http://localhost:9006` | URL do sidecar de programas educacionais |
-| `SIDECAR_PROGRAMASEDU_API_KEY` | — | API Key enviada ao sidecar de programas educacionais |
-| `SIDECAR_PROGRAMASEDU_API_KEY_HEADER` | `X-API-Key` | Nome do header de autenticação para o sidecar de programas educacionais |
+| Variável                       | Padrão                  | Descrição                                                               |
+| ------------------------------ | ----------------------- | ----------------------------------------------------------------------- |
+| `PEDAGOGICO_API_URL`           | `http://localhost:9004` | URL da API do microserviço pedagógico                                   |
+| `PEDAGOGICO_API_KEY`           | —                       | API Key enviada à API do microserviço pedagógico                        |
+| `PEDAGOGICO_API_KEY_HEADER`    | `X-API-Key`             | Nome do header de autenticação para a API do microserviço pedagógico    |
+| `PROFESSORES_API_URL`          | `http://localhost:9005` | URL da API do microserviço professores                                  |
+| `PROFESSORES_API_KEY`          | —                       | API Key enviada à API do microserviço professores                       |
+| `PROFESSORES_API_KEY_HEADER`   | `X-API-Key`             | Nome do header de autenticação para a API do microserviço professores   |
+| `INSTITUCIONAL_API_URL`        | `http://localhost:9006` | URL da API do microserviço institucional                                |
+| `INSTITUCIONAL_API_KEY`        | —                       | API Key enviada à API do microserviço institucional                     |
+| `INSTITUCIONAL_API_KEY_HEADER` | `X-API-Key`             | Nome do header de autenticação para a API do microserviço institucional |
+| `PROGRAMASEDU_API_URL`         | `http://localhost:9006` | URL da API do microserviço de programas educacionais                    |
+| `PROGRAMASEDU_API_KEY`         | —                       | API Key enviada à API do microserviço de programas educacionais         |
+| `PROGRAMASEDU_API_KEY_HEADER`  | `X-API-Key`             | Nome do header de autenticação para programas educacionais              |
+| `ALUNOS_API_URL`               | `http://localhost:9007` | URL da API do microserviço alunos                                       |
+| `ALUNOS_API_KEY`               | —                       | API Key enviada à API do microserviço alunos                            |
+| `ALUNOS_API_KEY_HEADER`        | `X-API-Key`             | Nome do header de autenticação para a API do microserviço alunos        |
 
-**Elastic APM**
+**SME Sidecar SDK**
 
-| Variável | Padrão | Descrição |
-|---|---|---|
-| `ELASTIC_APM_SERVICE_NAME` | `transition-gateway` | Nome do serviço no APM |
-| `ELASTIC_APM_SERVER_URL` | `http://localhost:8200` | URL do servidor APM |
-| `ELASTIC_APM_SECRET_TOKEN` | — | Token de autenticação do APM |
-| `ELASTIC_APM_ENVIRONMENT` | `local` | Ambiente (`local`, `staging`, `production`) |
-| `ELASTIC_APM_ENABLED` | `1` | Ativa (`1`) ou desativa (`0`) o agente APM |
-
-**RabbitMQ (logging)**
-
-| Variável | Padrão | Descrição |
-|---|---|---|
-| `ENABLE_RABBITMQ_LOGGING` | `0` | Ativa (`1`) o envio de logs ao RabbitMQ |
-| `RABBITMQ_HOST` | — | Host do RabbitMQ |
-| `RABBITMQ_VIRTUAL_HOST` | `/` | Virtual host do RabbitMQ |
-| `RABBITMQ_LOG_QUEUE` | — | Nome da fila de destino dos logs |
-| `RABBITMQ_LOG_LEVEL` | `INFO` | Nível mínimo de log enviado ao RabbitMQ |
-| `RABBITMQ_USERNAME` | — | Usuário do RabbitMQ |
-| `RABBITMQ_PASSWORD` | — | Senha do RabbitMQ |
+| Variável                          | Padrão                  | Descrição                                       |
+| --------------------------------- | ----------------------- | ----------------------------------------------- |
+| `SME_SERVICE_NAME`                | `transition-gateway`    | Nome do serviço nos logs e traces               |
+| `SME_SERVICE_VERSION`             | `unknown`               | Versão publicada na telemetria                  |
+| `SME_ENVIRONMENT`                 | `dev`                   | Ambiente de execução                            |
+| `SME_TIMEOUT_SECONDS`             | `10`                    | Timeout das chamadas às APIs dos microserviços  |
+| `SME_LOG_LEVEL`                   | `ERROR`                 | Nível mínimo dos logs                           |
+| `SME_LOG_FORMAT`                  | `json`                  | Formato `json` ou `console`                     |
+| `SME_CORRELATION_ID_HEADER`       | `X-Request-ID`          | Header de correlação                            |
+| `SME_OTEL_ENABLED`                | `false`                 | Ativa tracing OpenTelemetry                     |
+| `SME_OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4317` | URL OTLP gRPC configurada diretamente no `.env` |
+| `SME_OTEL_EXPORTER_OTLP_HEADERS`  | —                       | Headers do exporter em `chave=valor`            |
+| `SME_OTEL_EXPORTER_OTLP_INSECURE` | `true`                  | Desabilita TLS no transporte OTLP               |
+| `SME_RABBITMQ_URL`                | —                       | URL AMQP para transporte opcional de logs       |
+| `SME_LOG_RABBITMQ_QUEUE`          | —                       | Fila RabbitMQ de logs                           |
 
 ## Observabilidade
 
@@ -219,18 +158,20 @@ make run
 
 Todos os logs são emitidos em JSON estruturado. Cada registro inclui os seguintes campos:
 
-| Campo | Descrição |
-|---|---|
-| `timestamp` | Data e hora do evento |
-| `level` | Nível do log (`INFO`, `WARNING`, `ERROR`) |
-| `logger` | Nome do módulo que gerou o log |
-| `message` | Mensagem descritiva (ex.: `GET /api/v1/... 200 43ms`) |
-| `request_id` | UUID da requisição, propagado via header `X-Request-ID` |
-| `service` | Nome do serviço (`transitiongateway`) |
-| `transaction_id` | ID da transação APM (correlação com traces) |
-| `trace_id` | ID do trace APM (correlação fim a fim) |
+| Campo        | Descrição                                                  |
+| ------------ | ---------------------------------------------------------- |
+| `timestamp`  | Data e hora do evento                                      |
+| `level`      | Nível do log (`INFO`, `WARNING`, `ERROR`)                  |
+| `logger`     | Nome do módulo que gerou o log                             |
+| `message`    | Mensagem descritiva da requisição atendida                 |
+| `event`      | Nome do evento estruturado (ex.: `http_request_completed`) |
+| `request_id` | UUID da requisição, propagado via header `X-Request-ID`    |
+| `service`    | Nome do serviço (`transitiongateway`)                      |
+| `span_id`    | ID da operação atual                                       |
+| `trace_id`   | ID do trace distribuído fim a fim                          |
 
-O middleware `LoggingContextMiddleware` emite um registro por requisição HTTP com método, path, status code e duração em milissegundos.
+O `ObservabilityMiddleware` do SDK emite um evento por requisição HTTP
+com método, path, status code e duração em milissegundos.
 
 ### Pipeline de logs
 
@@ -240,20 +181,27 @@ Aplicação
    ├── stdout (sempre)
    │     JSON estruturado lido pelo runtime do container
    │
-   └── RabbitMQ (quando ENABLE_RABBITMQ_LOGGING=1)
+   └── RabbitMQ (quando SME_LOG_RABBITMQ_QUEUE está configurada)
          │
          └── Consumer (Logstash)
                │
                └── Elasticsearch → Kibana (Logs)
 ```
 
-Para ver logs no Kibana, `ENABLE_RABBITMQ_LOGGING` deve estar ativo e o consumer Logstash precisa estar configurado para ler da fila `RABBITMQ_LOG_QUEUE` e indexar no Elasticsearch.
+Para ver logs no Kibana via RabbitMQ, configure `SME_RABBITMQ_URL` e
+`SME_LOG_RABBITMQ_QUEUE`. O consumer Logstash deve ler essa fila e
+indexar os eventos no Elasticsearch.
 
-### Rastreamento APM (Elastic APM)
+### Rastreamento distribuído
 
-O agente APM (`elasticapm.contrib.django`) instrumenta automaticamente cada requisição Django, criando transações e spans visíveis em **Kibana → Observability → APM**.
+O SME Sidecar SDK cria um span `django.request` na entrada do gateway e
+instrumenta o cliente HTTPX. As chamadas às APIs dos microserviços recebem
+automaticamente `traceparent`, preservando um único trace desde o gateway
+até os serviços de domínio. Os spans são enviados por OTLP ao Elastic APM
+ou a um OpenTelemetry Collector.
 
-Os campos `transaction_id` e `trace_id` presentes em cada log permitem correlacionar um registro de log com a transação APM correspondente diretamente na interface do Kibana.
+Os campos `trace_id` e `span_id` presentes em cada log permitem abrir o
+trace correspondente diretamente na interface de observabilidade.
 
 ## Atalhos Make
 
@@ -261,31 +209,31 @@ Use `make help` para listar todos os comandos disponíveis. Os principais:
 
 **Ambiente**
 
-| Comando | Descrição |
-|---|---|
-| `make run` | Sobe o gateway em modo dev (porta 8002) |
-| `make build` | Rebuild da imagem dev |
-| `make stop` | Para e remove containers |
+| Comando      | Descrição                               |
+| ------------ | --------------------------------------- |
+| `make run`   | Sobe o gateway em modo dev (porta 8002) |
+| `make build` | Rebuild da imagem dev                   |
+| `make stop`  | Para e remove containers                |
 
 **Testes**
 
-| Comando | Descrição |
-|---|---|
-| `make test` | Suite completa com cobertura ≥ 80% |
-| `make test-core` | Apenas `apps.core` |
-| `make test-pedagogico` | Apenas `apps.pedagogico` |
-| `make test-professores` | Apenas `apps.professores` |
-| `make test-institucional` | Apenas `apps.institucional` |
+| Comando                   | Descrição                          |
+| ------------------------- | ---------------------------------- |
+| `make test`               | Suite completa com cobertura ≥ 80% |
+| `make test-core`          | Apenas `apps.core`                 |
+| `make test-pedagogico`    | Apenas `apps.pedagogico`           |
+| `make test-professores`   | Apenas `apps.professores`          |
+| `make test-institucional` | Apenas `apps.institucional`        |
 
 **Qualidade**
 
-| Comando | Descrição |
-|---|---|
-| `make lint` | ruff + black + isort + mypy |
-| `make coverage` | Relatório HTML em `docs/_cov/` |
-| `make schema` | Gera schema OpenAPI em `schema.yml` |
-| `make docs` | Gera documentação Sphinx em `docs/_build/html/` |
+| Comando         | Descrição                                       |
+| --------------- | ----------------------------------------------- |
+| `make lint`     | ruff + black + isort + mypy                     |
+| `make coverage` | Relatório HTML em `docs/_cov/`                  |
+| `make schema`   | Gera schema OpenAPI em `schema.yml`             |
+| `make docs`     | Gera documentação Sphinx em `docs/_build/html/` |
 
 ## Endpoints
 
-Consulte o Swagger em `/api/v1/docs/` para a lista completa de rotas com parâmetros e exemplos de resposta.
+Consulte o Swagger da aplicação para a lista completa de rotas com parâmetros e exemplos de resposta.

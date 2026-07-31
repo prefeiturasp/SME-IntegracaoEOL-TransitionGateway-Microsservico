@@ -12,10 +12,12 @@ from apps.professores.serializers import (
     FuncionarioFuncaoAtividadeSerializer,
     FuncionarioFuncaoExternaSerializer,
     FuncionarioLegadoSerializer,
+    FuncionarioSgpLegadoSerializer,
     ProfessorAtribuicaoTurmaDisciplinaSerializer,
     ProfessorAutoCompleteSerializer,
     ProfessorStatusAtribuicaoSerializer,
     ProfessorTurmaAtribuidaSimplificadaSerializer,
+    SupervisorLegadoSerializer,
     TextoEstritoField,
     TurmaAtribuidaProfessorSerializer,
     TurmaElegivelLegadoSerializer,
@@ -149,6 +151,17 @@ class FuncionarioSerializerTest(SimpleTestCase):
                 {"cpf": "11610699840", "funcao_externo": 5},
                 {"funcionarioCpf": "11610699840", "funcaoExternaId": 5},
             ),
+            (
+                SupervisorLegadoSerializer,
+                {
+                    "codigo_rf": "000001",
+                    "nome_servidor": "NOME SERVIDOR",
+                },
+                {
+                    "codigoRF": "000001",
+                    "nomeServidor": "NOME SERVIDOR",
+                },
+            ),
         ]
         for serializer_cls, payload, esperado in casos:
             with self.subTest(serializer=serializer_cls.__name__):
@@ -175,6 +188,34 @@ class FuncionarioLegadoSerializerTest(SimpleTestCase):
                 "codigoRf": "000001",
                 "funcaoExterno": 5,
                 "login": "000001",
+                "nomeServidor": "ANA",
+                "tipoFuncaoExterno": 7,
+            },
+        )
+
+
+class FuncionarioSgpLegadoSerializerTest(SimpleTestCase):
+    """Valida serialização de funcionário SGP no contrato legado."""
+
+    def test_serializa_campos(self) -> None:
+        payload = {
+            "cd_cargo": "3360",
+            "codigo_funcao_atividade": 30,
+            "codigo_rf": "000001",
+            "funcao_externo": 5,
+            "login": None,
+            "nome_servidor": "ANA",
+            "tipo_funcao_externo": 7,
+        }
+
+        self.assertEqual(
+            FuncionarioSgpLegadoSerializer(payload).data,
+            {
+                "cd_Cargo": 3360,
+                "codigoFuncaoAtividade": 30,
+                "codigoRf": "000001",
+                "funcaoExterno": 5,
+                "login": None,
                 "nomeServidor": "ANA",
                 "tipoFuncaoExterno": 7,
             },
@@ -269,6 +310,60 @@ class TurmasAtribuidasLegadoSerializerTest(SimpleTestCase):
             data["dres"][0]["ues"][0]["turmas"][0]["codigoModalidade"],
             0,
         )
+
+    def test_aceita_campos_da_composicao_de_professor(self) -> None:
+        payload = [
+            {
+                "cod_dre": "109200",
+                "dre": "DIRETORIA REGIONAL DE EDUCACAO SAO MATEUS",
+                "dre_abrev": "DRE - SM",
+                "cod_escola": "013803",
+                "ue": "JULIO DE GRAMMONT",
+                "cod_tipo_escola": 1,
+                "cod_turma": 3018605,
+                "ano": "7",
+                "ano_letivo": 2026,
+                "modalidade": "Fundamental",
+                "cod_modalidade": 5,
+                "nome_turma": "7B",
+                "semestre": 0,
+                "duracao_turno": 5,
+                "tipo_turno": 1,
+            },
+            {
+                "cod_dre": "109200",
+                "dre": "DIRETORIA REGIONAL DE EDUCACAO SAO MATEUS",
+                "dre_abrev": "DRE - SM",
+                "cod_escola": "013803",
+                "ue": "JULIO DE GRAMMONT",
+                "cod_tipo_escola": 1,
+                "cod_turma": 3018602,
+                "ano": "7",
+                "ano_letivo": 2026,
+                "modalidade": "Fundamental",
+                "cod_modalidade": 5,
+                "nome_turma": "7A",
+                "semestre": 0,
+                "duracao_turno": 5,
+                "tipo_turno": 1,
+            },
+        ]
+
+        data = TurmasAtribuidasLegadoSerializer(payload).data
+        dre = data["dres"][0]
+        ue = dre["ues"][0]
+
+        self.assertEqual(dre["codigo"], "109200")
+        self.assertEqual(dre["abreviacao"], "DRE - SM")
+        self.assertEqual(ue["codigo"], "013803")
+        self.assertEqual(ue["codTipoEscola"], 1)
+        self.assertEqual(
+            [turma["codigo"] for turma in ue["turmas"]],
+            [3018602, 3018605],
+        )
+        self.assertEqual(ue["turmas"][0]["modalidade"], "Fundamental")
+        self.assertEqual(ue["turmas"][0]["codigoModalidade"], 5)
+        self.assertEqual(ue["turmas"][0]["duracaoTurno"], 5)
 
     def test_retorna_payload_nao_lista_sem_transformar(self) -> None:
         payload = {"abrangencia": None}

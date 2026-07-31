@@ -3,9 +3,9 @@
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.request import Request
-from rest_framework.views import APIView
 
 from apps.core.responses import Response, detail_response
+from apps.core.views import DomainAPIView
 from apps.programasedu import services
 from apps.programasedu.serializers import (
     AlunoTurmaPapSerializer,
@@ -17,10 +17,17 @@ from apps.programasedu.serializers import (
 )
 
 _TAG = ["Aluno"]
+_DOMINIO_PROGRAMASEDU = "programasedu"
 _ERRO_CODIGO_ALUNO_OBRIGATORIO = "É necessário informar o codigo_aluno."
 
 
-class ObterTurmasPapView(APIView):
+class ProgramasEduAPIView(DomainAPIView):
+    """APIView base que padroniza falhas de comunicação com programas."""
+
+    api_domain = _DOMINIO_PROGRAMASEDU
+
+
+class ObterTurmasPapView(ProgramasEduAPIView):
     """Lista turmas PAP por ano letivo e UE."""
 
     @extend_schema(
@@ -72,7 +79,7 @@ class ObterTurmasPapView(APIView):
         return Response(TurmaPapResumoSerializer(data, many=True).data)
 
 
-class VerificarSeAlunosSaoTurmaProgramaPapView(APIView):
+class VerificarSeAlunosSaoTurmaProgramaPapView(ProgramasEduAPIView):
     """Verifica se alunos pertencem a turmas PAP."""
 
     @extend_schema(
@@ -127,7 +134,7 @@ class VerificarSeAlunosSaoTurmaProgramaPapView(APIView):
         return Response(AlunoTurmaProgramaPapSerializer(data, many=True).data)
 
 
-class ObterAlunosPapAnoCorrenteView(APIView):
+class ObterAlunosPapAnoCorrenteView(ProgramasEduAPIView):
     """Lista alunos PAP do ano corrente."""
 
     @extend_schema(
@@ -153,7 +160,7 @@ class ObterAlunosPapAnoCorrenteView(APIView):
         return Response(AlunoTurmaPapSerializer(data, many=True).data)
 
 
-class ObterAlunosPapPorAnoLetivoView(APIView):
+class ObterAlunosPapPorAnoLetivoView(ProgramasEduAPIView):
     """Lista alunos PAP por ano letivo."""
 
     @extend_schema(
@@ -191,7 +198,7 @@ class ObterAlunosPapPorAnoLetivoView(APIView):
         return Response(AlunoTurmaPapSerializer(data, many=True).data)
 
 
-class ObterComponentesCurricularesTurmasProgramaAlunoView(APIView):
+class ObterComponentesCurricularesTurmasProgramaAlunoView(ProgramasEduAPIView):
     """Lista componentes curriculares das turmas de programa do aluno."""
 
     @extend_schema(
@@ -245,7 +252,7 @@ class ObterComponentesCurricularesTurmasProgramaAlunoView(APIView):
         )
 
 
-class ObterDadosSrmPaeeAlunoView(APIView):
+class ObterDadosSrmPaeeAlunoView(ProgramasEduAPIView):
     """Retorna dados de SRM/PAEE colaborativo do aluno."""
 
     @extend_schema(
@@ -286,7 +293,7 @@ class ObterDadosSrmPaeeAlunoView(APIView):
         )
 
 
-class ObterTurmaSrmERegularDoAlunoView(APIView):
+class ObterTurmaSrmERegularDoAlunoView(ProgramasEduAPIView):
     """Retorna turmas SRM e regulares do aluno."""
 
     @extend_schema(

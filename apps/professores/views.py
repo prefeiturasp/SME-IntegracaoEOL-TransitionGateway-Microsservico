@@ -5,10 +5,13 @@ from typing import Any, NamedTuple, cast
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.request import Request
-from rest_framework.views import APIView
 
 from apps.core.datetime import validar_data_str, validar_data_tick
-from apps.core.responses import Response, detail_response
+from apps.core.responses import (
+    Response,
+    detail_response,
+)
+from apps.core.views import DomainAPIView
 from apps.professores import services
 from apps.professores.serializers import (
     BuscarFuncionariosPorUeSerializer,
@@ -20,6 +23,8 @@ from apps.professores.serializers import (
     FuncionarioFuncaoAtividadeSerializer,
     FuncionarioFuncaoAtividadeUeSerializer,
     FuncionarioFuncaoExternaSerializer,
+    FuncionarioSgpLegadoSerializer,
+    FuncionarioUeLegadoSerializer,
     ListaStringSerializer,
     NomeServidorSerializer,
     ProfessorAtribuicaoTurmaDisciplinaSerializer,
@@ -28,6 +33,7 @@ from apps.professores.serializers import (
     ProfessorStatusAtribuicaoSerializer,
     ProfessorTurmaAtribuidaSimplificadaSerializer,
     ProfessorTurmaSerializer,
+    SupervisorLegadoSerializer,
     TurmaAtribuidaProfessorSerializer,
     TurmasIdsSerializer,
     VerificarAtribuicaoDisciplinaQuerySerializer,
@@ -49,11 +55,13 @@ _MSG_CODIGO_FUNCAO_ATIVIDADE_OBRIGATORIO = (
 _MSG_REGISTRO_FUNCIONAL_OBRIGATORIO = (
     "É necessário informar o registro funcional."
 )
+_MSG_PERFIL_OBRIGATORIO = "É necessário informar o perfil."
 _MSG_DRE_ID_OBRIGATORIO = "É necessário informar o dreId."
 _MSG_UE_ID_OBRIGATORIO = "É necessário informar o ueId."
 _MSG_NOME_OBRIGATORIO = "É necessário informar o nome."
 _TAMANHO_MINIMO_NOME = 2
-_MSG_RESPOSTA_INVALIDA_SIDECAR = "Resposta inválida do sidecar de professores."
+_MSG_RESPOSTA_INVALIDA_API = "Resposta inválida da API de professores."
+_DOMINIO_PROFESSORES = "professores"
 _CAMPOS_TURMA = {
     "codigo_turma",
     "data_disponibilizacao_aulas",
@@ -139,6 +147,36 @@ _PARAM_EH_PERFIL_MANUAL_TEMPORARIO = OpenApiParameter(
         "abrangência retornado."
     ),
 )
+_PARAM_CODIGO_DRE_LEGADO = OpenApiParameter(
+    "CodigoDre",
+    OpenApiTypes.STR,
+    OpenApiParameter.QUERY,
+    required=False,
+    description=(
+        "Código da DRE usado na consulta por perfil quando informado."
+    ),
+)
+_PARAM_CODIGO_UE_LEGADO = OpenApiParameter(
+    "CodigoUe",
+    OpenApiTypes.STR,
+    OpenApiParameter.QUERY,
+    required=False,
+    description="Código da unidade educacional usado no filtro.",
+)
+_PARAM_CODIGO_RF_LEGADO = OpenApiParameter(
+    "CodigoRf",
+    OpenApiTypes.STR,
+    OpenApiParameter.QUERY,
+    required=False,
+    description="Registro funcional usado na consulta por perfil.",
+)
+_PARAM_NOME_SERVIDOR_LEGADO = OpenApiParameter(
+    "NomeServidor",
+    OpenApiTypes.STR,
+    OpenApiParameter.QUERY,
+    required=False,
+    description="Nome do servidor usado no filtro.",
+)
 # Planejamento: os branches curto-circuitam, então só a abrangência é útil.
 _PARAMS_ABRANGENCIA_TEMPORARIOS = [_PARAM_ABRANGENCIA_TEMPORARIO]
 # Disciplinas: o branch de vínculo com UE/DRE filtra por cargos.
@@ -155,6 +193,12 @@ _PARAMS_TURMAS_TEMPORARIOS = [
     _PARAM_DRE_CODIGO_TEMPORARIO,
     _PARAM_EH_PERFIL_MANUAL_TEMPORARIO,
 ]
+_PARAMS_FUNCIONARIOS_PERFIL = [
+    _PARAM_CODIGO_DRE_LEGADO,
+    _PARAM_CODIGO_UE_LEGADO,
+    _PARAM_CODIGO_RF_LEGADO,
+    _PARAM_NOME_SERVIDOR_LEGADO,
+]
 
 
 class _AbrangenciaTemporaria(NamedTuple):
@@ -169,19 +213,25 @@ class _AbrangenciaTemporaria(NamedTuple):
 
 
 def _inteiro_param(request: Request, nome: str) -> int | None:
-    """Lê um parâmetro inteiro único da query string."""
+    """Lê um parâmetro inteiro único da requisição."""
     bruto = request.query_params.get(nome)
     return int(bruto) if bruto and bruto.isdigit() else None
 
 
 def _inteiros_param(request: Request, nome: str) -> list[int] | None:
-    """Lê um parâmetro inteiro repetido da query string."""
+    """Lê um parâmetro inteiro repetido da requisição."""
     valores = [
         item
         for item in request.query_params.getlist(nome)
         if item.strip().isdigit()
     ]
     return [int(item) for item in valores] or None
+
+
+class ProfessoresAPIView(DomainAPIView):
+    """APIView base que padroniza falhas de comunicação com professores."""
+
+    api_domain = _DOMINIO_PROFESSORES
 
 
 def _abrangencia_temporaria(request: Request) -> _AbrangenciaTemporaria:
@@ -248,7 +298,7 @@ def _is_lista_turmas(data: object) -> bool:
     """Verifica se os dados representam uma lista de turmas.
 
     Args:
-        data: Conteúdo retornado pela consulta ao sidecar.
+        data: Conteúdo retornado pela consulta.
 
     Returns:
         ``True`` quando todos os itens têm os campos de turma esperados.
@@ -263,7 +313,7 @@ def _is_lista_dicionarios(data: object) -> bool:
     """Verifica se os dados são uma lista de dicionários.
 
     Args:
-        data: Conteúdo retornado pela consulta ao sidecar.
+        data: Conteúdo retornado pela consulta.
 
     Returns:
         ``True`` quando os dados são uma lista composta só de dicionários.
@@ -273,7 +323,7 @@ def _is_lista_dicionarios(data: object) -> bool:
     )
 
 
-class ProfessorView(APIView):
+class ProfessorView(ProfessoresAPIView):
     """Retorna o nome do professor pelo RF."""
 
     @extend_schema(
@@ -291,9 +341,6 @@ class ProfessorView(APIView):
 
         Returns:
             Nome do professor, ou ausência de conteúdo quando não encontrado.
-
-        Raises:
-            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
         """
         if not rf_professor.strip():
             return detail_response("Codigo RF e obrigatorio.")
@@ -303,7 +350,7 @@ class ProfessorView(APIView):
         return Response(data)
 
 
-class ValidadeProfessorView(APIView):
+class ValidadeProfessorView(ProfessoresAPIView):
     """Retorna indicação de validade do professor."""
 
     @extend_schema(
@@ -319,9 +366,6 @@ class ValidadeProfessorView(APIView):
 
         Returns:
             Indicador booleano de validade do professor.
-
-        Raises:
-            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
         """
         if not codigo_rf.strip():
             return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
@@ -329,7 +373,7 @@ class ValidadeProfessorView(APIView):
         return Response(data)
 
 
-class ProfessorVerificarAtribuicaoDataView(APIView):
+class ProfessorVerificarAtribuicaoDataView(ProfessoresAPIView):
     """Verifica a atribuição do professor em uma data."""
 
     @extend_schema(
@@ -379,7 +423,7 @@ class ProfessorVerificarAtribuicaoDataView(APIView):
         return Response(resposta)
 
 
-class ProfessorStatusAtribuicaoView(APIView):
+class ProfessorStatusAtribuicaoView(ProfessoresAPIView):
     """Obtém o status da atribuição do professor em uma turma."""
 
     @extend_schema(
@@ -416,7 +460,7 @@ class ProfessorStatusAtribuicaoView(APIView):
         return Response(resposta)
 
 
-class ProfessorVerificarAtribuicaoDataTickView(APIView):
+class ProfessorVerificarAtribuicaoDataTickView(ProfessoresAPIView):
     """Verifica a atribuição do professor em uma data por tick."""
 
     @extend_schema(
@@ -480,7 +524,7 @@ class ProfessorVerificarAtribuicaoDataTickView(APIView):
         return Response(resposta)
 
 
-class ProfessorAtribuicaoTurmaDisciplinaView(APIView):
+class ProfessorAtribuicaoTurmaDisciplinaView(ProfessoresAPIView):
     """Obtém a atribuições de uma turma e disciplina."""
 
     @extend_schema(
@@ -538,7 +582,7 @@ class ProfessorAtribuicaoTurmaDisciplinaView(APIView):
         return Response(resposta)
 
 
-class ProfessorVerificarAtribuicaoTurmaDisciplinaDataView(APIView):
+class ProfessorVerificarAtribuicaoTurmaDisciplinaDataView(ProfessoresAPIView):
     """Verifica a atribuição do professor em uma turma e disciplina."""
 
     @extend_schema(
@@ -617,7 +661,7 @@ class ProfessorVerificarAtribuicaoTurmaDisciplinaDataView(APIView):
         return Response(resposta)
 
 
-class FuncionarioAtivoView(APIView):
+class FuncionarioAtivoView(ProfessoresAPIView):
     """Retorna indicação de atividade do funcionário."""
 
     @extend_schema(
@@ -635,9 +679,6 @@ class FuncionarioAtivoView(APIView):
 
         Returns:
             Indicador booleano de funcionário ativo.
-
-        Raises:
-            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
         """
         if not registro_funcional.strip():
             return detail_response(_MSG_REGISTRO_FUNCIONAL_OBRIGATORIO)
@@ -645,7 +686,7 @@ class FuncionarioAtivoView(APIView):
         return Response(data)
 
 
-class NomeServidorView(APIView):
+class NomeServidorView(ProfessoresAPIView):
     """Retorna nome e CPF do servidor."""
 
     @extend_schema(
@@ -661,9 +702,6 @@ class NomeServidorView(APIView):
 
         Returns:
             Dados de identificação do servidor, ou ausência de conteúdo.
-
-        Raises:
-            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
         """
         data = services.get_nome_servidor(registro_funcional)
         if data is None:
@@ -671,7 +709,7 @@ class NomeServidorView(APIView):
         return Response(NomeServidorSerializer(data).data)
 
 
-class NomeUsuarioEolView(APIView):
+class NomeUsuarioEolView(ProfessoresAPIView):
     """Retorna nome de usuário EOL do funcionário."""
 
     @extend_schema(
@@ -687,9 +725,6 @@ class NomeUsuarioEolView(APIView):
 
         Returns:
             Nome de usuário EOL, ou ausência de conteúdo quando não encontrado.
-
-        Raises:
-            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
         """
         if not registro_funcional.strip():
             return detail_response(_MSG_REGISTRO_FUNCIONAL_OBRIGATORIO)
@@ -699,7 +734,7 @@ class NomeUsuarioEolView(APIView):
         return Response(data)
 
 
-class FuncionarioTurmaDisciplinasView(APIView):
+class FuncionarioTurmaDisciplinasView(ProfessoresAPIView):
     """Retorna disciplinas da turma."""
 
     @extend_schema(
@@ -715,9 +750,6 @@ class FuncionarioTurmaDisciplinasView(APIView):
 
         Returns:
             Disciplinas da turma, ou ausência de conteúdo.
-
-        Raises:
-            httpx.HTTPError: Quando a chamada ao sidecar falha.
         """
         if not codigo_turma.strip():
             return detail_response(_MSG_CODIGO_TURMA_OBRIGATORIO)
@@ -727,7 +759,7 @@ class FuncionarioTurmaDisciplinasView(APIView):
         return Response(data)
 
 
-class FuncionarioPerfilTurmaDisciplinasView(APIView):
+class FuncionarioPerfilTurmaDisciplinasView(ProfessoresAPIView):
     """Retorna disciplinas do funcionário na turma."""
 
     @extend_schema(
@@ -753,9 +785,6 @@ class FuncionarioPerfilTurmaDisciplinasView(APIView):
 
         Returns:
             Disciplinas da turma, ou ausência de conteúdo.
-
-        Raises:
-            httpx.HTTPError: Quando a chamada ao sidecar falha.
         """
         response = _validar_disciplinas_funcionario(
             login,
@@ -777,7 +806,7 @@ class FuncionarioPerfilTurmaDisciplinasView(APIView):
         return Response(data)
 
 
-class FuncionarioPerfilTurmaDisciplinasPlanejamentoView(APIView):
+class FuncionarioPerfilTurmaDisciplinasPlanejamentoView(ProfessoresAPIView):
     """Retorna disciplinas de planejamento do funcionário na turma."""
 
     @extend_schema(
@@ -805,9 +834,6 @@ class FuncionarioPerfilTurmaDisciplinasPlanejamentoView(APIView):
 
         Returns:
             Disciplinas da turma, ou ausência de conteúdo.
-
-        Raises:
-            httpx.HTTPError: Quando a chamada ao sidecar falha.
         """
         response = _validar_disciplinas_funcionario(
             login,
@@ -844,7 +870,7 @@ def _validar_disciplinas_funcionario(
     return None
 
 
-class ProfessorBuscarPorRfView(APIView):
+class ProfessorBuscarPorRfView(ProfessoresAPIView):
     """Retorna dados resumidos de professor."""
 
     @extend_schema(
@@ -875,9 +901,6 @@ class ProfessorBuscarPorRfView(APIView):
 
         Returns:
             Dados resumidos do professor, ou ausência de conteúdo.
-
-        Raises:
-            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
         """
         if not codigo_rf.strip():
             return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
@@ -900,7 +923,7 @@ class ProfessorBuscarPorRfView(APIView):
         return Response(ProfessorBuscarPorRfSerializer(data).data)
 
 
-class FuncionariosBuscarPorListaRfView(APIView):
+class FuncionariosBuscarPorListaRfView(ProfessoresAPIView):
     """Retorna professores pelos RFs informados."""
 
     @extend_schema(
@@ -920,7 +943,6 @@ class FuncionariosBuscarPorListaRfView(APIView):
 
         Raises:
             ValidationError: Quando a lista de RFs informada é inválida.
-            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
         """
         serializer = ListaStringSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -930,7 +952,7 @@ class FuncionariosBuscarPorListaRfView(APIView):
         return Response(ProfessorBuscarPorRfSerializer(data, many=True).data)
 
 
-class EscolaFuncionariosCargoView(APIView):
+class EscolaFuncionariosCargoView(ProfessoresAPIView):
     """Retorna funcionários da escola filtrados por cargo."""
 
     @extend_schema(
@@ -952,9 +974,6 @@ class EscolaFuncionariosCargoView(APIView):
 
         Returns:
             Funcionários no cargo informado, ou ausência de conteúdo.
-
-        Raises:
-            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
         """
         if not codigo_ue.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
@@ -969,7 +988,7 @@ class EscolaFuncionariosCargoView(APIView):
         return Response(FuncionarioEscolaSerializer(data, many=True).data)
 
 
-class EscolaFuncionariosCargosView(APIView):
+class EscolaFuncionariosCargosView(ProfessoresAPIView):
     """Retorna funcionários da escola filtrados por cargos."""
 
     @extend_schema(
@@ -1001,9 +1020,6 @@ class EscolaFuncionariosCargosView(APIView):
 
         Returns:
             Funcionários nos cargos informados, ou ausência de conteúdo.
-
-        Raises:
-            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
         """
         if not codigo_ue.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
@@ -1012,11 +1028,11 @@ class EscolaFuncionariosCargosView(APIView):
         if data is None:
             return Response(status=204)
         if not _is_lista_dicionarios(data):
-            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(FuncionarioCargoSerializer(data, many=True).data)
 
 
-class EscolaFuncionariosFuncoesAtividadesView(APIView):
+class EscolaFuncionariosFuncoesAtividadesView(ProfessoresAPIView):
     """Retorna funcionários da escola por funções atividades."""
 
     @extend_schema(
@@ -1051,9 +1067,6 @@ class EscolaFuncionariosFuncoesAtividadesView(APIView):
 
         Returns:
             Funcionários nas funções atividades, ou ausência de conteúdo.
-
-        Raises:
-            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
         """
         if not codigo_ue.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
@@ -1069,13 +1082,13 @@ class EscolaFuncionariosFuncoesAtividadesView(APIView):
         if data is None:
             return Response(status=204)
         if not _is_lista_dicionarios(data):
-            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(
             FuncionarioFuncaoAtividadeSerializer(data, many=True).data
         )
 
 
-class EscolaFuncionariosFuncoesExternasView(APIView):
+class EscolaFuncionariosFuncoesExternasView(ProfessoresAPIView):
     """Retorna funcionários da escola por funções externas."""
 
     @extend_schema(
@@ -1110,9 +1123,6 @@ class EscolaFuncionariosFuncoesExternasView(APIView):
 
         Returns:
             Funcionários nas funções externas, ou ausência de conteúdo.
-
-        Raises:
-            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
         """
         if not codigo_ue.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
@@ -1126,13 +1136,13 @@ class EscolaFuncionariosFuncoesExternasView(APIView):
         if data is None:
             return Response(status=204)
         if not _is_lista_dicionarios(data):
-            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(
             FuncionarioFuncaoExternaSerializer(data, many=True).data
         )
 
 
-class EscolaFuncionariosFuncaoExternaView(APIView):
+class EscolaFuncionariosFuncaoExternaView(ProfessoresAPIView):
     """Retorna funcionários da escola por uma função externa específica."""
 
     @extend_schema(
@@ -1154,9 +1164,6 @@ class EscolaFuncionariosFuncaoExternaView(APIView):
 
         Returns:
             Funcionários da função externa, ou ausência de conteúdo.
-
-        Raises:
-            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
         """
         if not codigo_ue.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
@@ -1169,11 +1176,11 @@ class EscolaFuncionariosFuncaoExternaView(APIView):
         if not data:
             return Response(status=204)
         if not _is_lista_dicionarios(data):
-            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(FuncionarioEscolaSerializer(data, many=True).data)
 
 
-class EscolaFuncionariosFuncaoAtividadeView(APIView):
+class EscolaFuncionariosFuncaoAtividadeView(ProfessoresAPIView):
     """Retorna funcionários da escola por uma função atividade específica."""
 
     @extend_schema(
@@ -1201,9 +1208,6 @@ class EscolaFuncionariosFuncaoAtividadeView(APIView):
 
         Returns:
             Funcionários da função atividade, ou ausência de conteúdo.
-
-        Raises:
-            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
         """
         if not codigo_ue.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
@@ -1216,13 +1220,13 @@ class EscolaFuncionariosFuncaoAtividadeView(APIView):
         if not data:
             return Response(status=204)
         if not _is_lista_dicionarios(data):
-            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(
             FuncionarioFuncaoAtividadeUeSerializer(data, many=True).data
         )
 
 
-class EscolaFuncionariosView(APIView):
+class EscolaFuncionariosView(ProfessoresAPIView):
     """Retorna funcionários vinculados à escola."""
 
     @extend_schema(
@@ -1238,9 +1242,6 @@ class EscolaFuncionariosView(APIView):
 
         Returns:
             Funcionários vinculados à escola, ou ausência de conteúdo.
-
-        Raises:
-            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
         """
         if not codigo_ue.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
@@ -1250,7 +1251,243 @@ class EscolaFuncionariosView(APIView):
         return Response(FuncionarioEscolaSerializer(data, many=True).data)
 
 
-class ProfessorDisciplinaTurmasView(APIView):
+class FuncionariosUeView(ProfessoresAPIView):
+    """Retorna funcionários vinculados à unidade educacional."""
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna funcionários vinculados à unidade educacional."),
+        request=BuscarFuncionariosPorUeSerializer,
+        responses={
+            200: FuncionarioUeLegadoSerializer(many=True),
+            204: None,
+            400: dict,
+            404: str,
+        },
+    )
+    def post(self, request: Request, codigo_ue: str) -> Response:
+        """Retorna funcionários vinculados à unidade educacional.
+
+        Args:
+            request: Requisição HTTP recebida pela API.
+            codigo_ue: Código da unidade educacional usada na consulta.
+
+        Returns:
+            Funcionários vinculados à unidade, ou ausência de conteúdo.
+        """
+        if not codigo_ue.strip():
+            return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
+        serializer = BuscarFuncionariosPorUeSerializer(data=request.data or {})
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=400)
+        data = services.get_funcionarios_ue(
+            codigo_ue,
+            serializer.validated_data,
+        )
+        if data is None:
+            return Response(status=204)
+        if not isinstance(data, list):
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
+        if not data:
+            return Response(
+                "Não foram encontrados funcionários.",
+                status=404,
+            )
+        return Response(FuncionarioUeLegadoSerializer(data, many=True).data)
+
+
+class FuncionariosCargoView(ProfessoresAPIView):
+    """Retorna funcionários vinculados ao cargo."""
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna funcionários vinculados ao cargo."),
+        responses={200: FuncionarioEscolaSerializer(many=True), 204: None},
+    )
+    def get(self, _request: Request, codigo_cargo: str) -> Response:
+        """Retorna funcionários vinculados ao cargo.
+
+        Args:
+            codigo_cargo: Código do cargo usado na consulta.
+
+        Returns:
+            Funcionários vinculados ao cargo, ou ausência de conteúdo.
+        """
+        if not codigo_cargo.strip():
+            return detail_response("É necessário informar o codigoCargo.")
+        data = services.get_funcionarios_por_cargo(codigo_cargo)
+        if data is None:
+            return Response(status=204)
+        if not isinstance(data, list):
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
+        return Response(FuncionarioEscolaSerializer(data, many=True).data)
+
+
+class FuncionariosSupervisoresView(ProfessoresAPIView):
+    """Retorna supervisores vinculados à DRE."""
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna supervisores vinculados à DRE."),
+        request=ListaStringSerializer,
+        responses={
+            200: SupervisorLegadoSerializer(many=True),
+            400: str,
+            404: str,
+        },
+    )
+    def post(self, request: Request, codigo_dre: str) -> Response:
+        """Retorna supervisores vinculados à DRE.
+
+        Args:
+            request: Requisição HTTP recebida pela API.
+            codigo_dre: Código EOL da DRE consultada.
+
+        Returns:
+            Supervisores vinculados à DRE informada.
+        """
+        serializer = ListaStringSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                _MSG_LISTA_SUPERVISORES_OBRIGATORIA,
+                status=400,
+            )
+        data = services.get_supervisores_por_dre(
+            codigo_dre,
+            serializer.validated_data,
+        )
+        if data is None:
+            return Response(status=204)
+        if not isinstance(data, list):
+            return Response(
+                {
+                    "detail": _MSG_RESPOSTA_INVALIDA_API,
+                    "api": data,
+                },
+                status=502,
+            )
+        if not data:
+            return Response(_MSG_SUPERVISORES_NAO_ENCONTRADOS, status=404)
+        return Response(SupervisorLegadoSerializer(data, many=True).data)
+
+
+class FuncionariosPerfisView(ProfessoresAPIView):
+    """Retorna usuários SGP por perfil."""
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna usuários SGP por perfil."),
+        parameters=_PARAMS_FUNCIONARIOS_PERFIL,
+        responses={
+            200: FuncionarioSgpLegadoSerializer(many=True),
+            400: str,
+            404: str,
+        },
+    )
+    def get(self, request: Request, id_perfil: str) -> Response:
+        """Retorna usuários SGP por perfil.
+
+        Args:
+            request: Requisição com filtros de perfil.
+            id_perfil: Perfil usado na consulta.
+
+        Returns:
+            Usuários SGP encontrados para o perfil.
+        """
+        if not id_perfil.strip():
+            return detail_response(_MSG_PERFIL_OBRIGATORIO)
+        params = {
+            "codigo_dre": (
+                request.query_params.get("CodigoDre")
+                or request.query_params.get("codigo_dre")
+            ),
+            "codigo_ue": (
+                request.query_params.get("CodigoUe")
+                or request.query_params.get("codigo_ue")
+            ),
+            "codigo_rf": (
+                request.query_params.get("CodigoRf")
+                or request.query_params.get("codigo_rf")
+            ),
+            "nome_servidor": (
+                request.query_params.get("NomeServidor")
+                or request.query_params.get("nome_servidor")
+            ),
+        }
+        params = {chave: valor for chave, valor in params.items() if valor}
+        data = services.get_usuarios_sgp_por_perfil(id_perfil, params)
+        if data is None:
+            return Response(status=204)
+        if not isinstance(data, list):
+            return Response(data, status=400)
+        return Response(FuncionarioSgpLegadoSerializer(data, many=True).data)
+
+
+class FuncionariosPerfisDreView(ProfessoresAPIView):
+    """Retorna funcionários SGP por perfil e DRE."""
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna funcionários SGP por perfil e DRE."),
+        parameters=[
+            _PARAM_CODIGO_UE_LEGADO,
+            _PARAM_CODIGO_RF_LEGADO,
+            _PARAM_NOME_SERVIDOR_LEGADO,
+        ],
+        responses={
+            200: FuncionarioSgpLegadoSerializer(many=True),
+            400: str,
+            404: str,
+        },
+    )
+    def get(
+        self,
+        request: Request,
+        id_perfil: str,
+        codigo_dre: str,
+    ) -> Response:
+        """Retorna funcionários SGP por perfil e DRE.
+
+        Args:
+            request: Requisição com filtros de perfil.
+            id_perfil: Perfil usado na consulta.
+            codigo_dre: DRE usada na consulta.
+
+        Returns:
+            Funcionários SGP encontrados para a DRE.
+        """
+        if not id_perfil.strip():
+            return detail_response(_MSG_PERFIL_OBRIGATORIO)
+        if not codigo_dre.strip():
+            return detail_response("É necessário informar o codigoDre.")
+        params = {
+            "codigo_ue": (
+                request.query_params.get("CodigoUe")
+                or request.query_params.get("codigo_ue")
+            ),
+            "codigo_rf": (
+                request.query_params.get("CodigoRf")
+                or request.query_params.get("codigo_rf")
+            ),
+            "nome_servidor": (
+                request.query_params.get("NomeServidor")
+                or request.query_params.get("nome_servidor")
+            ),
+        }
+        params = {chave: valor for chave, valor in params.items() if valor}
+        data = services.get_funcionarios_sgp_por_perfil_dre(
+            id_perfil,
+            codigo_dre,
+            params,
+        )
+        if data is None:
+            return Response(status=204)
+        if not isinstance(data, list):
+            return Response(data, status=400)
+        return Response(FuncionarioSgpLegadoSerializer(data, many=True).data)
+
+
+class ProfessorDisciplinaTurmasView(ProfessoresAPIView):
     """Retorna turmas atribuídas ao professor."""
 
     @extend_schema(
@@ -1286,7 +1523,6 @@ class ProfessorDisciplinaTurmasView(APIView):
 
         Raises:
             ValidationError: Quando as turmas informadas são inválidas.
-            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
         """
         if not codigo_rf.strip():
             return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
@@ -1302,11 +1538,11 @@ class ProfessorDisciplinaTurmasView(APIView):
         if data is None:
             return Response(status=204)
         if not _is_lista_turmas(data):
-            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(ProfessorTurmaSerializer(data, many=True).data)
 
 
-class ProfessorTurmasView(APIView):
+class ProfessorTurmasView(ProfessoresAPIView):
     """Retorna turmas atribuídas ao professor."""
 
     @extend_schema(
@@ -1325,9 +1561,6 @@ class ProfessorTurmasView(APIView):
 
         Returns:
             Turmas atribuídas ao professor, ou ausência de conteúdo.
-
-        Raises:
-            httpx.HTTPError: Quando a chamada a um dos sidecares falha.
         """
         if not codigo_rf.strip():
             return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
@@ -1339,7 +1572,7 @@ class ProfessorTurmasView(APIView):
         )
 
 
-class FuncionarioPerfilTurmasView(APIView):
+class FuncionarioPerfilTurmasView(ProfessoresAPIView):
     """Retorna abrangência de turmas do funcionário."""
 
     @extend_schema(
@@ -1358,14 +1591,11 @@ class FuncionarioPerfilTurmasView(APIView):
 
         Returns:
             Abrangência de turmas, ou ausência de conteúdo.
-
-        Raises:
-            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
         """
         if not login.strip():
             return detail_response("É necessário informar o login.")
         if not id_perfil.strip():
-            return detail_response("É necessário informar o perfil.")
+            return detail_response(_MSG_PERFIL_OBRIGATORIO)
         params = _abrangencia_temporaria(request)
         data = services.get_abrangencia_funcionario_perfil(
             login,
@@ -1382,7 +1612,7 @@ class FuncionarioPerfilTurmasView(APIView):
         return Response(data)
 
 
-class FuncionariosTurmasView(APIView):
+class FuncionariosTurmasView(ProfessoresAPIView):
     """Retorna abrangência de turmas para unidades."""
 
     @extend_schema(
@@ -1402,7 +1632,6 @@ class FuncionariosTurmasView(APIView):
 
         Raises:
             ValidationError: Quando a lista de UEs informada é inválida.
-            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
         """
         serializer = ListaStringSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -1412,7 +1641,7 @@ class FuncionariosTurmasView(APIView):
         return Response(data)
 
 
-class FuncionariosBuscarTurmasElegiveisView(APIView):
+class FuncionariosBuscarTurmasElegiveisView(ProfessoresAPIView):
     """Retorna turmas elegíveis para cópia."""
 
     @extend_schema(
@@ -1429,9 +1658,6 @@ class FuncionariosBuscarTurmasElegiveisView(APIView):
 
         Returns:
             Turmas elegíveis, ou ausência de conteúdo.
-
-        Raises:
-            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
         """
         payload = cast(dict[str, Any], request.data)
         data = services.get_turmas_elegiveis(payload)
@@ -1440,7 +1666,7 @@ class FuncionariosBuscarTurmasElegiveisView(APIView):
         return Response(data)
 
 
-class FuncionariosView(APIView):
+class FuncionariosView(ProfessoresAPIView):
     """Retorna funcionários por filtros básicos."""
 
     @extend_schema(
@@ -1457,9 +1683,6 @@ class FuncionariosView(APIView):
 
         Returns:
             Funcionários encontrados, ou ausência de conteúdo.
-
-        Raises:
-            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
         """
         payload = cast(dict[str, Any], request.data)
         data = services.get_funcionarios(payload)
@@ -1473,7 +1696,7 @@ class FuncionariosView(APIView):
         return Response(data)
 
 
-class ProfessorBuscarPorRfDreUeView(APIView):
+class ProfessorBuscarPorRfDreUeView(ProfessoresAPIView):
     """Retorna dados resumidos de professor por RF, DRE e UE."""
 
     @extend_schema(
@@ -1516,9 +1739,6 @@ class ProfessorBuscarPorRfDreUeView(APIView):
 
         Returns:
             Dados resumidos do professor, ou ausência de conteúdo.
-
-        Raises:
-            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
         """
         if not codigo_rf.strip():
             return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
@@ -1537,7 +1757,7 @@ class ProfessorBuscarPorRfDreUeView(APIView):
         return Response(ProfessorBuscarPorRfSerializer(data).data)
 
 
-class ProfessoresBuscarPorListaRfAnoView(APIView):
+class ProfessoresBuscarPorListaRfAnoView(ProfessoresAPIView):
     """Retorna professores pelos RFs informados no ano letivo."""
 
     @extend_schema(
@@ -1558,7 +1778,6 @@ class ProfessoresBuscarPorListaRfAnoView(APIView):
 
         Raises:
             ValidationError: Quando a lista de RFs informada é inválida.
-            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
         """
         if isinstance(request.data, list) and not request.data:
             return detail_response("É necessário informar ao menos um RF.")
@@ -1573,7 +1792,7 @@ class ProfessoresBuscarPorListaRfAnoView(APIView):
         return Response(ProfessorBuscarPorRfSerializer(data, many=True).data)
 
 
-class ProfessorEhEmeiView(APIView):
+class ProfessorEhEmeiView(ProfessoresAPIView):
     """Retorna indicação de vínculo do professor com EMEI."""
 
     @extend_schema(
@@ -1589,9 +1808,6 @@ class ProfessorEhEmeiView(APIView):
 
         Returns:
             Indicador booleano de vínculo com EMEI.
-
-        Raises:
-            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
         """
         if not codigo_rf.strip():
             return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
@@ -1599,7 +1815,7 @@ class ProfessorEhEmeiView(APIView):
         return Response(data)
 
 
-class ProfessorAutoCompleteView(APIView):
+class ProfessorAutoCompleteView(ProfessoresAPIView):
     """Lista professores para autocomplete por DRE e ano letivo."""
 
     @extend_schema(
@@ -1639,9 +1855,6 @@ class ProfessorAutoCompleteView(APIView):
 
         Returns:
             Professores encontrados, ou ausência de conteúdo.
-
-        Raises:
-            httpx.HTTPError: Quando a chamada ao sidecar de professores falha.
         """
         if not dre_id.strip():
             return detail_response(_MSG_DRE_ID_OBRIGATORIO)
@@ -1662,11 +1875,11 @@ class ProfessorAutoCompleteView(APIView):
         if not data:
             return Response([])
         if not _is_lista_dicionarios(data):
-            return detail_response(_MSG_RESPOSTA_INVALIDA_SIDECAR, 502)
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(ProfessorAutoCompleteSerializer(data, many=True).data)
 
 
-class ProfessorBuscaTurmasAtribuidasEscolaView(APIView):
+class ProfessorBuscaTurmasAtribuidasEscolaView(ProfessoresAPIView):
     """Retorna turmas atribuídas ao professor na escola."""
 
     @extend_schema(
@@ -1696,9 +1909,6 @@ class ProfessorBuscaTurmasAtribuidasEscolaView(APIView):
 
         Returns:
             Turmas atribuídas ao professor na escola, ou ausência de conteúdo.
-
-        Raises:
-            httpx.HTTPError: Quando a chamada a um dos sidecares falha.
         """
         if not codigo_rf or not codigo_rf.strip():
             return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
@@ -1717,7 +1927,7 @@ class ProfessorBuscaTurmasAtribuidasEscolaView(APIView):
         )
 
 
-class BuscaTurmasAtribuidasProfessoresEscolaView(APIView):
+class BuscaTurmasAtribuidasProfessoresEscolaView(ProfessoresAPIView):
     """Retorna turmas atribuídas a professores na escola."""
 
     @extend_schema(
@@ -1743,9 +1953,6 @@ class BuscaTurmasAtribuidasProfessoresEscolaView(APIView):
 
         Returns:
             Turmas atribuídas a professores na escola, ou ausência de conteúdo.
-
-        Raises:
-            httpx.HTTPError: Quando a chamada a um dos sidecares falha.
         """
         if not codigo_eol_escola.strip():
             return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
@@ -1760,7 +1967,7 @@ class BuscaTurmasAtribuidasProfessoresEscolaView(APIView):
         )
 
 
-class ProfessorBuscarTurmasAtribuidasView(APIView):
+class ProfessorBuscarTurmasAtribuidasView(ProfessoresAPIView):
     """Retorna turmas atribuídas ao professor."""
 
     @extend_schema(
@@ -1786,9 +1993,6 @@ class ProfessorBuscarTurmasAtribuidasView(APIView):
 
         Returns:
             Turmas atribuídas ao professor, ou ausência de conteúdo.
-
-        Raises:
-            httpx.HTTPError: Quando a chamada a um dos sidecares falha.
         """
         if not codigo_rf.strip():
             return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)

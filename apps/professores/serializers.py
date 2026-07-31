@@ -62,9 +62,17 @@ class NomeServidorSerializer(serializers.Serializer):
 class BuscarFuncionariosPorUeSerializer(serializers.Serializer):
     """Filtros do POST de funcionários por UE (contrato legado)."""
 
-    CodigoUE = serializers.CharField(required=False, allow_blank=True)
-    CodigoRF = serializers.CharField(required=False, allow_blank=True)
-    NomeServidor = serializers.CharField(required=False, allow_blank=True)
+    codigosRfs = serializers.ListField(  # noqa: N815
+        child=TextoEstritoField(allow_blank=False),
+        required=False,
+        allow_empty=True,
+        default=list,
+    )
+    filtro = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="",
+    )
 
 
 @extend_schema_serializer(component_name="buscar_turmas_elegiveis")
@@ -98,15 +106,36 @@ class DisciplinaTurmaAtribuidaSerializer(serializers.Serializer):
     def get_codCompTerritorioSaber(  # noqa: N802
         self, obj: dict[str, Any]
     ) -> int | None:
-        """Retorna código de território saber."""
+        """Retorna código de território saber.
+
+        Args:
+            obj: Dados da disciplina.
+
+        Returns:
+            Código encontrado quando houver valor.
+        """
         return obj.get("codigo_componente_territorio_saber") or None
 
     def get_tipoEscola(self, obj: dict[str, Any]) -> str | None:  # noqa: N802
-        """Retorna tipo de escola."""
+        """Retorna tipo de escola.
+
+        Args:
+            obj: Dados da disciplina.
+
+        Returns:
+            Tipo de escola encontrado.
+        """
         return obj.get("tipo_escola")
 
     def get_professor(self, _obj: dict[str, Any]) -> None:
-        """Retorna professor da disciplina."""
+        """Retorna professor da disciplina.
+
+        Args:
+            _obj: Dados da disciplina.
+
+        Returns:
+            Valor nulo para o campo.
+        """
         return None
 
 
@@ -125,11 +154,25 @@ class DisciplinaTurmaAgrupamentoSerializer(DisciplinaTurmaAtribuidaSerializer):
     def get_codCompTerritorioSaber(  # noqa: N802
         self, obj: dict[str, Any]
     ) -> int:
-        """Retorna código de território saber."""
+        """Retorna código de território saber.
+
+        Args:
+            obj: Dados da disciplina.
+
+        Returns:
+            Código encontrado ou zero.
+        """
         return obj.get("codigo_componente_territorio_saber") or 0
 
     def get_tipoEscola(self, _obj: dict[str, Any]) -> None:  # noqa: N802
-        """Retorna tipo de escola conforme contrato legado."""
+        """Retorna tipo de escola.
+
+        Args:
+            _obj: Dados da disciplina.
+
+        Returns:
+            Valor nulo para o campo.
+        """
         return None
 
 
@@ -197,11 +240,25 @@ class TurmaAbrangenciaLegadoSerializer(serializers.Serializer):
     )
 
     def get_tipoTurma(self, _obj: Any) -> int:  # noqa: N802
-        """Retorna tipo de turma padrão."""
+        """Retorna tipo de turma.
+
+        Args:
+            _obj: Dados da turma.
+
+        Returns:
+            Tipo de turma padrão.
+        """
         return 0
 
     def get_dataInicioTurma(self, _obj: Any) -> None:  # noqa: N802
-        """Retorna data de início sempre nula."""
+        """Retorna data de início.
+
+        Args:
+            _obj: Dados da turma.
+
+        Returns:
+            Valor nulo para o campo.
+        """
         return None
 
 
@@ -268,8 +325,162 @@ class AbrangenciaLegadoSerializer(serializers.Serializer):
 class TurmasAtribuidasLegadoSerializer(serializers.Serializer):
     """Serializa turmas atribuídas no contrato legado."""
 
+    def _valor(self, item: dict[str, Any], *campos: str) -> Any:
+        """Retorna o primeiro valor encontrado.
+
+        Args:
+            item: Dados usados na busca.
+            *campos: Campos consultados em ordem.
+
+        Returns:
+            Primeiro valor encontrado.
+        """
+        for campo in campos:
+            valor = item.get(campo)
+            if valor is not None:
+                return valor
+        return None
+
+    def _obter_dre(
+        self,
+        item: dict[str, Any],
+        dres: dict[str, dict[str, Any]],
+        codigo_dre: Any,
+    ) -> tuple[str, dict[str, Any]]:
+        """Retorna a DRE agrupada.
+
+        Args:
+            item: Dados usados na composição.
+            dres: DREs já agrupadas.
+            codigo_dre: Código usado como chave.
+
+        Returns:
+            Chave e dados agrupados da DRE.
+        """
+        chave_dre = str(codigo_dre) if codigo_dre else "__sem_dre__"
+        dre = dres.setdefault(
+            chave_dre,
+            {
+                "abreviacao": self._valor(item, "dre_abreviacao", "dre_abrev"),
+                "codigo": codigo_dre,
+                "nome": item.get("dre"),
+                "ues": [],
+            },
+        )
+        return chave_dre, dre
+
+    def _obter_ue(
+        self,
+        item: dict[str, Any],
+        ues_por_dre: dict[tuple[str, str], dict[str, Any]],
+        dre: dict[str, Any],
+        chave_dre: str,
+        codigo_ue: Any,
+    ) -> dict[str, Any]:
+        """Retorna a UE agrupada.
+
+        Args:
+            item: Dados usados na composição.
+            ues_por_dre: UEs já agrupadas por DRE.
+            dre: Dados agrupados da DRE.
+            chave_dre: Chave da DRE.
+            codigo_ue: Código usado como chave.
+
+        Returns:
+            Dados agrupados da UE.
+        """
+        chave_ue = (chave_dre, str(codigo_ue))
+        ue = ues_por_dre.get(chave_ue)
+        if ue is not None:
+            return ue
+
+        ue = {
+            "codigo": codigo_ue,
+            "nome": item.get("ue"),
+            "codTipoEscola": self._valor(
+                item, "codigo_tipo_escola", "cod_tipo_escola"
+            ),
+            "turmas": [],
+        }
+        ues_por_dre[chave_ue] = ue
+        cast(list[dict[str, Any]], dre["ues"]).append(ue)
+        return ue
+
+    def _montar_turma(
+        self,
+        item: dict[str, Any],
+        codigo_turma: Any,
+    ) -> dict[str, Any]:
+        """Monta uma turma atribuída.
+
+        Args:
+            item: Dados usados na composição.
+            codigo_turma: Código da turma.
+
+        Returns:
+            Turma no formato de resposta.
+        """
+        return {
+            "ano": item.get("ano"),
+            "anoLetivo": item.get("ano_letivo"),
+            "codigo": codigo_turma,
+            "tipoTurma": 0,
+            "modalidade": item.get("modalidade"),
+            "codigoModalidade": self._valor(
+                item, "codigo_modalidade", "cod_modalidade"
+            )
+            or 0,
+            "nomeTurma": item.get("nome_turma"),
+            "semestre": item.get("semestre"),
+            "duracaoTurno": item.get("duracao_turno"),
+            "tipoTurno": item.get("tipo_turno"),
+            "dataFim": None,
+            "ehistorico": False,
+            "ensinoEspecial": False,
+            "etapaEJA": 0,
+            "serieEnsino": None,
+            "dataInicioTurma": None,
+            "extinta": False,
+            "situacao": None,
+            "ueCodigo": None,
+        }
+
+    def _ordenar_dres(
+        self,
+        dres: dict[str, dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Ordena DREs, UEs e turmas.
+
+        Args:
+            dres: DREs agrupadas para ordenação.
+
+        Returns:
+            DREs ordenadas.
+        """
+        for dre in dres.values():
+            ues = cast(list[dict[str, Any]], dre["ues"])
+            ues.sort(key=lambda ue: str(ue.get("codigo") or ""))
+            for ue in ues:
+                turmas = cast(list[dict[str, Any]], ue["turmas"])
+                turmas.sort(
+                    key=lambda turma: (
+                        turma.get("codigo") is None,
+                        turma.get("codigo") or 0,
+                    )
+                )
+        return sorted(
+            dres.values(), key=lambda dre: str(dre.get("codigo") or "")
+        )
+
     def to_representation(self, instance: Any) -> Any:
-        """Agrupa turmas por DRE e UE."""
+        """Agrupa turmas por DRE e UE.
+
+        Args:
+            instance: Dados recebidos para representação.
+
+        Returns:
+            Dados agrupados quando houver lista de entrada.
+        """
         if not isinstance(instance, list):
             return instance
 
@@ -280,63 +491,33 @@ class TurmasAtribuidasLegadoSerializer(serializers.Serializer):
         for item in instance:
             if not isinstance(item, dict):
                 continue
-            codigo_dre = item.get("codigo_dre")
-            codigo_ue = item.get("codigo_escola")
+            codigo_dre = self._valor(item, "codigo_dre", "cod_dre")
+            codigo_ue = self._valor(
+                item, "codigo_escola", "cod_escola", "cod_ue"
+            )
             if not codigo_ue:
                 continue
 
-            chave_dre = str(codigo_dre) if codigo_dre else "__sem_dre__"
-            dre = dres.setdefault(
+            chave_dre, dre = self._obter_dre(item, dres, codigo_dre)
+            ue = self._obter_ue(
+                item,
+                ues_por_dre,
+                dre,
                 chave_dre,
-                {
-                    "abreviacao": item.get("dre_abreviacao"),
-                    "codigo": codigo_dre,
-                    "nome": item.get("dre"),
-                    "ues": [],
-                },
+                codigo_ue,
             )
-            chave_ue = (chave_dre, str(codigo_ue))
-            ue = ues_por_dre.get(chave_ue)
-            if ue is None:
-                ue = {
-                    "codigo": codigo_ue,
-                    "nome": item.get("ue"),
-                    "codTipoEscola": item.get("codigo_tipo_escola"),
-                    "turmas": [],
-                }
-                ues_por_dre[chave_ue] = ue
-                dre["ues"].append(ue)
 
-            chave_turma = (chave_dre, str(codigo_ue), item.get("codigo_turma"))
+            codigo_turma = self._valor(item, "codigo_turma", "cod_turma")
+            chave_turma = (chave_dre, str(codigo_ue), codigo_turma)
             if chave_turma in turmas_por_ue:
                 continue
             turmas_por_ue.add(chave_turma)
 
-            ue["turmas"].append(
-                {
-                    "ano": item.get("ano"),
-                    "anoLetivo": item.get("ano_letivo"),
-                    "codigo": item.get("codigo_turma"),
-                    "tipoTurma": 0,
-                    "modalidade": item.get("modalidade"),
-                    "codigoModalidade": item.get("codigo_modalidade") or 0,
-                    "nomeTurma": item.get("nome_turma"),
-                    "semestre": item.get("semestre"),
-                    "duracaoTurno": item.get("duracao_turno"),
-                    "tipoTurno": item.get("tipo_turno"),
-                    "dataFim": None,
-                    "ehistorico": False,
-                    "ensinoEspecial": False,
-                    "etapaEJA": 0,
-                    "serieEnsino": None,
-                    "dataInicioTurma": None,
-                    "extinta": False,
-                    "situacao": None,
-                    "ueCodigo": None,
-                }
+            cast(list[dict[str, Any]], ue["turmas"]).append(
+                self._montar_turma(item, codigo_turma)
             )
 
-        return {"abrangencia": None, "dres": list(dres.values())}
+        return {"abrangencia": None, "dres": self._ordenar_dres(dres)}
 
 
 class TurmaElegivelLegadoSerializer(serializers.Serializer):
@@ -358,9 +539,8 @@ class FuncionarioLegadoSerializer(serializers.Serializer):
     """Serializa funcionário no contrato legado."""
 
     cd_Cargo = serializers.SerializerMethodField()
-    codigoFuncaoAtividade = serializers.IntegerField(
-        source="codigo_funcao_atividade",
-        default=0,
+    codigoFuncaoAtividade = serializers.SerializerMethodField(
+        method_name="get_codigo_funcao_atividade",
     )
     codigoRf = serializers.CharField(
         source="codigo_rf",
@@ -387,8 +567,91 @@ class FuncionarioLegadoSerializer(serializers.Serializer):
     )
 
     def get_cd_Cargo(self, _obj: Any) -> int:  # noqa: N802
-        """Retorna cargo padrão."""
+        """Retorna cargo.
+
+        Args:
+            _obj: Dados do funcionário.
+
+        Returns:
+            Cargo padrão.
+        """
         return 0
+
+    def get_codigo_funcao_atividade(self, obj: dict[str, Any]) -> int:
+        """Retorna função de atividade.
+
+        Args:
+            obj: Dados do funcionário.
+
+        Returns:
+            Código da função de atividade.
+        """
+        return int(obj.get("codigo_funcao_atividade") or 0)
+
+
+class FuncionarioUeLegadoSerializer(FuncionarioLegadoSerializer):
+    """Serializa funcionário por UE no contrato legado."""
+
+    def get_codigo_funcao_atividade(self, _obj: dict[str, Any]) -> int:
+        """Retorna função de atividade.
+
+        Args:
+            _obj: Dados do funcionário.
+
+        Returns:
+            Função de atividade padrão.
+        """
+        return 0
+
+
+class FuncionarioSgpLegadoSerializer(serializers.Serializer):
+    """Serializa funcionário SGP no contrato legado."""
+
+    cd_Cargo = serializers.SerializerMethodField()
+    codigoFuncaoAtividade = serializers.SerializerMethodField()
+    codigoRf = serializers.CharField(
+        source="codigo_rf",
+        allow_null=True,
+        default=None,
+    )
+    funcaoExterno = serializers.IntegerField(
+        source="funcao_externo",
+        default=0,
+    )
+    login = serializers.CharField(allow_null=True, default=None)
+    nomeServidor = serializers.CharField(
+        source="nome_servidor",
+        allow_null=True,
+        default=None,
+    )
+    tipoFuncaoExterno = serializers.IntegerField(
+        source="tipo_funcao_externo",
+        default=0,
+    )
+
+    def get_cd_Cargo(self, obj: dict[str, Any]) -> int:  # noqa: N802
+        """Retorna cargo do vínculo.
+
+        Args:
+            obj: Dados do funcionário.
+
+        Returns:
+            Código do cargo.
+        """
+        return int(obj.get("cd_cargo") or obj.get("codigo_cargo") or 0)
+
+    def get_codigoFuncaoAtividade(  # noqa: N802
+        self, obj: dict[str, Any]
+    ) -> int:
+        """Retorna função de atividade.
+
+        Args:
+            obj: Dados do funcionário.
+
+        Returns:
+            Código da função de atividade.
+        """
+        return int(obj.get("codigo_funcao_atividade") or 0)
 
 
 class ProfessorBuscarPorRfSerializer(serializers.Serializer):
@@ -424,6 +687,13 @@ class FuncionarioCargoSerializer(serializers.Serializer):
     cargoId = serializers.IntegerField(source="cargo_id")
 
 
+class SupervisorLegadoSerializer(serializers.Serializer):
+    """Serializa supervisor no contrato legado."""
+
+    codigoRF = serializers.CharField(source="codigo_rf")
+    nomeServidor = serializers.CharField(source="nome_servidor")
+
+
 class FuncionarioFuncaoAtividadeSerializer(serializers.Serializer):
     """Serializa vínculo de funcionário com função atividade."""
 
@@ -457,12 +727,25 @@ class FuncionarioFuncaoAtividadeUeSerializer(serializers.Serializer):
     tipoFuncaoExterno = serializers.IntegerField(source="tipo_funcao_externo")
 
     def get_login(self, _obj: Any) -> None:
-        """Retorna `login` sempre nulo."""
-        # A consulta legada por função não fornece login.
+        """Retorna login.
+
+        Args:
+            _obj: Dados do funcionário.
+
+        Returns:
+            Valor nulo para o campo.
+        """
         return None
 
     def get_cd_cargo(self, obj: Any) -> int:
-        """Converta o código do cargo para inteiro, usando zero como padrão."""
+        """Retorna código do cargo.
+
+        Args:
+            obj: Dados do funcionário.
+
+        Returns:
+            Código do cargo convertido.
+        """
         valor = obj.get("codigo_cargo") if isinstance(obj, dict) else None
         if valor in (None, ""):
             return 0

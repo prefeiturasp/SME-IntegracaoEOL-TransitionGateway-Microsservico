@@ -3,19 +3,12 @@
 from datetime import datetime
 from typing import Any
 
-from django.conf import settings
-
-from apps.core.http_client import ServiceClient
+from apps.core.api_clients import get_api_client
 
 _BASE = "/api/v1/alunos"
 _BASE_UES = f"{_BASE}/ues"
 
-_client = ServiceClient(
-    base_url=settings.SIDECAR_ALUNOS_URL,
-    dominio="alunos",
-    api_key=settings.SIDECAR_ALUNOS_API_KEY,
-    api_key_header=settings.SIDECAR_ALUNOS_API_KEY_HEADER,
-)
+_client = get_api_client("alunos")
 
 
 def get_informacoes_aluno(codigo_aluno: str) -> Any:
@@ -25,11 +18,11 @@ def get_informacoes_aluno(codigo_aluno: str) -> Any:
         codigo_aluno: Código EOL do aluno.
 
     Returns:
-        Payload retornado pelo sidecar, ou ``None`` quando não houver corpo.
+        Payload retornado pela API, ou ``None`` quando não houver corpo.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     resp = _client.get(f"{_BASE}/{codigo_aluno}/informacoes")
     resp.raise_for_status()
@@ -43,11 +36,11 @@ def get_necessidades_especiais_aluno(codigo_aluno: str) -> Any:
         codigo_aluno: Código EOL do aluno.
 
     Returns:
-        Lista de necessidades especiais retornada pelo sidecar.
+        Lista de necessidades especiais retornada pela API.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     resp = _client.get(f"{_BASE}/{codigo_aluno}/necessidades-especiais")
     resp.raise_for_status()
@@ -74,8 +67,8 @@ def buscar_alunos_ativos_autocomplete(
         Lista de alunos encontrados ou lista vazia.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     params: dict[str, Any] = {
         "aluno_codigo": aluno_codigo,
@@ -119,8 +112,8 @@ def get_alunos_autocomplete_ue(
         Lista de alunos encontrados ou lista vazia.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     params: dict[str, Any] = {"limite": limite}
     if codigo_turmas:
@@ -159,8 +152,8 @@ def get_dados_acompanhamento_escolar(
         Lista de dados de acompanhamento ou lista vazia.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     params: dict[str, Any] = {}
     if codigo_aluno:
@@ -196,11 +189,11 @@ def get_turmas_aluno_com_historico(
         tipo_turma: Exclui turmas do tipo programa quando verdadeiro.
 
     Returns:
-        Lista de turmas retornada pelo sidecar.
+        Lista de turmas retornada pela API.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     resp = _client.get(
         f"{_BASE}/{codigo_aluno}/turmas/anos_letivos/{ano_letivo}"
@@ -222,11 +215,11 @@ def listar_alunos_por_ano(
         codigos_aluno: Códigos EOL dos alunos.
 
     Returns:
-        Lista de alunos retornada pelo sidecar.
+        Lista de alunos retornada pela API.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     params: dict[str, Any] = {"codigos_aluno": codigos_aluno}
     resp = _client.get(
@@ -254,8 +247,8 @@ def get_quantidade_matriculados_cc(
         Lista de quantidades agregadas ou lista vazia.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     params: dict[str, Any] = {
         "componentes_curriculares": componentes_curriculares
@@ -294,8 +287,8 @@ def get_quantidade_matriculados(
         Lista de quantidades agregadas ou lista vazia.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     params: dict[str, Any] = {}
     if dre_codigo:
@@ -323,15 +316,115 @@ def get_responsavel_resumido(cpf_responsavel: str) -> Any:
         cpf_responsavel: CPF do responsável.
 
     Returns:
-        Payload retornado pelo sidecar, ou ``None`` quando não houver corpo.
+        Payload retornado pela API, ou ``None`` quando não houver corpo.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     resp = _client.get(f"{_BASE}/responsaveis/{cpf_responsavel}/resumido")
     resp.raise_for_status()
     return _client.json_or_none(resp)
+
+
+def get_dados_responsavel(cpf_responsavel: str) -> Any:
+    """Retorna os dados do responsável e dos alunos vinculados.
+
+    Args:
+        cpf_responsavel: CPF do responsável.
+
+    Returns:
+        Lista de vínculos encontrados.
+
+    Raises:
+        httpx.HTTPStatusError: Se o serviço retornar status de erro.
+        httpx.RequestError: Se o serviço estiver inacessível.
+    """
+    resp = _client.get(f"{_BASE}/responsaveis/{cpf_responsavel}/contrato")
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
+def atualizar_dados_responsavel(
+    codigo_aluno: str,
+    cpf_responsavel: str,
+    payload: dict[str, Any],
+) -> bool:
+    """Atualiza os dados cadastrais do responsável.
+
+    Args:
+        codigo_aluno: Código EOL do aluno.
+        cpf_responsavel: CPF do responsável.
+        payload: Dados cadastrais informados para atualização.
+
+    Returns:
+        Indicador de atualização do vínculo.
+
+    Raises:
+        httpx.HTTPStatusError: Se o serviço retornar status de erro.
+        httpx.RequestError: Se o serviço estiver inacessível.
+    """
+    resp = _client.post(
+        f"{_BASE}/{codigo_aluno}/responsaveis/{cpf_responsavel}",
+        payload=payload,
+    )
+    resp.raise_for_status()
+    return bool(_client.json_or_none(resp))
+
+
+def atualizar_dados_responsavel_busca_ativa(
+    codigo_aluno: str,
+    cpf_responsavel: str,
+    payload: dict[str, Any],
+) -> bool:
+    """Atualiza os contatos do responsável no fluxo de busca ativa.
+
+    Args:
+        codigo_aluno: Código EOL do aluno.
+        cpf_responsavel: CPF do responsável.
+        payload: Dados de contato informados para atualização.
+
+    Returns:
+        Indicador de atualização do vínculo.
+
+    Raises:
+        httpx.HTTPStatusError: Se o serviço retornar status de erro.
+        httpx.RequestError: Se o serviço estiver inacessível.
+    """
+    resp = _client.put(
+        f"{_BASE}/{codigo_aluno}/responsaveis/{cpf_responsavel}",
+        payload=payload,
+    )
+    resp.raise_for_status()
+    return bool(_client.json_or_none(resp))
+
+
+def get_nomes_alunos(
+    codigos_alunos: list[str],
+    ano_letivo: int | None = None,
+) -> Any:
+    """Retorna nomes e matrículas-turma dos alunos.
+
+    Args:
+        codigos_alunos: Códigos EOL dos alunos.
+        ano_letivo: Ano letivo usado como filtro opcional.
+
+    Returns:
+        Lista de nomes e vínculos encontrados.
+
+    Raises:
+        httpx.HTTPStatusError: Se o serviço retornar status de erro.
+        httpx.RequestError: Se o serviço estiver inacessível.
+    """
+    payload: dict[str, Any] = {"codigos_alunos": codigos_alunos}
+    if ano_letivo is not None:
+        payload["ano_letivo"] = ano_letivo
+    resp = _client.post(
+        f"{_BASE}/obter-nomes-alunos/contrato",
+        payload=payload,
+    )
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
 
 
 def get_responsaveis(
@@ -372,11 +465,11 @@ def get_filiacao_aluno(codigo_aluno: str) -> Any:
         codigo_aluno: Código EOL do aluno.
 
     Returns:
-        Lista de responsáveis retornada pelo sidecar.
+        Lista de responsáveis retornada pela API.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     resp = _client.get(f"{_BASE}/{codigo_aluno}/responsaveis/filiacao")
     resp.raise_for_status()
@@ -393,8 +486,8 @@ def get_informacoes_alunos_turma(codigo_turma: str) -> Any:
         Lista de alunos da turma, ou lista vazia quando não houver registros.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     resp = _client.get(f"{_BASE}/{codigo_turma}/turma/informacoes")
     resp.raise_for_status()
@@ -533,7 +626,7 @@ def get_matriculas_turmas_aluno(
     data_aula_ticks: str | int | None = None,
     ano_letivo: str | int | None = None,
 ) -> Any:
-    """Retorna as matrículas-turma do aluno consultando o sidecar.
+    """Retorna as matrículas-turma do aluno consultando a API.
 
     Args:
         codigo_aluno: Código EOL do aluno.
@@ -605,11 +698,11 @@ def get_turmas_aluno(codigo_aluno: str) -> Any:
         codigo_aluno: Código do aluno.
 
     Returns:
-        Lista de turmas retornada pelo sidecar.
+        Lista de turmas retornada pela API.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     resp = _client.get(f"{_BASE}/{codigo_aluno}/turmas/")
     resp.raise_for_status()
@@ -631,11 +724,11 @@ def get_alunos_da_ue(
         codigo_eol: Código EOL usado para filtrar um aluno.
 
     Returns:
-        Lista de alunos retornada pelo sidecar.
+        Lista de alunos retornada pela API.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     params: dict[str, str] = {}
     if nome_aluno:
@@ -660,13 +753,13 @@ def get_turmas_aluno_com_programa(codigo_aluno: str) -> Any:
         codigo_aluno: Código do aluno.
 
     Returns:
-        Lista de turmas (regulares e de programa) retornada pelo sidecar.
-        Lista vazia quando o sidecar responde 4xx (código inválido como
+        Lista de turmas (regulares e de programa) retornada pela API.
+        Lista vazia quando a API responde 4xx (código inválido como
         ``"00000"`` ou aluno sem turmas).
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar erro de servidor (5xx).
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar erro de servidor (5xx).
+        httpx.RequestError: Se a API estiver inacessível.
     """
     resp = _client.get(
         f"{_BASE}/{codigo_aluno}/turmas/",
@@ -693,11 +786,11 @@ def get_turmas_aluno_por_situacao(
         tipo_turma: Indicador booleano (``true``/``false``).
 
     Returns:
-        Lista de turmas retornada pelo sidecar.
+        Lista de turmas retornada pela API.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     resp = _client.get(
         f"{_BASE}/{codigo_aluno}/turmas/anos_letivos/{ano_letivo}"
@@ -715,11 +808,11 @@ def get_alunos_ativos_turma(codigo_turma: str) -> Any:
         codigo_turma: Código EOL da turma.
 
     Returns:
-        Lista de alunos ativos retornada pelo sidecar.
+        Lista de alunos ativos retornada pela API.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     resp = _client.get(f"{_BASE}/turmas/{codigo_turma}/ativos")
     resp.raise_for_status()
@@ -739,11 +832,11 @@ def get_alunos_ativos_turma_periodo(
         data_referencia_inicio: Data inicial opcional da consulta.
 
     Returns:
-        Lista de alunos ativos retornada pelo sidecar.
+        Lista de alunos ativos retornada pela API.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     params = (
         {"data_referencia_inicio": data_referencia_inicio}
@@ -782,8 +875,8 @@ def get_total_alunos_ativos_periodo(
         Total retornado pelo serviço de alunos.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     params: dict[str, Any] = {}
     if ue_id:
@@ -815,12 +908,12 @@ def get_codigos_turmas_regulares_aluno(
 
     Returns:
         Códigos de turma ordenados por data da situação decrescente. Lista
-        vazia quando o sidecar responde 4xx (código inválido ou sem
+        vazia quando a API responde 4xx (código inválido ou sem
         vínculos).
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar erro de servidor (5xx).
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar erro de servidor (5xx).
+        httpx.RequestError: Se a API estiver inacessível.
     """
     params: dict[str, Any] = {}
     if data_referencia:
@@ -859,8 +952,8 @@ def montar_codigos_turmas_regulares_aluno(
         Códigos de turma que atendem ao recorte, na ordem do Alunos-MS.
 
     Raises:
-        httpx.HTTPStatusError: Se algum sidecar retornar erro de servidor.
-        httpx.RequestError: Se algum sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se alguma API retornar erro de servidor.
+        httpx.RequestError: Se alguma API estiver inacessível.
     """
     from apps.pedagogico import services as pedagogico_services
 
@@ -884,11 +977,11 @@ def listar_alunos(codigos_aluno: list[str]) -> Any:
         codigos_aluno: Códigos dos alunos usados no filtro.
 
     Returns:
-        Lista de alunos retornada pelo sidecar.
+        Lista de alunos retornada pela API.
 
     Raises:
-        httpx.HTTPStatusError: Se o sidecar retornar status de erro.
-        httpx.RequestError: Se o sidecar estiver inacessível.
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
     """
     params: dict[str, Any] = {"codigos_aluno": codigos_aluno}
     resp = _client.get(f"{_BASE}/alunos", params=params)

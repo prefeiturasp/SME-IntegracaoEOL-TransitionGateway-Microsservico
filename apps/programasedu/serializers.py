@@ -1,7 +1,7 @@
 """Serializers do domínio de programas educacionais."""
 
 from datetime import date, datetime, timedelta, timezone
-from typing import Any
+from typing import Any, cast
 
 from rest_framework import serializers
 
@@ -22,10 +22,10 @@ class DataMatriculaField(serializers.DateTimeField):
         if isinstance(value, str):
             value = datetime.fromisoformat(value.replace("Z", "+00:00"))
         if not isinstance(value, datetime):
-            return super().to_representation(value)
+            return cast(str | None, super().to_representation(value))
         value = value.replace(tzinfo=None)
         texto = value.isoformat(timespec="milliseconds")
-        return texto.rstrip("0").rstrip(".")
+        return cast(str, texto.rstrip("0").rstrip("."))
 
 
 class LegadoDateTimeField(serializers.CharField):

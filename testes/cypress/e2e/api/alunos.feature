@@ -57,36 +57,36 @@ Funcionalidade: API - Alunos
     E o retorno deve ser vazio
 
   Cenário: Validar turmas do aluno por código
-    Dado que possuo acesso à API de turmas
+    Dado que possuo acesso à API de alunos
     Quando realizo consulta de turmas do aluno por código
     Então retorna o status 200
     E o retorno deve conter informações das turmas do aluno
 
   Cenário: Validar turmas PAP por ano letivo e escola
-    Dado que possuo acesso à API de turmas
+    Dado que possuo acesso à API de alunos
     Quando realizo consulta de turmas PAP por ano letivo e escola
     Então retorna o status 200
     E o retorno deve conter lista de turmas PAP
 
   Cenário: Validar componentes de turmas de programa do aluno
-    Dado que possuo acesso à API de turmas
+    Dado que possuo acesso à API de alunos
     Quando realizo consulta de componentes das turmas de programa do aluno
     Então retorna o status 200
     E o retorno deve conter componentes das turmas de programa
 
   Cenário: Validar verificação de alunos em turmas PAP
-    Dado que possuo acesso à API de turmas
+    Dado que possuo acesso à API de alunos
     Quando realizo consulta de verificação de alunos em turmas PAP
     Então retorna o status 200
 
   Cenário: Validar turmas PAP por ano letivo e escola
-    Dado que possuo acesso à API de turmas
+    Dado que possuo acesso à API de alunos
     Quando realizo consulta de turmas PAP por ano letivo e escola
     Então retorna o status 200
     E o retorno deve conter lista de turmas PAP
 
   Cenário: Validar componentes de turmas de programa do aluno
-    Dado que possuo acesso à API de turmas
+    Dado que possuo acesso à API de alunos
     Quando realizo consulta de componentes das turmas de programa do aluno
     Então retorna o status 200
     E o retorno deve conter componentes das turmas de programa
