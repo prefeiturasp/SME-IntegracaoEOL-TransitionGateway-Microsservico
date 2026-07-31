@@ -12,7 +12,6 @@ from apps.professores.serializers import (
     FuncionarioFuncaoAtividadeSerializer,
     FuncionarioFuncaoExternaSerializer,
     FuncionarioLegadoSerializer,
-    FuncionarioSgpLegadoSerializer,
     ProfessorAtribuicaoTurmaDisciplinaSerializer,
     ProfessorAutoCompleteSerializer,
     ProfessorStatusAtribuicaoSerializer,
