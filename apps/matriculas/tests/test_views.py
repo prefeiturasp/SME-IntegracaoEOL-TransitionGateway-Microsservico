@@ -49,27 +49,6 @@ class MatriculasUrlsTest(SimpleTestCase):
 
         self.assertEqual(match.kwargs, {"codigo_escola": "100001"})
 
-    def test_rota_escolas_quantidade_alunos_sem_barra(self) -> None:
-        match = resolve("/api/escolas/100001/alunos/quantidade")
-
-        self.assertEqual(match.kwargs, {"codigo_escola": "100001"})
-
-    def test_rota_escolas_matriculas_aluno(self) -> None:
-        match = resolve("/api/escolas/100001/aluno/1234567/matriculas/")
-
-        self.assertEqual(
-            match.kwargs,
-            {"codigo_escola": "100001", "codigo_aluno": "1234567"},
-        )
-
-    def test_rota_escolas_matriculas_aluno_sem_barra(self) -> None:
-        match = resolve("/api/escolas/100001/aluno/1234567/matriculas")
-
-        self.assertEqual(
-            match.kwargs,
-            {"codigo_escola": "100001", "codigo_aluno": "1234567"},
-        )
-
     def test_rota_escolas_matriculas_aluno_plural(self) -> None:
         match = resolve("/api/escolas/100001/alunos/1234567/matriculas/")
 
@@ -459,7 +438,7 @@ class QuantidadeAlunosPorTurmaEscolaViewTest(SimpleTestCase):
 class MatriculasAlunoEscolaViewTest(SimpleTestCase):
     """Valida o endpoint legado E24."""
 
-    _URL = "/api/escolas/100001/aluno/1234567/matriculas/"
+    _URL = "/api/escolas/100001/alunos/1234567/matriculas/"
 
     @patch("apps.matriculas.views.services.get_matriculas_aluno_escola")
     def test_200_retorna_contrato_legado(
@@ -507,7 +486,7 @@ class MatriculasAlunoEscolaViewTest(SimpleTestCase):
         mock_service.return_value = []
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/400496/aluno/8577981/matriculas")
+        resp = client.get("/api/escolas/400496/alunos/8577981/matriculas/")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
@@ -519,7 +498,7 @@ class MatriculasAlunoEscolaViewTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/100001/aluno/abc/matriculas/")
+        resp = client.get("/api/escolas/100001/alunos/abc/matriculas/")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
