@@ -3274,7 +3274,7 @@ class Lote5ResponsaveisENomesViewTest(SimpleTestCase):
     """Valida os contratos públicos de responsáveis e nomes."""
 
     @patch("apps.alunos.views.services.get_dados_responsavel")
-    def test_get_responsavel_retorna_os_27_campos(
+    def test_get_responsavel_retorna_os_28_campos(
         self, mock_service: MagicMock
     ) -> None:
         """Verifica nomes, ordem e conversões do contrato legado."""
@@ -3307,6 +3307,7 @@ class Lote5ResponsaveisENomesViewTest(SimpleTestCase):
                 "numero_telefone_comercial": "",
                 "tipo_turno_telefone_comercial": None,
                 "autoriza_envio_sms": "S",
+                "data_nascimento_mae": None,
             }
         ]
         client = _cliente_autenticado()
@@ -3346,9 +3347,11 @@ class Lote5ResponsaveisENomesViewTest(SimpleTestCase):
                 "numeroTelefoneComercial",
                 "tipoTurnoTelefoneComercial",
                 "autorizaEnvioSMS",
+                "dataNascimentoMae",
             ],
         )
         self.assertEqual(resp.json()[0]["digitoRG"], "4   ")
+        self.assertIsNone(resp.json()[0]["dataNascimentoMae"])
         self.assertEqual(
             resp.json()[0]["dataNascimentoAluno"],
             "2011-08-11T00:00:00",
