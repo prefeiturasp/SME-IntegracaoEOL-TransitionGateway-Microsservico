@@ -700,6 +700,9 @@ class DadosResponsavelSerializer(serializers.Serializer):
     autorizaEnvioSMS = serializers.CharField(  # NOSONAR
         source="autoriza_envio_sms", allow_null=True
     )
+    dataNascimentoMae = DatetimeLegadoField(  # NOSONAR
+        source="data_nascimento_mae", default=None
+    )
 
 
 class AtualizarResponsavelRequestSerializer(serializers.Serializer):
