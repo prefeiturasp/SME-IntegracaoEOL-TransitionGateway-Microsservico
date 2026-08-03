@@ -1778,6 +1778,70 @@ class GetTurmasAtribuidasProfessorTest(SimpleTestCase):
         self.assertEqual(result, [])
 
 
+class GetAdministradoresSgpEscolaTest(SimpleTestCase):
+    """Valida serviço de administradores SGP da escola."""
+
+    @patch("apps.professores.services._client")
+    def test_chama_endpoint_correto(self, mock_client: MagicMock) -> None:
+        """Valida path do sidecar."""
+        mock_resp = MagicMock()
+        mock_client.get.return_value = mock_resp
+        mock_client.json_or_none.return_value = ["7821972", "7980302"]
+
+        result = services.get_administradores_sgp_escola("019465")
+
+        mock_client.get.assert_called_once_with(
+            "/api/v1/escolas/019465/administrador-sgp"
+        )
+        self.assertEqual(result, ["7821972", "7980302"])
+
+    @patch("apps.professores.services._client")
+    def test_retorna_lista_vazia_quando_sidecar_retorna_none(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Retorna [] quando sidecar retorna None."""
+        mock_client.json_or_none.return_value = None
+
+        result = services.get_administradores_sgp_escola("019465")
+
+        self.assertEqual(result, [])
+
+    @patch("apps.professores.services._client")
+    def test_retorna_lista_vazia_quando_sidecar_retorna_dict(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Retorna [] quando sidecar retorna objeto ao invés de array."""
+        mock_client.json_or_none.return_value = {"erro": "contrato"}
+
+        result = services.get_administradores_sgp_escola("019465")
+
+        self.assertEqual(result, [])
+
+    @patch("apps.professores.services._client")
+    def test_filtra_valores_vazios(self, mock_client: MagicMock) -> None:
+        """Remove valores None e vazios da lista."""
+        mock_client.json_or_none.return_value = [
+            "7821972",
+            None,
+            "",
+            "7980302",
+        ]
+
+        result = services.get_administradores_sgp_escola("019465")
+
+        self.assertEqual(result, ["7821972", "7980302"])
+
+    @patch("apps.professores.services._client")
+    def test_converte_para_string(self, mock_client: MagicMock) -> None:
+        """Converte RFs numéricos para string."""
+        mock_client.json_or_none.return_value = [7821972, 7980302]
+
+        result = services.get_administradores_sgp_escola("019465")
+
+        self.assertEqual(result, ["7821972", "7980302"])
+        self.assertIsInstance(result[0], str)
+
+
 class GetDisciplinasFuncionarioTurmaTest(SimpleTestCase):
     """Valida seleção de fonte por abrangência."""
 
