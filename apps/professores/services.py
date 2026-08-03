@@ -1234,7 +1234,8 @@ def verificar_atribuicao_professor_turma(
         ``True`` quando o professor tem atribuição na turma.
     """
     resp = _client.get(
-        f"{_BASE}/{codigo_rf}/turmas/{codigo_turma}/verificar-atribuicao/?data_consulta={data}"
+        f"{_BASE}/{codigo_rf}/turmas/{codigo_turma}/"
+        f"atribuicao/verificar/data/?data_consulta={data}"
     )
     return bool(_client.json_or_none(resp))
 
