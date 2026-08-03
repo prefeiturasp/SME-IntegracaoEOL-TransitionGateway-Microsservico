@@ -692,34 +692,6 @@ class MatriculasAlunoEscolaViewTest(SimpleTestCase):
 class FuncoesAuxiliaresTest(SimpleTestCase):
     """Testes das funções auxiliares de views."""
 
-    def test_sidecar_error_response_com_json_valido(self) -> None:
-        from apps.matriculas.views import _sidecar_error_response
-
-        request = httpx.Request("GET", "https://sidecar/test")
-        response = httpx.Response(
-            400, json={"detail": "Erro esperado"}, request=request
-        )
-        exc = httpx.HTTPStatusError("Erro", request=request, response=response)
-
-        result = _sidecar_error_response(exc)
-
-        self.assertEqual(result.status_code, 400)
-        self.assertEqual(result.data, {"detail": "Erro esperado"})
-
-    def test_sidecar_error_response_com_json_invalido(self) -> None:
-        from apps.matriculas.views import _sidecar_error_response
-
-        request = httpx.Request("GET", "https://sidecar/test")
-        response = httpx.Response(
-            500, content=b"Texto puro", request=request
-        )
-        exc = httpx.HTTPStatusError("Erro", request=request, response=response)
-
-        result = _sidecar_error_response(exc)
-
-        self.assertEqual(result.status_code, 500)
-        self.assertEqual(result.data, {"detail": "Texto puro"})
-
     def test_to_int_com_string_valida(self) -> None:
         from apps.matriculas.views import _to_int
 

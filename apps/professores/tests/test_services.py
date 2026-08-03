@@ -1791,7 +1791,7 @@ class GetAdministradoresSgpEscolaTest(SimpleTestCase):
         result = services.get_administradores_sgp_escola("019465")
 
         mock_client.get.assert_called_once_with(
-            "/api/v1/escolas/019465/administrador-sgp"
+            "/api/v1/professores/escolas/019465/administrador-sgp"
         )
         self.assertEqual(result, ["7821972", "7980302"])
 
