@@ -1390,3 +1390,20 @@ def _montar_turma_atribuida_professor(
         "ano": turma.get("ano"),
         "etapaEnsino": turma.get("etapa_ensino"),
     }
+
+
+def get_administradores_sgp_escola(codigo_ue: str) -> list[str]:
+    """Retorna lista de RFs dos administradores SGP da escola.
+
+    Args:
+        codigo_ue: Código EOL da unidade educacional.
+
+    Returns:
+        Lista de RFs/logins dos administradores SGP (ADM UE e ADM DRE).
+        Retorna lista vazia se não houver administradores ou em caso de erro.
+    """
+    resp = _client.get(f"{_BASE_ESCOLAS}/{codigo_ue}/administrador-sgp")
+    data = _client.json_or_none(resp)
+    if not isinstance(data, list):
+        return []
+    return [str(rf) for rf in data if rf]

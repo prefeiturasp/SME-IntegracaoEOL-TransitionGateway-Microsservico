@@ -3,6 +3,7 @@
 from django.urls import path
 
 from apps.professores.views import (
+    AdministradorSgpEscolaView,
     BuscaTurmasAtribuidasProfessoresEscolaView,
     EscolaFuncionariosCargosView,
     EscolaFuncionariosCargoView,
@@ -197,6 +198,10 @@ urlpatterns = [
     path(
         "escolas/<str:codigo_ue>/funcionarios/",
         EscolaFuncionariosView.as_view(),
+    ),
+    path(
+        "escolas/<str:codigo_ue>/administrador-sgp/",
+        AdministradorSgpEscolaView.as_view(),
     ),
     path(
         "professores/<str:codigo_rf>/escolas/<str:codigo_eol_escola>/turmas/anos_letivos/<int:ano_letivo>/",

@@ -2150,6 +2150,69 @@ class ProfessorBuscarPorRfDreUeViewTest(SimpleTestCase):
         )
 
 
+class AdministradorSgpEscolaViewTest(SimpleTestCase):
+    """Valida endpoint de administradores SGP da escola."""
+
+    @patch("apps.professores.views.services.get_administradores_sgp_escola")
+    def test_200_retorna_lista_de_rfs(self, mock_service: MagicMock) -> None:
+        """Retorna 200 com array de RFs."""
+        mock_service.return_value = ["7821972", "7980302"]
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/escolas/019465/administrador-sgp/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), ["7821972", "7980302"])
+        mock_service.assert_called_once_with("019465")
+
+    @patch("apps.professores.views.services.get_administradores_sgp_escola")
+    def test_200_retorna_array_vazio_quando_sem_dados(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Retorna 200 com array vazio quando não há administradores."""
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/escolas/999999/administrador-sgp/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+
+    @patch("apps.professores.views.services.get_administradores_sgp_escola")
+    def test_200_permite_duplicatas(self, mock_service: MagicMock) -> None:
+        """Mantém duplicatas como no legado."""
+        mock_service.return_value = ["6940773", "6940773", "7385005"]
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/escolas/108500/administrador-sgp/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.json(), ["6940773", "6940773", "7385005"]
+        )
+
+    def test_400_quando_codigo_ue_vazio(self) -> None:
+        """Retorna 400 quando código UE é vazio."""
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/escolas/%20/administrador-sgp/")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @patch("apps.professores.views.services.get_administradores_sgp_escola")
+    def test_200_retorna_array_direto_nao_objeto(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Garante que retorna array JSON direto, não objeto."""
+        mock_service.return_value = ["1234567"]
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/escolas/019465/administrador-sgp/")
+
+        # Deve ser array, não {"items": [...]}
+        self.assertIsInstance(resp.json(), list)
+
+
 class ProfessoresBuscarPorListaRfAnoViewTest(SimpleTestCase):
     """Valida a busca de professores por lista de RF e ano."""
 

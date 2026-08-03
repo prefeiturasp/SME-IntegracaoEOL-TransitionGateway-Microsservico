@@ -33,33 +33,13 @@ urlpatterns = [
 
 escola_urlpatterns = [
     path(
-        "<str:codigo_escola>/alunos/quantidade",
-        QuantidadeAlunosPorTurmaEscolaView.as_view(),
-        name="quantidade-alunos-por-turma-escola-sem-barra",
-    ),
-    path(
         "<str:codigo_escola>/alunos/quantidade/",
         QuantidadeAlunosPorTurmaEscolaView.as_view(),
         name="quantidade-alunos-por-turma-escola",
     ),
     path(
-        "<str:codigo_escola>/aluno/<str:codigo_aluno>/matriculas/",
-        MatriculasAlunoEscolaView.as_view(),
-        name="matriculas-aluno-escola",
-    ),
-    path(
-        "<str:codigo_escola>/aluno/<str:codigo_aluno>/matriculas",
-        MatriculasAlunoEscolaView.as_view(),
-        name="matriculas-aluno-escola-sem-barra",
-    ),
-    path(
         "<str:codigo_escola>/alunos/<str:codigo_aluno>/matriculas/",
         MatriculasAlunoEscolaView.as_view(),
-        name="matriculas-aluno-escola-plural",
-    ),
-    path(
-        "<str:codigo_escola>/alunos/<str:codigo_aluno>/matriculas",
-        MatriculasAlunoEscolaView.as_view(),
-        name="matriculas-aluno-escola-plural-sem-barra",
+        name="matriculas-aluno-escola",
     ),
 ]
