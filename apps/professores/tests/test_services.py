@@ -27,7 +27,7 @@ class VerificarAtribuicaoProfessorTurmaTest(SimpleTestCase):
 
         mock_client.get.assert_called_once_with(
             "/api/v1/professores/000001/turmas/3032577/"
-            "verificar-atribuicao/?data_consulta=2026-07-28"
+            "atribuicao/verificar/data/?data_consulta=2026-07-28"
         )
         mock_client.json_or_none.assert_called_once_with(mock_response)
         self.assertIs(result, True)
