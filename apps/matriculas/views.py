@@ -11,6 +11,7 @@ from drf_spectacular.utils import (
 )
 from django.utils import timezone
 from rest_framework.request import Request
+from rest_framework.views import APIView
 
 from apps.alunos import services as alunos_services
 from apps.core.responses import Response, api_unavailable_response, detail_response
