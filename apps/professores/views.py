@@ -2002,3 +2002,34 @@ class ProfessorBuscarTurmasAtribuidasView(ProfessoresAPIView):
         return Response(
             ProfessorTurmaAtribuidaSimplificadaSerializer(data, many=True).data
         )
+
+
+class AdministradorSgpEscolaView(ProfessoresAPIView):
+    """Retorna administradores SGP da escola."""
+
+    @extend_schema(
+        tags=_TAG_ESCOLA,
+        operation_id="E01_administrador_sgp",
+        description=(
+            "Retorna lista de RFs dos administradores SGP da escola "
+            "(ADM UE e ADM DRE)."
+        ),
+        responses={
+            200: OpenApiTypes.OBJECT,
+        },
+    )
+    def get(self, request: Request, codigo_ue: str) -> Response:
+        """Retorna administradores SGP da escola.
+
+        Args:
+            request: Requisição HTTP.
+            codigo_ue: Código EOL da unidade educacional.
+
+        Returns:
+            Array de RFs dos administradores: ["7821972", "7980302", ...]
+            ou array vazio [] se não houver.
+        """
+        if not codigo_ue.strip():
+            return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
+        data = services.get_administradores_sgp_escola(codigo_ue)
+        return Response(data)
