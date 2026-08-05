@@ -20,6 +20,7 @@ from apps.professores.serializers import (
     FuncionarioUnidadeLegadoSerializer,
     ProfessorAtribuicaoInternaSerializer,
     ProfessorAtribuicaoPeriodoPathSerializer,
+    FuncionariosPerfisQuerySerializer,
     ProfessorAtribuicaoTurmaDisciplinaSerializer,
     ProfessorAutoCompleteSerializer,
     ProfessoresTitularesParametrosSerializer,
@@ -103,6 +104,42 @@ class VerificarAtribuicaoDisciplinaQuerySerializerTest(SimpleTestCase):
 
         self.assertFalse(serializer.is_valid())
         self.assertIn("territorioSaber", serializer.errors)
+
+
+class FuncionariosPerfisQuerySerializerTest(SimpleTestCase):
+    """Valida filtros de funcionários por perfil."""
+
+    def test_normaliza_aliases_legados(self) -> None:
+        serializer = FuncionariosPerfisQuerySerializer(
+            data={
+                "CodigoDre": " 108100 ",
+                "CodigoUe": " 000532 ",
+                "CodigoRf": " 7654321 ",
+                "NomeServidor": " ANA ",
+            }
+        )
+
+        self.assertTrue(serializer.is_valid())
+        self.assertEqual(
+            serializer.validated_data,
+            {
+                "codigo_dre": "108100",
+                "codigo_ue": "000532",
+                "codigo_rf": "7654321",
+                "nome_servidor": "ANA",
+            },
+        )
+
+    def test_rejeita_quando_sem_codigo_dre_ou_rf(self) -> None:
+        serializer = FuncionariosPerfisQuerySerializer(
+            data={"CodigoDre": " ", "CodigoRf": ""}
+        )
+
+        self.assertFalse(serializer.is_valid())
+        self.assertEqual(
+            serializer.errors["non_field_errors"][0],
+            FuncionariosPerfisQuerySerializer.mensagem_dre_ou_rf_obrigatorio,
+        )
 
 
 class ProfessorStatusAtribuicaoSerializerTest(SimpleTestCase):

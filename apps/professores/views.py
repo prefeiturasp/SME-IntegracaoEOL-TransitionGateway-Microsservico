@@ -31,6 +31,7 @@ from apps.professores.serializers import (
     FuncionarioFuncaoExternaSerializer,
     FuncionarioLoginSerializer,
     FuncionarioSgpLegadoSerializer,
+    FuncionariosPerfisQuerySerializer,
     FuncionarioUeLegadoSerializer,
     FuncionarioUnidadeLegadoSerializer,
     ListaStringSerializer,
@@ -92,6 +93,7 @@ _MSG_CODIGO_TURMA_OBRIGATORIO = "É necessário informar o codigoTurma."
 _MSG_DATA_VALIDA = "Deve ser informada uma data valida."
 _MSG_DISCIPLINA_ID_OBRIGATORIO = "É necessário informar o disciplinaId."
 _MSG_DATAS_TICKS_OBRIGATORIAS = "É necessário informar as datas em ticks!"
+
 
 # Parâmetros temporários usados enquanto a identidade não informa
 # a abrangência.
@@ -2033,25 +2035,15 @@ class FuncionariosPerfisView(ProfessoresAPIView):
         """
         if not id_perfil.strip():
             return detail_response(_MSG_PERFIL_OBRIGATORIO)
-        params = {
-            "codigo_dre": (
-                request.query_params.get("CodigoDre")
-                or request.query_params.get("codigo_dre")
-            ),
-            "codigo_ue": (
-                request.query_params.get("CodigoUe")
-                or request.query_params.get("codigo_ue")
-            ),
-            "codigo_rf": (
-                request.query_params.get("CodigoRf")
-                or request.query_params.get("codigo_rf")
-            ),
-            "nome_servidor": (
-                request.query_params.get("NomeServidor")
-                or request.query_params.get("nome_servidor")
-            ),
-        }
-        params = {chave: valor for chave, valor in params.items() if valor}
+        serializer = FuncionariosPerfisQuerySerializer(
+            data=request.query_params
+        )
+        if not serializer.is_valid():
+            return Response(
+                FuncionariosPerfisQuerySerializer.mensagem_dre_ou_rf_obrigatorio,
+                status=400,
+            )
+        params = cast(dict[str, Any], serializer.validated_data)
         data = services.get_usuarios_sgp_por_perfil(id_perfil, params)
         if data is None:
             return Response(status=204)

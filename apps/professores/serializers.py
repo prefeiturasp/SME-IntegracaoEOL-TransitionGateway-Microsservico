@@ -75,6 +75,63 @@ class BuscarFuncionariosPorUeSerializer(serializers.Serializer):
     )
 
 
+class FuncionariosPerfisQuerySerializer(serializers.Serializer):
+    """Normaliza e valida filtros de funcionários por perfil."""
+
+    mensagem_dre_ou_rf_obrigatorio = (
+        "O código da Dre ou código rf/login deve ser informados."
+    )
+
+    codigo_dre = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        trim_whitespace=True,
+    )
+    codigo_ue = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        trim_whitespace=True,
+    )
+    codigo_rf = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        trim_whitespace=True,
+    )
+    nome_servidor = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        trim_whitespace=True,
+    )
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        data = kwargs.get("data")
+        if data is not None:
+            kwargs["data"] = {
+                "codigo_dre": data.get("CodigoDre")
+                or data.get("codigo_dre")
+                or "",
+                "codigo_ue": data.get("CodigoUe")
+                or data.get("codigo_ue")
+                or "",
+                "codigo_rf": data.get("CodigoRf")
+                or data.get("codigo_rf")
+                or "",
+                "nome_servidor": data.get("NomeServidor")
+                or data.get("nome_servidor")
+                or "",
+            }
+        super().__init__(*args, **kwargs)
+
+    def validate(self, attrs: dict[str, str]) -> dict[str, str]:
+        """Exige DRE ou RF e remove filtros vazios."""
+        params = {chave: valor for chave, valor in attrs.items() if valor}
+        if not params.get("codigo_dre") and not params.get("codigo_rf"):
+            raise serializers.ValidationError(
+                self.mensagem_dre_ou_rf_obrigatorio
+            )
+        return params
+
+
 @extend_schema_serializer(component_name="buscar_turmas_elegiveis")
 class BuscarTurmasElegiveisSerializer(serializers.Serializer):
     """Filtros do POST de turmas elegíveis para cópia (contrato legado)."""

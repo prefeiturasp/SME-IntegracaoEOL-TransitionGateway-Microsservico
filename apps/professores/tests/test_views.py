@@ -1154,10 +1154,31 @@ class FuncionariosPerfisViewTest(SimpleTestCase):
         mock_service.return_value = "erro"
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/perfis/perfil-x/")
+        resp = client.get(
+            "/api/funcionarios/perfis/perfil-x/?CodigoDre=108100"
+        )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(resp.json(), "erro")
+        mock_service.assert_called_once_with(
+            "perfil-x",
+            {"codigo_dre": "108100"},
+        )
+
+    @patch("apps.professores.views.services.get_usuarios_sgp_por_perfil")
+    def test_400_quando_sem_codigo_dre_ou_rf(
+        self, mock_service: MagicMock
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/perfis/perfil-x/")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            "O código da Dre ou código rf/login deve ser informados.",
+        )
+        mock_service.assert_not_called()
 
     @patch(
         "apps.professores.views.services.get_funcionarios_sgp_por_perfil_dre"
