@@ -78,6 +78,21 @@ class ProfessoresUrlsTest(SimpleTestCase):
 
         self.assertEqual(match.kwargs, {"cpf": "42347206826"})
 
+    def test_preserva_codigo_dre_ue_funcionarios_unidade(self) -> None:
+        match = resolve("/api/funcionarios/unidade/108900/")
+
+        self.assertEqual(match.kwargs, {"codigo_dre_ue": "108900"})
+
+    def test_resolve_funcionarios_admins_sme(self) -> None:
+        match = resolve("/api/funcionarios/admins/sme/")
+
+        self.assertEqual(match.kwargs, {})
+
+    def test_preserva_codigo_rf_dados_sigpae(self) -> None:
+        match = resolve("/api/funcionarios/DadosSigpae/7758626/")
+
+        self.assertEqual(match.kwargs, {"codigo_rf": "7758626"})
+
     def test_resolve_funcionarios_buscar_por_lista_login(self) -> None:
         match = resolve("/api/funcionarios/BuscarPorListaLogin/")
 
@@ -2467,6 +2482,214 @@ class ProfessoresBuscarPorListaRfAnoViewTest(SimpleTestCase):
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class FuncionariosUnidadeViewTest(SimpleTestCase):
+    """Valida funcionarios por unidade."""
+
+    @patch("apps.professores.views.services.get_funcionarios_unidade")
+    def test_200_retorna_funcionarios(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [
+            {
+                "login": "16161610191",
+                "nome_servidor": "LUCAS SOUZA",
+                "perfil": "5be1e074-37d6-e911-abd6-f81654fe895d",
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/unidade/108900/",
+            ["5BE1E074-37D6-E911-ABD6-F81654FE895D"],
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.json(),
+            [
+                {
+                    "login": "16161610191",
+                    "nomeServidor": "LUCAS SOUZA",
+                    "perfil": "5be1e074-37d6-e911-abd6-f81654fe895d",
+                }
+            ],
+        )
+        mock_service.assert_called_once_with(
+            "108900",
+            ["5BE1E074-37D6-E911-ABD6-F81654FE895D"],
+        )
+
+    @patch("apps.professores.views.services.get_funcionarios_unidade")
+    def test_404_quando_lista_vazia(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/unidade/0/",
+            ["perfil"],
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(resp.json(), "Nao foram encontrados funcionarios.")
+
+    def test_400_quando_body_invalido(self) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/unidade/108900/",
+            [],
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @patch("apps.professores.views.services.get_funcionarios_unidade")
+    def test_502_quando_sidecar_retorna_objeto(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = {"erro": "contrato"}
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/unidade/108900/",
+            ["perfil"],
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+
+
+class FuncionariosAdminsSmeViewTest(SimpleTestCase):
+    """Valida administradores SME por perfis."""
+
+    @patch("apps.professores.views.services.get_funcionarios_admins_sme")
+    def test_200_retorna_array_de_strings(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = ["9521992", "9466002"]
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/admins/sme/",
+            ["EA741BF4-47EA-486D-8B88-5327521BCFC5"],
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), ["9521992", "9466002"])
+        mock_service.assert_called_once_with(
+            ["EA741BF4-47EA-486D-8B88-5327521BCFC5"]
+        )
+
+    @patch("apps.professores.views.services.get_funcionarios_admins_sme")
+    def test_200_retorna_array_vazio(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/admins/sme/",
+            ["perfil"],
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+
+    def test_400_quando_body_invalido(self) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/admins/sme/",
+            {"perfil": "x"},
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @patch("apps.professores.views.services.get_funcionarios_admins_sme")
+    def test_502_quando_sidecar_retorna_objeto(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = {"erro": "contrato"}
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/admins/sme/",
+            ["perfil"],
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+
+
+class FuncionarioDadosSigpaeViewTest(SimpleTestCase):
+    """Valida dados SIGPAE do funcionario."""
+
+    @patch("apps.professores.views.services.get_funcionario_dados_sigpae")
+    def test_200_retorna_dados_sigpae(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = {
+            "rf": "7758626",
+            "cpf": "28386997842",
+            "email": "ingrid.marcela@sme.prefeitura.sp.gov.br",
+            "cargos": [
+                {
+                    "codigo_cargo": 3239,
+                    "descricao_cargo": "PROF.ED.INF.E ENS.FUND.I",
+                    "codigo_unidade": "092223",
+                    "descricao_unidade": "MARIA ISABEL",
+                    "codigo_dre": "108800",
+                    "contrato_externo": False,
+                }
+            ],
+            "nome": "INGRID MARCELA BARBA",
+            "inexistente_eol": False,
+        }
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/DadosSigpae/7758626/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()["inexistenteEol"], False)
+        self.assertEqual(resp.json()["cargos"][0]["codigoCargo"], 3239)
+        mock_service.assert_called_once_with("7758626")
+
+    @patch("apps.professores.views.services.get_funcionario_dados_sigpae")
+    def test_preserva_erro_http_do_sidecar(
+        self, mock_service: MagicMock
+    ) -> None:
+        request = httpx.Request("GET", "http://professores")
+        response = httpx.Response(
+            601,
+            json="Sem informacoes na base de dados para o Codigo Rf informado",
+            request=request,
+        )
+        mock_service.side_effect = httpx.HTTPStatusError(
+            "erro",
+            request=request,
+            response=response,
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/DadosSigpae/0/")
+
+        self.assertEqual(resp.status_code, 601)
+        self.assertEqual(
+            resp.json(),
+            "Sem informacoes na base de dados para o Codigo Rf informado",
+        )
+
+    @patch("apps.professores.views.services.get_funcionario_dados_sigpae")
+    def test_502_quando_sidecar_retorna_lista(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/DadosSigpae/7758626/")
+
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
 
 
 class ProfessorEhEmeiViewTest(SimpleTestCase):

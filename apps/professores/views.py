@@ -22,6 +22,7 @@ from apps.professores.serializers import (
     DisciplinaTurmaAgrupamentoSerializer,
     DisciplinaTurmaAtribuidaSerializer,
     FuncionarioCargoSerializer,
+    FuncionarioDadosSigpaeSerializer,
     FuncionarioEscolaSerializer,
     FuncionarioExternoSerializer,
     FuncionarioFuncaoAtividadeSerializer,
@@ -30,6 +31,7 @@ from apps.professores.serializers import (
     FuncionarioLoginSerializer,
     FuncionarioSgpLegadoSerializer,
     FuncionarioUeLegadoSerializer,
+    FuncionarioUnidadeLegadoSerializer,
     ListaStringSerializer,
     NomeServidorSerializer,
     ProfessorAtribuicaoTurmaDisciplinaSerializer,
@@ -1039,6 +1041,136 @@ class FuncionariosBuscarPorListaLoginView(ProfessoresAPIView):
         if not _is_lista_dicionarios(data):
             return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(FuncionarioLoginSerializer(data, many=True).data)
+
+
+class FuncionariosUnidadeView(ProfessoresAPIView):
+    """Retorna funcionarios por unidade e perfis."""
+
+    parser_classes = [JSONParser, JsonPatchParser]
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna funcionarios por unidade e perfis."),
+        request=ListaStringSerializer,
+        responses={
+            200: FuncionarioUnidadeLegadoSerializer(many=True),
+            204: None,
+            400: dict,
+            404: str,
+            502: dict,
+        },
+    )
+    def post(self, request: Request, codigo_dre_ue: str) -> Response:
+        """Retorna funcionarios por unidade e perfis.
+
+        Args:
+            request: Requisicao com a lista de perfis no corpo.
+            codigo_dre_ue: Codigo da unidade ou DRE/UE usada na consulta.
+
+        Returns:
+            Funcionarios encontrados, ou ausencia de dados.
+        """
+        if not codigo_dre_ue.strip():
+            return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
+        serializer = ListaStringSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            data = services.get_funcionarios_unidade(
+                codigo_dre_ue,
+                serializer.validated_data,
+            )
+        except httpx.HTTPStatusError as exc:
+            return api_error_response_status_livre(exc)
+        if data is None:
+            return Response(status=204)
+        if not isinstance(data, list):
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
+        if not data:
+            return Response(
+                "Nao foram encontrados funcionarios.",
+                status=404,
+            )
+        if not _is_lista_dicionarios(data):
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
+        return Response(
+            FuncionarioUnidadeLegadoSerializer(data, many=True).data
+        )
+
+
+class FuncionariosAdminsSmeView(ProfessoresAPIView):
+    """Retorna administradores SME pelos perfis informados."""
+
+    parser_classes = [JSONParser, JsonPatchParser]
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna administradores SME pelos perfis informados."),
+        request=ListaStringSerializer,
+        responses={
+            200: ListaStringSerializer,
+            204: None,
+            400: dict,
+            502: dict,
+        },
+    )
+    def post(self, request: Request) -> Response:
+        """Retorna administradores SME pelos perfis informados.
+
+        Args:
+            request: Requisicao com a lista de perfis no corpo.
+
+        Returns:
+            Lista de RFs/logins dos administradores, ou ausencia de dados.
+        """
+        serializer = ListaStringSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            data = services.get_funcionarios_admins_sme(
+                serializer.validated_data
+            )
+        except httpx.HTTPStatusError as exc:
+            return api_error_response_status_livre(exc)
+        if data is None:
+            return Response(status=204)
+        if not isinstance(data, list) or not all(
+            isinstance(item, str) for item in data
+        ):
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
+        return Response(data)
+
+
+class FuncionarioDadosSigpaeView(ProfessoresAPIView):
+    """Retorna dados SIGPAE do funcionario."""
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna dados SIGPAE do funcionario."),
+        responses={
+            200: FuncionarioDadosSigpaeSerializer,
+            204: None,
+            502: dict,
+        },
+    )
+    def get(self, _request: Request, codigo_rf: str) -> Response:
+        """Retorna dados SIGPAE do funcionario.
+
+        Args:
+            codigo_rf: RF usado na consulta.
+
+        Returns:
+            Dados SIGPAE do funcionario, ou ausencia de dados.
+        """
+        if not codigo_rf.strip():
+            return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
+        try:
+            data = services.get_funcionario_dados_sigpae(codigo_rf)
+        except httpx.HTTPStatusError as exc:
+            return api_error_response_status_livre(exc)
+        if data is None:
+            return Response(status=204)
+        if not isinstance(data, dict):
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
+        return Response(FuncionarioDadosSigpaeSerializer(data).data)
 
 
 class EscolaFuncionariosCargoView(ProfessoresAPIView):

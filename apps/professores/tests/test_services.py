@@ -2155,3 +2155,59 @@ class GetAbrangenciaFuncionarioPerfilTest(SimpleTestCase):
                 "ehPerfilManual": True,
             },
         )
+
+
+class GetFuncionariosNovosContratosTest(SimpleTestCase):
+    """Valida services dos novos contratos de funcionarios."""
+
+    @patch("apps.professores.services._client")
+    def test_funcionarios_unidade_chama_path_correto(
+        self, mock_client: MagicMock
+    ) -> None:
+        mock_response = MagicMock()
+        mock_client.post.return_value = mock_response
+        mock_client.json_or_none.return_value = [
+            {"login": "16161610191", "nome_servidor": "LUCAS", "perfil": "p1"}
+        ]
+
+        result = services.get_funcionarios_unidade("108900", ["p1"])
+
+        mock_client.post.assert_called_once_with(
+            "/api/v1/professores/funcionarios/unidade/108900/",
+            payload=["p1"],
+        )
+        mock_client.json_or_none.assert_called_once_with(mock_response)
+        self.assertEqual(result, mock_client.json_or_none.return_value)
+
+    @patch("apps.professores.services._client")
+    def test_admins_sme_chama_path_correto(
+        self, mock_client: MagicMock
+    ) -> None:
+        mock_response = MagicMock()
+        mock_client.post.return_value = mock_response
+        mock_client.json_or_none.return_value = ["9521992"]
+
+        result = services.get_funcionarios_admins_sme(["perfil"])
+
+        mock_client.post.assert_called_once_with(
+            "/api/v1/professores/funcionarios/admins/sme/",
+            payload=["perfil"],
+        )
+        mock_client.json_or_none.assert_called_once_with(mock_response)
+        self.assertEqual(result, ["9521992"])
+
+    @patch("apps.professores.services._client")
+    def test_dados_sigpae_chama_path_correto(
+        self, mock_client: MagicMock
+    ) -> None:
+        mock_response = MagicMock()
+        mock_client.get.return_value = mock_response
+        mock_client.json_or_none.return_value = {"rf": "7758626"}
+
+        result = services.get_funcionario_dados_sigpae("7758626")
+
+        mock_client.get.assert_called_once_with(
+            "/api/v1/professores/funcionarios/DadosSigpae/7758626/"
+        )
+        mock_client.json_or_none.assert_called_once_with(mock_response)
+        self.assertEqual(result, {"rf": "7758626"})

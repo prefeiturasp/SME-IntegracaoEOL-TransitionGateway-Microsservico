@@ -654,6 +654,36 @@ class FuncionarioSgpLegadoSerializer(serializers.Serializer):
         return int(obj.get("codigo_funcao_atividade") or 0)
 
 
+class FuncionarioUnidadeLegadoSerializer(serializers.Serializer):
+    """Serializa funcionario por unidade no contrato legado."""
+
+    login = serializers.CharField()
+    nomeServidor = serializers.CharField(source="nome_servidor")
+    perfil = serializers.CharField()
+
+
+class FuncionarioDadosSigpaeCargoSerializer(serializers.Serializer):
+    """Serializa cargo SIGPAE do funcionario."""
+
+    codigoCargo = serializers.IntegerField(source="codigo_cargo")
+    descricaoCargo = serializers.CharField(source="descricao_cargo")
+    codigoUnidade = serializers.CharField(source="codigo_unidade")
+    descricaoUnidade = serializers.CharField(source="descricao_unidade")
+    codigoDre = serializers.CharField(source="codigo_dre")
+    contratoExterno = serializers.BooleanField(source="contrato_externo")
+
+
+class FuncionarioDadosSigpaeSerializer(serializers.Serializer):
+    """Serializa dados SIGPAE do funcionario."""
+
+    rf = serializers.CharField()
+    cpf = serializers.CharField()
+    email = serializers.EmailField(allow_blank=True, allow_null=True)
+    cargos = FuncionarioDadosSigpaeCargoSerializer(many=True)
+    nome = serializers.CharField()
+    inexistenteEol = serializers.BooleanField(source="inexistente_eol")
+
+
 class ProfessorBuscarPorRfSerializer(serializers.Serializer):
     """Serializa dados resumidos de professor."""
 
