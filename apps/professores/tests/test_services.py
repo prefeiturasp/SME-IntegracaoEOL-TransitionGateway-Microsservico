@@ -419,6 +419,59 @@ class GetProfessoresPorListaRfTest(SimpleTestCase):
         self.assertEqual(result, payload)
 
 
+class GetFuncionarioExternoTest(SimpleTestCase):
+    """Valida a busca de funcionario externo por CPF."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_correto(self, mock_get: MagicMock) -> None:
+        payload = [
+            {
+                "nome_pessoa": "NOME PESSOA",
+                "cpf": "42347206826",
+            },
+        ]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[{}]"
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_funcionario_externo("42347206826")
+
+        mock_get.assert_called_once_with(
+            "/api/v1/professores/funcionarios/"
+            "funcionario-externo/42347206826/"
+        )
+        self.assertEqual(result, payload)
+
+
+class GetFuncionariosPorListaLoginTest(SimpleTestCase):
+    """Valida a busca de funcionarios por lista de login."""
+
+    @patch.object(services._client, "post")
+    def test_chama_path_correto(self, mock_post: MagicMock) -> None:
+        payload = [
+            {
+                "login": "8970971",
+                "nome_servidor": "NOME SERVIDOR",
+                "perfil": "00000000-0000-0000-0000-000000000000",
+            },
+        ]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[{}]"
+        mock_resp.json.return_value = payload
+        mock_post.return_value = mock_resp
+
+        result = services.get_funcionarios_por_lista_login(["8970971"])
+
+        mock_post.assert_called_once_with(
+            "/api/v1/professores/funcionarios/BuscarPorListaLogin/",
+            payload=["8970971"],
+        )
+        self.assertEqual(result, payload)
+
+
 class GetFuncionariosEscolaTest(SimpleTestCase):
     """Valida a busca de funcionários por escola."""
 
@@ -539,6 +592,31 @@ class GetSupervisoresPorDreTest(SimpleTestCase):
         mock_post.assert_called_once_with(
             "/api/v1/professores/funcionarios/supervisores/108100/",
             payload=["000001"],
+        )
+        self.assertEqual(result, payload)
+
+
+class GetSupervisoresDreTest(SimpleTestCase):
+    """Valida a busca de supervisores da DRE via endpoint canonico."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_correto(self, mock_get: MagicMock) -> None:
+        payload = [
+            {
+                "codigo_rf": "7205066",
+                "nome_servidor": "NOME SERVIDOR",
+            },
+        ]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[{}]"
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_supervisores_dre("108100")
+
+        mock_get.assert_called_once_with(
+            "/api/v1/professores/funcionarios/dres/108100/supervisores/"
         )
         self.assertEqual(result, payload)
 
@@ -2077,3 +2155,59 @@ class GetAbrangenciaFuncionarioPerfilTest(SimpleTestCase):
                 "ehPerfilManual": True,
             },
         )
+
+
+class GetFuncionariosNovosContratosTest(SimpleTestCase):
+    """Valida services dos novos contratos de funcionarios."""
+
+    @patch("apps.professores.services._client")
+    def test_funcionarios_unidade_chama_path_correto(
+        self, mock_client: MagicMock
+    ) -> None:
+        mock_response = MagicMock()
+        mock_client.post.return_value = mock_response
+        mock_client.json_or_none.return_value = [
+            {"login": "16161610191", "nome_servidor": "LUCAS", "perfil": "p1"}
+        ]
+
+        result = services.get_funcionarios_unidade("108900", ["p1"])
+
+        mock_client.post.assert_called_once_with(
+            "/api/v1/professores/funcionarios/unidade/108900/",
+            payload=["p1"],
+        )
+        mock_client.json_or_none.assert_called_once_with(mock_response)
+        self.assertEqual(result, mock_client.json_or_none.return_value)
+
+    @patch("apps.professores.services._client")
+    def test_admins_sme_chama_path_correto(
+        self, mock_client: MagicMock
+    ) -> None:
+        mock_response = MagicMock()
+        mock_client.post.return_value = mock_response
+        mock_client.json_or_none.return_value = ["9521992"]
+
+        result = services.get_funcionarios_admins_sme(["perfil"])
+
+        mock_client.post.assert_called_once_with(
+            "/api/v1/professores/funcionarios/admins/sme/",
+            payload=["perfil"],
+        )
+        mock_client.json_or_none.assert_called_once_with(mock_response)
+        self.assertEqual(result, ["9521992"])
+
+    @patch("apps.professores.services._client")
+    def test_dados_sigpae_chama_path_correto(
+        self, mock_client: MagicMock
+    ) -> None:
+        mock_response = MagicMock()
+        mock_client.get.return_value = mock_response
+        mock_client.json_or_none.return_value = {"rf": "7758626"}
+
+        result = services.get_funcionario_dados_sigpae("7758626")
+
+        mock_client.get.assert_called_once_with(
+            "/api/v1/professores/funcionarios/DadosSigpae/7758626/"
+        )
+        mock_client.json_or_none.assert_called_once_with(mock_response)
+        self.assertEqual(result, {"rf": "7758626"})

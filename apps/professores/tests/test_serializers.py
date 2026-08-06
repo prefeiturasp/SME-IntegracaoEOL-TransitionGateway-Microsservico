@@ -9,10 +9,14 @@ from apps.professores.serializers import (
     DisciplinaTurmaAgrupamentoSerializer,
     DisciplinaTurmaAtribuidaSerializer,
     FuncionarioCargoSerializer,
+    FuncionarioDadosSigpaeSerializer,
+    FuncionarioExternoSerializer,
     FuncionarioFuncaoAtividadeSerializer,
     FuncionarioFuncaoExternaSerializer,
     FuncionarioLegadoSerializer,
+    FuncionarioLoginSerializer,
     FuncionarioSgpLegadoSerializer,
+    FuncionarioUnidadeLegadoSerializer,
     ProfessorAtribuicaoTurmaDisciplinaSerializer,
     ProfessorAutoCompleteSerializer,
     ProfessorStatusAtribuicaoSerializer,
@@ -166,6 +170,114 @@ class FuncionarioSerializerTest(SimpleTestCase):
         for serializer_cls, payload, esperado in casos:
             with self.subTest(serializer=serializer_cls.__name__):
                 self.assertEqual(serializer_cls(payload).data, esperado)
+
+    def test_serializa_funcionario_externo(self) -> None:
+        payload = {
+            "nome_pessoa": "NOME PESSOA",
+            "nome_pai": "NOME PAI",
+            "nome_mae": "NOME MAE",
+            "data_nascimento": "1995-01-12T00:00:00",
+            "rg": "000000043171462",
+            "cpf": "42347206826",
+            "titulo_eleitoral": "401921980116",
+            "pis_pasep": "13866991818",
+            "codigo_contrato_externo": 4796,
+            "codigo_ue": "327221",
+            "nome_ue": "JARDIM NORONHA",
+            "funcao": "PROFESSOR",
+            "tipo_funcionario": "FUNCIONARIO REDE PARCEIRA",
+        }
+
+        self.assertEqual(
+            FuncionarioExternoSerializer(payload).data,
+            {
+                "nomePessoa": "NOME PESSOA",
+                "nomePai": "NOME PAI",
+                "nomeMae": "NOME MAE",
+                "dataNascimento": "1995-01-12T00:00:00",
+                "rg": "000000043171462",
+                "cpf": "42347206826",
+                "tituloEleitoral": "401921980116",
+                "pisPasep": "13866991818",
+                "codigoContratoExterno": 4796,
+                "codigoUE": "327221",
+                "nomeUe": "JARDIM NORONHA",
+                "funcao": "PROFESSOR",
+                "tipoFuncionario": "FUNCIONARIO REDE PARCEIRA",
+            },
+        )
+
+    def test_serializa_funcionario_por_login(self) -> None:
+        payload = {
+            "login": "8970971",
+            "nome_servidor": "NOME SERVIDOR",
+            "perfil": "00000000-0000-0000-0000-000000000000",
+        }
+
+        self.assertEqual(
+            FuncionarioLoginSerializer(payload).data,
+            {
+                "login": "8970971",
+                "nomeServidor": "NOME SERVIDOR",
+                "perfil": "00000000-0000-0000-0000-000000000000",
+            },
+        )
+
+    def test_serializa_funcionario_por_unidade(self) -> None:
+        payload = {
+            "login": "16161610191",
+            "nome_servidor": "LUCAS SOUZA",
+            "perfil": "5be1e074-37d6-e911-abd6-f81654fe895d",
+        }
+
+        self.assertEqual(
+            FuncionarioUnidadeLegadoSerializer(payload).data,
+            {
+                "login": "16161610191",
+                "nomeServidor": "LUCAS SOUZA",
+                "perfil": "5be1e074-37d6-e911-abd6-f81654fe895d",
+            },
+        )
+
+    def test_serializa_dados_sigpae(self) -> None:
+        payload = {
+            "rf": "7758626",
+            "cpf": "28386997842",
+            "email": "ingrid.marcela@sme.prefeitura.sp.gov.br",
+            "cargos": [
+                {
+                    "codigo_cargo": 3239,
+                    "descricao_cargo": "PROF.ED.INF.E ENS.FUND.I",
+                    "codigo_unidade": "092223",
+                    "descricao_unidade": "MARIA ISABEL",
+                    "codigo_dre": "108800",
+                    "contrato_externo": False,
+                }
+            ],
+            "nome": "INGRID MARCELA BARBA",
+            "inexistente_eol": False,
+        }
+
+        self.assertEqual(
+            FuncionarioDadosSigpaeSerializer(payload).data,
+            {
+                "rf": "7758626",
+                "cpf": "28386997842",
+                "email": "ingrid.marcela@sme.prefeitura.sp.gov.br",
+                "cargos": [
+                    {
+                        "codigoCargo": 3239,
+                        "descricaoCargo": "PROF.ED.INF.E ENS.FUND.I",
+                        "codigoUnidade": "092223",
+                        "descricaoUnidade": "MARIA ISABEL",
+                        "codigoDre": "108800",
+                        "contratoExterno": False,
+                    }
+                ],
+                "nome": "INGRID MARCELA BARBA",
+                "inexistenteEol": False,
+            },
+        )
 
 
 class FuncionarioLegadoSerializerTest(SimpleTestCase):

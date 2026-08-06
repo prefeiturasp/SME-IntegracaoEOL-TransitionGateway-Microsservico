@@ -654,6 +654,36 @@ class FuncionarioSgpLegadoSerializer(serializers.Serializer):
         return int(obj.get("codigo_funcao_atividade") or 0)
 
 
+class FuncionarioUnidadeLegadoSerializer(serializers.Serializer):
+    """Serializa funcionario por unidade no contrato legado."""
+
+    login = serializers.CharField()
+    nomeServidor = serializers.CharField(source="nome_servidor")
+    perfil = serializers.CharField()
+
+
+class FuncionarioDadosSigpaeCargoSerializer(serializers.Serializer):
+    """Serializa cargo SIGPAE do funcionario."""
+
+    codigoCargo = serializers.IntegerField(source="codigo_cargo")
+    descricaoCargo = serializers.CharField(source="descricao_cargo")
+    codigoUnidade = serializers.CharField(source="codigo_unidade")
+    descricaoUnidade = serializers.CharField(source="descricao_unidade")
+    codigoDre = serializers.CharField(source="codigo_dre")
+    contratoExterno = serializers.BooleanField(source="contrato_externo")
+
+
+class FuncionarioDadosSigpaeSerializer(serializers.Serializer):
+    """Serializa dados SIGPAE do funcionario."""
+
+    rf = serializers.CharField()
+    cpf = serializers.CharField()
+    email = serializers.EmailField(allow_blank=True, allow_null=True)
+    cargos = FuncionarioDadosSigpaeCargoSerializer(many=True)
+    nome = serializers.CharField()
+    inexistenteEol = serializers.BooleanField(source="inexistente_eol")
+
+
 class ProfessorBuscarPorRfSerializer(serializers.Serializer):
     """Serializa dados resumidos de professor."""
 
@@ -692,6 +722,76 @@ class SupervisorLegadoSerializer(serializers.Serializer):
 
     codigoRF = serializers.CharField(source="codigo_rf")
     nomeServidor = serializers.CharField(source="nome_servidor")
+
+
+class FuncionarioExternoSerializer(serializers.Serializer):
+    """Serializa funcionario externo no contrato legado."""
+
+    nomePessoa = serializers.CharField(
+        source="nome_pessoa",
+        allow_null=True,
+        default=None,
+    )
+    nomePai = serializers.CharField(
+        source="nome_pai",
+        allow_null=True,
+        default=None,
+    )
+    nomeMae = serializers.CharField(
+        source="nome_mae",
+        allow_null=True,
+        default=None,
+    )
+    dataNascimento = serializers.CharField(
+        source="data_nascimento",
+        allow_null=True,
+        default=None,
+    )
+    rg = serializers.CharField(allow_null=True, default=None)
+    cpf = serializers.CharField(allow_null=True, default=None)
+    tituloEleitoral = serializers.CharField(
+        source="titulo_eleitoral",
+        allow_null=True,
+        default=None,
+    )
+    pisPasep = serializers.CharField(
+        source="pis_pasep",
+        allow_null=True,
+        default=None,
+    )
+    codigoContratoExterno = serializers.IntegerField(
+        source="codigo_contrato_externo",
+        allow_null=True,
+        default=None,
+    )
+    codigoUE = serializers.CharField(
+        source="codigo_ue",
+        allow_null=True,
+        default=None,
+    )
+    nomeUe = serializers.CharField(
+        source="nome_ue",
+        allow_null=True,
+        default=None,
+    )
+    funcao = serializers.CharField(allow_null=True, default=None)
+    tipoFuncionario = serializers.CharField(
+        source="tipo_funcionario",
+        allow_null=True,
+        default=None,
+    )
+
+
+class FuncionarioLoginSerializer(serializers.Serializer):
+    """Serializa funcionario por login no contrato legado."""
+
+    login = serializers.CharField(allow_null=True, default=None)
+    nomeServidor = serializers.CharField(
+        source="nome_servidor",
+        allow_null=True,
+        default=None,
+    )
+    perfil = serializers.CharField(allow_null=True, default=None)
 
 
 class FuncionarioFuncaoAtividadeSerializer(serializers.Serializer):
