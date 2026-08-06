@@ -73,6 +73,16 @@ class ProfessoresUrlsTest(SimpleTestCase):
 
         self.assertEqual(match.kwargs, {})
 
+    def test_preserva_cpf_funcionario_externo(self) -> None:
+        match = resolve("/api/funcionarios/funcionario-externo/42347206826/")
+
+        self.assertEqual(match.kwargs, {"cpf": "42347206826"})
+
+    def test_resolve_funcionarios_buscar_por_lista_login(self) -> None:
+        match = resolve("/api/funcionarios/BuscarPorListaLogin/")
+
+        self.assertEqual(match.kwargs, {})
+
     def test_preserva_codigo_ue_funcionarios_ue(self) -> None:
         match = resolve("/api/funcionarios/ue/000123/")
 
@@ -536,6 +546,29 @@ class FuncionariosBuscarPorListaRfViewTest(SimpleTestCase):
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
+    @patch("apps.professores.views.services.get_funcionarios_por_lista_login")
+    def test_aceita_content_type_json_patch(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = [
+            {
+                "login": "8970971",
+                "nome_servidor": "NOME SERVIDOR",
+                "perfil": "00000000-0000-0000-0000-000000000000",
+            },
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/BuscarPorListaLogin/",
+            data='["8970971"]',
+            content_type="application/json-patch+json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()[0]["login"], "8970971")
+        mock_service.assert_called_once_with(["8970971"])
+
     def test_400_quando_lista_vazia(self) -> None:
         client = _cliente_autenticado()
 
@@ -557,6 +590,136 @@ class FuncionariosBuscarPorListaRfViewTest(SimpleTestCase):
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class FuncionarioExternoCPFViewTest(SimpleTestCase):
+    """Valida a busca de funcionario externo por CPF."""
+
+    @patch("apps.professores.views.services.get_funcionario_externo")
+    def test_200_retorna_funcionario_externo(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = [
+            {
+                "nome_pessoa": "NOME PESSOA",
+                "nome_pai": "NOME PAI",
+                "nome_mae": "NOME MAE",
+                "data_nascimento": "1995-01-12T00:00:00",
+                "rg": "000000043171462",
+                "cpf": "42347206826",
+                "titulo_eleitoral": "401921980116",
+                "pis_pasep": "13866991818",
+                "codigo_contrato_externo": 4796,
+                "codigo_ue": "327221",
+                "nome_ue": "JARDIM NORONHA",
+                "funcao": "PROFESSOR",
+                "tipo_funcionario": "FUNCIONARIO REDE PARCEIRA",
+            },
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/funcionario-externo/42347206826/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()[0]["nomePessoa"], "NOME PESSOA")
+        self.assertEqual(resp.json()[0]["codigoUE"], "327221")
+        mock_service.assert_called_once_with("42347206826")
+
+    @patch("apps.professores.views.services.get_funcionario_externo")
+    def test_204_quando_lista_vazia(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/funcionario-externo/42347206826/")
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch("apps.professores.views.services.get_funcionario_externo")
+    def test_502_quando_sidecar_retorna_objeto(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = {"cpf": "42347206826"}
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/funcionario-externo/42347206826/")
+
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+
+
+class FuncionariosBuscarPorListaLoginViewTest(SimpleTestCase):
+    """Valida a busca de funcionarios por lista de login."""
+
+    @patch("apps.professores.views.services.get_funcionarios_por_lista_login")
+    def test_200_retorna_funcionarios(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [
+            {
+                "login": "8970971",
+                "nome_servidor": "NOME SERVIDOR",
+                "perfil": "00000000-0000-0000-0000-000000000000",
+            },
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/BuscarPorListaLogin/",
+            ["8970971"],
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.json(),
+            [
+                {
+                    "login": "8970971",
+                    "nomeServidor": "NOME SERVIDOR",
+                    "perfil": "00000000-0000-0000-0000-000000000000",
+                }
+            ],
+        )
+        mock_service.assert_called_once_with(["8970971"])
+
+    @patch("apps.professores.views.services.get_funcionarios_por_lista_login")
+    def test_204_quando_sem_conteudo(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = None
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/BuscarPorListaLogin/",
+            ["8970971"],
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_400_quando_lista_vazia(self) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/BuscarPorListaLogin/",
+            [],
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(), "É necessario informar uma lista de Logins"
+        )
+
+    @patch("apps.professores.views.services.get_funcionarios_por_lista_login")
+    def test_502_quando_sidecar_retorna_objeto(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = {"login": "8970971"}
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/BuscarPorListaLogin/",
+            ["8970971"],
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
 
 
 class EscolaFuncionariosViewTest(SimpleTestCase):
@@ -850,6 +1013,50 @@ class FuncionariosSupervisoresViewTest(SimpleTestCase):
             data=["000001"],
             content_type="application/json",
         )
+
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+
+
+class DRESupervisoresViewTest(SimpleTestCase):
+    """Valida a busca de supervisores da DRE."""
+
+    @patch("apps.professores.views.services.get_supervisores_dre")
+    def test_200_retorna_supervisores(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [
+            {
+                "codigo_rf": "7205066",
+                "nome_servidor": "NOME SERVIDOR",
+            },
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/DREs/108100/supervisores/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.json(),
+            [{"codigoRF": "7205066", "nomeServidor": "NOME SERVIDOR"}],
+        )
+        mock_service.assert_called_once_with("108100")
+
+    @patch("apps.professores.views.services.get_supervisores_dre")
+    def test_200_quando_lista_vazia(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/DREs/108100/supervisores/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+
+    @patch("apps.professores.views.services.get_supervisores_dre")
+    def test_502_quando_sidecar_retorna_objeto(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = {"codigo_rf": "7205066"}
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/DREs/108100/supervisores/")
 
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
 
@@ -2187,9 +2394,7 @@ class AdministradorSgpEscolaViewTest(SimpleTestCase):
         resp = client.get("/api/escolas/108500/administrador-sgp/")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            resp.json(), ["6940773", "6940773", "7385005"]
-        )
+        self.assertEqual(resp.json(), ["6940773", "6940773", "7385005"])
 
     def test_400_quando_codigo_ue_vazio(self) -> None:
         """Retorna 400 quando código UE é vazio."""

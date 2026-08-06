@@ -336,6 +336,35 @@ def get_professores_por_lista_rf(codigos_rf: list[str]) -> Any:
     return _client.json_or_none(resp)
 
 
+def get_funcionario_externo(cpf: str) -> Any:
+    """Retorna funcionario externo por CPF.
+
+    Args:
+        cpf: CPF usado na consulta.
+
+    Returns:
+        Lista de funcionarios externos ou ausencia de dados.
+    """
+    resp = _client.get(f"{_BASE_FUNCIONARIOS}/funcionario-externo/{cpf}/")
+    return _client.json_or_none(resp)
+
+
+def get_funcionarios_por_lista_login(logins: list[str]) -> Any:
+    """Retorna funcionarios pelos logins informados.
+
+    Args:
+        logins: Logins usados na consulta.
+
+    Returns:
+        Lista de funcionarios ou ausencia de dados.
+    """
+    resp = _client.post(
+        f"{_BASE_FUNCIONARIOS}/BuscarPorListaLogin/",
+        payload=logins,
+    )
+    return _client.json_or_none(resp)
+
+
 def get_funcionarios_escola(codigo_ue: str) -> Any:
     """Retorna funcionários vinculados à escola.
 
@@ -395,6 +424,21 @@ def get_supervisores_por_dre(
     resp = _client.post(
         f"{_BASE_FUNCIONARIOS}/supervisores/{codigo_dre}/",
         payload=codigos_supervisores,
+    )
+    return _client.json_or_none(resp)
+
+
+def get_supervisores_dre(codigo_eol_dre: str) -> Any:
+    """Retorna supervisores vinculados a DRE.
+
+    Args:
+        codigo_eol_dre: Codigo EOL da DRE consultada.
+
+    Returns:
+        Lista de supervisores ou ausencia de dados.
+    """
+    resp = _client.get(
+        f"{_BASE_FUNCIONARIOS}/dres/{codigo_eol_dre}/supervisores/"
     )
     return _client.json_or_none(resp)
 

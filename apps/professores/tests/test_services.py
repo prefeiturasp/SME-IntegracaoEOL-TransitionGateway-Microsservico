@@ -419,6 +419,59 @@ class GetProfessoresPorListaRfTest(SimpleTestCase):
         self.assertEqual(result, payload)
 
 
+class GetFuncionarioExternoTest(SimpleTestCase):
+    """Valida a busca de funcionario externo por CPF."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_correto(self, mock_get: MagicMock) -> None:
+        payload = [
+            {
+                "nome_pessoa": "NOME PESSOA",
+                "cpf": "42347206826",
+            },
+        ]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[{}]"
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_funcionario_externo("42347206826")
+
+        mock_get.assert_called_once_with(
+            "/api/v1/professores/funcionarios/"
+            "funcionario-externo/42347206826/"
+        )
+        self.assertEqual(result, payload)
+
+
+class GetFuncionariosPorListaLoginTest(SimpleTestCase):
+    """Valida a busca de funcionarios por lista de login."""
+
+    @patch.object(services._client, "post")
+    def test_chama_path_correto(self, mock_post: MagicMock) -> None:
+        payload = [
+            {
+                "login": "8970971",
+                "nome_servidor": "NOME SERVIDOR",
+                "perfil": "00000000-0000-0000-0000-000000000000",
+            },
+        ]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[{}]"
+        mock_resp.json.return_value = payload
+        mock_post.return_value = mock_resp
+
+        result = services.get_funcionarios_por_lista_login(["8970971"])
+
+        mock_post.assert_called_once_with(
+            "/api/v1/professores/funcionarios/BuscarPorListaLogin/",
+            payload=["8970971"],
+        )
+        self.assertEqual(result, payload)
+
+
 class GetFuncionariosEscolaTest(SimpleTestCase):
     """Valida a busca de funcionários por escola."""
 
@@ -539,6 +592,31 @@ class GetSupervisoresPorDreTest(SimpleTestCase):
         mock_post.assert_called_once_with(
             "/api/v1/professores/funcionarios/supervisores/108100/",
             payload=["000001"],
+        )
+        self.assertEqual(result, payload)
+
+
+class GetSupervisoresDreTest(SimpleTestCase):
+    """Valida a busca de supervisores da DRE via endpoint canonico."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_correto(self, mock_get: MagicMock) -> None:
+        payload = [
+            {
+                "codigo_rf": "7205066",
+                "nome_servidor": "NOME SERVIDOR",
+            },
+        ]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[{}]"
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_supervisores_dre("108100")
+
+        mock_get.assert_called_once_with(
+            "/api/v1/professores/funcionarios/dres/108100/supervisores/"
         )
         self.assertEqual(result, payload)
 

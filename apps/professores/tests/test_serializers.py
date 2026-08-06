@@ -9,9 +9,11 @@ from apps.professores.serializers import (
     DisciplinaTurmaAgrupamentoSerializer,
     DisciplinaTurmaAtribuidaSerializer,
     FuncionarioCargoSerializer,
+    FuncionarioExternoSerializer,
     FuncionarioFuncaoAtividadeSerializer,
     FuncionarioFuncaoExternaSerializer,
     FuncionarioLegadoSerializer,
+    FuncionarioLoginSerializer,
     FuncionarioSgpLegadoSerializer,
     ProfessorAtribuicaoTurmaDisciplinaSerializer,
     ProfessorAutoCompleteSerializer,
@@ -166,6 +168,58 @@ class FuncionarioSerializerTest(SimpleTestCase):
         for serializer_cls, payload, esperado in casos:
             with self.subTest(serializer=serializer_cls.__name__):
                 self.assertEqual(serializer_cls(payload).data, esperado)
+
+    def test_serializa_funcionario_externo(self) -> None:
+        payload = {
+            "nome_pessoa": "NOME PESSOA",
+            "nome_pai": "NOME PAI",
+            "nome_mae": "NOME MAE",
+            "data_nascimento": "1995-01-12T00:00:00",
+            "rg": "000000043171462",
+            "cpf": "42347206826",
+            "titulo_eleitoral": "401921980116",
+            "pis_pasep": "13866991818",
+            "codigo_contrato_externo": 4796,
+            "codigo_ue": "327221",
+            "nome_ue": "JARDIM NORONHA",
+            "funcao": "PROFESSOR",
+            "tipo_funcionario": "FUNCIONARIO REDE PARCEIRA",
+        }
+
+        self.assertEqual(
+            FuncionarioExternoSerializer(payload).data,
+            {
+                "nomePessoa": "NOME PESSOA",
+                "nomePai": "NOME PAI",
+                "nomeMae": "NOME MAE",
+                "dataNascimento": "1995-01-12T00:00:00",
+                "rg": "000000043171462",
+                "cpf": "42347206826",
+                "tituloEleitoral": "401921980116",
+                "pisPasep": "13866991818",
+                "codigoContratoExterno": 4796,
+                "codigoUE": "327221",
+                "nomeUe": "JARDIM NORONHA",
+                "funcao": "PROFESSOR",
+                "tipoFuncionario": "FUNCIONARIO REDE PARCEIRA",
+            },
+        )
+
+    def test_serializa_funcionario_por_login(self) -> None:
+        payload = {
+            "login": "8970971",
+            "nome_servidor": "NOME SERVIDOR",
+            "perfil": "00000000-0000-0000-0000-000000000000",
+        }
+
+        self.assertEqual(
+            FuncionarioLoginSerializer(payload).data,
+            {
+                "login": "8970971",
+                "nomeServidor": "NOME SERVIDOR",
+                "perfil": "00000000-0000-0000-0000-000000000000",
+            },
+        )
 
 
 class FuncionarioLegadoSerializerTest(SimpleTestCase):

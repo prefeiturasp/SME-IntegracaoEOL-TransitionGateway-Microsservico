@@ -7,23 +7,24 @@ from apps.institucional.views import (
     DREDetalheView,
     DREListView,
     EquipamentosView,
-    EscolasListPostView,
     EscolaDetalheView,
-    EscolasSigpaePorDREView,
+    EscolasListPostView,
     EscolasPorDREeTipoView,
     EscolasPorDREView,
-    SubprefeiturasPorEscolaView,
+    EscolasSigpaePorDREView,
+    SincronizacoesInstitucionaisView,
     SubprefeiturasPorDREView,
+    SubprefeiturasPorEscolaView,
     TiposEscolasView,
     TiposUnidadeEducacaoView,
     TodasUnidadesView,
-    UnidadeCodigoIntegracaoPorDREView,
     UesPorDREView,
-    UnidadesPorDREView,
-    SincronizacoesInstitucionaisView,
+    UnidadeCodigoIntegracaoPorDREView,
     UnidadeEolView,
     UnidadesParceirasView,
+    UnidadesPorDREView,
 )
+from apps.professores.views import DRESupervisoresView
 
 urlpatterns = [
     # DREs — /api/DREs/
@@ -67,6 +68,11 @@ urlpatterns = [
         "DREs/<str:codigo_eol_dre>/escolas/<str:tipo_escola>/",
         EscolasPorDREeTipoView.as_view(),
         name="escolas-por-dre-tipo",
+    ),
+    path(
+        "DREs/<str:codigo_eol_dre>/supervisores/",
+        DRESupervisoresView.as_view(),
+        name="dre-supervisores",
     ),
     path(
         "DREs/<str:codigo_eol_dre>/",
