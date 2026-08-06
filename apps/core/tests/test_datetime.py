@@ -5,6 +5,7 @@ from datetime import UTC, date, datetime
 from django.test import SimpleTestCase
 
 from apps.core.datetime import (
+    datetime_de_tick,
     datetime_legado,
     formatar_datetime_legado,
     parse_date,
@@ -86,3 +87,16 @@ class ValidarDataTickTest(SimpleTestCase):
 
     def test_rejeita_valor_nao_numerico(self) -> None:
         self.assertFalse(validar_data_tick("tick-invalido"))
+
+
+class DatetimeDeTickTest(SimpleTestCase):
+    """Valida a conversão de ticks do DateTime do .NET."""
+
+    def test_converte_ticks_para_datetime(self) -> None:
+        resultado = datetime_de_tick("639207072000000000")
+
+        self.assertEqual(resultado, datetime(2026, 7, 27))
+
+    def test_rejeita_ticks_invalidos(self) -> None:
+        with self.assertRaisesRegex(ValueError, "Valor de ticks inválido"):
+            datetime_de_tick("inválido")

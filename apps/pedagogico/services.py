@@ -6,6 +6,10 @@ from typing import Any, cast
 from apps.alunos import services as alunos_services
 from apps.core.api_clients import get_api_client
 from apps.core.datetime import formatar_datetime_legado
+from apps.pedagogico.serializers import (
+    AtribuicaoTerritorioTurmaSerializer,
+    TurmaAtribuidaAnoSerializer,
+)
 from apps.professores import services as professores_services
 
 _BASE = "/api/v1/pedagogico/componentes-curriculares"
@@ -1127,3 +1131,75 @@ def verificar_atriuicao_territorio_saber(
         f"professor/{codigo_rf}/data/{data}/atribuicao/validar/"
     )
     return bool(_client.json_or_none(resp))
+
+
+def get_componentes_api_eol() -> list[dict[str, Any]]:
+    """Retorna componentes curriculares API EOL.
+
+    Returns:
+        Lista de componentes curriculares API EOL.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        ValueError: Se a resposta não puder ser convertida para JSON.
+    """
+    return cast(list[dict[str, Any]], _client.get(f"{_BASE}/api-eol/").json())
+
+
+def get_atribuicoes_territorio_saber(
+    codigo_rf: str,
+    ano_letivo: int | None = None,
+) -> list[dict[str, Any]]:
+    """Retorna atribuições do professor em território do saber.
+
+    Args:
+        codigo_rf: RF do professor usado na consulta.
+        ano_letivo: Ano letivo de referência, quando houver filtro.
+
+    Returns:
+        Atribuições do professor em território do saber.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        ValueError: Se a resposta não puder ser convertida para JSON.
+    """
+    if ano_letivo is None:
+        path = (
+            f"{_BASE}/professores/{codigo_rf}/" "atribuicoes-territorio-saber/"
+        )
+    else:
+        path = (
+            f"{_BASE}/professores/{codigo_rf}/anos-letivos/{ano_letivo}/"
+            "atribuicoes-territorio-saber/"
+        )
+    resp = _client.get(path)
+    payload = _client.json_or_none(resp)
+    if not isinstance(payload, list):
+        return []
+    serializer = TurmaAtribuidaAnoSerializer(payload, many=True)
+    return [dict(item) for item in serializer.data]
+
+
+def get_professores_turma_territorio_saber(
+    codigo_turma: str,
+) -> list[dict[str, Any]]:
+    """Retorna professores atribuídos a uma turma em território do saber.
+
+    Args:
+        codigo_turma: Código da turma usada na consulta.
+
+    Returns:
+        Lista de professores atribuídos à turma em território do saber.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        ValueError: Se a resposta não puder ser convertida para JSON.
+    """
+    resp = _client.get(
+        f"{_BASE}/turmas/{codigo_turma}/atribuicoes-territorio-saber/"
+    )
+    payload = _client.json_or_none(resp)
+    if not isinstance(payload, list):
+        return []
+    serializer = AtribuicaoTerritorioTurmaSerializer(payload, many=True)
+    return [dict(item) for item in serializer.data]

@@ -6,6 +6,7 @@ from django.test import SimpleTestCase
 from rest_framework import serializers
 
 from apps.professores.serializers import (
+    BuscarProfessorTitularPorDisciplinaSerializer,
     DisciplinaTurmaAgrupamentoSerializer,
     DisciplinaTurmaAtribuidaSerializer,
     FuncionarioCargoSerializer,
@@ -13,8 +14,12 @@ from apps.professores.serializers import (
     FuncionarioFuncaoExternaSerializer,
     FuncionarioLegadoSerializer,
     FuncionarioSgpLegadoSerializer,
+    ProfessorAtribuicaoInternaSerializer,
+    ProfessorAtribuicaoPeriodoPathSerializer,
     ProfessorAtribuicaoTurmaDisciplinaSerializer,
     ProfessorAutoCompleteSerializer,
+    ProfessoresTitularesParametrosSerializer,
+    ProfessorRecorrenciaDataSerializer,
     ProfessorStatusAtribuicaoSerializer,
     ProfessorTurmaAtribuidaSimplificadaSerializer,
     SupervisorLegadoSerializer,
@@ -117,6 +122,113 @@ class ProfessorAtribuicaoTurmaDisciplinaSerializerTest(SimpleTestCase):
         self.assertEqual(data["codigoTurma"], 3032577)
         self.assertEqual(data["disciplinaId"], 89)
         self.assertIsNone(data["disciplinasAgrupadasIds"])
+
+
+class ProfessorAtribuicaoInternaSerializerTest(SimpleTestCase):
+    """Valida o contrato canônico consumido pelo serviço de professores."""
+
+    def test_padroniza_tipos_e_completa_campos_ausentes(self) -> None:
+        """Normaliza dados comuns aos endpoints de atribuição."""
+        data = ProfessorAtribuicaoInternaSerializer(
+            {
+                "codigo_turma": 3032577,
+                "ano_letivo": "2026",
+                "disciplina_id": 89,
+            }
+        ).data
+
+        self.assertEqual(data["codigo_turma"], "3032577")
+        self.assertEqual(data["ano_letivo"], 2026)
+        self.assertEqual(data["disciplina_id"], "89")
+        self.assertIsNone(data["data_inicio_atribuicao"])
+        self.assertEqual(data["disciplinas_agrupadas_ids"], [])
+
+
+class ProfessorAtribuicaoPeriodoPathSerializerTest(SimpleTestCase):
+    """Valida os parâmetros da consulta de atribuição por período."""
+
+    def test_rejeita_periodo_invertido(self) -> None:
+        """Rejeita data inicial posterior à data final."""
+        serializer = ProfessorAtribuicaoPeriodoPathSerializer(
+            data={
+                "codigo_rf": "000001",
+                "codigo_turma": "3032577",
+                "componente_curricular_id": "89",
+                "data_inicio_periodo": "2026-08-01",
+                "data_fim_periodo": "2026-07-31",
+            }
+        )
+
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("non_field_errors", serializer.errors)
+
+
+class ProfessoresTitularesParametrosSerializerTest(SimpleTestCase):
+    """Valida os filtros da busca de professores titulares."""
+
+    def test_converte_data_e_booleano(self) -> None:
+        """Converte parâmetros externos para o contrato interno."""
+        serializer = ProfessoresTitularesParametrosSerializer(
+            data={
+                "codigo_turma": "3032577",
+                "codigoRF": "000001",
+                "dataReferencia": "2026-07-28",
+                "realiza_agrupamento": "true",
+            }
+        )
+
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        self.assertEqual(serializer.validated_data["codigo_rf"], "000001")
+        self.assertTrue(serializer.validated_data["realiza_agrupamento"])
+
+
+class BuscarProfessorTitularPorDisciplinaSerializerTest(SimpleTestCase):
+    """Valida o DTO legado de professor titular por disciplina."""
+
+    def test_mapeia_campos_do_contrato_legado(self) -> None:
+        """Converte os nomes internos para os nomes definidos no DTO."""
+        data = BuscarProfessorTitularPorDisciplinaSerializer(
+            {
+                "professor_rf": "000001",
+                "nome_professor": "PROFESSOR",
+                "disciplina": "CIENCIAS",
+                "disciplina_id": "89",
+                "disciplinas_id": "89,90",
+                "turma_id": 3032577,
+            }
+        ).data
+
+        self.assertEqual(
+            data,
+            {
+                "professorRf": "000001",
+                "nome_Professor": "PROFESSOR",
+                "disciplina": "CIENCIAS",
+                "disciplina_Id": "89",
+                "disciplinas_Id": "89,90",
+                "turma_Id": 3032577,
+            },
+        )
+
+
+class ProfessorRecorrenciaDataSerializerTest(SimpleTestCase):
+    """Valida a serialização da permissão de persistência por data."""
+
+    def test_mapeia_contrato_legado(self) -> None:
+        serializer = ProfessorRecorrenciaDataSerializer(
+            {
+                "data": "2026-07-27T00:00:00",
+                "pode_persistir": True,
+            }
+        )
+
+        self.assertEqual(
+            serializer.data,
+            {
+                "data": "2026-07-27T00:00:00",
+                "podePersistir": True,
+            },
+        )
 
 
 class FuncionarioSerializerTest(SimpleTestCase):

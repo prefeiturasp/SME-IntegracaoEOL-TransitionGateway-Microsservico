@@ -1,9 +1,15 @@
 """Serviços de integração do domínio professores."""
 
-from typing import Any
+from collections.abc import Iterable
+from datetime import date, datetime
+from typing import Any, cast
 
 from apps.core.api_clients import get_api_client
-from apps.core.datetime import datetime_legado
+from apps.core.datetime import (
+    datetime_de_tick,
+    datetime_legado,
+    obter_ano_tick,
+)
 from apps.institucional import services as institucional_services
 from apps.pedagogico import services as pedagogico_services
 from apps.professores.serializers import (
@@ -11,6 +17,7 @@ from apps.professores.serializers import (
     DisciplinaTurmaAgrupamentoSerializer,
     DisciplinaTurmaAtribuidaSerializer,
     FuncionarioLegadoSerializer,
+    ProfessorAtribuicaoInternaSerializer,
     ProfessorAtribuicaoTurmaDisciplinaSerializer,
     ProfessorStatusAtribuicaoSerializer,
     TurmaElegivelLegadoSerializer,
@@ -40,6 +47,8 @@ _TIPOS_ABRANGENCIA_VINCULO_UE = frozenset(
         _TIPO_ABRANGENCIA_DRE_ESCOLAS_ATRIBUIDAS,
     }
 )
+
+_COMPONENTE_AGRUPAMENTO_TERRITORIO_SABER_ID_INICIAL = 800000
 
 _client = get_api_client("professores")
 
@@ -1132,6 +1141,276 @@ def get_turmas_professor_disciplina(
     return _client.json_or_none(resp)
 
 
+def buscar_professores_titulares_por_turma(
+    codigo_turma: str,
+    codigo_rf: str,
+    data_referencia: datetime | None,
+    realiza_agrupamento: bool,
+) -> list[dict[str, Any]]:
+    """Busca professores titulares de uma turma.
+
+    Args:
+        codigo_turma: Código da turma consultada.
+        codigo_rf: RF usado como filtro opcional.
+        data_referencia: Data de referência usada como filtro opcional.
+        realiza_agrupamento: Indica se componentes devem ser agrupados.
+
+    Returns:
+        Professores titulares encontrados ou uma lista vazia.
+
+    Raises:
+        httpx.HTTPError: Quando a chamada ao serviço de professores falha.
+        ValueError: Quando a resposta não pode ser convertida para JSON.
+    """
+    params: dict[str, str] = {}
+    if codigo_rf:
+        params["codigo_rf"] = codigo_rf
+    if data_referencia is not None:
+        params["data_referencia"] = data_referencia.isoformat()
+
+    resp = _client.get(
+        f"{_BASE}/{codigo_turma}/titulares/",
+        params=params or None,
+    )
+    payload = _client.json_or_none(resp)
+    if not isinstance(payload, list):
+        return []
+
+    componentes_professor = [
+        item for item in payload if isinstance(item, dict)
+    ]
+
+    componentes_api_eol = pedagogico_services.get_componentes_api_eol()
+
+    _verifica_se_existe_vigencia_ativa = next(
+        (
+            _verificar_vigencia_componente_pai(
+                componentes_api_eol,
+                str(componente.get("disciplina_id")),
+                data_referencia,
+            )
+            for componente in componentes_professor
+        ),
+        False,
+    )
+
+    atribuicoes_turma_territorio_saber = (
+        pedagogico_services.get_professores_turma_territorio_saber(
+            codigo_turma
+        )
+    )
+    if isinstance(atribuicoes_turma_territorio_saber, list) and any(
+        atribuicoes_turma_territorio_saber
+    ):
+        componentes_professor = _tratar_agrupamento_componentes_professor(
+            codigo_turma,
+            componentes_professor,
+            atribuicoes_turma_territorio_saber,
+        )
+
+    componentes_retorno: list[dict[str, Any]] = []
+    if realiza_agrupamento or _verifica_se_existe_vigencia_ativa:
+        componentes_retorno = [
+            _montar_componente_professor_agrupado(
+                componente,
+                componentes_api_eol,
+            )
+            for componente in componentes_professor
+        ]
+    else:
+        componentes_retorno = componentes_professor
+
+    return _agrupar_componentes_retorno(componentes_retorno)
+
+
+def _agrupar_componentes_retorno(
+    componentes_retorno: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Agrupa componentes por disciplina e RF do professor.
+
+    Args:
+        componentes_retorno: Componentes tratados que serão agrupados.
+
+    Returns:
+        Componentes no contrato interno do DTO de professor titular.
+    """
+    grupos: dict[tuple[Any, Any], list[dict[str, Any]]] = {}
+    for componente in componentes_retorno:
+        chave = (
+            componente.get("disciplina"),
+            componente.get("professor_rf"),
+        )
+        grupos.setdefault(chave, []).append(componente)
+
+    retorno: list[dict[str, Any]] = []
+    for componentes in grupos.values():
+        primeiro = componentes[0]
+        disciplinas_id = ",".join(
+            (
+                ""
+                if componente.get("disciplina_id") is None
+                else str(componente.get("disciplina_id"))
+            )
+            for componente in componentes
+        )
+        nomes_professores = ", ".join(
+            _valores_distintos(
+                componente.get("nome_professor") for componente in componentes
+            )
+        ).replace(", Não há professor titular.", "")
+        professores_rf = ", ".join(
+            _valores_distintos(
+                componente.get("professor_rf") for componente in componentes
+            )
+        )
+        retorno.append(
+            {
+                "disciplina": primeiro.get("disciplina"),
+                "disciplina_id": None,
+                "disciplinas_id": disciplinas_id,
+                "nome_professor": nomes_professores,
+                "professor_rf": professores_rf,
+                "turma_id": 0,
+            }
+        )
+
+    return retorno
+
+
+def _valores_distintos(valores: Iterable[Any]) -> list[str]:
+    """Retorna representações textuais distintas na ordem original.
+
+    Args:
+        valores: Valores que serão deduplicados.
+
+    Returns:
+        Valores textuais distintos.
+    """
+    retorno: list[str] = []
+    vistos: set[str] = set()
+    for valor in valores:
+        texto = "" if valor is None else str(valor)
+        if texto not in vistos:
+            vistos.add(texto)
+            retorno.append(texto)
+    return retorno
+
+
+def _montar_componente_professor_agrupado(
+    componente_professor: dict[str, Any],
+    componentes_api_eol: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Monta o componente do professor usando os dados do componente pai.
+
+    Args:
+        componente_professor: Componente associado ao professor titular.
+        componentes_api_eol: Componentes curriculares retornados pela API EOL.
+
+    Returns:
+        Componente no contrato interno de professor titular, agrupado pelo pai
+        quando ele existir.
+    """
+    disciplina_id = str(componente_professor.get("disciplina_id"))
+    componente_atual = next(
+        (
+            componente
+            for componente in componentes_api_eol
+            if isinstance(componente, dict)
+            and str(componente.get("id_componente_curricular"))
+            == disciplina_id
+        ),
+        None,
+    )
+    codigo_componente_pai = (
+        componente_atual.get("id_componente_curricular_pai")
+        if componente_atual is not None
+        else None
+    )
+    componente_pai = next(
+        (
+            componente
+            for componente in componentes_api_eol
+            if isinstance(componente, dict)
+            and codigo_componente_pai is not None
+            and str(componente.get("id_componente_curricular"))
+            == str(codigo_componente_pai)
+        ),
+        None,
+    )
+
+    return {
+        "disciplina": (
+            componente_pai.get("descricao")
+            if componente_pai is not None
+            else componente_professor.get("disciplina")
+        ),
+        "disciplina_id": (
+            str(codigo_componente_pai)
+            if codigo_componente_pai is not None
+            else disciplina_id
+        ),
+        "disciplinas_id": None,
+        "nome_professor": componente_professor.get("nome_professor"),
+        "professor_rf": componente_professor.get("professor_rf"),
+        "turma_id": 0,
+    }
+
+
+def _tratar_agrupamento_componentes_professor(
+    codigos_turmas: str | list[str],
+    componentes_professor: list[dict[str, Any]],
+    atribuicoes_territorio_saber: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Agrupa componentes regulares e atribuições de Território do Saber.
+
+    Args:
+        codigos_turmas: Códigos das turmas que serão tratados.
+        componentes_professor: Componentes regulares dos professores
+            titulares.
+        atribuicoes_territorio_saber: Atribuições agrupadas de Território
+            do Saber.
+
+    Returns:
+        Componentes regulares não agrupados e atribuições de Território do
+        Saber convertidas para o contrato interno de professor titular.
+    """
+    turmas = (
+        [codigos_turmas] if isinstance(codigos_turmas, str) else codigos_turmas
+    )
+    retorno: list[dict[str, Any]] = []
+
+    for codigo_turma in turmas:
+        ids_componentes_territorio = {
+            int(disciplina_agrupada_id)
+            for atribuicao in atribuicoes_territorio_saber
+            if str(atribuicao.get("codigo_turma")) == codigo_turma
+            for disciplina_agrupada_id in (
+                atribuicao.get("disciplinas_agrupadas_ids") or []
+            )
+        }
+        componentes_regulares = [
+            componente
+            for componente in componentes_professor
+            if str(componente.get("turma_id")) == codigo_turma
+            and int(cast(Any, componente.get("disciplina_id")))
+            not in ids_componentes_territorio
+        ]
+        retorno.extend(componentes_regulares)
+        retorno.extend(
+            {
+                "disciplina": atribuicao.get("disciplina_nome"),
+                "disciplina_id": atribuicao.get("disciplina_id"),
+                "disciplinas_id": atribuicao.get("disciplina_id"),
+                "nome_professor": atribuicao.get("nome_professor"),
+                "professor_rf": atribuicao.get("codigo_rf"),
+                "turma_id": int(cast(Any, atribuicao.get("codigo_turma"))),
+            }
+            for atribuicao in atribuicoes_territorio_saber
+        )
+
+    return retorno
+
+
 def get_turmas_atribuidas_professor_escola(
     codigo_rf: str,
     codigo_eol_escola: str,
@@ -1287,6 +1566,275 @@ def verificar_atribuicao_professor_turma_disciplina(
     return bool(_client.json_or_none(resp))
 
 
+def verificar_recorrencia_datas(
+    codigo_rf: str,
+    codigo_turma: str,
+    disciplina_id: str,
+    datas_ticks: list[str],
+) -> list[dict[str, Any]]:
+    """Verifica datas recorrentes de uma atribuição docente.
+
+    Args:
+        codigo_rf: RF usado na consulta.
+        codigo_turma: Código da turma usada na consulta.
+        disciplina_id: ID da disciplina usada na consulta.
+        datas_ticks: Datas recorrentes em ticks de DateTime do .NET.
+
+    Returns:
+        Permissões de persistência por data.
+
+    Raises:
+        httpx.HTTPError: Quando uma das chamadas aos sidecars falha.
+        ValueError: Quando um tick informado é inválido.
+    """
+    data_tick_padrao = datas_ticks[0] if datas_ticks else None
+    if not data_tick_padrao:
+        return []
+
+    ano_letivo = obter_ano_tick(data_tick_padrao)
+
+    atribuicoes_rf = _get_atribuicoes_professor_turma_disciplina(
+        codigo_rf, disciplina_id, ano_letivo
+    )
+
+    componentes_api_eol = pedagogico_services.get_componentes_api_eol()
+    ids_componentes_filhos = {
+        str(componente.get("id_componente_curricular"))
+        for componente in componentes_api_eol
+        if str(componente.get("id_componente_curricular_pai")) == disciplina_id
+    }
+
+    retorno: list[dict[str, Any]] = []
+    for data_tick in datas_ticks:
+        data_consulta = datetime_de_tick(data_tick)
+        pode_persistir = any(
+            _atribuicao_permite_persistir(
+                atribuicao,
+                codigo_turma,
+                disciplina_id,
+                ids_componentes_filhos,
+                data_consulta,
+            )
+            for atribuicao in atribuicoes_rf
+            if isinstance(atribuicao, dict)
+        )
+        retorno.append(
+            {
+                "data": data_consulta.isoformat(),
+                "pode_persistir": pode_persistir,
+            }
+        )
+
+    return retorno
+
+
+def verificar_atribuicao_periodo(
+    codigo_rf: str,
+    codigo_turma: str,
+    disciplina_id: str,
+    data_inicio: str,
+    data_fim: str,
+) -> bool:
+    """Verifica se o professor tem atribuição na turma e disciplina no período.
+
+    Args:
+        codigo_rf: RF usado na consulta.
+        codigo_turma: Código da turma usada na consulta.
+        disciplina_id: ID da disciplina usada na consulta.
+        data_inicio: Data de início do período.
+        data_fim: Data de fim do período.
+
+    Returns:
+        ``True`` quando o professor tem atribuição na turma e disciplina
+          no período.
+    """
+    data_inicio_periodo = _parse_datetime_atribuicao(data_inicio)
+    data_fim_periodo = _parse_datetime_atribuicao(data_fim)
+    if (
+        data_inicio_periodo is None
+        or data_fim_periodo is None
+        or data_inicio_periodo > data_fim_periodo
+    ):
+        return False
+
+    atribuicoes_rf = _get_atribuicoes_professor_turma_disciplina(
+        codigo_rf,
+        disciplina_id,
+        0,
+    )
+    componentes_api_eol = pedagogico_services.get_componentes_api_eol()
+    ids_componentes_filhos = {
+        str(componente.get("id_componente_curricular"))
+        for componente in componentes_api_eol
+        if str(componente.get("id_componente_curricular_pai")) == disciplina_id
+    }
+
+    return any(
+        _atribuicao_sobrepoe_periodo(
+            atribuicao,
+            codigo_turma,
+            disciplina_id,
+            ids_componentes_filhos,
+            data_inicio_periodo,
+            data_fim_periodo,
+        )
+        for atribuicao in atribuicoes_rf
+    )
+
+
+def _atribuicao_sobrepoe_periodo(
+    atribuicao: dict[str, Any],
+    codigo_turma: str,
+    disciplina_id: str,
+    ids_componentes_filhos: set[str],
+    data_inicio_periodo: datetime,
+    data_fim_periodo: datetime,
+) -> bool:
+    """Verifica se uma atribuição corresponde e sobrepõe um período.
+
+    Args:
+        atribuicao: Dados normalizados da atribuição do professor.
+        codigo_turma: Código da turma consultada.
+        disciplina_id: ID da disciplina consultada.
+        ids_componentes_filhos: IDs dos componentes filhos da disciplina.
+        data_inicio_periodo: Início do período consultado.
+        data_fim_periodo: Fim do período consultado.
+
+    Returns:
+        ``True`` quando turma e disciplina correspondem e os períodos se
+        sobrepõem.
+    """
+    data_inicio_atribuicao = _parse_datetime_atribuicao(
+        atribuicao.get("data_inicio_atribuicao")
+    )
+    data_fim_atribuicao = _parse_datetime_atribuicao(
+        atribuicao.get("data_fim_atribuicao")
+    )
+    if data_inicio_atribuicao is None or data_fim_atribuicao is None:
+        return False
+
+    disciplina_atribuicao = str(atribuicao.get("disciplina_id"))
+    turma_e_disciplina_correspondem = str(
+        atribuicao.get("codigo_turma")
+    ) == codigo_turma and (
+        disciplina_atribuicao == disciplina_id
+        or disciplina_atribuicao in ids_componentes_filhos
+    )
+    periodo_sobreposto = (
+        data_inicio_atribuicao <= data_inicio_periodo <= data_fim_atribuicao
+        or data_inicio_atribuicao <= data_fim_periodo <= data_fim_atribuicao
+        or data_inicio_periodo
+        <= data_inicio_atribuicao
+        <= data_fim_atribuicao
+        <= data_fim_periodo
+    )
+    return turma_e_disciplina_correspondem and periodo_sobreposto
+
+
+def _get_atribuicoes_professor_turma_disciplina(
+    codigo_rf: str, disciplina_id: str, ano_letivo: int
+) -> list[dict[str, Any]]:
+    """Retorna atribuições do professor na disciplina no ano letivo.
+
+    Args:
+        codigo_rf: RF usado na consulta.
+        disciplina_id: ID da disciplina usada na consulta.
+        ano_letivo: Ano letivo de referência.
+
+    Returns:
+        Lista de atribuições ou ausência de conteúdo.
+    """
+    if _validar_componente_eh_territorio_saber_agrupado(disciplina_id):
+        if ano_letivo > 0:
+            payload = pedagogico_services.get_atribuicoes_territorio_saber(
+                codigo_rf,
+                ano_letivo,
+            )
+        else:
+            payload = pedagogico_services.get_atribuicoes_territorio_saber(
+                codigo_rf
+            )
+    else:
+        if ano_letivo > 0:
+            resp = _client.get(
+                f"{_BASE}/{codigo_rf}/turmas/anos_letivos/{ano_letivo}/"
+            )
+        else:
+            resp = _client.get(f"{_BASE}/{codigo_rf}/turmas/anos_letivos/")
+        payload = _client.json_or_none(resp)
+
+    if not isinstance(payload, list):
+        return []
+
+    atribuicoes = [item for item in payload if isinstance(item, dict)]
+    serializer = ProfessorAtribuicaoInternaSerializer(atribuicoes, many=True)
+    return [dict(item) for item in serializer.data]
+
+
+def _parse_datetime_atribuicao(valor: Any) -> datetime | None:
+    """Converta uma data de atribuição para comparação interna."""
+    if isinstance(valor, datetime):
+        return valor.replace(tzinfo=None)
+    if isinstance(valor, date):
+        return datetime.combine(valor, datetime.min.time())
+    if not isinstance(valor, str) or not valor.strip():
+        return None
+    try:
+        return datetime.fromisoformat(
+            valor.strip().replace("Z", "+00:00")
+        ).replace(tzinfo=None)
+    except ValueError:
+        return None
+
+
+def _atribuicao_permite_persistir(
+    atribuicao: dict[str, Any],
+    codigo_turma: str,
+    disciplina_id: str,
+    ids_componentes_filhos: set[str],
+    data_consulta: datetime,
+) -> bool:
+    """Aplique a regra legada de persistência para uma atribuição.
+
+    Args:
+        atribuicao: Dados da atribuição do professor.
+        codigo_turma: Código da turma consultada.
+        disciplina_id: ID da disciplina consultada.
+        ids_componentes_filhos: IDs dos componentes filhos da disciplina.
+        data_consulta: Data de recorrência que será verificada.
+
+    Returns:
+        ``True`` quando a atribuição permite persistir na data consultada.
+    """
+    data_inicio = _parse_datetime_atribuicao(
+        atribuicao.get("data_inicio_atribuicao")
+    )
+    data_fim = _parse_datetime_atribuicao(
+        atribuicao.get("data_fim_atribuicao")
+    )
+    data_fim_turma = _parse_datetime_atribuicao(
+        atribuicao.get("data_fim_turma")
+    )
+    disciplina_atribuicao = str(atribuicao.get("disciplina_id"))
+
+    atribuicao_na_data = (
+        str(atribuicao.get("codigo_turma")) == codigo_turma
+        and (
+            disciplina_atribuicao == disciplina_id
+            or disciplina_atribuicao in ids_componentes_filhos
+        )
+        and data_inicio is not None
+        and data_fim is not None
+        and data_inicio <= data_consulta <= data_fim
+    )
+    atribuicao_ate_fim_turma = (
+        data_fim is not None
+        and data_fim_turma is not None
+        and data_fim >= data_fim_turma
+    )
+    return atribuicao_na_data or atribuicao_ate_fim_turma
+
+
 def verificar_atribuicao_disciplina_territorio_saber(
     codigo_rf: str,
     codigo_turma: str,
@@ -1407,3 +1955,75 @@ def get_administradores_sgp_escola(codigo_ue: str) -> list[str]:
     if not isinstance(data, list):
         return []
     return [str(rf) for rf in data if rf]
+
+
+def _validar_componente_eh_territorio_saber_agrupado(
+    codigo_componente: str,
+) -> bool:
+    """Valida se o componente curricular é agrupado em Território do Saber.
+
+    Args:
+        codigo_componente: Código do componente curricular.
+
+    Returns:
+        True se o componente é agrupado; False caso contrário.
+    """
+    try:
+        return (
+            int(codigo_componente)
+            >= _COMPONENTE_AGRUPAMENTO_TERRITORIO_SABER_ID_INICIAL
+        )
+    except (TypeError, ValueError):
+        return False
+
+
+def _verificar_vigencia_componente_pai(
+    componentes_api_eol: list[dict[str, Any]],
+    disciplina_id: str,
+    data_referencia: datetime | None,
+) -> bool:
+    """Verifica se o componente curricular pai está vigente.
+
+    Args:
+        componentes_api_eol: Lista de componentes curriculares do EOL.
+        disciplina_id: ID da disciplina usada na consulta.
+        data_referencia: Data de referência para verificar a vigência. Na
+            ausência, utiliza a data atual.
+
+    Returns:
+        True se o componente curricular pai estiver vigente; False
+        caso contrário.
+    """
+    componente = next(
+        (
+            item
+            for item in componentes_api_eol
+            if isinstance(item, dict)
+            and str(item.get("id_componente_curricular")) == disciplina_id
+        ),
+        None,
+    )
+    if componente is None:
+        return False
+
+    codigo_componente_pai = componente.get("id_componente_curricular_pai")
+    if codigo_componente_pai is None:
+        return False
+
+    data_base = _parse_datetime_atribuicao(data_referencia)
+    if data_base is None:
+        data_base = datetime.combine(date.today(), datetime.min.time())
+
+    for item in componentes_api_eol:
+        if not isinstance(item, dict) or str(
+            item.get("id_componente_curricular")
+        ) != str(codigo_componente_pai):
+            continue
+
+        vigencia = item.get("vigencia")
+        if vigencia is None:
+            return True
+        data_vigencia = _parse_datetime_atribuicao(vigencia)
+        return data_vigencia is not None and data_vigencia >= data_base
+
+    return False
