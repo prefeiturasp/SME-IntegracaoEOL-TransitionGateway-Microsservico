@@ -1,6 +1,6 @@
 """Rotas do domínio de professores."""
 
-from django.urls import path
+from django.urls import path, register_converter
 
 from apps.professores.views import (
     AdministradorSgpEscolaView,
@@ -42,14 +42,48 @@ from apps.professores.views import (
     ProfessorDisciplinaTurmasView,
     ProfessorEhEmeiView,
     ProfessoresBuscarPorListaRfAnoView,
+    ProfessoresTitularesPorTurmaView,
     ProfessorStatusAtribuicaoView,
     ProfessorTurmasView,
     ProfessorVerificarAtribuicaoDataTickView,
     ProfessorVerificarAtribuicaoDataView,
+    ProfessorVerificarAtribuicaoPeriodoView,
     ProfessorVerificarAtribuicaoTurmaDisciplinaDataView,
+    ProfessorVerificarRecorrenciaDatasView,
     ProfessorView,
     ValidadeProfessorView,
 )
+
+
+class _BooleanConverter:
+    """Converte os literais de rota ``true`` e ``false`` em booleanos."""
+
+    regex = "(?i:true|false)"
+
+    def to_python(self, value: str) -> bool:
+        """Converta o valor textual recebido pela rota.
+
+        Args:
+            value: Literal booleano capturado na URL.
+
+        Returns:
+            Valor booleano convertido.
+        """
+        return value.lower() == "true"
+
+    def to_url(self, value: bool) -> str:
+        """Converta o booleano para construção reversa da URL.
+
+        Args:
+            value: Booleano usado na construção da URL.
+
+        Returns:
+            Literal booleano em letras minúsculas.
+        """
+        return str(value).lower()
+
+
+register_converter(_BooleanConverter, "bool")
 
 urlpatterns = [
     path(
@@ -127,6 +161,11 @@ urlpatterns = [
         ProfessorTurmasView.as_view(),
     ),
     path(
+        "professores/<str:codigo_turma>/titulares/"
+        "realizaAgrupamentoComponente/<bool:realiza_agrupamento>",
+        ProfessoresTitularesPorTurmaView.as_view(),
+    ),
+    path(
         "professores/<str:codigo_rf>/disciplina/<str:disciplina_id>/turmas/",
         ProfessorDisciplinaTurmasView.as_view(),
     ),
@@ -143,12 +182,23 @@ urlpatterns = [
         ProfessorVerificarAtribuicaoDataView.as_view(),
     ),
     path(
+        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/componentes/"
+        "<str:componente_curricular_id>/atribuicao/periodo/inicio/"
+        "<str:data_inicio_periodo>/fim/<str:data_fim_periodo>",
+        ProfessorVerificarAtribuicaoPeriodoView.as_view(),
+    ),
+    path(
         "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/atribuicao/status/",
         ProfessorStatusAtribuicaoView.as_view(),
     ),
     path(
         "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/disciplinas/<str:disciplina_id>/atribuicao/verificar/datatick/",
         ProfessorVerificarAtribuicaoDataTickView.as_view(),
+    ),
+    path(
+        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/disciplinas/"
+        "<str:disciplina_id>/atribuicao/recorrencia/verificar/datas",
+        ProfessorVerificarRecorrenciaDatasView.as_view(),
     ),
     path(
         "professores/<str:codigo_turma>/disciplinas/<str:disciplina_id>/atribuicao/data/",

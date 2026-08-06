@@ -990,3 +990,109 @@ class ProfessorAtribuicaoTurmaDisciplinaSerializer(serializers.Serializer):
     nomeProfessor = serializers.CharField(
         source="nome_professor", allow_null=True
     )
+
+
+class ProfessorAtribuicaoInternaSerializer(serializers.Serializer):
+    """Padroniza atribuições consumidas de diferentes domínios."""
+
+    codigo_turma = serializers.CharField(allow_null=True, default=None)
+    ano_letivo = serializers.IntegerField(allow_null=True, default=None)
+    nome_turma = serializers.CharField(allow_null=True, default=None)
+    data_inicio_atribuicao = serializers.DateTimeField(
+        allow_null=True, default=None
+    )
+    data_fim_atribuicao = serializers.DateTimeField(
+        allow_null=True, default=None
+    )
+    data_fim_turma = serializers.DateTimeField(allow_null=True, default=None)
+    ano_atribuicao = serializers.IntegerField(allow_null=True, default=None)
+    codigo_rf = serializers.CharField(allow_null=True, default=None)
+    disciplina_id = serializers.CharField(allow_null=True, default=None)
+    disciplina_nome = serializers.CharField(allow_null=True, default=None)
+    disciplinas_agrupadas_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        allow_null=True,
+        allow_empty=True,
+        default=list,
+    )
+    nome_professor = serializers.CharField(allow_null=True, default=None)
+
+
+class ProfessorRecorrenciaDataSerializer(serializers.Serializer):
+    """Serializa a permissão de persistência para uma data recorrente."""
+
+    data = serializers.CharField()  # type: ignore[assignment]
+    podePersistir = serializers.BooleanField(source="pode_persistir")
+
+
+class ProfessorAtribuicaoPeriodoPathSerializer(serializers.Serializer):
+    """Valida os parâmetros de rota da atribuição por período."""
+
+    codigo_rf = serializers.CharField(allow_blank=False)
+    codigo_turma = serializers.CharField(allow_blank=False)
+    componente_curricular_id = serializers.CharField(allow_blank=False)
+    data_inicio_periodo = serializers.DateTimeField(
+        input_formats=["iso-8601", "%Y-%m-%d"]
+    )
+    data_fim_periodo = serializers.DateTimeField(
+        input_formats=["iso-8601", "%Y-%m-%d"]
+    )
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        """Valida a ordem cronológica do período.
+
+        Args:
+            attrs: Parâmetros de rota convertidos pelo serializer.
+
+        Returns:
+            Parâmetros validados.
+
+        Raises:
+            serializers.ValidationError: Quando o período está invertido.
+        """
+        if attrs["data_inicio_periodo"] > attrs["data_fim_periodo"]:
+            raise serializers.ValidationError("Período informado é inválido.")
+        return attrs
+
+
+class ProfessoresTitularesParametrosSerializer(serializers.Serializer):
+    """Valida os filtros da busca de professores titulares."""
+
+    codigo_turma = serializers.CharField(allow_blank=False)
+    codigoRF = serializers.CharField(
+        source="codigo_rf",
+        required=False,
+        allow_blank=True,
+        default="",
+    )
+    dataReferencia = serializers.DateTimeField(
+        source="data_referencia",
+        required=False,
+        allow_null=True,
+        default=None,
+        input_formats=["iso-8601", "%Y-%m-%d"],
+    )
+    realiza_agrupamento = serializers.BooleanField()
+
+
+class BuscarProfessorTitularPorDisciplinaSerializer(serializers.Serializer):
+    """Serializa o professor titular por disciplina no contrato legado."""
+
+    professorRf = serializers.CharField(
+        source="professor_rf",
+        allow_null=True,
+    )
+    nome_Professor = serializers.CharField(
+        source="nome_professor",
+        allow_null=True,
+    )
+    disciplina = serializers.CharField(allow_null=True)
+    disciplina_Id = serializers.CharField(
+        source="disciplina_id",
+        allow_null=True,
+    )
+    disciplinas_Id = serializers.CharField(
+        source="disciplinas_id",
+        allow_null=True,
+    )
+    turma_Id = serializers.IntegerField(source="turma_id")
