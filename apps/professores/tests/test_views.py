@@ -2659,7 +2659,7 @@ class FuncionarioDadosSigpaeViewTest(SimpleTestCase):
     def test_preserva_erro_http_do_sidecar(
         self, mock_service: MagicMock
     ) -> None:
-        request = httpx.Request("GET", "http://professores")
+        request = httpx.Request("GET", "https://professores.local/test")
         response = httpx.Response(
             601,
             json="Sem informacoes na base de dados para o Codigo Rf informado",
