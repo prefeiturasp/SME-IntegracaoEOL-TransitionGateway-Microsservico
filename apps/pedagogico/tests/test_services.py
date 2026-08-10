@@ -1270,6 +1270,53 @@ class GetComponentesPorTurmasUeTest(SimpleTestCase):
         self.assertEqual(result, [])
 
 
+class GetTurmaComponentesTurmaTest(SimpleTestCase):
+    """Valida a consulta dos componentes curriculares de uma turma."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_monta_path_query_e_retorna_lista(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        """Repassa turma e componentes e preserva o payload recebido."""
+        response = MagicMock()
+        payload = [
+            {
+                "componente_codigo": "89",
+                "desc_experiencia_pedagogica": "HORTA PEDAGOGICA",
+            }
+        ]
+        mock_client.get.return_value = response
+        mock_client.json_or_none.return_value = payload
+
+        resultado = services.get_turma_componentes_turma(
+            "3032577",
+            ["89", "90"],
+        )
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/turmas/3032577/componentes-turma/",
+            params={"codigos_componentes": ["89", "90"]},
+        )
+        mock_client.json_or_none.assert_called_once_with(response)
+        self.assertEqual(resultado, payload)
+
+    @patch("apps.pedagogico.services._client")
+    def test_retorna_lista_vazia_para_payload_invalido(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        """Normaliza payload vazio ou incompatível para lista vazia."""
+        mock_client.json_or_none.return_value = {"detail": "erro"}
+
+        resultado = services.get_turma_componentes_turma(
+            "3032577",
+            ["89"],
+        )
+
+        self.assertEqual(resultado, [])
+
+
 class GetCatalogoComponentesTest(SimpleTestCase):
     """Valida a consulta do catálogo de componentes curriculares."""
 
@@ -1540,6 +1587,60 @@ class GetProfessoresTurmaTerritorioSaberTest(SimpleTestCase):
             f"{_BASE}/turmas/3032577/atribuicoes-territorio-saber/"
         )
         self.assertEqual(resultado[0]["disciplina_id"], "800000")
+
+    @patch("apps.pedagogico.services._client")
+    def test_normaliza_cod_agrupamento_do_payload_atual(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        """Usa o código do agrupamento como identificador da disciplina."""
+        mock_client.json_or_none.return_value = [
+            {
+                "codigo_turma": "3022108",
+                "cod_agrupamento": 812935,
+                "componentes_curriculares_agrupados": [1216, 1217],
+                "descricao_territorio_saber": "III - ORIENTACAO",
+                "descricao_experiencia_pedagogica": "OUTRAS",
+                "rf_professor": "8022127",
+            }
+        ]
+
+        resultado = services.get_professores_turma_territorio_saber("3022108")
+
+        self.assertEqual(resultado[0]["disciplina_id"], "812935")
+        self.assertEqual(
+            resultado[0]["disciplinas_agrupadas_ids"], [1216, 1217]
+        )
+        self.assertEqual(
+            resultado[0]["disciplina_nome"],
+            "III - ORIENTACAO - OUTRAS",
+        )
+        self.assertEqual(resultado[0]["codigo_rf"], "8022127")
+
+
+class GetProfessoresTurmasTerritorioSaberTest(SimpleTestCase):
+    """Valida professores de Território do Saber por várias turmas."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_envia_codigos_como_lista_na_query_string(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        """Envia cada código de turma como parâmetro de mesmo nome."""
+        response = MagicMock()
+        mock_client.get.return_value = response
+        mock_client.json_or_none.return_value = []
+
+        resultado = services.get_professores_turmas_territorio_saber(
+            ["3032577", "3032578"]
+        )
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/turmas/atribuicoes-territorio-saber/",
+            params={"codigo_turma": [3032577, 3032578]},
+        )
+        mock_client.json_or_none.assert_called_once_with(response)
+        self.assertEqual(resultado, [])
 
 
 class GetAtribuicoesTerritorioSaberSemAnoTest(SimpleTestCase):
