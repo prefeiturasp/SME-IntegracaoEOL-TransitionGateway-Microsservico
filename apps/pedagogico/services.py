@@ -1201,5 +1201,104 @@ def get_professores_turma_territorio_saber(
     payload = _client.json_or_none(resp)
     if not isinstance(payload, list):
         return []
-    serializer = AtribuicaoTerritorioTurmaSerializer(payload, many=True)
+    atribuicoes = [
+        _normalizar_atribuicao_territorio_turma(item)
+        for item in payload
+        if isinstance(item, dict)
+    ]
+    serializer = AtribuicaoTerritorioTurmaSerializer(atribuicoes, many=True)
     return [dict(item) for item in serializer.data]
+
+
+def get_professores_turmas_territorio_saber(
+    codigo_turma: list[str],
+) -> list[dict[str, Any]]:
+    """Retorna professores atribuídos as turmas em território do saber.
+
+    Args:
+        codigo_turma: lista de códigos de turmas usadas na consulta.
+
+    Returns:
+        Lista de professores atribuídos às turmas em território do saber.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        ValueError: Se a resposta não puder ser convertida para JSON.
+    """
+    resp = _client.get(
+        f"{_BASE}/turmas/atribuicoes-territorio-saber/",
+        params={"codigo_turma": [int(codigo) for codigo in codigo_turma]},
+    )
+    payload = _client.json_or_none(resp)
+    if not isinstance(payload, list):
+        return []
+    atribuicoes = [
+        _normalizar_atribuicao_territorio_turma(item)
+        for item in payload
+        if isinstance(item, dict)
+    ]
+    serializer = AtribuicaoTerritorioTurmaSerializer(atribuicoes, many=True)
+    return [dict(item) for item in serializer.data]
+
+
+def _normalizar_atribuicao_territorio_turma(
+    atribuicao: dict[str, Any],
+) -> dict[str, Any]:
+    """Normaliza contratos de atribuição territorial antigos e atuais.
+
+    Args:
+        atribuicao: Atribuição territorial retornada pelo sidecar pedagógico.
+
+    Returns:
+        Atribuição no contrato interno consumido pelo app de professores.
+    """
+    descricao_territorio = atribuicao.get("descricao_territorio_saber")
+    descricao_experiencia = atribuicao.get("descricao_experiencia_pedagogica")
+    disciplina_nome = atribuicao.get("disciplina_nome") or " - ".join(
+        str(descricao)
+        for descricao in (descricao_territorio, descricao_experiencia)
+        if descricao
+    )
+    return {
+        "codigo_turma": atribuicao.get("codigo_turma"),
+        "disciplina_id": (
+            atribuicao.get("disciplina_id")
+            or atribuicao.get("cod_agrupamento")
+        ),
+        "disciplina_nome": disciplina_nome or None,
+        "disciplinas_agrupadas_ids": (
+            atribuicao.get("disciplinas_agrupadas_ids")
+            or atribuicao.get("componentes_curriculares_agrupados")
+            or []
+        ),
+        "nome_professor": atribuicao.get("nome_professor"),
+        "codigo_rf": (
+            atribuicao.get("codigo_rf") or atribuicao.get("rf_professor")
+        ),
+    }
+
+
+def get_turma_componentes_turma(
+    codigo_turma: str, codigos_componentes: list[str]
+) -> list[dict[str, Any]]:
+    """Retorna componentes curriculares de uma turma.
+
+    Args:
+        codigo_turma: Código da turma usada na consulta.
+        codigos_componentes: Lista de códigos dos componentes curriculares.
+
+    Returns:
+        Lista de componentes curriculares do componente turma.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        ValueError: Se a resposta não puder ser convertida para JSON.
+    """
+    resp = _client.get(
+        f"{_BASE}/turmas/{codigo_turma}/componentes-turma/",
+        params={"codigos_componentes": codigos_componentes},
+    )
+    payload = _client.json_or_none(resp)
+    if not isinstance(payload, list):
+        return []
+    return payload

@@ -19,6 +19,8 @@ from apps.professores.serializers import (
     ProfessorAtribuicaoTurmaDisciplinaSerializer,
     ProfessorAutoCompleteSerializer,
     ProfessoresTitularesParametrosSerializer,
+    ProfessoresTitularesPorTurmasQuerySerializer,
+    ProfessoresTitularesPorUeParametrosSerializer,
     ProfessorRecorrenciaDataSerializer,
     ProfessorStatusAtribuicaoSerializer,
     ProfessorTurmaAtribuidaSimplificadaSerializer,
@@ -29,6 +31,31 @@ from apps.professores.serializers import (
     TurmasAtribuidasLegadoSerializer,
     VerificarAtribuicaoDisciplinaQuerySerializer,
 )
+
+
+class ProfessoresTitularesPorTurmasQuerySerializerTest(SimpleTestCase):
+    """Valida os códigos da busca de titulares por várias turmas."""
+
+    def test_converte_nome_legado_para_snake_case(self) -> None:
+        """Disponibiliza os códigos validados com nome interno Python."""
+        serializer = ProfessoresTitularesPorTurmasQuerySerializer(
+            data={"codigosTurmas": ["3022108", "3022109"]}
+        )
+
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        self.assertEqual(
+            serializer.validated_data,
+            {"codigos_turmas": ["3022108", "3022109"]},
+        )
+
+    def test_rejeita_lista_vazia(self) -> None:
+        """Exige ao menos um código de turma."""
+        serializer = ProfessoresTitularesPorTurmasQuerySerializer(
+            data={"codigosTurmas": []}
+        )
+
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("codigosTurmas", serializer.errors)
 
 
 class TextoEstritoFieldTest(SimpleTestCase):
@@ -209,6 +236,26 @@ class BuscarProfessorTitularPorDisciplinaSerializerTest(SimpleTestCase):
                 "turma_Id": 3032577,
             },
         )
+
+
+class ProfessoresTitularesPorUeParametrosSerializerTest(SimpleTestCase):
+    """Valida os parâmetros da busca de titulares por UE."""
+
+    def test_converte_data_e_aplica_agrupamento_padrao(self) -> None:
+        """Converte a data e usa agrupamento falso quando ausente."""
+        serializer = ProfessoresTitularesPorUeParametrosSerializer(
+            data={
+                "ue_codigo": "094765",
+                "data_referencia": "2026-08-10",
+            }
+        )
+
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        self.assertEqual(
+            serializer.validated_data["data_referencia"].date().isoformat(),
+            "2026-08-10",
+        )
+        self.assertIs(serializer.validated_data["realiza_agrupamento"], False)
 
 
 class ProfessorRecorrenciaDataSerializerTest(SimpleTestCase):

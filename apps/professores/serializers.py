@@ -996,3 +996,33 @@ class BuscarProfessorTitularPorDisciplinaSerializer(serializers.Serializer):
         allow_null=True,
     )
     turma_Id = serializers.IntegerField(source="turma_id")
+
+
+class ProfessoresTitularesPorUeParametrosSerializer(serializers.Serializer):
+    """Valida os parâmetros da busca de professores titulares por UE."""
+
+    ue_codigo = serializers.CharField(allow_blank=False)
+    data_referencia = serializers.DateTimeField(
+        input_formats=["iso-8601", "%Y-%m-%d"],
+    )
+    realizaAgrupamento = serializers.BooleanField(  # noqa: N815
+        source="realiza_agrupamento",
+        required=False,
+        default=False,
+    )
+
+
+class ProfessoresTitularesPorTurmasQuerySerializer(serializers.Serializer):
+    """Valida os códigos de turmas da busca de professores titulares."""
+
+    codigosTurmas = serializers.ListField(  # noqa: N815
+        source="codigos_turmas",
+        child=serializers.CharField(allow_blank=False),
+        allow_empty=False,
+    )
+
+
+class ProfessoresTitularesPorTurmasSerializer(
+    BuscarProfessorTitularPorDisciplinaSerializer
+):
+    """Serializa professores titulares de várias turmas."""

@@ -33,6 +33,9 @@ from apps.professores.serializers import (
     ProfessorAutoCompleteSerializer,
     ProfessorBuscarPorRfSerializer,
     ProfessoresTitularesParametrosSerializer,
+    ProfessoresTitularesPorTurmasQuerySerializer,
+    ProfessoresTitularesPorTurmasSerializer,
+    ProfessoresTitularesPorUeParametrosSerializer,
     ProfessorRecorrenciaDataSerializer,
     ProfessorStatusAtribuicaoSerializer,
     ProfessorTurmaAtribuidaSimplificadaSerializer,
@@ -470,7 +473,7 @@ class ProfessorVerificarAtribuicaoPeriodoView(ProfessoresAPIView):
             }
         )
         if not serializer.is_valid():
-            return detail_response("Parâmetros do período são inválidos.")
+            return Response("Parâmetros do período são inválidos.", status=400)
 
         dados = serializer.validated_data
         resposta = services.verificar_atribuicao_periodo(
@@ -548,20 +551,198 @@ class ProfessoresTitularesPorTurmaView(ProfessoresAPIView):
             }
         )
         if not serializer.is_valid():
-            return detail_response(
-                "Código RF e Código de Turma, são obrigatórios."
+            return Response(
+                "Código RF e Código de Turma, são obrigatórios.", status=400
             )
 
         dados = serializer.validated_data
         professores = services.buscar_professores_titulares_por_turma(
             dados["codigo_turma"],
-            dados["codigo_rf"],
             dados["data_referencia"],
             dados["realiza_agrupamento"],
         )
         if not professores:
             return Response(status=204)
         resposta = BuscarProfessorTitularPorDisciplinaSerializer(
+            professores,
+            many=True,
+        )
+        return Response(resposta.data)
+
+
+class ProfessoresTitularesPorUeView(ProfessoresAPIView):
+    """Busca professores titulares de uma UE."""
+
+    @extend_schema(
+        tags=_TAG_PROFESSOR,
+        description=(
+            "Busca professores titulares da UE na data de referência."
+        ),
+        parameters=[
+            OpenApiParameter(
+                "ue_codigo",
+                OpenApiTypes.STR,
+                OpenApiParameter.PATH,
+                required=True,
+            ),
+            OpenApiParameter(
+                "data_referencia",
+                OpenApiTypes.DATETIME,
+                OpenApiParameter.PATH,
+                required=True,
+            ),
+            OpenApiParameter(
+                "realizaAgrupamento",
+                OpenApiTypes.BOOL,
+                OpenApiParameter.QUERY,
+                required=False,
+                default=False,
+            ),
+        ],
+        responses={
+            200: BuscarProfessorTitularPorDisciplinaSerializer(many=True),
+            204: None,
+            400: OpenApiTypes.OBJECT,
+        },
+    )
+    def get(
+        self,
+        request: Request,
+        ue_codigo: str,
+        data_referencia: str,
+    ) -> Response:
+        """Retorna professores titulares da UE.
+
+        Args:
+            request: Requisição com a opção de agrupamento.
+            ue_codigo: Código da unidade educacional consultada.
+            data_referencia: Data usada para consultar as atribuições.
+
+        Returns:
+            Professores encontrados, ausência de conteúdo ou erro de
+            validação.
+        """
+        serializer = ProfessoresTitularesPorUeParametrosSerializer(
+            data={
+                "ue_codigo": ue_codigo,
+                "data_referencia": data_referencia,
+                "realizaAgrupamento": request.query_params.get(
+                    "realizaAgrupamento",
+                    False,
+                ),
+            }
+        )
+        if not serializer.is_valid():
+            if not ue_codigo.strip():
+                return Response("O código da Ue é obrigatório.", status=400)
+            return Response("A data de referência é obrigatória.", status=400)
+
+        dados = serializer.validated_data
+        professores = services.buscar_professores_titulares_por_ue(
+            dados["ue_codigo"],
+            dados["data_referencia"],
+            dados["realiza_agrupamento"],
+        )
+        if not professores:
+            return Response(status=204)
+        resposta = BuscarProfessorTitularPorDisciplinaSerializer(
+            professores,
+            many=True,
+        )
+        return Response(resposta.data)
+
+
+class ProfessorTitularPorTurmaDisciplinaView(ProfessoresAPIView):
+    """Busca o professor titular de uma turma e disciplina."""
+
+    @extend_schema(
+        tags=_TAG_PROFESSOR,
+        description=(
+            "Busca o professor titular da turma para o componente curricular."
+        ),
+        responses={
+            200: BuscarProfessorTitularPorDisciplinaSerializer,
+            204: None,
+            400: OpenApiTypes.OBJECT,
+        },
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_turma: str,
+        codigo_componente_curricular: str,
+    ) -> Response:
+        """Retorna o professor titular da turma e componente curricular.
+
+        Args:
+            codigo_turma: Código da turma consultada.
+            codigo_componente_curricular: Código do componente curricular.
+
+        Returns:
+            Professor encontrado, ausência de conteúdo ou erro de
+            validação.
+        """
+        if not codigo_turma.strip():
+            return Response(
+                "Código RF e Código de Turma, são obrigatórios.", status=400
+            )
+
+        professor = services.buscar_professor_titular_por_turma_disciplina(
+            codigo_turma,
+            codigo_componente_curricular,
+        )
+        if professor is None:
+            return Response(status=204)
+        resposta = BuscarProfessorTitularPorDisciplinaSerializer(professor)
+        return Response(resposta.data)
+
+
+class ProfessoresTitularesPorTurmasView(ProfessoresAPIView):
+    """Busca professores titulares de várias turmas."""
+
+    @extend_schema(
+        tags=_TAG_PROFESSOR,
+        description="Busca professores titulares das turmas informadas.",
+        parameters=[
+            OpenApiParameter(
+                "codigosTurmas",
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                required=True,
+                many=True,
+                description="Códigos das turmas consultadas.",
+            )
+        ],
+        responses={
+            200: ProfessoresTitularesPorTurmasSerializer(many=True),
+            204: None,
+            400: OpenApiTypes.OBJECT,
+        },
+    )
+    def get(self, request: Request) -> Response:
+        """Retorna professores titulares das turmas.
+
+        Args:
+            request: Requisição com os códigos das turmas na query string.
+
+        Returns:
+            Professores encontrados, ausência de conteúdo ou erro de
+            validação.
+        """
+        serializer = ProfessoresTitularesPorTurmasQuerySerializer(
+            data={
+                "codigosTurmas": request.query_params.getlist("codigosTurmas")
+            }
+        )
+        if not serializer.is_valid():
+            return detail_response("Códigos de Turmas, são obrigatórios.")
+
+        professores = services.buscar_professores_titulares_por_turmas(
+            serializer.validated_data["codigos_turmas"]
+        )
+        if not professores:
+            return Response(status=204)
+        resposta = ProfessoresTitularesPorTurmasSerializer(
             professores,
             many=True,
         )

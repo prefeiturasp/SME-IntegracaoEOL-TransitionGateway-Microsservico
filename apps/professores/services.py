@@ -1143,7 +1143,6 @@ def get_turmas_professor_disciplina(
 
 def buscar_professores_titulares_por_turma(
     codigo_turma: str,
-    codigo_rf: str,
     data_referencia: datetime | None,
     realiza_agrupamento: bool,
 ) -> list[dict[str, Any]]:
@@ -1151,7 +1150,6 @@ def buscar_professores_titulares_por_turma(
 
     Args:
         codigo_turma: Código da turma consultada.
-        codigo_rf: RF usado como filtro opcional.
         data_referencia: Data de referência usada como filtro opcional.
         realiza_agrupamento: Indica se componentes devem ser agrupados.
 
@@ -1162,15 +1160,8 @@ def buscar_professores_titulares_por_turma(
         httpx.HTTPError: Quando a chamada ao serviço de professores falha.
         ValueError: Quando a resposta não pode ser convertida para JSON.
     """
-    params: dict[str, str] = {}
-    if codigo_rf:
-        params["codigo_rf"] = codigo_rf
-    if data_referencia is not None:
-        params["data_referencia"] = data_referencia.isoformat()
-
     resp = _client.get(
         f"{_BASE}/{codigo_turma}/titulares/",
-        params=params or None,
     )
     payload = _client.json_or_none(resp)
     if not isinstance(payload, list):
@@ -1220,7 +1211,271 @@ def buscar_professores_titulares_por_turma(
     else:
         componentes_retorno = componentes_professor
 
-    return _agrupar_componentes_retorno(componentes_retorno)
+    _aplicar_descricoes_componentes_turma(
+        codigo_turma,
+        componentes_retorno,
+    )
+
+    componentes_agrupados = _agrupar_componentes_retorno(componentes_retorno)
+    return [
+        componente
+        for componente in componentes_agrupados
+        if _possui_dados_professor_titular(componente)
+    ]
+
+
+def _aplicar_descricoes_componentes_turma(
+    codigo_turma: str,
+    componentes_retorno: list[dict[str, Any]],
+) -> None:
+    """Aplica descrições territoriais aos componentes de uma turma.
+
+    Args:
+        codigo_turma: Código da turma consultada.
+        componentes_retorno: Componentes que receberão as descrições.
+    """
+    componentes_codigos = [
+        str(componente["disciplina_id"])
+        for componente in componentes_retorno
+        if componente.get("disciplina_id") is not None
+        and str(componente["disciplina_id"]).strip()
+        and str(componente["disciplina_id"]).strip().lower() != "none"
+    ]
+
+    componentes_turmas = pedagogico_services.get_turma_componentes_turma(
+        codigo_turma,
+        componentes_codigos,
+    )
+
+    if isinstance(componentes_turmas, list):
+        for componente_retorno in componentes_retorno:
+            componente_turma = next(
+                (
+                    componente
+                    for componente in componentes_turmas
+                    if isinstance(componente, dict)
+                    and str(componente.get("componente_codigo"))
+                    == str(componente_retorno.get("disciplina_id"))
+                    and componente.get("desc_experiencia_pedagogica")
+                    is not None
+                ),
+                None,
+            )
+            if (
+                componente_turma is not None
+                and componente_turma.get("desc_experiencia_pedagogica")
+                is not None
+            ):
+                descricao_territorio = componente_turma.get(
+                    "desc_territorio_saber"
+                )
+                descricao_experiencia = componente_turma[
+                    "desc_experiencia_pedagogica"
+                ]
+                componente_retorno["disciplina"] = " - ".join(
+                    descricao
+                    for descricao in (
+                        descricao_territorio,
+                        descricao_experiencia,
+                    )
+                    if descricao
+                )
+
+
+def _possui_dados_professor_titular(componente: dict[str, Any]) -> bool:
+    """Verifica se o componente possui dados relevantes para o retorno.
+
+    Args:
+        componente: Dados agrupados do professor e componente curricular.
+
+    Returns:
+        True quando ao menos um campo relevante está preenchido.
+    """
+    campos_relevantes = (
+        "professor_rf",
+        "nome_professor",
+        "disciplina",
+        "disciplina_id",
+        "disciplinas_id",
+    )
+    return any(
+        valor is not None
+        and str(valor).strip()
+        and str(valor).strip().lower() != "none"
+        for valor in (componente.get(campo) for campo in campos_relevantes)
+    )
+
+
+def buscar_professores_titulares_por_ue(
+    ue_codigo: str,
+    data_referencia: datetime,
+    realiza_agrupamento: bool,
+) -> list[dict[str, Any]]:
+    """Busca professores titulares de uma UE na data de referência.
+
+    Args:
+        ue_codigo: Código da unidade educacional consultada.
+        data_referencia: Data usada para consultar as atribuições vigentes.
+        realiza_agrupamento: Indica se os componentes devem ser agrupados.
+
+    Returns:
+        Professores titulares encontrados ou uma lista vazia.
+
+    Raises:
+        httpx.HTTPError: Quando a chamada ao serviço de professores falha.
+        ValueError: Quando a resposta não pode ser convertida para JSON.
+    """
+    resp = _client.get(
+        f"{_BASE}/titulares/ue/{ue_codigo}/"
+        f"{data_referencia.date().isoformat()}"
+    )
+    payload = _client.json_or_none(resp)
+    if not isinstance(payload, list):
+        return []
+
+    componentes_professor = [
+        item for item in payload if isinstance(item, dict)
+    ]
+    if not componentes_professor:
+        return []
+
+    componentes_api_eol = pedagogico_services.get_componentes_api_eol()
+
+    existe_vigencia_ativa = any(
+        _verificar_vigencia_componente_pai(
+            componentes_api_eol,
+            str(componente.get("disciplina_id")),
+            data_referencia,
+        )
+        for componente in componentes_professor
+    )
+
+    codigos_turmas = _valores_distintos(
+        componente.get("turma_id") for componente in componentes_professor
+    )
+    if codigos_turmas:
+        atribuicoes_turma_territorio_saber = (
+            pedagogico_services.get_professores_turmas_territorio_saber(
+                codigos_turmas
+            )
+        )
+        if isinstance(atribuicoes_turma_territorio_saber, list) and any(
+            atribuicoes_turma_territorio_saber
+        ):
+            componentes_professor = _tratar_agrupamento_componentes_professor(
+                codigos_turmas,
+                componentes_professor,
+                atribuicoes_turma_territorio_saber,
+            )
+
+    if realiza_agrupamento or existe_vigencia_ativa:
+        componentes_retorno = [
+            _montar_componente_professor_agrupado(
+                componente,
+                componentes_api_eol,
+            )
+            for componente in componentes_professor
+        ]
+    else:
+        componentes_retorno = componentes_professor
+
+    for codigo_turma in codigos_turmas:
+        componentes_turma = [
+            componente
+            for componente in componentes_retorno
+            if str(componente.get("turma_id")) == codigo_turma
+        ]
+        _aplicar_descricoes_componentes_turma(
+            codigo_turma,
+            componentes_turma,
+        )
+
+    return componentes_retorno
+
+
+def buscar_professor_titular_por_turma_disciplina(
+    codigo_turma: str,
+    codigo_componente_curricular: str,
+) -> dict[str, Any] | None:
+    """Busca o professor titular da turma e componente curricular.
+
+    Args:
+        codigo_turma: Código da turma consultada.
+        codigo_componente_curricular: Código do componente curricular.
+
+    Returns:
+        Professor titular encontrado ou ausência de conteúdo.
+
+    Raises:
+        httpx.HTTPError: Quando a chamada ao serviço de professores falha.
+        ValueError: Quando a resposta não pode ser convertida para JSON.
+    """
+    if _validar_componente_eh_territorio_saber_agrupado(
+        codigo_componente_curricular
+    ):
+        atribuicoes_territorio_saber = (
+            pedagogico_services.get_professores_turma_territorio_saber(
+                codigo_turma
+            )
+        )
+        componente_professor = next(
+            (
+                componente
+                for componente in atribuicoes_territorio_saber
+                if isinstance(componente, dict)
+                and str(componente.get("disciplina_id"))
+                == codigo_componente_curricular
+            ),
+            None,
+        )
+        if componente_professor is None:
+            return None
+        disciplinas_agrupadas = componente_professor.get(
+            "disciplinas_agrupadas_ids"
+        )
+        return {
+            "disciplina": componente_professor.get("disciplina_nome"),
+            "disciplina_id": str(componente_professor.get("disciplina_id")),
+            "disciplinas_id": ",".join(
+                str(disciplina_id)
+                for disciplina_id in disciplinas_agrupadas or []
+            ),
+            "nome_professor": componente_professor.get("nome_professor"),
+            "professor_rf": componente_professor.get("codigo_rf"),
+            "turma_id": int(cast(Any, componente_professor["codigo_turma"])),
+        }
+
+    resp = _client.get(
+        f"{_BASE}/titular/turmas/{codigo_turma}/"
+        f"componentes-curriculares/{codigo_componente_curricular}"
+    )
+    payload = _client.json_or_none(resp)
+    if not isinstance(payload, dict):
+        return None
+
+    disciplina_id = payload.get("disciplina_id")
+    componentes_turma = pedagogico_services.get_turma_componentes_turma(
+        codigo_turma,
+        [str(disciplina_id)],
+    )
+    if isinstance(componentes_turma, list):
+        componente_turma = next(
+            (
+                componente
+                for componente in componentes_turma
+                if isinstance(componente, dict)
+                and str(componente.get("componente_codigo"))
+                == str(disciplina_id)
+                and componente.get("desc_experiencia_pedagogica") is not None
+            ),
+            None,
+        )
+        if componente_turma is not None:
+            payload["disciplina"] = componente_turma[
+                "desc_experiencia_pedagogica"
+            ]
+
+    return payload
 
 
 def _agrupar_componentes_retorno(
@@ -1266,7 +1521,7 @@ def _agrupar_componentes_retorno(
         retorno.append(
             {
                 "disciplina": primeiro.get("disciplina"),
-                "disciplina_id": None,
+                "disciplina_id": primeiro.get("disciplina_id"),
                 "disciplinas_id": disciplinas_id,
                 "nome_professor": nomes_professores,
                 "professor_rf": professores_rf,
@@ -1352,7 +1607,7 @@ def _montar_componente_professor_agrupado(
         "disciplinas_id": None,
         "nome_professor": componente_professor.get("nome_professor"),
         "professor_rf": componente_professor.get("professor_rf"),
-        "turma_id": 0,
+        "turma_id": componente_professor.get("turma_id", 0),
     }
 
 
@@ -1401,11 +1656,23 @@ def _tratar_agrupamento_componentes_professor(
                 "disciplina": atribuicao.get("disciplina_nome"),
                 "disciplina_id": atribuicao.get("disciplina_id"),
                 "disciplinas_id": atribuicao.get("disciplina_id"),
-                "nome_professor": atribuicao.get("nome_professor"),
+                "nome_professor": atribuicao.get("nome_professor")
+                or next(
+                    (
+                        componente.get("nome_professor")
+                        for componente in componentes_professor
+                        if str(componente.get("professor_rf"))
+                        == str(atribuicao.get("codigo_rf"))
+                        and int(cast(Any, componente.get("disciplina_id")))
+                        in ids_componentes_territorio
+                    ),
+                    None,
+                ),
                 "professor_rf": atribuicao.get("codigo_rf"),
                 "turma_id": int(cast(Any, atribuicao.get("codigo_turma"))),
             }
             for atribuicao in atribuicoes_territorio_saber
+            if str(atribuicao.get("codigo_turma")) == codigo_turma
         )
 
     return retorno
@@ -2027,3 +2294,66 @@ def _verificar_vigencia_componente_pai(
         return data_vigencia is not None and data_vigencia >= data_base
 
     return False
+
+
+def buscar_professores_titulares_por_turmas(
+    codigos_turmas: list[str],
+) -> list[dict[str, Any]]:
+    """Busca professores titulares de uma lista de turmas.
+
+    Args:
+        codigos_turmas: Lista de códigos das turmas consultadas.
+
+    Returns:
+        Professores titulares encontrados ou uma lista vazia.
+
+    Raises:
+        httpx.HTTPError: Quando a chamada ao serviço de professores falha.
+        ValueError: Quando a resposta não pode ser convertida para JSON.
+    """
+    resp = _client.get(
+        f"{_BASE}/titulares/",
+        params={"codigos_turmas": [int(codigo) for codigo in codigos_turmas]},
+    )
+    payload = _client.json_or_none(resp)
+    if not isinstance(payload, list):
+        return []
+
+    atribuicoes_professores = [
+        item for item in payload if isinstance(item, dict)
+    ]
+
+    componentes_api_eol = pedagogico_services.get_componentes_api_eol()
+
+    atribuicoes_territorio_saber = (
+        pedagogico_services.get_professores_turmas_territorio_saber(
+            codigos_turmas
+        )
+    )
+
+    if isinstance(atribuicoes_territorio_saber, list) and any(
+        atribuicoes_territorio_saber
+    ):
+        atribuicoes_professores = _tratar_agrupamento_componentes_professor(
+            codigos_turmas,
+            atribuicoes_professores,
+            atribuicoes_territorio_saber,
+        )
+
+    componentes_retorno: list[dict[str, Any]] = []
+    for codigo_turma in codigos_turmas:
+        componentes_turma = [
+            _montar_componente_professor_agrupado(
+                componente,
+                componentes_api_eol,
+            )
+            for componente in atribuicoes_professores
+            if str(componente.get("turma_id")) == codigo_turma
+        ]
+        _aplicar_descricoes_componentes_turma(
+            codigo_turma,
+            componentes_turma,
+        )
+        componentes_retorno.extend(componentes_turma)
+
+    return _agrupar_componentes_retorno(componentes_retorno)

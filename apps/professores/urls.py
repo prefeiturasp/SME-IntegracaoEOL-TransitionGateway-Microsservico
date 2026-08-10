@@ -37,8 +37,11 @@ from apps.professores.views import (
     ProfessorDisciplinaTurmasView,
     ProfessorEhEmeiView,
     ProfessoresBuscarPorListaRfAnoView,
+    ProfessoresTitularesPorTurmasView,
     ProfessoresTitularesPorTurmaView,
+    ProfessoresTitularesPorUeView,
     ProfessorStatusAtribuicaoView,
+    ProfessorTitularPorTurmaDisciplinaView,
     ProfessorTurmasView,
     ProfessorVerificarAtribuicaoDataTickView,
     ProfessorVerificarAtribuicaoDataView,
@@ -126,6 +129,19 @@ urlpatterns = [
     path(
         "professores/<int:ano_letivo>/AutoComplete/<str:dre_id>/",
         ProfessorAutoCompleteView.as_view(),
+    ),
+    path(
+        "professores/titulares/",
+        ProfessoresTitularesPorTurmasView.as_view(),
+    ),
+    path(
+        "professores/titulares/ue/<str:ue_codigo>/<str:data_referencia>",
+        ProfessoresTitularesPorUeView.as_view(),
+    ),
+    path(
+        "professores/titular/turmas/<str:codigo_turma>/"
+        "componentes-curriculares/<str:codigo_componente_curricular>",
+        ProfessorTitularPorTurmaDisciplinaView.as_view(),
     ),
     path(
         "professores/<str:codigo_rf>/ehEmei/",
