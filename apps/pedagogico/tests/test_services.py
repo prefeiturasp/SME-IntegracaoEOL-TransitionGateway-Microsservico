@@ -979,6 +979,150 @@ class GetItinerariosEnsinoMedioTest(SimpleTestCase):
             services.get_itinerarios_ensino_medio()
 
 
+class GetModalidadesEnsinoTest(SimpleTestCase):
+    """Valida a consulta do catálogo de modalidades de ensino."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_canonico(self, mock_get: MagicMock) -> None:
+        payload = ["Infantil", "Fundamental"]
+        mock_response = MagicMock()
+        mock_response.json.return_value = payload
+        mock_get.return_value = mock_response
+
+        result = services.get_modalidades_ensino()
+
+        mock_get.assert_called_once_with(
+            f"{_BASE_TURMAS}/escolas/modalidades-ensino/"
+        )
+        mock_response.raise_for_status.assert_called_once_with()
+        self.assertEqual(result, payload)
+
+    @patch.object(services._client, "get")
+    def test_rejeita_raiz_que_nao_seja_lista(
+        self, mock_get: MagicMock
+    ) -> None:
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"a": 1}
+        mock_get.return_value = mock_response
+
+        with self.assertRaises(ValueError):
+            services.get_modalidades_ensino()
+
+    @patch.object(services._client, "get")
+    def test_rejeita_item_que_nao_seja_texto(
+        self, mock_get: MagicMock
+    ) -> None:
+        mock_response = MagicMock()
+        mock_response.json.return_value = ["Infantil", 5]
+        mock_get.return_value = mock_response
+
+        with self.assertRaises(ValueError):
+            services.get_modalidades_ensino()
+
+
+class GetTurmasPorTipoSalaTest(SimpleTestCase):
+    """Valida a consulta de turmas por UE/tipo de sala/ano letivo."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_canonico(self, mock_get: MagicMock) -> None:
+        payload = [{"codigo_turma": 2112345}]
+        mock_response = MagicMock()
+        mock_response.json.return_value = payload
+        mock_get.return_value = mock_response
+
+        result = services.get_turmas_por_tipo_sala(
+            codigo_ue="000532", tipo_sala="1", ano_letivo="2024"
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE_TURMAS}/escolas/000532/salas/1/anos-letivos/2024/"
+        )
+        mock_response.raise_for_status.assert_called_once_with()
+        self.assertEqual(result, payload)
+
+    @patch.object(services._client, "get")
+    def test_rejeita_raiz_que_nao_seja_lista(
+        self, mock_get: MagicMock
+    ) -> None:
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"a": 1}
+        mock_get.return_value = mock_response
+
+        with self.assertRaises(ValueError):
+            services.get_turmas_por_tipo_sala(
+                codigo_ue="000532", tipo_sala="1", ano_letivo="2024"
+            )
+
+
+class GetTurmasPorEscolaTest(SimpleTestCase):
+    """Valida a consulta de turmas por UE/ano letivo."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_canonico(self, mock_get: MagicMock) -> None:
+        payload = [{"codigo_turma": 2112345}]
+        mock_response = MagicMock()
+        mock_response.json.return_value = payload
+        mock_get.return_value = mock_response
+
+        result = services.get_turmas_por_escola(
+            codigo_ue="000532", ano_letivo="2024"
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE_TURMAS}/escolas/000532/anos-letivos/2024/"
+        )
+        mock_response.raise_for_status.assert_called_once_with()
+        self.assertEqual(result, payload)
+
+    @patch.object(services._client, "get")
+    def test_rejeita_raiz_que_nao_seja_lista(
+        self, mock_get: MagicMock
+    ) -> None:
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"a": 1}
+        mock_get.return_value = mock_response
+
+        with self.assertRaises(ValueError):
+            services.get_turmas_por_escola(
+                codigo_ue="000532", ano_letivo="2024"
+            )
+
+
+class GetTurmasSondagemTest(SimpleTestCase):
+    """Valida a consulta de turmas de Sondagem por UE/ano letivo."""
+
+    @patch.object(services._client, "get")
+    def test_chama_path_canonico(self, mock_get: MagicMock) -> None:
+        payload = [{"codigo_turma": 2112345}]
+        mock_response = MagicMock()
+        mock_response.json.return_value = payload
+        mock_get.return_value = mock_response
+
+        result = services.get_turmas_sondagem(
+            codigo_ue="000532", ano_letivo="2024"
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE_TURMAS}/escolas/000532/turmas-sondagem/"
+            "anos-letivos/2024/"
+        )
+        mock_response.raise_for_status.assert_called_once_with()
+        self.assertEqual(result, payload)
+
+    @patch.object(services._client, "get")
+    def test_rejeita_raiz_que_nao_seja_lista(
+        self, mock_get: MagicMock
+    ) -> None:
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"a": 1}
+        mock_get.return_value = mock_response
+
+        with self.assertRaises(ValueError):
+            services.get_turmas_sondagem(
+                codigo_ue="000532", ano_letivo="2024"
+            )
+
+
 class GetComponentesUeAnosTest(SimpleTestCase):
     """Valida a consulta de componentes por anos escolares."""
 

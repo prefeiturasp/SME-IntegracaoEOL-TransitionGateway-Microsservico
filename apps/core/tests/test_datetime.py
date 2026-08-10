@@ -7,6 +7,7 @@ from django.test import SimpleTestCase
 from apps.core.datetime import (
     datetime_legado,
     formatar_datetime_legado,
+    formatar_datetime_legado_us,
     parse_date,
     validar_data_str,
     validar_data_tick,
@@ -30,6 +31,24 @@ class FormatarDatetimeLegadoTest(SimpleTestCase):
         result = formatar_datetime_legado("2026-02-04T00:00:00")
 
         self.assertEqual(result, "2026-02-04T00:00:00")
+
+
+class FormatarDatetimeLegadoUsTest(SimpleTestCase):
+    """Valida a formatacao en-US usada por DTOs sem conversor JSON custom."""
+
+    def test_converte_utc_para_formato_americano(self) -> None:
+        result = formatar_datetime_legado_us("2026-02-04T03:00:00Z")
+
+        self.assertEqual(result, "02/04/2026 00:00:00")
+
+    def test_aceita_datetime_sem_timezone(self) -> None:
+        result = formatar_datetime_legado_us("2026-02-04T00:00:00")
+
+        self.assertEqual(result, "02/04/2026 00:00:00")
+
+    def test_retorna_none_para_valor_ausente(self) -> None:
+        self.assertIsNone(formatar_datetime_legado_us(None))
+        self.assertIsNone(formatar_datetime_legado_us(""))
 
 
 class ParseDateTest(SimpleTestCase):

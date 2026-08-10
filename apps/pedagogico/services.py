@@ -654,6 +654,130 @@ def get_itinerarios_ensino_medio() -> list[dict[str, Any]]:
     return payload
 
 
+def get_modalidades_ensino() -> list[str]:
+    """Lista as descrições das modalidades (etapas) de ensino.
+
+    Returns:
+        Descrições das etapas de ensino cadastradas.
+
+    Raises:
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
+        ValueError: Se a resposta não for uma lista de strings.
+    """
+    response = _client.get(f"{_BASE_TURMAS}/escolas/modalidades-ensino/")
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, list) or any(
+        not isinstance(item, str) for item in payload
+    ):
+        raise ValueError(
+            "Resposta de modalidades de ensino deve ser uma lista de textos."
+        )
+    return payload
+
+
+def get_turmas_por_tipo_sala(
+    codigo_ue: str,
+    tipo_sala: str,
+    ano_letivo: str,
+) -> list[dict[str, Any]]:
+    """Lista turmas de uma UE/ano letivo filtradas por tipo de sala.
+
+    Args:
+        codigo_ue: Código da unidade educacional.
+        tipo_sala: Tipo de sala informado na rota.
+        ano_letivo: Ano letivo consultado.
+
+    Returns:
+        Turmas retornadas pela API no recorte.
+
+    Raises:
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
+        ValueError: Se a resposta não for uma lista de objetos.
+    """
+    response = _client.get(
+        f"{_BASE_TURMAS}/escolas/{codigo_ue}/salas/{tipo_sala}/"
+        f"anos-letivos/{ano_letivo}/"
+    )
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, list) or any(
+        not isinstance(item, dict) for item in payload
+    ):
+        raise ValueError(
+            "Resposta de turmas por tipo de sala deve ser uma lista "
+            "de objetos."
+        )
+    return payload
+
+
+def get_turmas_por_escola(
+    codigo_ue: str,
+    ano_letivo: str,
+) -> list[dict[str, Any]]:
+    """Lista turmas de uma UE/ano letivo cujo nome começa com dígito.
+
+    Args:
+        codigo_ue: Código da unidade educacional.
+        ano_letivo: Ano letivo consultado.
+
+    Returns:
+        Turmas retornadas pela API.
+
+    Raises:
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
+        ValueError: Se a resposta não for uma lista de objetos.
+    """
+    response = _client.get(
+        f"{_BASE_TURMAS}/escolas/{codigo_ue}/anos-letivos/{ano_letivo}/"
+    )
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, list) or any(
+        not isinstance(item, dict) for item in payload
+    ):
+        raise ValueError(
+            "Resposta de turmas por escola deve ser uma lista de objetos."
+        )
+    return payload
+
+
+def get_turmas_sondagem(
+    codigo_ue: str,
+    ano_letivo: str,
+) -> list[dict[str, Any]]:
+    """Lista turmas regulares de 5º ano do Fundamental para Sondagem.
+
+    Args:
+        codigo_ue: Código da unidade educacional.
+        ano_letivo: Ano letivo consultado.
+
+    Returns:
+        Turmas retornadas pela API.
+
+    Raises:
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
+        ValueError: Se a resposta não for uma lista de objetos.
+    """
+    response = _client.get(
+        f"{_BASE_TURMAS}/escolas/{codigo_ue}/turmas-sondagem/"
+        f"anos-letivos/{ano_letivo}/"
+    )
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, list) or any(
+        not isinstance(item, dict) for item in payload
+    ):
+        raise ValueError(
+            "Resposta de turmas de sondagem deve ser uma lista de objetos."
+        )
+    return payload
+
+
 def get_componentes_por_turmas_ue(
     ue_id: str,
     turmas: list[str],

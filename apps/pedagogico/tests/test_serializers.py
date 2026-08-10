@@ -11,9 +11,12 @@ from apps.pedagogico.serializers import (
     CodigoTurmaInteiroListSerializer,
     CodigoTurmaListSerializer,
     ItinerarioEnsinoMedioSerializer,
+    ModalidadeEnsinoListSerializer,
     SincronizacaoInstitucionalTurmaSerializer,
     TurmaDadosSerializer,
     TurmaHistoricaGeralSerializer,
+    TurmaPorEscolaSerializer,
+    TurmaPorSalaSerializer,
 )
 
 
@@ -514,3 +517,105 @@ class SincronizacaoInstitucionalTurmaSerializerTest(SimpleTestCase):
             componente["dataDisponibizacao"],
             "2026-06-17T05:11:45",
         )
+
+
+class ModalidadeEnsinoListSerializerTest(SimpleTestCase):
+    """Valida a lista de descrições de modalidades de ensino."""
+
+    def test_serializa_lista_de_strings(self) -> None:
+        serializer = ModalidadeEnsinoListSerializer(
+            ["Infantil", "Fundamental"]
+        )
+
+        self.assertEqual(serializer.data, ["Infantil", "Fundamental"])
+
+    def test_valida_lista_vazia(self) -> None:
+        serializer = ModalidadeEnsinoListSerializer(data=[])
+
+        self.assertTrue(serializer.is_valid())
+        self.assertEqual(serializer.validated_data, [])
+
+
+class TurmaPorSalaSerializerTest(SimpleTestCase):
+    """Valida turma no contrato legado de escolas por sala/sondagem."""
+
+    def test_converte_tipo_turma_para_string(self) -> None:
+        serializer = TurmaPorSalaSerializer(
+            data={
+                "codigo_turma": 2112345,
+                "nome_turma": "3A EF",
+                "tipo_turma": 1,
+                "situacao": "A",
+                "data_inicio_turma": "2024-02-05T03:00:00Z",
+                "data_fim_turma": None,
+            }
+        )
+
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        self.assertEqual(
+            serializer.data,
+            {
+                "codigoTurma": 2112345,
+                "nomeTurma": "3A EF",
+                "tipoTurma": "1",
+                "situacao": "A",
+                "dataInicioTurma": "02/05/2024 00:00:00",
+                "dataFimTurma": None,
+            },
+        )
+
+    def test_situacao_nula(self) -> None:
+        serializer = TurmaPorSalaSerializer(
+            data={
+                "codigo_turma": 2112345,
+                "nome_turma": "3A EF",
+                "tipo_turma": 1,
+                "situacao": None,
+                "data_inicio_turma": None,
+                "data_fim_turma": None,
+            }
+        )
+
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        self.assertIsNone(serializer.data["situacao"])
+
+
+class TurmaPorEscolaSerializerTest(SimpleTestCase):
+    """Valida turma no contrato legado de escolas/turmas."""
+
+    def test_inclui_nome_turma_eol_e_sigla_modalidade(self) -> None:
+        serializer = TurmaPorEscolaSerializer(
+            data={
+                "codigo_turma": 2112345,
+                "nome_turma_eol": "3A",
+                "nome_turma": "EF - 3A",
+                "tipo_turma": 1,
+                "situacao": "A",
+                "data_inicio_turma": None,
+                "data_fim_turma": None,
+                "sigla_modalidade": "EF",
+            }
+        )
+
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        self.assertEqual(serializer.data["nomeTurmaEOL"], "3A")
+        self.assertEqual(serializer.data["nomeTurma"], "EF - 3A")
+        self.assertEqual(serializer.data["siglaModalidade"], "EF")
+        self.assertEqual(serializer.data["tipoTurma"], "1")
+
+    def test_sigla_modalidade_nula(self) -> None:
+        serializer = TurmaPorEscolaSerializer(
+            data={
+                "codigo_turma": 2112345,
+                "nome_turma_eol": "3A",
+                "nome_turma": "3A",
+                "tipo_turma": 1,
+                "situacao": "A",
+                "data_inicio_turma": None,
+                "data_fim_turma": None,
+                "sigla_modalidade": None,
+            }
+        )
+
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        self.assertIsNone(serializer.data["siglaModalidade"])

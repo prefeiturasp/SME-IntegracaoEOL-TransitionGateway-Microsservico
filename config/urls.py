@@ -8,7 +8,11 @@ from apps.alunos.urls import turma_urlpatterns as alunos_turma_urlpatterns
 from apps.matriculas.urls import (
     escola_urlpatterns as matriculas_escola_urlpatterns,
 )
-from apps.pedagogico.urls import turma_urlpatterns, ue_urlpatterns
+from apps.pedagogico.urls import (
+    escola_urlpatterns,
+    turma_urlpatterns,
+    ue_urlpatterns,
+)
 from config import settings
 
 API_PREFIX = "api/v1/"
@@ -55,6 +59,10 @@ urlpatterns = [
     ),
     path("api/turmas/", include((turma_urlpatterns, "turmas"))),
     path("api/", include((ue_urlpatterns, "ues"))),
+    path(
+        "api/",
+        include((escola_urlpatterns, "pedagogico-escolas")),
+    ),
     path("api/", include("apps.professores.urls")),
     path("api/", include("apps.institucional.urls")),
     path("api/", include("apps.programasedu.urls")),
