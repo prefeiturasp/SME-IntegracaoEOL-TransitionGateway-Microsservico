@@ -22,3 +22,14 @@ recortes de perfil.
 
 Sem esses dados, o retorno nao representa todo o vinculo que o legado resolve
 pela identidade.
+
+## Professores por escola e ano
+
+Em algumas escolas, a origem pode conter mais de uma atribuicao ativa para a
+mesma turma e componente. O legado nao define um desempate completo entre essas
+atribuicoes antes de montar o retorno e, por isso, a escolha observada pode
+depender do cache ou da execucao da consulta.
+
+O novo EOL consome uma visao materializada que estabiliza essa escolha. Assim,
+as quantidades tendem a permanecer alinhadas, mas pode haver divergencia de RF
+em cenarios de empate na origem.

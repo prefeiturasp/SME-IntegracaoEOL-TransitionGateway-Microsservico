@@ -8,6 +8,7 @@ from apps.institucional.views import (
     DREListView,
     EquipamentosView,
     EscolaDetalheView,
+    EscolaProfessoresView,
     EscolasListPostView,
     EscolasPorDREeTipoView,
     EscolasPorDREView,
@@ -114,6 +115,16 @@ urlpatterns = [
         "escolas/<str:ue_codigo>/sincronizacoes-institucionais/",
         SincronizacoesInstitucionaisView.as_view(),
         name="escola-sincronizacoes-institucionais",
+    ),
+    path(
+        "escolas/<str:codigo_eol_escola>/professores/<int:ano_letivo>/",
+        EscolaProfessoresView.as_view(),
+        name="escola-professores-ano",
+    ),
+    path(
+        "escolas/<str:codigo_eol_escola>/professores/",
+        EscolaProfessoresView.as_view(),
+        name="escola-professores",
     ),
     path(
         "escolas/unidades-parceiras/",

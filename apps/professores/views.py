@@ -1,6 +1,6 @@
 """Views do domínio de professores."""
 
-from typing import Any, NamedTuple, cast
+from typing import Any, cast
 
 import httpx
 from drf_spectacular.types import OpenApiTypes
@@ -17,19 +17,30 @@ from apps.core.responses import (
 from apps.core.views import DomainAPIView
 from apps.professores import services
 from apps.professores.serializers import (
+    AbrangenciaLegadoSerializer,
+    AbrangenciaTemporariaSerializer,
     BuscarFuncionariosPorUeSerializer,
     BuscarProfessorTitularPorDisciplinaSerializer,
     BuscarTurmasElegiveisSerializer,
+    CargoFuncionarioConectaSerializer,
+    DisciplinasFuncionarioPathSerializer,
     DisciplinaTurmaAgrupamentoSerializer,
     DisciplinaTurmaAtribuidaSerializer,
+    DreUeAtribuicaoCargoSerializer,
     FuncionarioCargoSerializer,
+    FuncionarioConectaFormacaoSerializer,
     FuncionarioDadosSigpaeSerializer,
     FuncionarioEscolaSerializer,
     FuncionarioExternoSerializer,
     FuncionarioFuncaoAtividadeSerializer,
     FuncionarioFuncaoAtividadeUeSerializer,
     FuncionarioFuncaoExternaSerializer,
+    FuncionarioLegadoSerializer,
     FuncionarioLoginSerializer,
+    FuncionariosConectaFormacaoFiltroSerializer,
+    FuncionariosEscolaCargosQuerySerializer,
+    FuncionariosEscolaFuncoesAtividadesQuerySerializer,
+    FuncionariosEscolaFuncoesExternasQuerySerializer,
     FuncionarioSgpLegadoSerializer,
     FuncionariosPerfisQuerySerializer,
     FuncionarioUeLegadoSerializer,
@@ -38,19 +49,25 @@ from apps.professores.serializers import (
     NomeServidorSerializer,
     ProfessorAtribuicaoPeriodoPathSerializer,
     ProfessorAtribuicaoTurmaDisciplinaSerializer,
+    ProfessorAutocompleteQuerySerializer,
     ProfessorAutoCompleteSerializer,
+    ProfessorBuscarPorRfQuerySerializer,
     ProfessorBuscarPorRfSerializer,
     ProfessoresTitularesParametrosSerializer,
     ProfessoresTitularesPorTurmasQuerySerializer,
     ProfessoresTitularesPorTurmasSerializer,
     ProfessoresTitularesPorUeParametrosSerializer,
     ProfessorRecorrenciaDataSerializer,
+    ProfessorRfDreUeQuerySerializer,
     ProfessorStatusAtribuicaoSerializer,
     ProfessorTurmaAtribuidaSimplificadaSerializer,
     ProfessorTurmaSerializer,
     SupervisorLegadoSerializer,
     TurmaAtribuidaProfessorSerializer,
+    TurmaElegivelLegadoSerializer,
+    TurmasAtribuidasLegadoSerializer,
     TurmasIdsSerializer,
+    UsuarioConectaFormacaoSerializer,
     VerificarAtribuicaoDisciplinaQuerySerializer,
 )
 
@@ -89,6 +106,11 @@ _MSG_LISTA_SUPERVISORES_OBRIGATORIA = (
 )
 _MSG_SUPERVISORES_NAO_ENCONTRADOS = "Não foram encontrados supervisores."
 _MSG_LISTA_LOGINS_OBRIGATORIA = "É necessario informar uma lista de Logins"
+_MSG_LISTA_PERFIS_OBRIGATORIA = "É necessario informar uma lista de Perfis"
+# O MS responde 204 quando não há usuários: 4xx do upstream é contabilizado
+# pelo circuit breaker da SDK e derruba os demais endpoints de professores.
+# O 404 do contrato legado é reconstruído aqui.
+_MSG_USUARIOS_NAO_ENCONTRADOS = "Não foram encontrados usuários."
 _MSG_CODIGO_TURMA_OBRIGATORIO = "É necessário informar o codigoTurma."
 _MSG_DATA_VALIDA = "Deve ser informada uma data valida."
 _MSG_DISCIPLINA_ID_OBRIGATORIO = "É necessário informar o disciplinaId."
@@ -218,33 +240,56 @@ _PARAMS_FUNCIONARIOS_PERFIL = [
     _PARAM_CODIGO_RF_LEGADO,
     _PARAM_NOME_SERVIDOR_LEGADO,
 ]
-
-
-class _AbrangenciaTemporaria(NamedTuple):
-    """Parâmetros temporários que substituem os dados do CoreSSO."""
-
-    abrangencia: int | None
-    cargos: list[int] | None
-    funcoes: list[int] | None
-    grupo: int | None
-    dre_codigo: str | None
-    eh_perfil_manual: bool
-
-
-def _inteiro_param(request: Request, nome: str) -> int | None:
-    """Lê um parâmetro inteiro único da requisição."""
-    bruto = request.query_params.get(nome)
-    return int(bruto) if bruto and bruto.isdigit() else None
-
-
-def _inteiros_param(request: Request, nome: str) -> list[int] | None:
-    """Lê um parâmetro inteiro repetido da requisição."""
-    valores = [
-        item
-        for item in request.query_params.getlist(nome)
-        if item.strip().isdigit()
-    ]
-    return [int(item) for item in valores] or None
+_PARAMS_CONECTA_FORMACAO = [
+    OpenApiParameter(
+        "codigos_cargos",
+        OpenApiTypes.INT,
+        OpenApiParameter.QUERY,
+        required=False,
+        many=True,
+    ),
+    OpenApiParameter(
+        "codigos_funcoes",
+        OpenApiTypes.INT,
+        OpenApiParameter.QUERY,
+        required=False,
+        many=True,
+    ),
+    OpenApiParameter(
+        "codigo_modalidade",
+        OpenApiTypes.INT,
+        OpenApiParameter.QUERY,
+        required=False,
+        many=True,
+    ),
+    OpenApiParameter(
+        "anos_turma",
+        OpenApiTypes.STR,
+        OpenApiParameter.QUERY,
+        required=False,
+        many=True,
+    ),
+    OpenApiParameter(
+        "codigos_dres",
+        OpenApiTypes.STR,
+        OpenApiParameter.QUERY,
+        required=False,
+        many=True,
+    ),
+    OpenApiParameter(
+        "codigos_componentes_curriculares",
+        OpenApiTypes.INT,
+        OpenApiParameter.QUERY,
+        required=False,
+        many=True,
+    ),
+    OpenApiParameter(
+        "eh_tipo_jornada_jeif",
+        OpenApiTypes.BOOL,
+        OpenApiParameter.QUERY,
+        required=False,
+    ),
+]
 
 
 class ProfessoresAPIView(DomainAPIView):
@@ -257,66 +302,6 @@ class JsonPatchParser(JSONParser):
     """Processa payload JSON Patch como JSON."""
 
     media_type = "application/json-patch+json"
-
-
-def _abrangencia_temporaria(request: Request) -> _AbrangenciaTemporaria:
-    """Lê os parâmetros temporários que substituem os dados do CoreSSO."""
-    return _AbrangenciaTemporaria(
-        abrangencia=_inteiro_param(request, "abrangencia"),
-        cargos=_inteiros_param(request, "cargos"),
-        funcoes=_inteiros_param(request, "funcoesId"),
-        grupo=_inteiro_param(request, "grupo"),
-        dre_codigo=request.query_params.get("dreCodigo") or None,
-        eh_perfil_manual=(
-            request.query_params.get("ehPerfilManual", "").lower() == "true"
-        ),
-    )
-
-
-def _query_params(
-    request: Request,
-    lista: set[str],
-    simples: set[str],
-) -> dict[str, str | list[str]]:
-    """Coleta parâmetros de consulta informados na requisição.
-
-    Args:
-        request: Requisição com os parâmetros de consulta.
-        lista: Nomes de parâmetros que aceitam múltiplos valores.
-        simples: Nomes de parâmetros com valor único.
-
-    Returns:
-        Parâmetros presentes, como lista ou valor único conforme o nome.
-    """
-    params: dict[str, str | list[str]] = {}
-    for nome in lista:
-        valores = request.query_params.getlist(nome)
-        if valores:
-            params[nome] = valores
-    for nome in simples:
-        valor = request.query_params.get(nome)
-        if valor is not None:
-            params[nome] = valor
-    return params
-
-
-def _parse_bool_param(value: str | None) -> bool | None:
-    """Retorna o booleano correspondente ao parâmetro textual.
-
-    Args:
-        value: Valor textual recebido na consulta.
-
-    Returns:
-        Booleano correspondente, ou ``None`` quando o valor não é reconhecido.
-    """
-    if value is None:
-        return None
-    normalized = value.lower()
-    if normalized == "true":
-        return True
-    if normalized == "false":
-        return False
-    return None
 
 
 def _is_lista_turmas(data: object) -> bool:
@@ -346,6 +331,66 @@ def _is_lista_dicionarios(data: object) -> bool:
     return isinstance(data, list) and all(
         isinstance(item, dict) for item in data
     )
+
+
+def _bloco_abrangencia_temporario(
+    id_perfil: str,
+    params: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Monta o bloco temporário de abrangência no contrato legado.
+
+    Args:
+        id_perfil: Perfil usado na consulta.
+        params: Parâmetros temporários normalizados.
+
+    Returns:
+        Bloco de abrangência, ou ``None`` quando nenhum parâmetro foi
+        informado.
+    """
+    valores = (
+        params["abrangencia"],
+        params["cargos"],
+        params["funcoes"],
+        params["grupo"],
+    )
+    if not any(valor is not None for valor in valores):
+        return None
+    return {
+        "grupoID": id_perfil,
+        "cargosId": params["cargos"] or [],
+        "funcoesId": params["funcoes"] or [],
+        "grupo": params["grupo"],
+        "abrangencia": params["abrangencia"],
+        "ehPerfilManual": params["eh_perfil_manual"],
+    }
+
+
+def _serializar_abrangencia_funcionario(
+    data: Any,
+    id_perfil: str,
+    params: dict[str, Any],
+) -> Any:
+    """Serializa abrangência do funcionário no contrato legado.
+
+    Args:
+        data: Dados retornados pelo domínio consultado.
+        id_perfil: Perfil usado na consulta.
+        params: Parâmetros temporários normalizados.
+
+    Returns:
+        Abrangência serializada no contrato legado.
+    """
+    if isinstance(data, list):
+        data = TurmasAtribuidasLegadoSerializer(data).data
+    elif isinstance(data, dict):
+        data = AbrangenciaLegadoSerializer(data).data
+
+    if isinstance(data, dict):
+        data["abrangencia"] = _bloco_abrangencia_temporario(
+            id_perfil,
+            params,
+        )
+    return data
 
 
 class ProfessorView(ProfessoresAPIView):
@@ -800,7 +845,9 @@ class ProfessorStatusAtribuicaoView(ProfessoresAPIView):
         resposta = services.get_status_atribuicao_professor_turma(
             codigo_rf, codigo_turma
         )
-        return Response(resposta)
+        if resposta is None:
+            return Response(None)
+        return Response(ProfessorStatusAtribuicaoSerializer(resposta).data)
 
 
 class ProfessorVerificarAtribuicaoDataTickView(ProfessoresAPIView):
@@ -922,7 +969,12 @@ class ProfessorAtribuicaoTurmaDisciplinaView(ProfessoresAPIView):
         resposta = services.get_atribuicoes_turma_disciplina(
             codigo_turma, disciplina_id, data
         )
-        return Response(resposta)
+        return Response(
+            ProfessorAtribuicaoTurmaDisciplinaSerializer(
+                resposta,
+                many=True,
+            ).data
+        )
 
 
 class ProfessorVerificarRecorrenciaDatasView(ProfessoresAPIView):
@@ -1159,7 +1211,11 @@ class FuncionarioTurmaDisciplinasView(ProfessoresAPIView):
         data = services.get_disciplinas_turma(codigo_turma)
         if data == []:
             return Response(status=204)
-        return Response(data)
+        if not isinstance(data, list):
+            return Response(data)
+        return Response(
+            DisciplinaTurmaAgrupamentoSerializer(data, many=True).data
+        )
 
 
 class FuncionarioPerfilTurmaDisciplinasView(ProfessoresAPIView):
@@ -1189,24 +1245,34 @@ class FuncionarioPerfilTurmaDisciplinasView(ProfessoresAPIView):
         Returns:
             Disciplinas da turma, ou ausência de conteúdo.
         """
-        response = _validar_disciplinas_funcionario(
-            login,
-            id_perfil,
-            codigo_turma,
+        path_serializer = DisciplinasFuncionarioPathSerializer(
+            data={
+                "login": login,
+                "id_perfil": id_perfil,
+                "codigo_turma": codigo_turma,
+            }
         )
-        if response is not None:
-            return response
-        params = _abrangencia_temporaria(request)
+        if not path_serializer.is_valid():
+            return detail_response(
+                str(path_serializer.errors["non_field_errors"][0])
+            )
+        serializer = AbrangenciaTemporariaSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        params = serializer.validated_data
         data = services.get_disciplinas_funcionario_turma(
             login,
             id_perfil,
             codigo_turma,
-            abrangencia=params.abrangencia,
-            cargos=params.cargos,
+            abrangencia=params["abrangencia"],
+            cargos=params["cargos"],
         )
         if data == []:
             return Response(status=204)
-        return Response(data)
+        if not isinstance(data, list):
+            return Response(data)
+        return Response(
+            DisciplinaTurmaAtribuidaSerializer(data, many=True).data
+        )
 
 
 class FuncionarioPerfilTurmaDisciplinasPlanejamentoView(ProfessoresAPIView):
@@ -1238,39 +1304,34 @@ class FuncionarioPerfilTurmaDisciplinasPlanejamentoView(ProfessoresAPIView):
         Returns:
             Disciplinas da turma, ou ausência de conteúdo.
         """
-        response = _validar_disciplinas_funcionario(
-            login,
-            id_perfil,
-            codigo_turma,
+        path_serializer = DisciplinasFuncionarioPathSerializer(
+            data={
+                "login": login,
+                "id_perfil": id_perfil,
+                "codigo_turma": codigo_turma,
+            }
         )
-        if response is not None:
-            return response
-        params = _abrangencia_temporaria(request)
+        if not path_serializer.is_valid():
+            return detail_response(
+                str(path_serializer.errors["non_field_errors"][0])
+            )
+        serializer = AbrangenciaTemporariaSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        params = serializer.validated_data
         data = services.get_disciplinas_funcionario_turma(
             login,
             id_perfil,
             codigo_turma,
             planejamento=True,
-            abrangencia=params.abrangencia,
+            abrangencia=params["abrangencia"],
         )
         if data == []:
             return Response(status=204)
-        return Response(data)
-
-
-def _validar_disciplinas_funcionario(
-    login: str,
-    id_perfil: str,
-    codigo_turma: str,
-) -> Response | None:
-    """Valida parâmetros da consulta de disciplinas."""
-    if not login.strip():
-        return detail_response("É necessário informar o login.")
-    if not id_perfil.strip():
-        return detail_response("É necessário informar o idPerfil.")
-    if not codigo_turma.strip():
-        return detail_response(_MSG_CODIGO_TURMA_OBRIGATORIO)
-    return None
+        if not isinstance(data, list):
+            return Response(data)
+        return Response(
+            DisciplinaTurmaAtribuidaSerializer(data, many=True).data
+        )
 
 
 class ProfessorBuscarPorRfView(ProfessoresAPIView):
@@ -1307,15 +1368,16 @@ class ProfessorBuscarPorRfView(ProfessoresAPIView):
         """
         if not codigo_rf.strip():
             return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
-        buscar_outros_cargos_param = request.query_params.get(
-            "buscar_outros_cargos"
+        serializer = ProfessorBuscarPorRfQuerySerializer(
+            data=request.query_params
         )
-        buscar_outros_cargos = _parse_bool_param(buscar_outros_cargos_param)
-        if (
-            buscar_outros_cargos_param is not None
-            and buscar_outros_cargos is None
-        ):
-            return detail_response("buscar_outros_cargos deve ser booleano.")
+        if not serializer.is_valid():
+            return detail_response(
+                ProfessorBuscarPorRfQuerySerializer.mensagem_booleano
+            )
+        buscar_outros_cargos = serializer.validated_data[
+            "buscar_outros_cargos"
+        ]
         data = services.get_professor_por_rf(
             codigo_rf,
             ano_letivo,
@@ -1632,7 +1694,11 @@ class EscolaFuncionariosCargosView(ProfessoresAPIView):
         """
         if not codigo_ue.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
-        params = _query_params(request, {"cargos"}, {"dre_codigo"})
+        serializer = FuncionariosEscolaCargosQuerySerializer(
+            data=request.query_params
+        )
+        serializer.is_valid(raise_exception=True)
+        params = serializer.validated_data
         data = services.get_funcionarios_escola_cargos(codigo_ue, params)
         if data is None:
             return Response(status=204)
@@ -1679,11 +1745,11 @@ class EscolaFuncionariosFuncoesAtividadesView(ProfessoresAPIView):
         """
         if not codigo_ue.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
-        params = _query_params(
-            request,
-            {"funcoes_atividades"},
-            {"codigo_dre"},
+        serializer = FuncionariosEscolaFuncoesAtividadesQuerySerializer(
+            data=request.query_params
         )
+        serializer.is_valid(raise_exception=True)
+        params = serializer.validated_data
         data = services.get_funcionarios_escola_funcoes_atividades(
             codigo_ue,
             params,
@@ -1735,9 +1801,12 @@ class EscolaFuncionariosFuncoesExternasView(ProfessoresAPIView):
         """
         if not codigo_ue.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
-        params = _query_params(request, {"funcoes"}, {"codigo_dre"})
-        if "codigo_dre" not in params:
+        serializer = FuncionariosEscolaFuncoesExternasQuerySerializer(
+            data=request.query_params
+        )
+        if not serializer.is_valid():
             return Response(status=400)
+        params = serializer.validated_data
         data = services.get_funcionarios_escola_funcoes_externas(
             codigo_ue,
             params,
@@ -1930,6 +1999,165 @@ class FuncionariosCargoView(ProfessoresAPIView):
         if not isinstance(data, list):
             return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(FuncionarioEscolaSerializer(data, many=True).data)
+
+
+class CargosFuncionarioView(ProfessoresAPIView):
+    """Retorna cargos por registro funcional."""
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna cargos por registro funcional."),
+        responses={
+            200: CargoFuncionarioConectaSerializer(many=True),
+            204: None,
+            400: dict,
+            502: dict,
+        },
+    )
+    def get(self, _request: Request, registro_funcional: str) -> Response:
+        """Retorna cargos por registro funcional.
+
+        Args:
+            registro_funcional: Registro funcional usado na consulta.
+
+        Returns:
+            Cargos encontrados, ou ausência de conteúdo.
+        """
+        if not registro_funcional.strip():
+            return detail_response(_MSG_REGISTRO_FUNCIONAL_OBRIGATORIO)
+        data = services.get_cargos_funcionario(registro_funcional)
+        if data is None:
+            return Response(status=204)
+        if not _is_lista_dicionarios(data):
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
+        return Response(
+            CargoFuncionarioConectaSerializer(data, many=True).data
+        )
+
+
+class FuncionariosConectaFormacaoView(ProfessoresAPIView):
+    """Retorna funcionários elegíveis para o Conecta Formação."""
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=(
+            "Retorna funcionários elegíveis para o Conecta Formação."
+        ),
+        parameters=_PARAMS_CONECTA_FORMACAO,
+        responses={
+            200: FuncionarioConectaFormacaoSerializer(many=True),
+            204: None,
+            502: dict,
+        },
+    )
+    def get(self, request: Request) -> Response:
+        """Retorna funcionários elegíveis para o Conecta Formação.
+
+        Args:
+            request: Requisição HTTP recebida pela API.
+
+        Returns:
+            Funcionários encontrados, ou ausência de conteúdo.
+        """
+        serializer = FuncionariosConectaFormacaoFiltroSerializer(
+            data=request.query_params
+        )
+        serializer.is_valid(raise_exception=True)
+        data = services.get_funcionarios_conecta_formacao(
+            serializer.validated_data
+        )
+        if data is None:
+            return Response(status=204)
+        if not _is_lista_dicionarios(data):
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
+        return Response(
+            FuncionarioConectaFormacaoSerializer(data, many=True).data
+        )
+
+
+class FuncionariosAtribuicaoCargoView(ProfessoresAPIView):
+    """Retorna DRE e UE da atribuição por cargo."""
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna DRE e UE da atribuição por cargo."),
+        responses={
+            200: DreUeAtribuicaoCargoSerializer(many=True),
+            204: None,
+            400: dict,
+            502: dict,
+        },
+    )
+    def get(
+        self,
+        _request: Request,
+        registro_funcional: str,
+        codigo_cargo: str,
+    ) -> Response:
+        """Retorna DRE e UE da atribuição por cargo.
+
+        Args:
+            registro_funcional: Registro funcional usado na consulta.
+            codigo_cargo: Código do cargo usado na consulta.
+
+        Returns:
+            Vínculos encontrados, ou ausência de conteúdo.
+        """
+        if not registro_funcional.strip():
+            return detail_response(_MSG_REGISTRO_FUNCIONAL_OBRIGATORIO)
+        if not codigo_cargo.strip():
+            return detail_response("É necessário informar o codigoCargo.")
+        data = services.get_dre_ue_atribuicao_cargo(
+            registro_funcional,
+            codigo_cargo,
+        )
+        if data is None:
+            return Response(status=204)
+        if not _is_lista_dicionarios(data):
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
+        return Response(DreUeAtribuicaoCargoSerializer(data, many=True).data)
+
+
+class UsuariosConectaFormacaoView(ProfessoresAPIView):
+    """Retorna usuários do Conecta Formação por perfis."""
+
+    parser_classes = [JSONParser, JsonPatchParser]
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna usuários do Conecta Formação por perfis."),
+        request=ListaStringSerializer,
+        responses={
+            200: UsuarioConectaFormacaoSerializer(many=True),
+            400: dict,
+            404: str,
+            502: dict,
+        },
+    )
+    def post(self, request: Request) -> Response:
+        """Retorna usuários do Conecta Formação por perfis.
+
+        Args:
+            request: Requisição com a lista de perfis no corpo.
+
+        Returns:
+            Usuários encontrados, ou ausência de conteúdo.
+        """
+        if request.data == []:
+            return Response(_MSG_LISTA_PERFIS_OBRIGATORIA, status=400)
+        serializer = ListaStringSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            data = services.get_usuarios_conecta_formacao(
+                serializer.validated_data
+            )
+        except httpx.HTTPStatusError as exc:
+            return api_error_response_status_livre(exc)
+        if data is None:
+            return Response(_MSG_USUARIOS_NAO_ENCONTRADOS, status=404)
+        if not _is_lista_dicionarios(data):
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
+        return Response(UsuarioConectaFormacaoSerializer(data, many=True).data)
 
 
 class FuncionariosSupervisoresView(ProfessoresAPIView):
@@ -2225,20 +2453,24 @@ class FuncionarioPerfilTurmasView(ProfessoresAPIView):
             return detail_response("É necessário informar o login.")
         if not id_perfil.strip():
             return detail_response(_MSG_PERFIL_OBRIGATORIO)
-        params = _abrangencia_temporaria(request)
+        serializer = AbrangenciaTemporariaSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        params = serializer.validated_data
         data = services.get_abrangencia_funcionario_perfil(
             login,
             id_perfil,
-            abrangencia=params.abrangencia,
-            cargos=params.cargos,
-            funcoes=params.funcoes,
-            grupo=params.grupo,
-            dre_codigo=params.dre_codigo,
-            eh_perfil_manual=params.eh_perfil_manual,
+            abrangencia=params["abrangencia"],
+            cargos=params["cargos"],
+            funcoes=params["funcoes"],
+            grupo=params["grupo"],
+            dre_codigo=params["dre_codigo"],
+            eh_perfil_manual=params["eh_perfil_manual"],
         )
         if data is None:
             return Response(status=204)
-        return Response(data)
+        return Response(
+            _serializar_abrangencia_funcionario(data, id_perfil, params)
+        )
 
 
 class FuncionariosTurmasView(ProfessoresAPIView):
@@ -2267,7 +2499,7 @@ class FuncionariosTurmasView(ProfessoresAPIView):
         data = services.get_abrangencia_ues(serializer.validated_data)
         if data is None:
             return Response(status=204)
-        return Response(data)
+        return Response(TurmasAtribuidasLegadoSerializer(data).data)
 
 
 class FuncionariosBuscarTurmasElegiveisView(ProfessoresAPIView):
@@ -2292,7 +2524,9 @@ class FuncionariosBuscarTurmasElegiveisView(ProfessoresAPIView):
         data = services.get_turmas_elegiveis(payload)
         if not data:
             return Response(status=204)
-        return Response(data)
+        if not isinstance(data, list):
+            return Response(data)
+        return Response(TurmaElegivelLegadoSerializer(data, many=True).data)
 
 
 class FuncionariosView(ProfessoresAPIView):
@@ -2322,7 +2556,9 @@ class FuncionariosView(ProfessoresAPIView):
                 "Não foram encontrados funcionários.",
                 status=404,
             )
-        return Response(data)
+        if not isinstance(data, list):
+            return Response(data)
+        return Response(FuncionarioLegadoSerializer(data, many=True).data)
 
 
 class ProfessorBuscarPorRfDreUeView(ProfessoresAPIView):
@@ -2371,11 +2607,9 @@ class ProfessorBuscarPorRfDreUeView(ProfessoresAPIView):
         """
         if not codigo_rf.strip():
             return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
-        params = _query_params(
-            request,
-            set(),
-            {"dre_id", "ue_id", "buscar_outros_cargos"},
-        )
+        serializer = ProfessorRfDreUeQuerySerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        params = serializer.validated_data
         data = services.get_professor_por_rf_dre_ue(
             codigo_rf,
             ano_letivo,
@@ -2487,15 +2721,19 @@ class ProfessorAutoCompleteView(ProfessoresAPIView):
         """
         if not dre_id.strip():
             return detail_response(_MSG_DRE_ID_OBRIGATORIO)
-        ue_id = request.query_params.get("ue_id")
+        serializer = ProfessorAutocompleteQuerySerializer(
+            data=request.query_params
+        )
+        serializer.is_valid(raise_exception=True)
+        params = serializer.validated_data
+        ue_id = params.get("ue_id")
         if not ue_id or not ue_id.strip():
             return detail_response(_MSG_UE_ID_OBRIGATORIO)
-        nome = request.query_params.get("nome")
+        nome = params.get("nome")
         if not nome or not nome.strip():
             return detail_response(_MSG_NOME_OBRIGATORIO)
         if len(nome.strip()) < _TAMANHO_MINIMO_NOME:
             return Response(status=204)
-        params = _query_params(request, set(), {"ue_id", "nome"})
         data = services.get_autocomplete_professores(
             ano_letivo,
             dre_id,

@@ -13,15 +13,7 @@ from apps.core.datetime import (
 from apps.institucional import services as institucional_services
 from apps.pedagogico import services as pedagogico_services
 from apps.professores.serializers import (
-    AbrangenciaLegadoSerializer,
-    DisciplinaTurmaAgrupamentoSerializer,
-    DisciplinaTurmaAtribuidaSerializer,
-    FuncionarioLegadoSerializer,
     ProfessorAtribuicaoInternaSerializer,
-    ProfessorAtribuicaoTurmaDisciplinaSerializer,
-    ProfessorStatusAtribuicaoSerializer,
-    TurmaElegivelLegadoSerializer,
-    TurmasAtribuidasLegadoSerializer,
 )
 
 _BASE = "/api/v1/professores"
@@ -463,6 +455,73 @@ def get_funcionarios_por_cargo(codigo_cargo: str) -> Any:
     return _client.json_or_none(resp)
 
 
+def get_cargos_funcionario(registro_funcional: str) -> Any:
+    """Retorna cargos por registro funcional.
+
+    Args:
+        registro_funcional: RF usado na consulta.
+
+    Returns:
+        Vínculos funcionais encontrados ou ausência de conteúdo.
+    """
+    resp = _client.get(f"{_BASE_FUNCIONARIOS}/cargo/{registro_funcional}/")
+    return _client.json_or_none(resp)
+
+
+def get_funcionarios_conecta_formacao(
+    params: dict[str, str | list[str]],
+) -> Any:
+    """Retorna funcionários elegíveis para o Conecta Formação.
+
+    Args:
+        params: Filtros recebidos na consulta.
+
+    Returns:
+        Funcionários encontrados ou ausência de conteúdo.
+    """
+    resp = _client.get(
+        f"{_BASE_FUNCIONARIOS}/registros-funcionais/conecta-formacao/",
+        params=params or None,
+    )
+    return _client.json_or_none(resp)
+
+
+def get_dre_ue_atribuicao_cargo(
+    registro_funcional: str,
+    codigo_cargo: str,
+) -> Any:
+    """Retorna DRE e UE da atribuição por cargo.
+
+    Args:
+        registro_funcional: RF usado na consulta.
+        codigo_cargo: Código do cargo usado na consulta.
+
+    Returns:
+        Vínculos encontrados ou ausência de conteúdo.
+    """
+    resp = _client.get(
+        f"{_BASE_FUNCIONARIOS}/atribuicao/{registro_funcional}/"
+        f"cargo/{codigo_cargo}/"
+    )
+    return _client.json_or_none(resp)
+
+
+def get_usuarios_conecta_formacao(perfis: list[str]) -> Any:
+    """Retorna usuários do Conecta Formação por perfis.
+
+    Args:
+        perfis: Perfis usados na consulta.
+
+    Returns:
+        Usuários encontrados ou ausência de conteúdo.
+    """
+    resp = _client.post(
+        f"{_BASE_FUNCIONARIOS}/usuarios/conecta-formacao/",
+        payload=perfis,
+    )
+    return _client.json_or_none(resp)
+
+
 def get_supervisores_por_dre(
     codigo_dre: str,
     codigos_supervisores: list[str],
@@ -692,16 +751,14 @@ def get_disciplinas_turma(codigo_turma: str) -> Any:
         codigo_turma: Código da turma usada na consulta.
 
     Returns:
-        Disciplinas no contrato legado.
+        Disciplinas retornadas pela fonte pedagógica.
     """
     data = pedagogico_services.get_componentes_por_lista_turmas(
         [codigo_turma],
         adicionar_componentes_planejamento=False,
         incluir_extintas=True,
     )
-    if not isinstance(data, list):
-        return data
-    return DisciplinaTurmaAgrupamentoSerializer(data, many=True).data
+    return data
 
 
 def get_disciplinas_funcionario_turma(
@@ -724,7 +781,7 @@ def get_disciplinas_funcionario_turma(
         cargos: Cargos temporários do perfil usados no filtro de vínculo.
 
     Returns:
-        Disciplinas no contrato legado.
+        Disciplinas retornadas pela fonte selecionada.
     """
     data = _get_componentes_por_switch(
         login=login,
@@ -734,9 +791,7 @@ def get_disciplinas_funcionario_turma(
         abrangencia=abrangencia,
         cargos=cargos,
     )
-    if not isinstance(data, list):
-        return data
-    return DisciplinaTurmaAtribuidaSerializer(data, many=True).data
+    return data
 
 
 def _get_componentes_por_switch(
@@ -883,9 +938,7 @@ def get_abrangencia_funcionario_perfil(
     if abrangencia == _TIPO_ABRANGENCIA_SME:
         data = get_todas_turmas_atribuidas_dre_ue()
     elif abrangencia == _TIPO_ABRANGENCIA_PROFESSOR:
-        data = TurmasAtribuidasLegadoSerializer(
-            montar_turmas_atribuidas_professor(login)
-        ).data
+        data = montar_turmas_atribuidas_professor(login)
     elif abrangencia in _TIPOS_ABRANGENCIA_VINCULO_UE:
         dre = dre_codigo if abrangencia in _TIPOS_ABRANGENCIA_DRE else None
         cargos_filtro = (
@@ -897,13 +950,6 @@ def get_abrangencia_funcionario_perfil(
             f"{_BASE_FUNCIONARIOS_LEGADO}/{login}/perfis/{id_perfil}/turmas/"
         )
         data = _client.json_or_none(resp)
-        if isinstance(data, dict):
-            data = AbrangenciaLegadoSerializer(data).data
-
-    if isinstance(data, dict):
-        data["abrangencia"] = _bloco_abrangencia_temporario(
-            id_perfil, abrangencia, cargos, funcoes, grupo, eh_perfil_manual
-        )
     return data
 
 
@@ -920,7 +966,7 @@ def get_turmas_atribuidas_ue(
         codigo_dre: DRE usada no filtro.
 
     Returns:
-        Abrangência de turmas no contrato legado.
+        Turmas atribuídas por vínculo com UE.
     """
     params: dict[str, Any] = {}
     if cargos:
@@ -932,9 +978,7 @@ def get_turmas_atribuidas_ue(
         params=params or None,
     )
     data = _client.json_or_none(resp)
-    if not isinstance(data, list):
-        return data
-    return TurmasAtribuidasLegadoSerializer(data).data
+    return data
 
 
 def get_abrangencia_ues(codigos_ue: list[str]) -> Any:
@@ -947,7 +991,7 @@ def get_abrangencia_ues(codigos_ue: list[str]) -> Any:
         Abrangência de turmas ou ausência de conteúdo.
     """
     data = pedagogico_services.get_turmas_atribuidas_dre_ue(codigos_ue)
-    return TurmasAtribuidasLegadoSerializer(data).data
+    return data
 
 
 def get_todas_turmas_atribuidas_dre_ue() -> Any:
@@ -965,9 +1009,7 @@ def get_turmas_elegiveis(payload: dict[str, Any]) -> Any:
         Turmas elegíveis ou ausência de conteúdo.
     """
     data = pedagogico_services.get_turmas_elegiveis(payload)
-    if not isinstance(data, list):
-        return data
-    return TurmaElegivelLegadoSerializer(data, many=True).data
+    return data
 
 
 def get_funcionarios(payload: dict[str, Any]) -> Any:
@@ -984,36 +1026,7 @@ def get_funcionarios(payload: dict[str, Any]) -> Any:
         payload=payload,
     )
     data = _client.json_or_none(resp)
-    if not isinstance(data, list):
-        return data
-    return FuncionarioLegadoSerializer(data, many=True).data
-
-
-def _bloco_abrangencia_temporario(
-    id_perfil: str,
-    abrangencia: int | None,
-    cargos: list[int] | None,
-    funcoes: list[int] | None,
-    grupo: int | None,
-    eh_perfil_manual: bool,
-) -> dict[str, Any] | None:
-    """Monta o bloco de abrangência a partir dos parâmetros temporários.
-
-    Os valores viriam da identidade (CoreSSO); enquanto a integração não
-    existe, são informados por parâmetros temporários de consulta.
-    """
-    if not any(
-        valor is not None for valor in (abrangencia, cargos, funcoes, grupo)
-    ):
-        return None
-    return {
-        "grupoID": id_perfil,
-        "cargosId": cargos or [],
-        "funcoesId": funcoes or [],
-        "grupo": grupo,
-        "abrangencia": abrangencia,
-        "ehPerfilManual": eh_perfil_manual,
-    }
+    return data
 
 
 def _montar_turma_atribuida(
@@ -1828,6 +1841,28 @@ def get_turmas_atribuidas_professores_escola(
     return saida
 
 
+def get_professores_escola(
+    codigo_eol_escola: str,
+    ano_letivo: int = 0,
+) -> Any:
+    """Retorna professores atribuídos a uma escola.
+
+    Args:
+        codigo_eol_escola: Código EOL da escola usada na consulta.
+        ano_letivo: Ano letivo usado para filtrar as atribuições.
+
+    Returns:
+        Lista de professores retornada pelo domínio.
+    """
+    resp = _client.get(
+        f"{_BASE}/escolas/{codigo_eol_escola}/professores/{ano_letivo}/"
+    )
+    data = _client.json_or_none(resp)
+    if not isinstance(data, list):
+        return []
+    return data
+
+
 def get_turmas_atribuidas_professor(
     codigo_rf: str,
     ano_letivo: int,
@@ -1895,8 +1930,7 @@ def get_status_atribuicao_professor_turma(
     if payload is None:
         return None
 
-    serializer = ProfessorStatusAtribuicaoSerializer(payload)
-    return dict(serializer.data)
+    return cast(dict[str, Any], payload)
 
 
 def verificar_atribuicao_professor_turma_disciplina(
@@ -2246,11 +2280,7 @@ def get_atribuicoes_turma_disciplina(
     if not isinstance(payload, list):
         return []
 
-    serializer = ProfessorAtribuicaoTurmaDisciplinaSerializer(
-        payload,
-        many=True,
-    )
-    return [dict(item) for item in serializer.data]
+    return payload
 
 
 def _montar_turma_atribuida_professor_escola(
