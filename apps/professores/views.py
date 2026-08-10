@@ -2,13 +2,16 @@
 
 from typing import Any, NamedTuple, cast
 
+import httpx
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework.parsers import JSONParser
 from rest_framework.request import Request
 
 from apps.core.datetime import validar_data_str, validar_data_tick
 from apps.core.responses import (
     Response,
+    api_error_response_status_livre,
     detail_response,
 )
 from apps.core.views import DomainAPIView
@@ -19,12 +22,16 @@ from apps.professores.serializers import (
     DisciplinaTurmaAgrupamentoSerializer,
     DisciplinaTurmaAtribuidaSerializer,
     FuncionarioCargoSerializer,
+    FuncionarioDadosSigpaeSerializer,
     FuncionarioEscolaSerializer,
+    FuncionarioExternoSerializer,
     FuncionarioFuncaoAtividadeSerializer,
     FuncionarioFuncaoAtividadeUeSerializer,
     FuncionarioFuncaoExternaSerializer,
+    FuncionarioLoginSerializer,
     FuncionarioSgpLegadoSerializer,
     FuncionarioUeLegadoSerializer,
+    FuncionarioUnidadeLegadoSerializer,
     ListaStringSerializer,
     NomeServidorSerializer,
     ProfessorAtribuicaoTurmaDisciplinaSerializer,
@@ -40,6 +47,7 @@ from apps.professores.serializers import (
 )
 
 _TAG_ACESSOS = ["Acessos"]
+_TAG_DRE = ["DiretoriaRegionalEducacao"]
 _TAG_ESCOLA = ["Escola"]
 _TAG_FUNCIONARIO = ["Funcionario"]
 _TAG_PROFESSOR = ["Professor"]
@@ -72,6 +80,7 @@ _MSG_LISTA_SUPERVISORES_OBRIGATORIA = (
     "A lista de códigos de supervisores é obrigatória."
 )
 _MSG_SUPERVISORES_NAO_ENCONTRADOS = "Não foram encontrados supervisores."
+_MSG_LISTA_LOGINS_OBRIGATORIA = "É necessario informar uma lista de Logins"
 _MSG_CODIGO_TURMA_OBRIGATORIO = "É necessário informar o codigoTurma."
 _MSG_DATA_VALIDA = "Deve ser informada uma data valida."
 _MSG_DISCIPLINA_ID_OBRIGATORIO = "É necessário informar o disciplinaId."
@@ -232,6 +241,12 @@ class ProfessoresAPIView(DomainAPIView):
     """APIView base que padroniza falhas de comunicação com professores."""
 
     api_domain = _DOMINIO_PROFESSORES
+
+
+class JsonPatchParser(JSONParser):
+    """Processa payload JSON Patch como JSON."""
+
+    media_type = "application/json-patch+json"
 
 
 def _abrangencia_temporaria(request: Request) -> _AbrangenciaTemporaria:
@@ -952,6 +967,212 @@ class FuncionariosBuscarPorListaRfView(ProfessoresAPIView):
         return Response(ProfessorBuscarPorRfSerializer(data, many=True).data)
 
 
+class FuncionarioExternoCPFView(ProfessoresAPIView):
+    """Retorna funcionarios externos por CPF."""
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna funcionarios externos por CPF."),
+        responses={
+            200: FuncionarioExternoSerializer(many=True),
+            204: None,
+            502: dict,
+        },
+    )
+    def get(self, _request: Request, cpf: str) -> Response:
+        """Retorna funcionarios externos por CPF.
+
+        Args:
+            cpf: CPF usado na consulta.
+
+        Returns:
+            Funcionarios externos encontrados, ou ausencia de dados.
+        """
+        if not cpf.strip():
+            return detail_response("E necessario informar o CPF.")
+        try:
+            data = services.get_funcionario_externo(cpf)
+        except httpx.HTTPStatusError as exc:
+            return api_error_response_status_livre(exc)
+        if not data:
+            return Response(status=204)
+        if not _is_lista_dicionarios(data):
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
+        return Response(FuncionarioExternoSerializer(data, many=True).data)
+
+
+class FuncionariosBuscarPorListaLoginView(ProfessoresAPIView):
+    """Retorna funcionarios pelos logins informados."""
+
+    parser_classes = [JSONParser, JsonPatchParser]
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna funcionarios pelos logins informados."),
+        request=ListaStringSerializer,
+        responses={
+            200: FuncionarioLoginSerializer(many=True),
+            204: None,
+            400: dict,
+            502: dict,
+        },
+    )
+    def post(self, request: Request) -> Response:
+        """Retorna funcionarios pelos logins informados.
+
+        Args:
+            request: Requisicao com a lista de logins no corpo.
+
+        Returns:
+            Funcionarios encontrados, ou ausencia de dados.
+        """
+        if request.data == []:
+            return Response(_MSG_LISTA_LOGINS_OBRIGATORIA, status=400)
+        serializer = ListaStringSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            data = services.get_funcionarios_por_lista_login(
+                serializer.validated_data
+            )
+        except httpx.HTTPStatusError as exc:
+            return api_error_response_status_livre(exc)
+        if data is None:
+            return Response(status=204)
+        if not _is_lista_dicionarios(data):
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
+        return Response(FuncionarioLoginSerializer(data, many=True).data)
+
+
+class FuncionariosUnidadeView(ProfessoresAPIView):
+    """Retorna funcionarios por unidade e perfis."""
+
+    parser_classes = [JSONParser, JsonPatchParser]
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna funcionarios por unidade e perfis."),
+        request=ListaStringSerializer,
+        responses={
+            200: FuncionarioUnidadeLegadoSerializer(many=True),
+            204: None,
+            400: dict,
+            404: str,
+            502: dict,
+        },
+    )
+    def post(self, request: Request, codigo_dre_ue: str) -> Response:
+        """Retorna funcionarios por unidade e perfis.
+
+        Args:
+            request: Requisicao com a lista de perfis no corpo.
+            codigo_dre_ue: Codigo da unidade ou DRE/UE usada na consulta.
+
+        Returns:
+            Funcionarios encontrados, ou ausencia de dados.
+        """
+        if not codigo_dre_ue.strip():
+            return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
+        serializer = ListaStringSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            data = services.get_funcionarios_unidade(
+                codigo_dre_ue,
+                serializer.validated_data,
+            )
+        except httpx.HTTPStatusError as exc:
+            return api_error_response_status_livre(exc)
+        if data is None:
+            return Response(status=204)
+        if not isinstance(data, list):
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
+        if not data:
+            return Response(
+                "Nao foram encontrados funcionarios.",
+                status=404,
+            )
+        if not _is_lista_dicionarios(data):
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
+        return Response(
+            FuncionarioUnidadeLegadoSerializer(data, many=True).data
+        )
+
+
+class FuncionariosAdminsSmeView(ProfessoresAPIView):
+    """Retorna administradores SME pelos perfis informados."""
+
+    parser_classes = [JSONParser, JsonPatchParser]
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna administradores SME pelos perfis informados."),
+        request=ListaStringSerializer,
+        responses={
+            200: ListaStringSerializer,
+            204: None,
+            400: dict,
+            502: dict,
+        },
+    )
+    def post(self, request: Request) -> Response:
+        """Retorna administradores SME pelos perfis informados.
+
+        Args:
+            request: Requisicao com a lista de perfis no corpo.
+
+        Returns:
+            Lista de RFs/logins dos administradores, ou ausencia de dados.
+        """
+        serializer = ListaStringSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            data = services.get_funcionarios_admins_sme(
+                serializer.validated_data
+            )
+        except httpx.HTTPStatusError as exc:
+            return api_error_response_status_livre(exc)
+        if data is None:
+            return Response(status=204)
+        if not isinstance(data, list) or not all(
+            isinstance(item, str) for item in data
+        ):
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
+        return Response(data)
+
+
+class FuncionarioDadosSigpaeView(ProfessoresAPIView):
+    """Retorna dados SIGPAE do funcionario."""
+
+    @extend_schema(
+        tags=_TAG_FUNCIONARIO,
+        description=("Retorna dados SIGPAE do funcionario."),
+        responses={
+            200: FuncionarioDadosSigpaeSerializer,
+            204: None,
+            502: dict,
+        },
+    )
+    def get(self, _request: Request, codigo_rf: str) -> Response:
+        """Retorna dados SIGPAE do funcionario.
+
+        Args:
+            codigo_rf: RF usado na consulta.
+
+        Returns:
+            Dados SIGPAE do funcionario, ou ausencia de dados.
+        """
+        if not codigo_rf.strip():
+            return detail_response(_MSG_CODIGO_RF_OBRIGATORIO)
+        try:
+            data = services.get_funcionario_dados_sigpae(codigo_rf)
+        except httpx.HTTPStatusError as exc:
+            return api_error_response_status_livre(exc)
+        if data is None:
+            return Response(status=204)
+        if not isinstance(data, dict):
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
+        return Response(FuncionarioDadosSigpaeSerializer(data).data)
+
+
 class EscolaFuncionariosCargoView(ProfessoresAPIView):
     """Retorna funcionários da escola filtrados por cargo."""
 
@@ -1368,6 +1589,36 @@ class FuncionariosSupervisoresView(ProfessoresAPIView):
             )
         if not data:
             return Response(_MSG_SUPERVISORES_NAO_ENCONTRADOS, status=404)
+        return Response(SupervisorLegadoSerializer(data, many=True).data)
+
+
+class DRESupervisoresView(ProfessoresAPIView):
+    """Retorna supervisores vinculados a DRE."""
+
+    @extend_schema(
+        tags=_TAG_DRE,
+        description=("Retorna supervisores vinculados a DRE."),
+        responses={200: SupervisorLegadoSerializer(many=True), 502: dict},
+    )
+    def get(self, _request: Request, codigo_eol_dre: str) -> Response:
+        """Retorna supervisores vinculados a DRE.
+
+        Args:
+            codigo_eol_dre: Codigo EOL da DRE consultada.
+
+        Returns:
+            Supervisores vinculados a DRE informada.
+        """
+        if not codigo_eol_dre.strip():
+            return Response([])
+        try:
+            data = services.get_supervisores_dre(codigo_eol_dre)
+        except httpx.HTTPStatusError as exc:
+            return api_error_response_status_livre(exc)
+        if data is None:
+            return Response([])
+        if not _is_lista_dicionarios(data):
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(SupervisorLegadoSerializer(data, many=True).data)
 
 

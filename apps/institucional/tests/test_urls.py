@@ -36,6 +36,11 @@ class URLsInstitucionalTest(SimpleTestCase):
         self.assertEqual(match.view_name, "dre-detalhe")
         self.assertEqual(match.kwargs["codigo_eol_dre"], "108100")
 
+    def test_dre_supervisores_resolve_antes_do_detalhe(self) -> None:
+        match = resolve("/api/DREs/108100/supervisores/")
+        self.assertEqual(match.view_name, "dre-supervisores")
+        self.assertEqual(match.kwargs["codigo_eol_dre"], "108100")
+
     def test_escolas_por_dre_resolve(self) -> None:
         match = resolve("/api/DREs/108100/escola/")
         self.assertEqual(match.view_name, "escolas-por-dre")
@@ -95,9 +100,7 @@ class URLsInstitucionalTest(SimpleTestCase):
         self.assertEqual(match.kwargs["codigo_eol"], "019308")
 
     def test_sincronizacoes_institucionais_resolve(self) -> None:
-        match = resolve(
-            "/api/escolas/019308/sincronizacoes-institucionais/"
-        )
+        match = resolve("/api/escolas/019308/sincronizacoes-institucionais/")
         self.assertEqual(
             match.view_name, "escola-sincronizacoes-institucionais"
         )
