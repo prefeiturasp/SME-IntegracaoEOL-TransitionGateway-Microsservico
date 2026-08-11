@@ -1,31 +1,45 @@
 """Valida serializers do domínio professores."""
 
+from typing import Any
 from unittest.mock import patch
 
+from django.http import QueryDict
 from django.test import SimpleTestCase
 from rest_framework import serializers
 
 from apps.professores.serializers import (
+    AbrangenciaTemporariaSerializer,
     BuscarProfessorTitularPorDisciplinaSerializer,
+    CargoFuncionarioConectaSerializer,
+    DisciplinasFuncionarioPathSerializer,
     DisciplinaTurmaAgrupamentoSerializer,
     DisciplinaTurmaAtribuidaSerializer,
+    DreUeAtribuicaoCargoSerializer,
     FuncionarioCargoSerializer,
+    FuncionarioConectaFormacaoSerializer,
     FuncionarioDadosSigpaeSerializer,
     FuncionarioExternoSerializer,
     FuncionarioFuncaoAtividadeSerializer,
     FuncionarioFuncaoExternaSerializer,
     FuncionarioLegadoSerializer,
     FuncionarioLoginSerializer,
+    FuncionariosConectaFormacaoFiltroSerializer,
+    FuncionariosEscolaCargosQuerySerializer,
+    FuncionariosEscolaFuncoesExternasQuerySerializer,
     FuncionarioSgpLegadoSerializer,
+    FuncionariosPerfisQuerySerializer,
     FuncionarioUnidadeLegadoSerializer,
     ProfessorAtribuicaoInternaSerializer,
     ProfessorAtribuicaoPeriodoPathSerializer,
     ProfessorAtribuicaoTurmaDisciplinaSerializer,
+    ProfessorAutocompleteQuerySerializer,
     ProfessorAutoCompleteSerializer,
+    ProfessorBuscarPorRfQuerySerializer,
     ProfessoresTitularesParametrosSerializer,
     ProfessoresTitularesPorTurmasQuerySerializer,
     ProfessoresTitularesPorUeParametrosSerializer,
     ProfessorRecorrenciaDataSerializer,
+    ProfessorRfDreUeQuerySerializer,
     ProfessorStatusAtribuicaoSerializer,
     ProfessorTurmaAtribuidaSimplificadaSerializer,
     SupervisorLegadoSerializer,
@@ -33,6 +47,7 @@ from apps.professores.serializers import (
     TurmaAtribuidaProfessorSerializer,
     TurmaElegivelLegadoSerializer,
     TurmasAtribuidasLegadoSerializer,
+    UsuarioConectaFormacaoSerializer,
     VerificarAtribuicaoDisciplinaQuerySerializer,
 )
 
@@ -103,6 +118,288 @@ class VerificarAtribuicaoDisciplinaQuerySerializerTest(SimpleTestCase):
 
         self.assertFalse(serializer.is_valid())
         self.assertIn("territorioSaber", serializer.errors)
+
+
+class FuncionariosPerfisQuerySerializerTest(SimpleTestCase):
+    """Valida filtros de funcionários por perfil."""
+
+    def test_normaliza_aliases_legados(self) -> None:
+        serializer = FuncionariosPerfisQuerySerializer(
+            data={
+                "CodigoDre": " 108100 ",
+                "CodigoUe": " 000532 ",
+                "CodigoRf": " 7654321 ",
+                "NomeServidor": " ANA ",
+            }
+        )
+
+        self.assertTrue(serializer.is_valid())
+        self.assertEqual(
+            serializer.validated_data,
+            {
+                "codigo_dre": "108100",
+                "codigo_ue": "000532",
+                "codigo_rf": "7654321",
+                "nome_servidor": "ANA",
+            },
+        )
+
+    def test_rejeita_quando_sem_codigo_dre_ou_rf(self) -> None:
+        serializer = FuncionariosPerfisQuerySerializer(
+            data={"CodigoDre": " ", "CodigoRf": ""}
+        )
+
+        self.assertFalse(serializer.is_valid())
+        self.assertEqual(
+            serializer.errors["non_field_errors"][0],
+            FuncionariosPerfisQuerySerializer.mensagem_dre_ou_rf_obrigatorio,
+        )
+
+
+class CargoFuncionarioConectaSerializerTest(SimpleTestCase):
+    """Valida contrato legado de cargos por RF."""
+
+    def test_serializa_campos_legados(self) -> None:
+        serializer = CargoFuncionarioConectaSerializer(
+            {
+                "rf": 7758626,
+                "cpf": "12345678900",
+                "cd_cargo_base": 3360,
+                "cargo_base": "DIRETOR",
+                "cd_dre_cargo_base": "108100",
+                "cd_ue_cargo_base": "000532",
+                "ue_cargo_base": "ESCOLA",
+                "tipo_vinculo_cargo_base": 1,
+                "data_inicio_cargo_base": "2024-01-01T00:00:00",
+                "cd_cargo_sobreposto": None,
+                "cargo_sobreposto": None,
+                "cd_dre_cargo_sobreposto": None,
+                "cd_ue_cargo_sobreposto": None,
+                "ue_cargo_sobreposto": None,
+                "tipo_vinculo_cargo_sobreposto": None,
+                "data_inicio_cargo_sobreposto": None,
+                "cd_funcao_atividade": None,
+                "funcao_atividade": None,
+                "cd_dre_funcao_atividade": None,
+                "cd_ue_funcao_atividade": None,
+                "ue_funcao_atividade": None,
+                "tipo_vinculo_funcao_atividade": None,
+                "data_inicio_funcao_atividade": None,
+            }
+        )
+
+        self.assertEqual(serializer.data["cdCargoBase"], 3360)
+        self.assertEqual(serializer.data["cargoBase"], "DIRETOR")
+        self.assertEqual(serializer.data["cdDreCargoBase"], "108100")
+
+
+class FuncionarioConectaFormacaoSerializerTest(SimpleTestCase):
+    """Valida contrato de funcionários do Conecta Formação."""
+
+    def test_serializa_campos_legados(self) -> None:
+        serializer = FuncionarioConectaFormacaoSerializer(
+            {
+                "rf": "7758626",
+                "nome": "ANA",
+                "cpf": "12345678900",
+                "cargo_codigo": "3360",
+                "cargo": "DIRETOR",
+                "cargo_dre_codigo": "108100",
+                "cargo_ue_codigo": "000532",
+                "funcao_codigo": None,
+                "funcao": None,
+                "funcao_dre_codigo": None,
+                "funcao_ue_codigo": None,
+                "tipo_vinculo": 1,
+            }
+        )
+
+        self.assertEqual(serializer.data["cargoCodigo"], "3360")
+        self.assertEqual(serializer.data["cargoDreCodigo"], "108100")
+        self.assertEqual(serializer.data["tipoVinculo"], 1)
+
+
+class FuncionariosConectaFormacaoFiltroSerializerTest(SimpleTestCase):
+    """Valida filtros de funcionários do Conecta Formação."""
+
+    def test_preserva_parametros_repetidos(self) -> None:
+        query = QueryDict(
+            "codigos_cargos=3360&codigos_cargos=3239"
+            "&codigos_dres=108100&eh_tipo_jornada_jeif=true"
+        )
+        serializer = FuncionariosConectaFormacaoFiltroSerializer(data=query)
+
+        self.assertTrue(serializer.is_valid())
+        self.assertEqual(
+            serializer.validated_data["codigos_cargos"],
+            [3360, 3239],
+        )
+        self.assertEqual(serializer.validated_data["codigos_dres"], ["108100"])
+        self.assertIs(serializer.validated_data["eh_tipo_jornada_jeif"], True)
+
+
+class AbrangenciaTemporariaSerializerTest(SimpleTestCase):
+    """Valida parâmetros temporários de abrangência."""
+
+    def test_normaliza_parametros_temporarios(self) -> None:
+        query = QueryDict(
+            "abrangencia=4&cargos=3239&funcoesId=1&grupo=2"
+            "&dreCodigo=108100&ehPerfilManual=true"
+        )
+        serializer = AbrangenciaTemporariaSerializer(data=query)
+
+        self.assertTrue(serializer.is_valid())
+        self.assertEqual(
+            serializer.validated_data,
+            {
+                "abrangencia": 4,
+                "cargos": [3239],
+                "funcoes": [1],
+                "grupo": 2,
+                "dre_codigo": "108100",
+                "eh_perfil_manual": True,
+            },
+        )
+
+    def test_ignora_inteiros_invalidos(self) -> None:
+        query = QueryDict("abrangencia=abc&cargos=abc&funcoesId=1")
+        serializer = AbrangenciaTemporariaSerializer(data=query)
+
+        self.assertTrue(serializer.is_valid())
+        self.assertIsNone(serializer.validated_data["abrangencia"])
+        self.assertIsNone(serializer.validated_data["cargos"])
+        self.assertEqual(serializer.validated_data["funcoes"], [1])
+
+
+class DisciplinasFuncionarioPathSerializerTest(SimpleTestCase):
+    """Valida parâmetros de caminho das disciplinas do funcionário."""
+
+    def test_valida_parametros_obrigatorios(self) -> None:
+        serializer = DisciplinasFuncionarioPathSerializer(
+            data={
+                "login": "000001",
+                "id_perfil": "perfil",
+                "codigo_turma": "3030050",
+            }
+        )
+
+        self.assertTrue(serializer.is_valid())
+
+    def test_rejeita_login_vazio(self) -> None:
+        serializer = DisciplinasFuncionarioPathSerializer(
+            data={
+                "login": " ",
+                "id_perfil": "perfil",
+                "codigo_turma": "3030050",
+            }
+        )
+
+        self.assertFalse(serializer.is_valid())
+        self.assertEqual(
+            str(serializer.errors["non_field_errors"][0]),
+            "É necessário informar o login.",
+        )
+
+
+class QueryParamsSerializerTest(SimpleTestCase):
+    """Valida serializers de parâmetros de consulta."""
+
+    def test_preserva_listas_e_campos_simples(self) -> None:
+        query = QueryDict("cargos=3239&cargos=3240&dre_codigo=1")
+        serializer = FuncionariosEscolaCargosQuerySerializer(data=query)
+
+        self.assertTrue(serializer.is_valid())
+        self.assertEqual(
+            serializer.validated_data,
+            {"cargos": ["3239", "3240"], "dre_codigo": "1"},
+        )
+
+    def test_exige_codigo_dre_em_funcoes_externas(self) -> None:
+        serializer = FuncionariosEscolaFuncoesExternasQuerySerializer(
+            data=QueryDict("funcoes=5")
+        )
+
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("codigo_dre", serializer.errors)
+
+    def test_normaliza_filtros_de_rf_dre_ue(self) -> None:
+        query = QueryDict("dre_id=1&ue_id=019465&buscar_outros_cargos=true")
+        serializer = ProfessorRfDreUeQuerySerializer(data=query)
+
+        self.assertTrue(serializer.is_valid())
+        self.assertEqual(
+            serializer.validated_data,
+            {
+                "dre_id": "1",
+                "ue_id": "019465",
+                "buscar_outros_cargos": "true",
+            },
+        )
+
+    def test_normaliza_autocomplete(self) -> None:
+        query = QueryDict("ue_id=019465&nome=ana")
+        serializer = ProfessorAutocompleteQuerySerializer(data=query)
+
+        self.assertTrue(serializer.is_valid())
+        self.assertEqual(
+            serializer.validated_data,
+            {"ue_id": "019465", "nome": "ana"},
+        )
+
+
+class ProfessorBuscarPorRfQuerySerializerTest(SimpleTestCase):
+    """Valida filtros da busca de professor por RF."""
+
+    def test_converte_booleano_textual(self) -> None:
+        serializer = ProfessorBuscarPorRfQuerySerializer(
+            data=QueryDict("buscar_outros_cargos=false")
+        )
+
+        self.assertTrue(serializer.is_valid())
+        self.assertIs(
+            serializer.validated_data["buscar_outros_cargos"],
+            False,
+        )
+
+    def test_rejeita_booleano_invalido(self) -> None:
+        serializer = ProfessorBuscarPorRfQuerySerializer(
+            data=QueryDict("buscar_outros_cargos=sim")
+        )
+
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("buscar_outros_cargos", serializer.errors)
+
+
+class DreUeAtribuicaoCargoSerializerTest(SimpleTestCase):
+    """Valida contrato de atribuição por cargo."""
+
+    def test_serializa_campos_legados(self) -> None:
+        serializer = DreUeAtribuicaoCargoSerializer(
+            {
+                "codigo_dre": "108100",
+                "codigo_ue": "000532",
+            }
+        )
+
+        self.assertEqual(serializer.data["dreCodigo"], "108100")
+        self.assertEqual(serializer.data["ueCodigo"], "000532")
+
+
+class UsuarioConectaFormacaoSerializerTest(SimpleTestCase):
+    """Valida contrato de usuários do Conecta Formação."""
+
+    def test_serializa_campos_legados(self) -> None:
+        serializer = UsuarioConectaFormacaoSerializer(
+            {
+                "login": "7758626",
+                "nome": "ANA",
+                "nome_social": None,
+                "perfil": "perfil",
+            }
+        )
+
+        self.assertEqual(serializer.data["login"], "7758626")
+        self.assertIsNone(serializer.data["nomeSocial"])
 
 
 class ProfessorStatusAtribuicaoSerializerTest(SimpleTestCase):
@@ -273,8 +570,10 @@ class ProfessorRecorrenciaDataSerializerTest(SimpleTestCase):
             }
         )
 
+        data: Any = serializer.data  # type: ignore[has-type]
+
         self.assertEqual(
-            serializer.data,
+            data,
             {
                 "data": "2026-07-27T00:00:00",
                 "podePersistir": True,

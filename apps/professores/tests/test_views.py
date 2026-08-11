@@ -9,6 +9,7 @@ from django.urls import resolve
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from apps.professores.constants import MSG_CODIGO_CARGO_OBRIGATORIO
 from apps.professores.urls import _BooleanConverter
 
 _MSG_TURMAS_NAO_ENCONTRADAS = "Não foram encontradas turmas atribuídas."
@@ -109,6 +110,31 @@ class ProfessoresUrlsTest(SimpleTestCase):
         match = resolve("/api/funcionarios/cargos/3360/")
 
         self.assertEqual(match.kwargs, {"codigo_cargo": "3360"})
+
+    def test_preserva_rf_funcionarios_cargo(self) -> None:
+        match = resolve("/api/funcionarios/cargo/7758626/")
+
+        self.assertEqual(match.kwargs, {"registro_funcional": "7758626"})
+
+    def test_resolve_funcionarios_conecta_formacao(self) -> None:
+        match = resolve(
+            "/api/funcionarios/registros-funcionais/conecta-formacao/"
+        )
+
+        self.assertEqual(match.kwargs, {})
+
+    def test_preserva_rf_e_cargo_funcionarios_atribuicao_cargo(self) -> None:
+        match = resolve("/api/funcionarios/atribuicao/7758626/cargo/3360/")
+
+        self.assertEqual(
+            match.kwargs,
+            {"registro_funcional": "7758626", "codigo_cargo": "3360"},
+        )
+
+    def test_resolve_usuarios_conecta_formacao(self) -> None:
+        match = resolve("/api/funcionarios/usuarios/conecta-formacao/")
+
+        self.assertEqual(match.kwargs, {})
 
     def test_preserva_codigo_dre_funcionarios_supervisores(self) -> None:
         match = resolve("/api/funcionarios/supervisores/108100/")
@@ -959,8 +985,155 @@ class FuncionariosCargoViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": "É necessário informar o codigoCargo."},
+            {"detail": MSG_CODIGO_CARGO_OBRIGATORIO},
         )
+
+
+class CargosFuncionarioViewTest(SimpleTestCase):
+    """Valida cargos por registro funcional."""
+
+    @patch("apps.professores.views.services.get_cargos_funcionario")
+    def test_200_retorna_cargos(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [
+            {
+                "rf": 7758626,
+                "cpf": "12345678900",
+                "cd_cargo_base": 3360,
+                "cargo_base": "DIRETOR",
+                "cd_dre_cargo_base": "108100",
+                "cd_ue_cargo_base": "000532",
+                "ue_cargo_base": "ESCOLA",
+                "tipo_vinculo_cargo_base": 1,
+                "data_inicio_cargo_base": "2024-01-01T00:00:00",
+                "cd_cargo_sobreposto": None,
+                "cargo_sobreposto": None,
+                "cd_dre_cargo_sobreposto": None,
+                "cd_ue_cargo_sobreposto": None,
+                "ue_cargo_sobreposto": None,
+                "tipo_vinculo_cargo_sobreposto": None,
+                "data_inicio_cargo_sobreposto": None,
+                "cd_funcao_atividade": None,
+                "funcao_atividade": None,
+                "cd_dre_funcao_atividade": None,
+                "cd_ue_funcao_atividade": None,
+                "ue_funcao_atividade": None,
+                "tipo_vinculo_funcao_atividade": None,
+                "data_inicio_funcao_atividade": None,
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/cargo/7758626/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()[0]["cdCargoBase"], 3360)
+        self.assertEqual(resp.json()[0]["cargoBase"], "DIRETOR")
+        mock_service.assert_called_once_with("7758626")
+
+
+class FuncionariosConectaFormacaoViewTest(SimpleTestCase):
+    """Valida funcionários do Conecta Formação."""
+
+    @patch("apps.professores.views.services.get_funcionarios_conecta_formacao")
+    def test_200_retorna_funcionarios(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [
+            {
+                "rf": "7758626",
+                "nome": "ANA",
+                "cpf": "12345678900",
+                "cargo_codigo": "3360",
+                "cargo": "DIRETOR",
+                "cargo_dre_codigo": "108100",
+                "cargo_ue_codigo": "000532",
+                "funcao_codigo": None,
+                "funcao": None,
+                "funcao_dre_codigo": None,
+                "funcao_ue_codigo": None,
+                "tipo_vinculo": 1,
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/funcionarios/registros-funcionais/conecta-formacao/"
+            "?codigos_cargos=3360&codigos_dres=108100"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()[0]["cargoCodigo"], "3360")
+        mock_service.assert_called_once_with(
+            {
+                "codigos_cargos": [3360],
+                "codigos_funcoes": [],
+                "codigo_modalidade": [],
+                "anos_turma": [],
+                "codigos_dres": ["108100"],
+                "codigos_componentes_curriculares": [],
+                "eh_tipo_jornada_jeif": False,
+            }
+        )
+
+
+class FuncionariosAtribuicaoCargoViewTest(SimpleTestCase):
+    """Valida atribuição por cargo."""
+
+    @patch("apps.professores.views.services.get_dre_ue_atribuicao_cargo")
+    def test_200_retorna_vinculos(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [
+            {
+                "codigo_rf": "7758626",
+                "codigo_dre": "108100",
+                "codigo_ue": "000532",
+                "cargo": None,
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/atribuicao/7758626/cargo/3360/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()[0]["dreCodigo"], "108100")
+        mock_service.assert_called_once_with("7758626", "3360")
+
+
+class UsuariosConectaFormacaoViewTest(SimpleTestCase):
+    """Valida usuários do Conecta Formação."""
+
+    @patch("apps.professores.views.services.get_usuarios_conecta_formacao")
+    def test_200_retorna_usuarios(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [
+            {
+                "login": "7758626",
+                "nome": "ANA",
+                "nome_social": None,
+                "perfil": "perfil",
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/usuarios/conecta-formacao/",
+            data=["perfil"],
+            content_type="application/json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()[0]["nomeSocial"], None)
+        mock_service.assert_called_once_with(["perfil"])
+
+    @patch("apps.professores.views.services.get_usuarios_conecta_formacao")
+    def test_404_quando_sem_usuarios(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = None
+        client = _cliente_autenticado()
+
+        resp = client.post(
+            "/api/funcionarios/usuarios/conecta-formacao/",
+            data=["perfil"],
+            content_type="application/json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(resp.json(), "Não foram encontrados usuários.")
 
 
 class FuncionariosSupervisoresViewTest(SimpleTestCase):
@@ -1154,10 +1327,31 @@ class FuncionariosPerfisViewTest(SimpleTestCase):
         mock_service.return_value = "erro"
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/perfis/perfil-x/")
+        resp = client.get(
+            "/api/funcionarios/perfis/perfil-x/?CodigoDre=108100"
+        )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(resp.json(), "erro")
+        mock_service.assert_called_once_with(
+            "perfil-x",
+            {"codigo_dre": "108100"},
+        )
+
+    @patch("apps.professores.views.services.get_usuarios_sgp_por_perfil")
+    def test_400_quando_sem_codigo_dre_ou_rf(
+        self, mock_service: MagicMock
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/funcionarios/perfis/perfil-x/")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            "O código da Dre ou código rf/login deve ser informados.",
+        )
+        mock_service.assert_not_called()
 
     @patch(
         "apps.professores.views.services.get_funcionarios_sgp_por_perfil_dre"
@@ -1292,7 +1486,7 @@ class EscolaFuncionariosCargoViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": "É necessário informar o codigoCargo."},
+            {"detail": MSG_CODIGO_CARGO_OBRIGATORIO},
         )
 
     def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
@@ -2021,13 +2215,36 @@ class FuncionarioTurmaDisciplinasViewTest(SimpleTestCase):
 
     @patch("apps.professores.views.services.get_disciplinas_turma")
     def test_200_retorna_disciplinas(self, mock_service: MagicMock) -> None:
-        mock_service.return_value = [{"codDisciplina": 512}]
+        mock_service.return_value = [
+            {
+                "codigo": 512,
+                "codigo_componente_curricular_pai": None,
+                "descricao": "Arte",
+                "tipo_escola": "1",
+                "territorio_saber": False,
+            }
+        ]
         client = _cliente_autenticado()
 
         resp = client.get("/api/funcionarios/turmas/3030050/disciplinas/")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.json(), [{"codDisciplina": 512}])
+        self.assertEqual(
+            resp.json(),
+            [
+                {
+                    "codDisciplina": 512,
+                    "codDisciplinaPai": None,
+                    "codCompTerritorioSaber": 0,
+                    "disciplina": "Arte",
+                    "professor": None,
+                    "regencia": False,
+                    "tipoEscola": None,
+                    "territorioSaber": False,
+                    "codigosTerritoriosAgrupamento": [],
+                }
+            ],
+        )
         mock_service.assert_called_once_with("3030050")
 
     @patch("apps.professores.views.services.get_disciplinas_turma")
@@ -2058,7 +2275,15 @@ class FuncionarioPerfilTurmaDisciplinasViewTest(SimpleTestCase):
     def test_200_repassa_parametros_temporarios(
         self, mock_service: MagicMock
     ) -> None:
-        mock_service.return_value = [{"codDisciplina": 512}]
+        mock_service.return_value = [
+            {
+                "codigo": 512,
+                "codigo_componente_curricular_pai": None,
+                "descricao": "Arte",
+                "tipo_escola": "1",
+                "territorio_saber": False,
+            }
+        ]
         client = _cliente_autenticado()
 
         resp = client.get(
@@ -2067,6 +2292,7 @@ class FuncionarioPerfilTurmaDisciplinasViewTest(SimpleTestCase):
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()[0]["codDisciplina"], 512)
         mock_service.assert_called_once_with(
             "000001",
             "perfil-x",
@@ -2110,7 +2336,15 @@ class FuncionarioPerfilTurmaDisciplinasPlanejamentoViewTest(SimpleTestCase):
     def test_200_repassa_planejamento_e_abrangencia(
         self, mock_service: MagicMock
     ) -> None:
-        mock_service.return_value = [{"codDisciplina": 512}]
+        mock_service.return_value = [
+            {
+                "codigo": 512,
+                "codigo_componente_curricular_pai": None,
+                "descricao": "Arte",
+                "tipo_escola": "1",
+                "territorio_saber": False,
+            }
+        ]
         client = _cliente_autenticado()
 
         resp = client.get(
@@ -2119,6 +2353,7 @@ class FuncionarioPerfilTurmaDisciplinasPlanejamentoViewTest(SimpleTestCase):
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()[0]["codDisciplina"], 512)
         mock_service.assert_called_once_with(
             "000001",
             "perfil-x",
@@ -2160,7 +2395,20 @@ class FuncionarioPerfilTurmasViewTest(SimpleTestCase):
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.json(), payload)
+        self.assertEqual(
+            resp.json(),
+            {
+                "abrangencia": {
+                    "grupoID": "perfil-x",
+                    "cargosId": [3239],
+                    "funcoesId": [1],
+                    "grupo": 2,
+                    "abrangencia": 4,
+                    "ehPerfilManual": True,
+                },
+                "dres": [],
+            },
+        )
         mock_service.assert_called_once_with(
             "000001",
             "perfil-x",
@@ -2203,8 +2451,7 @@ class FuncionariosTurmasViewTest(SimpleTestCase):
 
     @patch("apps.professores.views.services.get_abrangencia_ues")
     def test_200_retorna_abrangencia(self, mock_service: MagicMock) -> None:
-        payload: dict[str, object] = {"abrangencia": None, "dres": []}
-        mock_service.return_value = payload
+        mock_service.return_value = []
         client = _cliente_autenticado()
 
         resp = client.post(
@@ -2214,7 +2461,7 @@ class FuncionariosTurmasViewTest(SimpleTestCase):
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.json(), payload)
+        self.assertEqual(resp.json(), {"abrangencia": None, "dres": []})
         mock_service.assert_called_once_with(["000532"])
 
     @patch("apps.professores.views.services.get_abrangencia_ues")
@@ -2241,7 +2488,9 @@ class FuncionariosBuscarTurmasElegiveisViewTest(SimpleTestCase):
             "CodigoTurma": 1,
             "ComponenteCurricular": 2,
         }
-        mock_service.return_value = [{"nomeTurma": "1A", "codTurma": 3030050}]
+        mock_service.return_value = [
+            {"nome_turma": "1A", "cod_turma": 3030050}
+        ]
         client = _cliente_autenticado()
 
         resp = client.post(
@@ -2280,13 +2529,13 @@ class FuncionariosViewTest(SimpleTestCase):
     @patch("apps.professores.views.services.get_funcionarios")
     def test_200_retorna_funcionarios(self, mock_service: MagicMock) -> None:
         payload = {"CodigoUE": "000532"}
-        mock_service.return_value = [{"codigoRf": "000001"}]
+        mock_service.return_value = [{"codigo_rf": "000001"}]
         client = _cliente_autenticado()
 
         resp = client.post("/api/funcionarios/", payload, format="json")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.json(), [{"codigoRf": "000001"}])
+        self.assertEqual(resp.json()[0]["codigoRf"], "000001")
         mock_service.assert_called_once_with(payload)
 
     @patch("apps.professores.views.services.get_funcionarios")
@@ -3107,13 +3356,26 @@ class ProfessorVerificarAtribuicaoPeriodoViewTest(SimpleTestCase):
         "atribuicao/periodo/inicio/2026-07-01/fim/2026-07-31"
     )
 
+    @patch(
+        "apps.professores.views.services."
+        "get_atribuicoes_professor_turma_disciplina"
+    )
     @patch("apps.professores.views.services.verificar_atribuicao_periodo")
     def test_post_200_repassa_periodo_e_retorna_booleano(
         self,
         mock_service: MagicMock,
+        mock_atribuicoes: MagicMock,
     ) -> None:
         """Repassa os parâmetros normalizados para o serviço."""
         mock_service.return_value = True
+        mock_atribuicoes.return_value = [
+            {
+                "codigo_turma": 3032577,
+                "disciplina_id": 89,
+                "data_inicio_atribuicao": "2026-07-01T00:00:00",
+                "data_fim_atribuicao": "2026-07-31T00:00:00",
+            }
+        ]
 
         resp = _cliente_autenticado().post(self._URL)
 
@@ -3125,6 +3387,22 @@ class ProfessorVerificarAtribuicaoPeriodoViewTest(SimpleTestCase):
             "89",
             "2026-07-01T00:00:00-03:00",
             "2026-07-31T00:00:00-03:00",
+            [
+                {
+                    "codigo_turma": "3032577",
+                    "ano_letivo": None,
+                    "nome_turma": None,
+                    "data_inicio_atribuicao": "2026-07-01T00:00:00",
+                    "data_fim_atribuicao": "2026-07-31T00:00:00",
+                    "data_fim_turma": None,
+                    "ano_atribuicao": None,
+                    "codigo_rf": None,
+                    "disciplina_id": "89",
+                    "disciplina_nome": None,
+                    "disciplinas_agrupadas_ids": [],
+                    "nome_professor": None,
+                }
+            ],
         )
 
     @patch("apps.professores.views.services.verificar_atribuicao_periodo")
@@ -3524,14 +3802,20 @@ class ProfessorStatusAtribuicaoViewTest(SimpleTestCase):
         self,
         mock_service: MagicMock,
     ) -> None:
-        mock_service.return_value = {"anoAtribuicao": 2026}
+        mock_service.return_value = {
+            "ano_atribuicao": 2026,
+            "data_cancelamento": None,
+            "data_disponibilizacao": None,
+            "data_fim_turma": None,
+            "codigo_motivo_disponibilizacao": None,
+        }
 
         resp = _cliente_autenticado().get(
             "/api/professores/000001/turmas/3032577/atribuicao/status/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.json(), {"anoAtribuicao": 2026})
+        self.assertEqual(resp.json()["anoAtribuicao"], 2026)
         mock_service.assert_called_once_with("000001", "3032577")
 
 
@@ -3592,7 +3876,22 @@ class ProfessorAtribuicaoTurmaDisciplinaViewTest(SimpleTestCase):
         self,
         mock_service: MagicMock,
     ) -> None:
-        mock_service.return_value = [{"codigoTurma": 3032577}]
+        mock_service.return_value = [
+            {
+                "codigo_turma": "3032577",
+                "ano_letivo": None,
+                "nome_turma": None,
+                "data_inicio_atribuicao": None,
+                "data_fim_atribuicao": None,
+                "data_fim_turma": None,
+                "ano_atribuicao": None,
+                "codigo_rf": None,
+                "disciplina_id": None,
+                "disciplina_nome": None,
+                "disciplinas_agrupadas_ids": None,
+                "nome_professor": None,
+            }
+        ]
 
         resp = _cliente_autenticado().get(
             self._URL,
@@ -3600,7 +3899,7 @@ class ProfessorAtribuicaoTurmaDisciplinaViewTest(SimpleTestCase):
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.json(), [{"codigoTurma": 3032577}])
+        self.assertEqual(resp.json()[0]["codigoTurma"], 3032577)
         mock_service.assert_called_once_with(
             "3032577",
             "89",
@@ -3626,12 +3925,26 @@ class ProfessorVerificarRecorrenciaDatasViewTest(SimpleTestCase):
         "atribuicao/recorrencia/verificar/datas"
     )
 
+    @patch(
+        "apps.professores.views.services."
+        "get_atribuicoes_professor_turma_disciplina"
+    )
     @patch("apps.professores.views.services.verificar_recorrencia_datas")
     def test_200_repassa_ticks_e_serializa_retorno(
-        self, mock_service: MagicMock
+        self,
+        mock_service: MagicMock,
+        mock_atribuicoes: MagicMock,
     ) -> None:
         mock_service.return_value = [
             {"data": "2026-07-27T00:00:00", "pode_persistir": True}
+        ]
+        mock_atribuicoes.return_value = [
+            {
+                "codigo_turma": 3032577,
+                "disciplina_id": 89,
+                "data_inicio_atribuicao": "2026-07-01T00:00:00",
+                "data_fim_atribuicao": "2026-07-31T00:00:00",
+            }
         ]
 
         resp = _cliente_autenticado().get(
@@ -3652,6 +3965,22 @@ class ProfessorVerificarRecorrenciaDatasViewTest(SimpleTestCase):
             "3032577",
             "89",
             ["639207072000000000", "639207936000000000"],
+            [
+                {
+                    "codigo_turma": "3032577",
+                    "ano_letivo": None,
+                    "nome_turma": None,
+                    "data_inicio_atribuicao": "2026-07-01T00:00:00",
+                    "data_fim_atribuicao": "2026-07-31T00:00:00",
+                    "data_fim_turma": None,
+                    "ano_atribuicao": None,
+                    "codigo_rf": None,
+                    "disciplina_id": "89",
+                    "disciplina_nome": None,
+                    "disciplinas_agrupadas_ids": [],
+                    "nome_professor": None,
+                }
+            ],
         )
 
     @patch("apps.professores.views.services.verificar_recorrencia_datas")

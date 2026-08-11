@@ -174,6 +174,48 @@ class DREListViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
 
+class EscolaProfessoresViewTest(SimpleTestCase):
+    """Valida a view de professores por escola."""
+
+    @patch("apps.institucional.views.professores_services")
+    def test_com_ano_retorna_professores(self, mock_svc: MagicMock) -> None:
+        """Retorna professores de uma escola por ano letivo."""
+        mock_svc.get_professores_escola.return_value = [
+            {
+                "codigo_rf": 1,
+                "nome": "Ana",
+                "cargo": None,
+                "cpf": None,
+                "data_inicio_exercicio": None,
+            }
+        ]
+
+        resp = _cliente_autenticado().get(
+            "/api/escolas/019465/professores/2026/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()[0]["codigoRF"], 1)
+        mock_svc.get_professores_escola.assert_called_once_with(
+            "019465",
+            2026,
+        )
+
+    @patch("apps.institucional.views.professores_services")
+    def test_sem_ano_usa_zero(self, mock_svc: MagicMock) -> None:
+        """Retorna professores usando o ano padrão do legado."""
+        mock_svc.get_professores_escola.return_value = []
+
+        resp = _cliente_autenticado().get("/api/escolas/019465/professores/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+        mock_svc.get_professores_escola.assert_called_once_with(
+            "019465",
+            0,
+        )
+
+
 class DREDetalheViewTest(SimpleTestCase):
     """Valida a view de detalhe de DRE."""
 

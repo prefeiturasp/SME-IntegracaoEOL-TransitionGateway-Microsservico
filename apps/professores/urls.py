@@ -5,6 +5,7 @@ from django.urls import path, register_converter
 from apps.professores.views import (
     AdministradorSgpEscolaView,
     BuscaTurmasAtribuidasProfessoresEscolaView,
+    CargosFuncionarioView,
     EscolaFuncionariosCargosView,
     EscolaFuncionariosCargoView,
     EscolaFuncionariosFuncaoAtividadeView,
@@ -19,10 +20,12 @@ from apps.professores.views import (
     FuncionarioPerfilTurmaDisciplinasView,
     FuncionarioPerfilTurmasView,
     FuncionariosAdminsSmeView,
+    FuncionariosAtribuicaoCargoView,
     FuncionariosBuscarPorListaLoginView,
     FuncionariosBuscarPorListaRfView,
     FuncionariosBuscarTurmasElegiveisView,
     FuncionariosCargoView,
+    FuncionariosConectaFormacaoView,
     FuncionariosPerfisDreView,
     FuncionariosPerfisView,
     FuncionariosSupervisoresView,
@@ -54,6 +57,7 @@ from apps.professores.views import (
     ProfessorVerificarAtribuicaoTurmaDisciplinaDataView,
     ProfessorVerificarRecorrenciaDatasView,
     ProfessorView,
+    UsuariosConectaFormacaoView,
     ValidadeProfessorView,
 )
 
@@ -243,6 +247,23 @@ urlpatterns = [
     path(
         "funcionarios/ue/<str:codigo_ue>/",
         FuncionariosUeView.as_view(),
+    ),
+    path(
+        "funcionarios/cargo/<str:registro_funcional>/",
+        CargosFuncionarioView.as_view(),
+    ),
+    path(
+        "funcionarios/registros-funcionais/conecta-formacao/",
+        FuncionariosConectaFormacaoView.as_view(),
+    ),
+    path(
+        "funcionarios/atribuicao/<str:registro_funcional>/"
+        "cargo/<str:codigo_cargo>/",
+        FuncionariosAtribuicaoCargoView.as_view(),
+    ),
+    path(
+        "funcionarios/usuarios/conecta-formacao/",
+        UsuariosConectaFormacaoView.as_view(),
     ),
     path(
         "funcionarios/cargos/<str:codigo_cargo>/",

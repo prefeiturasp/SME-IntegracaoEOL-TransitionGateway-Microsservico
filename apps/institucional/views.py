@@ -27,10 +27,14 @@ from apps.institucional.serializers import (
     UnidadeEolSerializer,
     UnidadeParceiraSerializer,
 )
+from apps.professores import services as professores_services
+from apps.professores.serializers import ProfessorEscolaLegadoSerializer
 
 _TAG_DRE = ["DiretoriaRegionalEducacao"]
 _TAG_ESCOLA = ["Escola"]
 _DOMINIO_INSTITUCIONAL = "institucional"
+_DOMINIO_PROFESSORES = "professores"
+_MSG_CODIGO_ESCOLA_OBRIGATORIO = "Código EOL da escola obrigatório."
 
 _ESCOLA_RESUMO_CAMPOS = {
     "codigoEscola",
@@ -131,6 +135,12 @@ class InstitucionalAPIView(DomainAPIView):
     """APIView base que padroniza falhas de comunicação institucional."""
 
     api_domain = _DOMINIO_INSTITUCIONAL
+
+
+class ProfessoresEscolaAPIView(DomainAPIView):
+    """APIView base para dados de professores em rotas de escola."""
+
+    api_domain = _DOMINIO_PROFESSORES
 
 
 def _filtrar_escola_resumo(item: dict) -> dict:
@@ -397,6 +407,62 @@ class EscolasPorDREeTipoView(InstitucionalAPIView):
                 return Response(status=status.HTTP_404_NOT_FOUND)
             raise
         return Response([_filtrar_escola_por_dre_tipo(e) for e in data])
+
+
+class EscolaProfessoresView(ProfessoresEscolaAPIView):
+    """Lista professores atribuídos a uma escola."""
+
+    @extend_schema(
+        tags=_TAG_ESCOLA,
+        summary="Professores de uma escola",
+        description=(
+            "Retorna professores atribuídos à escola informada, conforme "
+            "contrato legado."
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="codigo_eol_escola",
+                location=OpenApiParameter.PATH,
+                description="Código EOL da escola",
+                required=True,
+                type=str,
+            ),
+            OpenApiParameter(
+                name="ano_letivo",
+                location=OpenApiParameter.PATH,
+                description="Ano letivo",
+                required=False,
+                type=int,
+            ),
+        ],
+        responses={200: ProfessorEscolaLegadoSerializer(many=True), 400: str},
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_eol_escola: str,
+        ano_letivo: int = 0,
+    ) -> Response:
+        """Retorna professores atribuídos a uma escola.
+
+        Args:
+            _request: Requisição HTTP recebida pela API.
+            codigo_eol_escola: Código EOL da escola usada na consulta.
+            ano_letivo: Ano letivo usado para filtrar as atribuições.
+
+        Returns:
+            Resposta HTTP com os professores encontrados.
+        """
+        if not codigo_eol_escola.strip():
+            return Response(
+                _MSG_CODIGO_ESCOLA_OBRIGATORIO,
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        data = professores_services.get_professores_escola(
+            codigo_eol_escola,
+            ano_letivo,
+        )
+        return Response(ProfessorEscolaLegadoSerializer(data, many=True).data)
 
 
 class UesPorDREView(InstitucionalAPIView):
