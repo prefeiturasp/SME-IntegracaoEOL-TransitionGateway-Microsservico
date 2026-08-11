@@ -78,6 +78,18 @@ def formatar_datetime_legado(value: Any) -> Any:
     return normalizar_datetime_legado(value)
 
 
+def formatar_datetime_legado_us(value: Any) -> Any:
+    """Formata data/hora no padrão ``MM/dd/yyyy HH:mm:ss``.
+
+    Alguns dados de data caem no padrão en-US, precisando ser formatados
+    como tal.
+    """
+    iso = datetime_legado(value)
+    if iso is None:
+        return None
+    return datetime.fromisoformat(iso).strftime("%m/%d/%Y %H:%M:%S")
+
+
 def validar_data_str(data_str: str) -> bool:
     """Valida se uma string representa uma data no formato YYYY-MM-DD.
 

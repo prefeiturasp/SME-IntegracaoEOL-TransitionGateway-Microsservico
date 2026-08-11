@@ -25,12 +25,12 @@ class MatriculasUrlsTest(SimpleTestCase):
     """Valida os nomes dos parâmetros nas rotas."""
 
     def test_rota_matriculas(self) -> None:
-        match = resolve("/api/v1/matriculas/")
+        match = resolve("/api/matriculas/")
 
         self.assertEqual(match.kwargs, {})
 
     def test_rota_anos_anteriores_sem_barra(self) -> None:
-        match = resolve("/api/v1/matriculas/anos-anteriores")
+        match = resolve("/api/matriculas/anos-anteriores")
 
         self.assertEqual(match.url_name, "matriculas-anos-anteriores")
 
@@ -68,7 +68,7 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
         """Verifica que aliases camelCase não são aceitos na entrada."""
         client = _cliente_autenticado()
 
-        resp = client.get("/api/v1/matriculas/?anoLetivo=2026&ueCodigo=100001")
+        resp = client.get("/api/matriculas/?anoLetivo=2026&ueCodigo=100001")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
@@ -82,7 +82,7 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/v1/matriculas/?ano_letivo=2026&ue_codigo=100001"
+            "/api/matriculas/?ano_letivo=2026&ue_codigo=100001"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -98,7 +98,7 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/v1/matriculas/?ueCodigo=100001")
+        resp = client.get("/api/matriculas/?ueCodigo=100001")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
@@ -110,7 +110,7 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/v1/matriculas/?anoLetivo=2026")
+        resp = client.get("/api/matriculas/?anoLetivo=2026")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
@@ -123,7 +123,7 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/v1/matriculas/?ano_letivo=abc&ue_codigo=100001"
+            "/api/matriculas/?ano_letivo=abc&ue_codigo=100001"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -141,7 +141,7 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/v1/matriculas/?ano_letivo=2026&ue_codigo=100001"
+            "/api/matriculas/?ano_letivo=2026&ue_codigo=100001"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
@@ -164,7 +164,7 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/v1/matriculas/?ano_letivo=2026&ue_codigo=100001"
+            "/api/matriculas/?ano_letivo=2026&ue_codigo=100001"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -173,7 +173,7 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
     def test_403_sem_autenticacao(self) -> None:
         client = APIClient()
 
-        resp = client.get("/api/v1/matriculas/?anoLetivo=2026&ueCodigo=100001")
+        resp = client.get("/api/matriculas/?anoLetivo=2026&ueCodigo=100001")
 
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -191,7 +191,7 @@ class MatriculasAnosAnterioresViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/v1/matriculas/anos-anteriores"
+            "/api/matriculas/anos-anteriores"
             "?ano_letivo=2025&ue_codigo=100001"
         )
 
@@ -210,7 +210,7 @@ class MatriculasAnosAnterioresViewTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/v1/matriculas/anos-anteriores?ano_letivo=2025")
+        resp = client.get("/api/matriculas/anos-anteriores?ano_letivo=2025")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
@@ -221,7 +221,7 @@ class MatriculasAnosAnterioresViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/v1/matriculas/anos-anteriores"
+            "/api/matriculas/anos-anteriores"
             "?ano_letivo=abc&ue_codigo=100001"
         )
 
@@ -236,7 +236,7 @@ class MatriculasAnosAnterioresViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/v1/matriculas/anos-anteriores?ano_letivo=2025&ue_codigo=100001"
+            "/api/matriculas/anos-anteriores?ano_letivo=2025&ue_codigo=100001"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
@@ -255,7 +255,7 @@ class MatriculasAnosAnterioresViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/v1/matriculas/anos-anteriores?ano_letivo=2025&ue_codigo=100001"
+            "/api/matriculas/anos-anteriores?ano_letivo=2025&ue_codigo=100001"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)

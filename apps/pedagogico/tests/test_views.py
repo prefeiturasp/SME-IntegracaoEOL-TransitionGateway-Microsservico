@@ -13,6 +13,7 @@ from rest_framework.test import APIClient
 _PREFIX = "/api/v1/componentes-curriculares"
 _PREFIX_TURMAS = "/api/turmas"
 _PREFIX_UES = "/api/ues"
+_PREFIX_ESCOLAS = "/api/escolas"
 
 
 # Componente curricular completo retornado pelo sidecar.
@@ -1502,6 +1503,211 @@ class ItinerariosEnsinoMedioViewSetTest(SimpleTestCase):
         resp = client.get(f"{_PREFIX_TURMAS}/itinerario/ensino-medio/")
 
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
+
+
+class ModalidadesEnsinoViewSetTest(SimpleTestCase):
+    """Valida a listagem de modalidades de ensino."""
+
+    @patch("apps.pedagogico.views.services.get_modalidades_ensino")
+    def test_200_retorna_lista_de_strings(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = ["Infantil", "Fundamental"]
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PREFIX_ESCOLAS}/modalidades_ensino/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data, ["Infantil", "Fundamental"])
+
+    @patch("apps.pedagogico.views.services.get_modalidades_ensino")
+    def test_404_quando_vazio(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PREFIX_ESCOLAS}/modalidades_ensino/")
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            resp.data,
+            {"detail": "Não foram encontradas modalidades de ensino."},
+        )
+
+    def test_403_sem_autenticacao(self) -> None:
+        client = APIClient()
+
+        resp = client.get(f"{_PREFIX_ESCOLAS}/modalidades_ensino/")
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    @patch("apps.pedagogico.views.services.get_modalidades_ensino")
+    def test_503_quando_sidecar_indisponivel(
+        self, mock_svc: MagicMock
+    ) -> None:
+        request = httpx.Request("GET", "https://sidecar.local/test")
+        mock_svc.side_effect = httpx.ConnectError(
+            "Sidecar indisponível", request=request
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get(f"{_PREFIX_ESCOLAS}/modalidades_ensino/")
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
+class TurmasPorTipoSalaViewSetTest(SimpleTestCase):
+    """Valida a listagem de turmas por UE/tipo de sala/ano letivo."""
+
+    _TURMA = {
+        "codigo_turma": 2112345,
+        "nome_turma": "3A EF",
+        "tipo_turma": 1,
+        "situacao": "A",
+        "data_inicio_turma": None,
+        "data_fim_turma": None,
+    }
+
+    @patch("apps.pedagogico.views.services.get_turmas_por_tipo_sala")
+    def test_200_converte_tipo_turma_para_string(
+        self, mock_svc: MagicMock
+    ) -> None:
+        mock_svc.return_value = [self._TURMA]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_ESCOLAS}/000532/salas/1/anos_letivos/2024/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data[0]["codigoTurma"], 2112345)
+        self.assertEqual(resp.data[0]["tipoTurma"], "1")
+        mock_svc.assert_called_once_with(
+            codigo_ue="000532", tipo_sala="1", ano_letivo="2024"
+        )
+
+    @patch("apps.pedagogico.views.services.get_turmas_por_tipo_sala")
+    def test_404_quando_vazio(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_ESCOLAS}/000532/salas/1/anos_letivos/2024/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_403_sem_autenticacao(self) -> None:
+        client = APIClient()
+
+        resp = client.get(
+            f"{_PREFIX_ESCOLAS}/000532/salas/1/anos_letivos/2024/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class TurmasPorEscolaViewSetTest(SimpleTestCase):
+    """Valida a listagem de turmas por UE/ano letivo."""
+
+    _TURMA = {
+        "codigo_turma": 2112345,
+        "nome_turma_eol": "3A",
+        "nome_turma": "EF - 3A",
+        "tipo_turma": 1,
+        "situacao": "A",
+        "data_inicio_turma": None,
+        "data_fim_turma": None,
+        "sigla_modalidade": "EF",
+    }
+
+    @patch("apps.pedagogico.views.services.get_turmas_por_escola")
+    def test_200_repassa_turmas(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = [self._TURMA]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_ESCOLAS}/000532/turmas/anos_letivos/2024/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data[0]["nomeTurmaEOL"], "3A")
+        self.assertEqual(resp.data[0]["siglaModalidade"], "EF")
+        mock_svc.assert_called_once_with(
+            codigo_ue="000532", ano_letivo="2024"
+        )
+
+    @patch("apps.pedagogico.views.services.get_turmas_por_escola")
+    def test_200_lista_vazia_sem_traducao_para_404(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Único dos 4 endpoints de escolas que não traduz vazio para 404."""
+        mock_svc.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_ESCOLAS}/000532/turmas/anos_letivos/2024/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data, [])
+
+    def test_403_sem_autenticacao(self) -> None:
+        client = APIClient()
+
+        resp = client.get(
+            f"{_PREFIX_ESCOLAS}/000532/turmas/anos_letivos/2024/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class TurmasSondagemViewSetTest(SimpleTestCase):
+    """Valida a listagem de turmas de Sondagem por UE/ano letivo."""
+
+    _TURMA = {
+        "codigo_turma": 2112345,
+        "nome_turma": "5A EF",
+        "tipo_turma": 1,
+        "situacao": "A",
+        "data_inicio_turma": None,
+        "data_fim_turma": None,
+    }
+
+    @patch("apps.pedagogico.views.services.get_turmas_sondagem")
+    def test_200_repassa_turmas(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = [self._TURMA]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_ESCOLAS}/000532/turmasSondagem/anos_letivos/2024/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_svc.assert_called_once_with(
+            codigo_ue="000532", ano_letivo="2024"
+        )
+
+    @patch("apps.pedagogico.views.services.get_turmas_sondagem")
+    def test_404_quando_vazio(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_ESCOLAS}/000532/turmasSondagem/anos_letivos/2024/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            resp.data,
+            {"detail": "Não foram encontradas turmas de sondagem."},
+        )
+
+    def test_403_sem_autenticacao(self) -> None:
+        client = APIClient()
+
+        resp = client.get(
+            f"{_PREFIX_ESCOLAS}/000532/turmasSondagem/anos_letivos/2024/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class TurmasSchemaTest(SimpleTestCase):

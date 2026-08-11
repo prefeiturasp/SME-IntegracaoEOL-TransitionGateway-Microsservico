@@ -26,11 +26,15 @@ from apps.pedagogico.views import (
     ItinerariosEnsinoMedioViewSet,
     ListagemTurmasComponentesViewSet,
     ListarTurmasViewSet,
+    ModalidadesEnsinoViewSet,
     SincronizacaoInstitucionalTurmaViewSet,
     SincronizacoesInstitucionaisAnosLetivosViewSet,
     TurmasHistoricasGeraisProfessorViewSet,
+    TurmasPorEscolaViewSet,
+    TurmasPorTipoSalaViewSet,
     TurmasProgramaViewSet,
     TurmasRegularesViewSet,
+    TurmasSondagemViewSet,
     ValidarComponentePapViewSet,
 )
 
@@ -100,6 +104,31 @@ ue_urlpatterns = [
         + "sincronizacoes-institucionais/",
         SincronizacaoInstitucionalTurmaViewSet.as_view(),
         name="sincronizacao-institucional-turma",
+    ),
+]
+
+escola_urlpatterns = [
+    path(
+        "escolas/modalidades_ensino/",
+        ModalidadesEnsinoViewSet.as_view(),
+        name="modalidades-ensino",
+    ),
+    path(
+        "escolas/<str:codigo_ue>/salas/<str:tipo_sala>/anos_letivos/"
+        "<str:ano_letivo>/",
+        TurmasPorTipoSalaViewSet.as_view(),
+        name="turmas-por-tipo-sala",
+    ),
+    path(
+        "escolas/<str:codigo_ue>/turmas/anos_letivos/<str:ano_letivo>/",
+        TurmasPorEscolaViewSet.as_view(),
+        name="turmas-por-escola",
+    ),
+    path(
+        "escolas/<str:codigo_ue>/turmasSondagem/anos_letivos/"
+        "<str:ano_letivo>/",
+        TurmasSondagemViewSet.as_view(),
+        name="turmas-sondagem",
     ),
 ]
 
