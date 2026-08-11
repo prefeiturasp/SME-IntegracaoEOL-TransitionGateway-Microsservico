@@ -20,6 +20,7 @@ from apps.core.responses import (
 )
 from apps.core.views import DomainAPIView
 from apps.professores import services
+from apps.professores.constants import MSG_CODIGO_CARGO_OBRIGATORIO
 from apps.professores.serializers import (
     AbrangenciaLegadoSerializer,
     AbrangenciaTemporariaSerializer,
@@ -1686,7 +1687,7 @@ class EscolaFuncionariosCargoView(ProfessoresAPIView):
         if not codigo_ue.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
         if not codigo_cargo.strip():
-            return detail_response("É necessário informar o codigoCargo.")
+            return detail_response(MSG_CODIGO_CARGO_OBRIGATORIO)
         data = services.get_funcionarios_escola_por_cargo(
             codigo_ue,
             codigo_cargo,
@@ -2029,7 +2030,7 @@ class FuncionariosCargoView(ProfessoresAPIView):
             Funcionários vinculados ao cargo, ou ausência de conteúdo.
         """
         if not codigo_cargo.strip():
-            return detail_response("É necessário informar o codigoCargo.")
+            return detail_response(MSG_CODIGO_CARGO_OBRIGATORIO)
         data = services.get_funcionarios_por_cargo(codigo_cargo)
         if data is None:
             return Response(status=204)
@@ -2143,7 +2144,7 @@ class FuncionariosAtribuicaoCargoView(ProfessoresAPIView):
         if not registro_funcional.strip():
             return detail_response(_MSG_REGISTRO_FUNCIONAL_OBRIGATORIO)
         if not codigo_cargo.strip():
-            return detail_response("É necessário informar o codigoCargo.")
+            return detail_response(MSG_CODIGO_CARGO_OBRIGATORIO)
         data = services.get_dre_ue_atribuicao_cargo(
             registro_funcional,
             codigo_cargo,

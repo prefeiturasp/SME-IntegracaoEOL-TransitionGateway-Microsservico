@@ -9,6 +9,7 @@ from django.urls import resolve
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from apps.professores.constants import MSG_CODIGO_CARGO_OBRIGATORIO
 from apps.professores.urls import _BooleanConverter
 
 _MSG_TURMAS_NAO_ENCONTRADAS = "Não foram encontradas turmas atribuídas."
@@ -984,7 +985,7 @@ class FuncionariosCargoViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": "É necessário informar o codigoCargo."},
+            {"detail": MSG_CODIGO_CARGO_OBRIGATORIO},
         )
 
 
@@ -1485,7 +1486,7 @@ class EscolaFuncionariosCargoViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            {"detail": "É necessário informar o codigoCargo."},
+            {"detail": MSG_CODIGO_CARGO_OBRIGATORIO},
         )
 
     def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
