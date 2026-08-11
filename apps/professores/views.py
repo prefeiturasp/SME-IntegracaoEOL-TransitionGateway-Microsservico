@@ -8,7 +8,11 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.parsers import JSONParser
 from rest_framework.request import Request
 
-from apps.core.datetime import validar_data_str, validar_data_tick
+from apps.core.datetime import (
+    obter_ano_tick,
+    validar_data_str,
+    validar_data_tick,
+)
 from apps.core.responses import (
     Response,
     api_error_response_status_livre,
@@ -47,6 +51,7 @@ from apps.professores.serializers import (
     FuncionarioUnidadeLegadoSerializer,
     ListaStringSerializer,
     NomeServidorSerializer,
+    ProfessorAtribuicaoInternaSerializer,
     ProfessorAtribuicaoPeriodoPathSerializer,
     ProfessorAtribuicaoTurmaDisciplinaSerializer,
     ProfessorAutocompleteQuerySerializer,
@@ -333,6 +338,21 @@ def _is_lista_dicionarios(data: object) -> bool:
     )
 
 
+def _serializar_atribuicoes_internas(
+    atribuicoes: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Serializa atribuições consumidas pela regra de professores.
+
+    Args:
+        atribuicoes: Atribuições recebidas dos domínios integrados.
+
+    Returns:
+        Atribuições normalizadas para uso na regra.
+    """
+    serializer = ProfessorAtribuicaoInternaSerializer(atribuicoes, many=True)
+    return [dict(item) for item in serializer.data]
+
+
 def _bloco_abrangencia_temporario(
     id_perfil: str,
     params: dict[str, Any],
@@ -538,12 +558,20 @@ class ProfessorVerificarAtribuicaoPeriodoView(ProfessoresAPIView):
             return Response("Parâmetros do período são inválidos.", status=400)
 
         dados = serializer.validated_data
+        atribuicoes = _serializar_atribuicoes_internas(
+            services.get_atribuicoes_professor_turma_disciplina(
+                dados["codigo_rf"],
+                dados["componente_curricular_id"],
+                0,
+            )
+        )
         resposta = services.verificar_atribuicao_periodo(
             dados["codigo_rf"],
             dados["codigo_turma"],
             dados["componente_curricular_id"],
             dados["data_inicio_periodo"].isoformat(),
             dados["data_fim_periodo"].isoformat(),
+            atribuicoes,
         )
         return Response(resposta)
 
@@ -1027,11 +1055,20 @@ class ProfessorVerificarRecorrenciaDatasView(ProfessoresAPIView):
         if not datas_ticks or not all(map(validar_data_tick, datas_ticks)):
             return Response(_MSG_DATAS_TICKS_OBRIGATORIAS, status=400)
 
+        ano_letivo = obter_ano_tick(datas_ticks[0])
+        atribuicoes = _serializar_atribuicoes_internas(
+            services.get_atribuicoes_professor_turma_disciplina(
+                codigo_rf,
+                disciplina_id,
+                ano_letivo,
+            )
+        )
         resultado = services.verificar_recorrencia_datas(
             codigo_rf,
             codigo_turma,
             disciplina_id,
             datas_ticks,
+            atribuicoes,
         )
         serializer = ProfessorRecorrenciaDataSerializer(resultado, many=True)
         return Response(serializer.data)  # type: ignore[has-type]

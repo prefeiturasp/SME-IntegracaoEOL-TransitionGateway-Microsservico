@@ -1,5 +1,6 @@
 """Valida serializers do domínio professores."""
 
+from typing import Any
 from unittest.mock import patch
 
 from django.http import QueryDict
@@ -7,8 +8,8 @@ from django.test import SimpleTestCase
 from rest_framework import serializers
 
 from apps.professores.serializers import (
-    BuscarProfessorTitularPorDisciplinaSerializer,
     AbrangenciaTemporariaSerializer,
+    BuscarProfessorTitularPorDisciplinaSerializer,
     CargoFuncionarioConectaSerializer,
     DisciplinasFuncionarioPathSerializer,
     DisciplinaTurmaAgrupamentoSerializer,
@@ -26,19 +27,18 @@ from apps.professores.serializers import (
     FuncionariosEscolaCargosQuerySerializer,
     FuncionariosEscolaFuncoesExternasQuerySerializer,
     FuncionarioSgpLegadoSerializer,
+    FuncionariosPerfisQuerySerializer,
     FuncionarioUnidadeLegadoSerializer,
     ProfessorAtribuicaoInternaSerializer,
     ProfessorAtribuicaoPeriodoPathSerializer,
-    FuncionariosPerfisQuerySerializer,
-    FuncionarioUnidadeLegadoSerializer,
     ProfessorAtribuicaoTurmaDisciplinaSerializer,
     ProfessorAutocompleteQuerySerializer,
     ProfessorAutoCompleteSerializer,
+    ProfessorBuscarPorRfQuerySerializer,
     ProfessoresTitularesParametrosSerializer,
     ProfessoresTitularesPorTurmasQuerySerializer,
     ProfessoresTitularesPorUeParametrosSerializer,
     ProfessorRecorrenciaDataSerializer,
-    ProfessorBuscarPorRfQuerySerializer,
     ProfessorRfDreUeQuerySerializer,
     ProfessorStatusAtribuicaoSerializer,
     ProfessorTurmaAtribuidaSimplificadaSerializer,
@@ -570,8 +570,10 @@ class ProfessorRecorrenciaDataSerializerTest(SimpleTestCase):
             }
         )
 
+        data: Any = serializer.data  # type: ignore[has-type]
+
         self.assertEqual(
-            serializer.data,
+            data,
             {
                 "data": "2026-07-27T00:00:00",
                 "podePersistir": True,

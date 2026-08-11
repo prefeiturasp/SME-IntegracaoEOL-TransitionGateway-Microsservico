@@ -1,6 +1,7 @@
 """Valida os serviços do domínio de professores."""
 
 from datetime import date, datetime
+from typing import Any
 from unittest.mock import MagicMock, call, patch
 
 from django.test import SimpleTestCase
@@ -239,12 +240,12 @@ class VerificarRecorrenciaDatasTest(SimpleTestCase):
         "get_atribuicoes_territorio_saber"
     )
     @patch("apps.professores.services._client")
-    def test_normaliza_igualmente_as_duas_origens(
+    def test_retorna_atribuicoes_das_duas_origens(
         self,
         mock_client: MagicMock,
         mock_atribuicoes_territorio: MagicMock,
     ) -> None:
-        """Padroniza atribuições comuns e de Território do Saber."""
+        """Retorna atribuições comuns e de Território do Saber."""
         atribuicao = {
             "codigo_turma": 3032577,
             "ano_letivo": "2026",
@@ -274,9 +275,9 @@ class VerificarRecorrenciaDatasTest(SimpleTestCase):
         )
 
         self.assertEqual(atribuicoes_territorio, atribuicoes_comuns)
-        self.assertEqual(atribuicoes_territorio[0]["codigo_turma"], "3032577")
-        self.assertEqual(atribuicoes_territorio[0]["ano_letivo"], 2026)
-        self.assertEqual(atribuicoes_territorio[0]["disciplina_id"], "89")
+        self.assertEqual(atribuicoes_territorio[0]["codigo_turma"], 3032577)
+        self.assertEqual(atribuicoes_territorio[0]["ano_letivo"], "2026")
+        self.assertEqual(atribuicoes_territorio[0]["disciplina_id"], 89)
 
 
 class VerificarAtribuicaoPeriodoTest(SimpleTestCase):
@@ -2268,6 +2269,7 @@ class BuscarProfessorTitularPorTurmaDisciplinaTest(SimpleTestCase):
         )
         mock_client.json_or_none.assert_called_once_with(response)
         mock_componentes_turma.assert_called_once_with("3032577", ["89"])
+        assert resultado is not None
         self.assertEqual(resultado["disciplina"], "OUTRAS")
 
     @patch(
@@ -2298,6 +2300,7 @@ class BuscarProfessorTitularPorTurmaDisciplinaTest(SimpleTestCase):
             "89",
         )
 
+        assert resultado is not None
         self.assertEqual(resultado["disciplina"], "PROJETO")
 
     @patch("apps.professores.services._client")
@@ -2529,7 +2532,7 @@ class VerificarVigenciaComponentePaiTest(SimpleTestCase):
 
     def test_retorna_true_quando_pai_nao_possui_vigencia(self) -> None:
         """Considera vigente o componente pai sem data de vigência."""
-        componentes = [
+        componentes: list[dict[str, Any]] = [
             {
                 "id_componente_curricular": 89,
                 "id_componente_curricular_pai": 10,
@@ -2747,7 +2750,7 @@ class VerificarVigenciaComponentePaiComplementarTest(SimpleTestCase):
 
     def test_retorna_true_quando_pai_esta_vigente_na_data(self) -> None:
         """Aceita vigência igual ou posterior à data de referência."""
-        componentes = [
+        componentes: list[dict[str, Any]] = [
             {
                 "id_componente_curricular": 89,
                 "id_componente_curricular_pai": 10,
@@ -2768,7 +2771,7 @@ class VerificarVigenciaComponentePaiComplementarTest(SimpleTestCase):
 
     def test_retorna_false_quando_vigencia_do_pai_expirou(self) -> None:
         """Rejeita pai com vigência anterior à data de referência."""
-        componentes = [
+        componentes: list[dict[str, Any]] = [
             {
                 "id_componente_curricular": 89,
                 "id_componente_curricular_pai": 10,
@@ -2810,7 +2813,7 @@ class VerificarVigenciaComponentePaiComplementarTest(SimpleTestCase):
 
     def test_usa_data_atual_quando_referencia_e_nula(self) -> None:
         """Aplica a data atual quando não há data de referência."""
-        componentes = [
+        componentes: list[dict[str, Any]] = [
             {
                 "id_componente_curricular": 89,
                 "id_componente_curricular_pai": 10,

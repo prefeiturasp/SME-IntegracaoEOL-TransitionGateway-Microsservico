@@ -3355,13 +3355,26 @@ class ProfessorVerificarAtribuicaoPeriodoViewTest(SimpleTestCase):
         "atribuicao/periodo/inicio/2026-07-01/fim/2026-07-31"
     )
 
+    @patch(
+        "apps.professores.views.services."
+        "get_atribuicoes_professor_turma_disciplina"
+    )
     @patch("apps.professores.views.services.verificar_atribuicao_periodo")
     def test_post_200_repassa_periodo_e_retorna_booleano(
         self,
         mock_service: MagicMock,
+        mock_atribuicoes: MagicMock,
     ) -> None:
         """Repassa os parâmetros normalizados para o serviço."""
         mock_service.return_value = True
+        mock_atribuicoes.return_value = [
+            {
+                "codigo_turma": 3032577,
+                "disciplina_id": 89,
+                "data_inicio_atribuicao": "2026-07-01T00:00:00",
+                "data_fim_atribuicao": "2026-07-31T00:00:00",
+            }
+        ]
 
         resp = _cliente_autenticado().post(self._URL)
 
@@ -3373,6 +3386,22 @@ class ProfessorVerificarAtribuicaoPeriodoViewTest(SimpleTestCase):
             "89",
             "2026-07-01T00:00:00-03:00",
             "2026-07-31T00:00:00-03:00",
+            [
+                {
+                    "codigo_turma": "3032577",
+                    "ano_letivo": None,
+                    "nome_turma": None,
+                    "data_inicio_atribuicao": "2026-07-01T00:00:00",
+                    "data_fim_atribuicao": "2026-07-31T00:00:00",
+                    "data_fim_turma": None,
+                    "ano_atribuicao": None,
+                    "codigo_rf": None,
+                    "disciplina_id": "89",
+                    "disciplina_nome": None,
+                    "disciplinas_agrupadas_ids": [],
+                    "nome_professor": None,
+                }
+            ],
         )
 
     @patch("apps.professores.views.services.verificar_atribuicao_periodo")
@@ -3895,12 +3924,26 @@ class ProfessorVerificarRecorrenciaDatasViewTest(SimpleTestCase):
         "atribuicao/recorrencia/verificar/datas"
     )
 
+    @patch(
+        "apps.professores.views.services."
+        "get_atribuicoes_professor_turma_disciplina"
+    )
     @patch("apps.professores.views.services.verificar_recorrencia_datas")
     def test_200_repassa_ticks_e_serializa_retorno(
-        self, mock_service: MagicMock
+        self,
+        mock_service: MagicMock,
+        mock_atribuicoes: MagicMock,
     ) -> None:
         mock_service.return_value = [
             {"data": "2026-07-27T00:00:00", "pode_persistir": True}
+        ]
+        mock_atribuicoes.return_value = [
+            {
+                "codigo_turma": 3032577,
+                "disciplina_id": 89,
+                "data_inicio_atribuicao": "2026-07-01T00:00:00",
+                "data_fim_atribuicao": "2026-07-31T00:00:00",
+            }
         ]
 
         resp = _cliente_autenticado().get(
@@ -3921,6 +3964,22 @@ class ProfessorVerificarRecorrenciaDatasViewTest(SimpleTestCase):
             "3032577",
             "89",
             ["639207072000000000", "639207936000000000"],
+            [
+                {
+                    "codigo_turma": "3032577",
+                    "ano_letivo": None,
+                    "nome_turma": None,
+                    "data_inicio_atribuicao": "2026-07-01T00:00:00",
+                    "data_fim_atribuicao": "2026-07-31T00:00:00",
+                    "data_fim_turma": None,
+                    "ano_atribuicao": None,
+                    "codigo_rf": None,
+                    "disciplina_id": "89",
+                    "disciplina_nome": None,
+                    "disciplinas_agrupadas_ids": [],
+                    "nome_professor": None,
+                }
+            ],
         )
 
     @patch("apps.professores.views.services.verificar_recorrencia_datas")

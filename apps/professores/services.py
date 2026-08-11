@@ -12,9 +12,6 @@ from apps.core.datetime import (
 )
 from apps.institucional import services as institucional_services
 from apps.pedagogico import services as pedagogico_services
-from apps.professores.serializers import (
-    ProfessorAtribuicaoInternaSerializer,
-)
 
 _BASE = "/api/v1/professores"
 _BASE_ACESSOS = f"{_BASE}/acessos"
@@ -1962,6 +1959,7 @@ def verificar_recorrencia_datas(
     codigo_turma: str,
     disciplina_id: str,
     datas_ticks: list[str],
+    atribuicoes_rf: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     """Verifica datas recorrentes de uma atribuição docente.
 
@@ -1970,6 +1968,7 @@ def verificar_recorrencia_datas(
         codigo_turma: Código da turma usada na consulta.
         disciplina_id: ID da disciplina usada na consulta.
         datas_ticks: Datas recorrentes em ticks de DateTime do .NET.
+        atribuicoes_rf: Atribuições previamente preparadas.
 
     Returns:
         Permissões de persistência por data.
@@ -1984,9 +1983,10 @@ def verificar_recorrencia_datas(
 
     ano_letivo = obter_ano_tick(data_tick_padrao)
 
-    atribuicoes_rf = _get_atribuicoes_professor_turma_disciplina(
-        codigo_rf, disciplina_id, ano_letivo
-    )
+    if atribuicoes_rf is None:
+        atribuicoes_rf = _get_atribuicoes_professor_turma_disciplina(
+            codigo_rf, disciplina_id, ano_letivo
+        )
 
     componentes_api_eol = pedagogico_services.get_componentes_api_eol()
     ids_componentes_filhos = {
@@ -2025,6 +2025,7 @@ def verificar_atribuicao_periodo(
     disciplina_id: str,
     data_inicio: str,
     data_fim: str,
+    atribuicoes_rf: list[dict[str, Any]] | None = None,
 ) -> bool:
     """Verifica se o professor tem atribuição na turma e disciplina no período.
 
@@ -2034,6 +2035,7 @@ def verificar_atribuicao_periodo(
         disciplina_id: ID da disciplina usada na consulta.
         data_inicio: Data de início do período.
         data_fim: Data de fim do período.
+        atribuicoes_rf: Atribuições previamente preparadas.
 
     Returns:
         ``True`` quando o professor tem atribuição na turma e disciplina
@@ -2048,11 +2050,12 @@ def verificar_atribuicao_periodo(
     ):
         return False
 
-    atribuicoes_rf = _get_atribuicoes_professor_turma_disciplina(
-        codigo_rf,
-        disciplina_id,
-        0,
-    )
+    if atribuicoes_rf is None:
+        atribuicoes_rf = _get_atribuicoes_professor_turma_disciplina(
+            codigo_rf,
+            disciplina_id,
+            0,
+        )
     componentes_api_eol = pedagogico_services.get_componentes_api_eol()
     ids_componentes_filhos = {
         str(componente.get("id_componente_curricular"))
@@ -2157,9 +2160,29 @@ def _get_atribuicoes_professor_turma_disciplina(
     if not isinstance(payload, list):
         return []
 
-    atribuicoes = [item for item in payload if isinstance(item, dict)]
-    serializer = ProfessorAtribuicaoInternaSerializer(atribuicoes, many=True)
-    return [dict(item) for item in serializer.data]
+    return [item for item in payload if isinstance(item, dict)]
+
+
+def get_atribuicoes_professor_turma_disciplina(
+    codigo_rf: str,
+    disciplina_id: str,
+    ano_letivo: int,
+) -> list[dict[str, Any]]:
+    """Retorna atribuições do professor na disciplina no ano letivo.
+
+    Args:
+        codigo_rf: RF usado na consulta.
+        disciplina_id: ID da disciplina usada na consulta.
+        ano_letivo: Ano letivo de referência.
+
+    Returns:
+        Lista de atribuições ou ausência de conteúdo.
+    """
+    return _get_atribuicoes_professor_turma_disciplina(
+        codigo_rf,
+        disciplina_id,
+        ano_letivo,
+    )
 
 
 def _parse_datetime_atribuicao(valor: Any) -> datetime | None:
