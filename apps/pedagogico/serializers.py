@@ -741,3 +741,41 @@ class ListagemTurmasComponentesPaginadoSerializer(serializers.Serializer):
         source="total_registros"
     )  # NOSONAR
     totalPaginas = serializers.IntegerField(source="total_paginas")  # NOSONAR
+
+
+class TurmaAtribuidaAnoSerializer(serializers.Serializer):
+    """Serializa uma atribuição agrupada de Território do Saber."""
+
+    codigo_turma = serializers.CharField(allow_null=True)
+    ano_letivo = serializers.IntegerField(allow_null=True)
+    nome_turma = serializers.CharField(allow_null=True)
+    data_inicio_atribuicao = serializers.DateTimeField(allow_null=True)
+    data_fim_atribuicao = serializers.DateTimeField(allow_null=True)
+    data_fim_turma = serializers.DateTimeField(allow_null=True)
+    ano_atribuicao = serializers.IntegerField(allow_null=True)
+    codigo_rf = serializers.CharField(allow_null=True)
+    disciplina_id = serializers.CharField(allow_null=True)
+    disciplina_nome = serializers.CharField(allow_null=True)
+    disciplinas_agrupadas_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        allow_null=True,
+        allow_empty=True,
+        default=list,
+    )
+    nome_professor = serializers.CharField(allow_null=True)
+
+
+class AtribuicaoTerritorioTurmaSerializer(serializers.Serializer):
+    """Serializa a atribuição de Território do Saber de uma turma."""
+
+    codigo_turma = serializers.CharField(allow_null=True, default=None)
+    disciplina_id = serializers.CharField(allow_null=True, default=None)
+    disciplina_nome = serializers.CharField(allow_null=True, default=None)
+    disciplinas_agrupadas_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        allow_null=True,
+        allow_empty=True,
+        default=list,
+    )
+    nome_professor = serializers.CharField(allow_null=True, default=None)
+    codigo_rf = serializers.CharField(allow_null=True, default=None)

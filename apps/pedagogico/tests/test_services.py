@@ -1414,6 +1414,53 @@ class GetComponentesPorTurmasUeTest(SimpleTestCase):
         self.assertEqual(result, [])
 
 
+class GetTurmaComponentesTurmaTest(SimpleTestCase):
+    """Valida a consulta dos componentes curriculares de uma turma."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_monta_path_query_e_retorna_lista(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        """Repassa turma e componentes e preserva o payload recebido."""
+        response = MagicMock()
+        payload = [
+            {
+                "componente_codigo": "89",
+                "desc_experiencia_pedagogica": "HORTA PEDAGOGICA",
+            }
+        ]
+        mock_client.get.return_value = response
+        mock_client.json_or_none.return_value = payload
+
+        resultado = services.get_turma_componentes_turma(
+            "3032577",
+            ["89", "90"],
+        )
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/turmas/3032577/componentes-turma/",
+            params={"codigos_componentes": ["89", "90"]},
+        )
+        mock_client.json_or_none.assert_called_once_with(response)
+        self.assertEqual(resultado, payload)
+
+    @patch("apps.pedagogico.services._client")
+    def test_retorna_lista_vazia_para_payload_invalido(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        """Normaliza payload vazio ou incompatível para lista vazia."""
+        mock_client.json_or_none.return_value = {"detail": "erro"}
+
+        resultado = services.get_turma_componentes_turma(
+            "3032577",
+            ["89"],
+        )
+
+        self.assertEqual(resultado, [])
+
+
 class GetCatalogoComponentesTest(SimpleTestCase):
     """Valida a consulta do catálogo de componentes curriculares."""
 
@@ -1603,3 +1650,191 @@ class VerificarAtribuicaoTerritorioSaberTest(SimpleTestCase):
         )
         mock_client.json_or_none.assert_called_once_with(response)
         self.assertIs(result, True)
+
+
+class GetAtribuicoesTerritorioSaberTest(SimpleTestCase):
+    """Valida a consulta de atribuições de Território do Saber."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_serializa_lista_retornada_pelo_sidecar(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        """Preserva o contrato interno e aceita campos opcionais nulos."""
+        response = MagicMock()
+        mock_client.get.return_value = response
+        mock_client.json_or_none.return_value = [
+            {
+                "codigo_turma": "3032577",
+                "ano_letivo": None,
+                "nome_turma": "7A",
+                "data_inicio_atribuicao": None,
+                "data_fim_atribuicao": None,
+                "data_fim_turma": None,
+                "ano_atribuicao": None,
+                "codigo_rf": "000001",
+                "disciplina_id": "800000",
+                "disciplina_nome": None,
+                "disciplinas_agrupadas_ids": None,
+                "nome_professor": None,
+            }
+        ]
+
+        result = services.get_atribuicoes_territorio_saber("000001", 2026)
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/professores/000001/anos-letivos/2026/"
+            "atribuicoes-territorio-saber/"
+        )
+        mock_client.json_or_none.assert_called_once_with(response)
+        self.assertEqual(result[0]["codigo_turma"], "3032577")
+        self.assertIsNone(result[0]["disciplinas_agrupadas_ids"])
+
+    @patch("apps.pedagogico.services._client")
+    def test_retorna_lista_vazia_para_payload_invalido(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        """Ignora respostas que não sejam listas de atribuições."""
+        mock_client.json_or_none.return_value = {"detail": "Não encontrado"}
+
+        result = services.get_atribuicoes_territorio_saber("000001", 2026)
+
+        self.assertEqual(result, [])
+
+
+class GetProfessoresTurmaTerritorioSaberTest(SimpleTestCase):
+    """Valida professores de Território do Saber por turma."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_usa_rota_de_atribuicoes_e_serializa_retorno(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        """Monta a rota de atribuições no recurso de componentes."""
+        response = MagicMock()
+        mock_client.get.return_value = response
+        mock_client.json_or_none.return_value = [
+            {
+                "codigo_turma": "3032577",
+                "disciplina_id": "800000",
+                "disciplina_nome": "TERRITORIO DO SABER",
+                "disciplinas_agrupadas_ids": [89, 90],
+                "nome_professor": "PROFESSOR",
+                "codigo_rf": "000001",
+            }
+        ]
+
+        resultado = services.get_professores_turma_territorio_saber("3032577")
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/turmas/3032577/atribuicoes-territorio-saber/"
+        )
+        self.assertEqual(resultado[0]["disciplina_id"], "800000")
+
+    @patch("apps.pedagogico.services._client")
+    def test_normaliza_cod_agrupamento_do_payload_atual(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        """Usa o código do agrupamento como identificador da disciplina."""
+        mock_client.json_or_none.return_value = [
+            {
+                "codigo_turma": "3022108",
+                "cod_agrupamento": 812935,
+                "componentes_curriculares_agrupados": [1216, 1217],
+                "descricao_territorio_saber": "III - ORIENTACAO",
+                "descricao_experiencia_pedagogica": "OUTRAS",
+                "rf_professor": "8022127",
+            }
+        ]
+
+        resultado = services.get_professores_turma_territorio_saber("3022108")
+
+        self.assertEqual(resultado[0]["disciplina_id"], "812935")
+        self.assertEqual(
+            resultado[0]["disciplinas_agrupadas_ids"], [1216, 1217]
+        )
+        self.assertEqual(
+            resultado[0]["disciplina_nome"],
+            "III - ORIENTACAO - OUTRAS",
+        )
+        self.assertEqual(resultado[0]["codigo_rf"], "8022127")
+
+
+class GetProfessoresTurmasTerritorioSaberTest(SimpleTestCase):
+    """Valida professores de Território do Saber por várias turmas."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_envia_codigos_como_lista_na_query_string(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        """Envia cada código de turma como parâmetro de mesmo nome."""
+        response = MagicMock()
+        mock_client.get.return_value = response
+        mock_client.json_or_none.return_value = []
+
+        resultado = services.get_professores_turmas_territorio_saber(
+            ["3032577", "3032578"]
+        )
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/turmas/atribuicoes-territorio-saber/",
+            params={"codigo_turma": [3032577, 3032578]},
+        )
+        mock_client.json_or_none.assert_called_once_with(response)
+        self.assertEqual(resultado, [])
+
+
+class GetAtribuicoesTerritorioSaberSemAnoTest(SimpleTestCase):
+    """Valida a consulta geral de atribuições de Território do Saber."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_consulta_sem_filtro_de_ano_letivo(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        """Usa a rota geral quando o ano letivo não é informado."""
+        response = MagicMock()
+        mock_client.get.return_value = response
+        mock_client.json_or_none.return_value = []
+
+        result = services.get_atribuicoes_territorio_saber("000001")
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/professores/000001/atribuicoes-territorio-saber/"
+        )
+        self.assertEqual(result, [])
+
+
+class GetComponentesApiEolTest(SimpleTestCase):
+    """Valida a consulta de componentes curriculares da API EOL."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_retorna_json_do_sidecar(self, mock_client: MagicMock) -> None:
+        """Consulta a rota correta e retorna o JSON recebido."""
+        response = MagicMock()
+        response.json.return_value = [{"id_componente_curricular": 89}]
+        mock_client.get.return_value = response
+
+        resultado = services.get_componentes_api_eol()
+
+        mock_client.get.assert_called_once_with(f"{_BASE}/api-eol/")
+        self.assertEqual(resultado, [{"id_componente_curricular": 89}])
+
+
+class GetProfessoresTurmaTerritorioSaberPayloadTest(SimpleTestCase):
+    """Valida respostas inválidas da atribuição territorial por turma."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_retorna_lista_vazia_para_payload_invalido(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        """Ignora payload que não seja uma lista."""
+        mock_client.json_or_none.return_value = {"detail": "Inválido"}
+
+        resultado = services.get_professores_turma_territorio_saber("3032577")
+
+        self.assertEqual(resultado, [])
