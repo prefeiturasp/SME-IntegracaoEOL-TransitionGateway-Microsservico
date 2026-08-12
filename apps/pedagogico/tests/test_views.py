@@ -1593,6 +1593,11 @@ class TurmasPorTipoSalaViewSetTest(SimpleTestCase):
         )
 
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            resp.data,
+            "Não foram encontradas turmas para a UE 000532, tipo de "
+            "sala 1 e ano letivo 2024",
+        )
 
     def test_403_sem_autenticacao(self) -> None:
         client = APIClient()
@@ -1697,7 +1702,7 @@ class TurmasSondagemViewSetTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(
             resp.data,
-            {"detail": "Não foram encontradas turmas de sondagem."},
+            "Não foram encontradas turmas de sondagem.",
         )
 
     def test_403_sem_autenticacao(self) -> None:

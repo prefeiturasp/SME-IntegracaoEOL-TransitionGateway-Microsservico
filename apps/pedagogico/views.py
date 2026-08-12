@@ -847,7 +847,7 @@ class TurmasPorTipoSalaViewSet(PedagogicoAPIView):
     @extend_schema(
         tags=_TAG_ESCOLA,
         description="Retorna as turmas da UE/ano letivo filtradas por tipo de sala.",
-        responses={200: TurmaPorSalaSerializer(many=True), 404: dict},
+        responses={200: TurmaPorSalaSerializer(many=True), 404: str},
     )
     def get(
         self,
@@ -892,11 +892,11 @@ class TurmasPorTipoSalaViewSet(PedagogicoAPIView):
             )
 
         if not data:
-            return detail_response(
+            return Response(
                 "Não foram encontradas turmas para a UE "
                 f"{codigo_ue}, tipo de sala {tipo_sala} e ano letivo "
                 f"{ano_letivo}",
-                404,
+                status=404,
             )
 
         serializer = TurmaPorSalaSerializer(data=data, many=True)
@@ -969,7 +969,7 @@ class TurmasSondagemViewSet(PedagogicoAPIView):
     @extend_schema(
         tags=_TAG_ESCOLA,
         description="Retorna as turmas de Sondagem da UE/ano letivo.",
-        responses={200: TurmaPorSalaSerializer(many=True), 404: dict},
+        responses={200: TurmaPorSalaSerializer(many=True), 404: str},
     )
     def get(
         self,
@@ -1011,7 +1011,7 @@ class TurmasSondagemViewSet(PedagogicoAPIView):
             )
 
         if not data:
-            return detail_response(_MSG_TURMAS_SONDAGEM_VAZIA, 404)
+            return Response(_MSG_TURMAS_SONDAGEM_VAZIA, status=404)
 
         serializer = TurmaPorSalaSerializer(data=data, many=True)
         if not serializer.is_valid():
