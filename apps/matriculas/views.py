@@ -26,7 +26,8 @@ from apps.matriculas.serializers import (
     QuantidadeAlunosPorTurmaEscolaSerializer,
 )
 
-_TAG = ["Aluno"]
+_TAG_MATRICULA = ["Matricula"]
+_TAG_ESCOLA = ["Escola"]
 _MSG_ANO_LETIVO_INVALIDO = "ano_letivo deve ser um inteiro válido."
 _DOMINIO_MATRICULAS = "matriculas"
 _MSG_CODIGO_UE_OBRIGATORIO = "Código da UE obrigatório."
@@ -285,7 +286,7 @@ class MatriculasAnoAtualView(APIView):
     """Lista matrículas consolidadas do ano letivo."""
 
     @extend_schema(
-        tags=_TAG,
+        tags=_TAG_MATRICULA,
         summary="Matrículas consolidadas do ano letivo",
         description="Retorna quantidade de matrículas por turma de uma UE.",
         parameters=[
@@ -331,7 +332,7 @@ class MatriculasAnosAnterioresView(MatriculasAPIView):
     """Lista matrículas históricas consolidadas por turma."""
 
     @extend_schema(
-        tags=_TAG,
+        tags=_TAG_MATRICULA,
         summary="Matrículas consolidadas de anos anteriores",
         description="Retorna quantidade histórica de matrículas por turma.",
         parameters=[
@@ -373,7 +374,7 @@ class TotalMatriculasPorTurnoUeView(MatriculasAPIView):
     """Lista o total de matrículas por turno na UE."""
 
     @extend_schema(
-        tags=_TAG,
+        tags=_TAG_MATRICULA,
         summary="Total de matrículas por turno na UE",
         parameters=[
             OpenApiParameter("ue_codigo", str, OpenApiParameter.PATH),
@@ -410,7 +411,7 @@ class TotalMatriculasPorTurnoDreView(MatriculasAPIView):
     """Lista o total de matrículas por turno na DRE."""
 
     @extend_schema(
-        tags=_TAG,
+        tags=_TAG_MATRICULA,
         summary="Total de matrículas por turno na DRE",
         parameters=[
             OpenApiParameter("dre_codigo", str, OpenApiParameter.PATH),
@@ -447,7 +448,7 @@ class QuantidadeAlunosPorTurmaEscolaView(MatriculasAPIView):
     """Lista a quantidade de alunos por turma na escola."""
 
     @extend_schema(
-        tags=_TAG,
+        tags=_TAG_ESCOLA,
         summary="Quantidade de alunos por turma na escola",
         parameters=[
             OpenApiParameter("codigo_escola", str, OpenApiParameter.PATH),
@@ -484,7 +485,7 @@ class MatriculasAlunoEscolaView(MatriculasAPIView):
     """Lista matrículas de um aluno na escola."""
 
     @extend_schema(
-        tags=_TAG,
+        tags=_TAG_ESCOLA,
         summary="Matrículas de um aluno na escola",
         parameters=[
             OpenApiParameter("codigo_escola", str, OpenApiParameter.PATH),

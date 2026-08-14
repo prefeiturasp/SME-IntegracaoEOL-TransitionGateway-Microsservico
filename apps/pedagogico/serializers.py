@@ -4,7 +4,11 @@ from typing import Any, cast
 
 from rest_framework import serializers
 
-from apps.core.datetime import datetime_legado, formatar_datetime_legado
+from apps.core.datetime import (
+    datetime_legado,
+    formatar_datetime_legado,
+    formatar_datetime_legado_us,
+)
 
 _SENTINELA_DATA = "0001-01-01T00:00:00"
 
@@ -407,6 +411,115 @@ class SincronizacaoInstitucionalTurmaSerializer(serializers.Serializer):
         return str(codigo_modalidade)
 
 
+class ModalidadeEnsinoListSerializer(serializers.ListSerializer):
+    """Serializa a lista de descrições de modalidades de ensino."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Inicializa a lista de descrições de modalidades de ensino.
+
+        Args:
+            *args: Argumentos posicionais do campo.
+            **kwargs: Argumentos nomeados do campo.
+        """
+        kwargs.setdefault("child", serializers.CharField())
+        kwargs.setdefault("allow_empty", True)
+        super().__init__(*args, **kwargs)
+
+
+class DataHoraLegadoUSField(serializers.CharField):
+    """Serializa data/hora no formato ``MM/dd/yyyy HH:mm:ss``.
+
+    Usado pelos DTOs de escolas/salas (``SalasPorUEDTO`` e afins), que não
+    passam pelo conversor JSON ISO customizado dos demais controllers.
+    """
+
+    def to_representation(self, value: Any) -> Any:
+        """Formata o valor de data e hora no padrão en-US."""
+        return formatar_datetime_legado_us(value)
+
+
+class TipoTurmaStringField(serializers.IntegerField):
+    """Serializa tipo_turma como texto."""
+
+    def to_representation(self, value: Any) -> Any:
+        """Formata o tipo de turma como texto."""
+        valor = super().to_representation(value)
+        return str(valor) if valor is not None else None
+
+
+_NOMES_TURMA_POR_SALA = {
+    "codigo_turma": "codigoTurma",
+    "nome_turma": "nomeTurma",
+    "tipo_turma": "tipoTurma",
+    "data_inicio_turma": "dataInicioTurma",
+    "data_fim_turma": "dataFimTurma",
+}
+
+
+class TurmaPorSalaSerializer(serializers.Serializer):
+    """Serializa turma por UE/tipo de sala/ano letivo."""
+
+    codigoTurma = serializers.IntegerField(source="codigo_turma")
+    nomeTurma = serializers.CharField(source="nome_turma")
+    tipoTurma = TipoTurmaStringField(source="tipo_turma")
+    situacao = serializers.CharField(allow_null=True)
+    dataInicioTurma = DataHoraLegadoUSField(
+        source="data_inicio_turma",
+        allow_null=True,
+    )
+    dataFimTurma = DataHoraLegadoUSField(
+        source="data_fim_turma",
+        allow_null=True,
+    )
+
+    def to_internal_value(self, data: Any) -> dict[str, Any]:
+        """Traduz os nomes canônicos (snake_case) para o contrato legado."""
+        if isinstance(data, dict):
+            data = {
+                _NOMES_TURMA_POR_SALA.get(nome, nome): valor
+                for nome, valor in data.items()
+            }
+        return cast(dict[str, Any], super().to_internal_value(data))
+
+
+_NOMES_TURMA_POR_ESCOLA = {
+    **_NOMES_TURMA_POR_SALA,
+    "nome_turma_eol": "nomeTurmaEOL",
+    "sigla_modalidade": "siglaModalidade",
+}
+
+
+class TurmaPorEscolaSerializer(serializers.Serializer):
+    """Serializa turma por UE/ano letivo com sigla de modalidade."""
+
+    codigoTurma = serializers.IntegerField(source="codigo_turma")
+    nomeTurmaEOL = serializers.CharField(source="nome_turma_eol")
+    nomeTurma = serializers.CharField(source="nome_turma")
+    tipoTurma = TipoTurmaStringField(source="tipo_turma")
+    situacao = serializers.CharField(allow_null=True)
+    dataInicioTurma = DataHoraLegadoUSField(
+        source="data_inicio_turma",
+        allow_null=True,
+    )
+    dataFimTurma = DataHoraLegadoUSField(
+        source="data_fim_turma",
+        allow_null=True,
+    )
+    siglaModalidade = serializers.CharField(
+        source="sigla_modalidade",
+        allow_null=True,
+    )
+
+    def to_internal_value(self, data: Any) -> dict[str, Any]:
+        """Traduz os nomes canônicos (snake_case) para o contrato legado."""
+        if isinstance(data, dict):
+            data = {
+                _NOMES_TURMA_POR_ESCOLA.get(nome, nome): valor
+                for nome, valor in data.items()
+            }
+        return cast(dict[str, Any], super().to_internal_value(data))
+
+
 class ComponenteBaseSerializer(serializers.Serializer):
     """Serializa o resumo de componente curricular."""
 
@@ -628,3 +741,41 @@ class ListagemTurmasComponentesPaginadoSerializer(serializers.Serializer):
         source="total_registros"
     )  # NOSONAR
     totalPaginas = serializers.IntegerField(source="total_paginas")  # NOSONAR
+
+
+class TurmaAtribuidaAnoSerializer(serializers.Serializer):
+    """Serializa uma atribuição agrupada de Território do Saber."""
+
+    codigo_turma = serializers.CharField(allow_null=True)
+    ano_letivo = serializers.IntegerField(allow_null=True)
+    nome_turma = serializers.CharField(allow_null=True)
+    data_inicio_atribuicao = serializers.DateTimeField(allow_null=True)
+    data_fim_atribuicao = serializers.DateTimeField(allow_null=True)
+    data_fim_turma = serializers.DateTimeField(allow_null=True)
+    ano_atribuicao = serializers.IntegerField(allow_null=True)
+    codigo_rf = serializers.CharField(allow_null=True)
+    disciplina_id = serializers.CharField(allow_null=True)
+    disciplina_nome = serializers.CharField(allow_null=True)
+    disciplinas_agrupadas_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        allow_null=True,
+        allow_empty=True,
+        default=list,
+    )
+    nome_professor = serializers.CharField(allow_null=True)
+
+
+class AtribuicaoTerritorioTurmaSerializer(serializers.Serializer):
+    """Serializa a atribuição de Território do Saber de uma turma."""
+
+    codigo_turma = serializers.CharField(allow_null=True, default=None)
+    disciplina_id = serializers.CharField(allow_null=True, default=None)
+    disciplina_nome = serializers.CharField(allow_null=True, default=None)
+    disciplinas_agrupadas_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        allow_null=True,
+        allow_empty=True,
+        default=list,
+    )
+    nome_professor = serializers.CharField(allow_null=True, default=None)
+    codigo_rf = serializers.CharField(allow_null=True, default=None)

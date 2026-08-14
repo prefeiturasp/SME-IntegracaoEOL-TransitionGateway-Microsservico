@@ -78,6 +78,18 @@ def formatar_datetime_legado(value: Any) -> Any:
     return normalizar_datetime_legado(value)
 
 
+def formatar_datetime_legado_us(value: Any) -> Any:
+    """Formata data/hora no padrão ``MM/dd/yyyy HH:mm:ss``.
+
+    Alguns dados de data caem no padrão en-US, precisando ser formatados
+    como tal.
+    """
+    iso = datetime_legado(value)
+    if iso is None:
+        return None
+    return datetime.fromisoformat(iso).strftime("%m/%d/%Y %H:%M:%S")
+
+
 def validar_data_str(data_str: str) -> bool:
     """Valida se uma string representa uma data no formato YYYY-MM-DD.
 
@@ -108,13 +120,45 @@ def validar_data_tick(ticks: int | str) -> bool:
         contrário, retorna ``False``.
     """
     try:
-        ticks = int(ticks)
-
-        # Intervalo válido para o DateTime do .NET
-        if ticks < 0 or ticks > 3155378975999999999:
-            return False
-
-        datetime.min + timedelta(microseconds=ticks / 10)
+        datetime_de_tick(ticks)
         return True
-    except (ValueError, TypeError, OverflowError):
+    except ValueError:
         return False
+
+
+def datetime_de_tick(ticks: int | str) -> datetime:
+    """Converta ticks de DateTime do .NET em data e hora.
+
+    Args:
+        ticks: Quantidade de intervalos de 100 nanossegundos desde o ano 1.
+
+    Returns:
+        Data e hora representada pelos ticks.
+
+    Raises:
+        ValueError: Quando o valor não representa ticks válidos.
+    """
+    try:
+        valor = int(ticks)
+        if valor < 0 or valor > 3155378975999999999:
+            raise ValueError
+        return datetime.min + timedelta(microseconds=valor // 10)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("Valor de ticks inválido.") from exc
+
+
+def obter_ano_tick(ticks: int | str) -> int:
+    """Retorna o ano correspondente a um valor de ``DateTime.Ticks`` do .NET.
+
+    Args:
+        ticks: Valor correspondente à quantidade de ticks do ``DateTime`` do
+            .NET (100 nanossegundos desde ``0001-01-01 00:00:00``). Aceita um
+            inteiro ou uma string numérica.
+
+    Returns:
+        O ano correspondente ao valor informado.
+
+    Raises:
+        ValueError: Se o valor não representar um ``DateTime.Ticks`` válido.
+    """
+    return datetime_de_tick(ticks).year

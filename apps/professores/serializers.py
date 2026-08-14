@@ -75,6 +75,286 @@ class BuscarFuncionariosPorUeSerializer(serializers.Serializer):
     )
 
 
+class FuncionariosPerfisQuerySerializer(serializers.Serializer):
+    """Normaliza e valida filtros de funcionários por perfil."""
+
+    mensagem_dre_ou_rf_obrigatorio = (
+        "O código da Dre ou código rf/login deve ser informados."
+    )
+
+    codigo_dre = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        trim_whitespace=True,
+    )
+    codigo_ue = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        trim_whitespace=True,
+    )
+    codigo_rf = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        trim_whitespace=True,
+    )
+    nome_servidor = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        trim_whitespace=True,
+    )
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        data = kwargs.get("data")
+        if data is not None:
+            kwargs["data"] = {
+                "codigo_dre": data.get("CodigoDre")
+                or data.get("codigo_dre")
+                or "",
+                "codigo_ue": data.get("CodigoUe")
+                or data.get("codigo_ue")
+                or "",
+                "codigo_rf": data.get("CodigoRf")
+                or data.get("codigo_rf")
+                or "",
+                "nome_servidor": data.get("NomeServidor")
+                or data.get("nome_servidor")
+                or "",
+            }
+        super().__init__(*args, **kwargs)
+
+    def validate(self, attrs: dict[str, str]) -> dict[str, str]:
+        """Exige DRE ou RF e remove filtros vazios."""
+        params = {chave: valor for chave, valor in attrs.items() if valor}
+        if not params.get("codigo_dre") and not params.get("codigo_rf"):
+            raise serializers.ValidationError(
+                self.mensagem_dre_ou_rf_obrigatorio
+            )
+        return params
+
+
+class AbrangenciaTemporariaSerializer(serializers.Serializer):
+    """Normaliza parâmetros temporários de abrangência."""
+
+    def to_internal_value(self, data: Any) -> dict[str, Any]:
+        """Normaliza os parâmetros recebidos na consulta.
+
+        Args:
+            data: Parâmetros recebidos na requisição.
+
+        Returns:
+            Parâmetros temporários normalizados.
+        """
+        return {
+            "abrangencia": self.obter_inteiro(data, "abrangencia"),
+            "cargos": self.obter_inteiros(data, "cargos"),
+            "funcoes": self.obter_inteiros(data, "funcoesId"),
+            "grupo": self.obter_inteiro(data, "grupo"),
+            "dre_codigo": self.obter_valor(data, "dreCodigo"),
+            "eh_perfil_manual": (
+                self.obter_valor(data, "ehPerfilManual") or ""
+            ).lower()
+            == "true",
+        }
+
+    def obter_valor(self, data: Any, nome: str) -> str | None:
+        """Retorna um parâmetro textual simples.
+
+        Args:
+            data: Parâmetros recebidos na requisição.
+            nome: Nome do parâmetro consultado.
+
+        Returns:
+            Valor informado, ou ``None`` quando ausente.
+        """
+        if not hasattr(data, "get"):
+            return None
+        return data.get(nome) or None
+
+    def obter_inteiro(self, data: Any, nome: str) -> int | None:
+        """Retorna um parâmetro inteiro simples.
+
+        Args:
+            data: Parâmetros recebidos na requisição.
+            nome: Nome do parâmetro consultado.
+
+        Returns:
+            Inteiro informado, ou ``None`` quando ausente.
+        """
+        valor = self.obter_valor(data, nome)
+        return int(valor) if valor and valor.isdigit() else None
+
+    def obter_inteiros(self, data: Any, nome: str) -> list[int] | None:
+        """Retorna parâmetros inteiros repetidos.
+
+        Args:
+            data: Parâmetros recebidos na requisição.
+            nome: Nome do parâmetro consultado.
+
+        Returns:
+            Inteiros informados, ou ``None`` quando ausentes.
+        """
+        if not hasattr(data, "getlist"):
+            return None
+        valores = [
+            item for item in data.getlist(nome) if item.strip().isdigit()
+        ]
+        return [int(item) for item in valores] or None
+
+
+class DisciplinasFuncionarioPathSerializer(serializers.Serializer):
+    """Valida parâmetros da consulta de disciplinas do funcionário."""
+
+    login = serializers.CharField(allow_blank=True)
+    id_perfil = serializers.CharField(allow_blank=True)
+    codigo_turma = serializers.CharField(allow_blank=True)
+
+    def validate(self, attrs: dict[str, str]) -> dict[str, str]:
+        """Valida os parâmetros obrigatórios do caminho.
+
+        Args:
+            attrs: Parâmetros recebidos no caminho da rota.
+
+        Returns:
+            Parâmetros validados.
+
+        Raises:
+            ValidationError: Quando algum parâmetro obrigatório está ausente.
+        """
+        if not attrs["login"].strip():
+            raise serializers.ValidationError("É necessário informar o login.")
+        if not attrs["id_perfil"].strip():
+            raise serializers.ValidationError(
+                "É necessário informar o idPerfil."
+            )
+        if not attrs["codigo_turma"].strip():
+            raise serializers.ValidationError(
+                "É necessário informar o codigoTurma."
+            )
+        return attrs
+
+
+class QueryParamsSerializer(serializers.Serializer):
+    """Normaliza parâmetros simples e repetidos da consulta."""
+
+    campos_lista: tuple[str, ...] = ()
+    campos_simples: tuple[str, ...] = ()
+    campos_obrigatorios: tuple[str, ...] = ()
+
+    def to_internal_value(self, data: Any) -> dict[str, str | list[str]]:
+        """Normaliza os parâmetros informados na consulta.
+
+        Args:
+            data: Parâmetros recebidos na requisição.
+
+        Returns:
+            Parâmetros presentes, como lista ou valor único.
+        """
+        params: dict[str, str | list[str]] = {}
+        if not hasattr(data, "get"):
+            return params
+        for nome in self.campos_lista:
+            valores = data.getlist(nome) if hasattr(data, "getlist") else []
+            if valores:
+                params[nome] = valores
+        for nome in self.campos_simples:
+            valor = data.get(nome)
+            if valor is not None:
+                params[nome] = valor
+        return params
+
+    def validate(
+        self,
+        attrs: dict[str, str | list[str]],
+    ) -> dict[str, str | list[str]]:
+        """Valida a presença dos parâmetros obrigatórios.
+
+        Args:
+            attrs: Parâmetros normalizados.
+
+        Returns:
+            Parâmetros validados.
+
+        Raises:
+            ValidationError: Quando um parâmetro obrigatório está ausente.
+        """
+        ausentes = [
+            campo for campo in self.campos_obrigatorios if campo not in attrs
+        ]
+        if ausentes:
+            raise serializers.ValidationError(
+                dict.fromkeys(ausentes, "Este campo é obrigatório.")
+            )
+        return attrs
+
+
+class FuncionariosEscolaCargosQuerySerializer(QueryParamsSerializer):
+    """Normaliza filtros de funcionários por cargos na escola."""
+
+    campos_lista = ("cargos",)
+    campos_simples = ("dre_codigo",)
+
+
+class FuncionariosEscolaFuncoesAtividadesQuerySerializer(
+    QueryParamsSerializer
+):
+    """Normaliza filtros de funcionários por funções atividades."""
+
+    campos_lista = ("funcoes_atividades",)
+    campos_simples = ("codigo_dre",)
+
+
+class FuncionariosEscolaFuncoesExternasQuerySerializer(QueryParamsSerializer):
+    """Normaliza filtros de funcionários por funções externas."""
+
+    campos_lista = ("funcoes",)
+    campos_simples = ("codigo_dre",)
+    campos_obrigatorios = ("codigo_dre",)
+
+
+class ProfessorRfDreUeQuerySerializer(QueryParamsSerializer):
+    """Normaliza filtros de professor por RF, DRE e UE."""
+
+    campos_simples = ("dre_id", "ue_id", "buscar_outros_cargos")
+
+
+class ProfessorAutocompleteQuerySerializer(QueryParamsSerializer):
+    """Normaliza filtros de autocomplete de professores."""
+
+    campos_simples = ("ue_id", "nome")
+
+
+class ProfessorBuscarPorRfQuerySerializer(serializers.Serializer):
+    """Normaliza filtros da busca de professor por RF."""
+
+    mensagem_booleano = "buscar_outros_cargos deve ser booleano."
+
+    def to_internal_value(self, data: Any) -> dict[str, bool | None]:
+        """Normaliza o filtro de outros cargos.
+
+        Args:
+            data: Parâmetros recebidos na requisição.
+
+        Returns:
+            Filtro booleano normalizado.
+
+        Raises:
+            ValidationError: Quando o valor informado não é booleano.
+        """
+        valor = (
+            data.get("buscar_outros_cargos") if hasattr(data, "get") else None
+        )
+        if valor is None:
+            return {"buscar_outros_cargos": None}
+        valor_normalizado = valor.lower()
+        if valor_normalizado == "true":
+            return {"buscar_outros_cargos": True}
+        if valor_normalizado == "false":
+            return {"buscar_outros_cargos": False}
+        raise serializers.ValidationError(
+            {"buscar_outros_cargos": self.mensagem_booleano}
+        )
+
+
 @extend_schema_serializer(component_name="buscar_turmas_elegiveis")
 class BuscarTurmasElegiveisSerializer(serializers.Serializer):
     """Filtros do POST de turmas elegíveis para cópia (contrato legado)."""
@@ -691,6 +971,19 @@ class ProfessorBuscarPorRfSerializer(serializers.Serializer):
     nome = serializers.CharField()
 
 
+class ProfessorEscolaLegadoSerializer(serializers.Serializer):
+    """Serializa professor de uma escola no contrato legado."""
+
+    codigoRF = serializers.IntegerField(source="codigo_rf")
+    nome = serializers.CharField()
+    cargo = serializers.CharField(allow_null=True)
+    cpf = serializers.CharField(allow_null=True)
+    dataInicioExercicio = serializers.CharField(
+        source="data_inicio_exercicio",
+        allow_null=True,
+    )
+
+
 class FuncionarioEscolaSerializer(serializers.Serializer):
     """Serializa funcionário vinculado a uma escola."""
 
@@ -715,6 +1008,212 @@ class FuncionarioCargoSerializer(serializers.Serializer):
         allow_null=True,
     )
     cargoId = serializers.IntegerField(source="cargo_id")
+
+
+class CargoFuncionarioConectaSerializer(serializers.Serializer):
+    """Serializa cargos por registro funcional."""
+
+    rf = serializers.IntegerField()
+    cpf = serializers.CharField(allow_null=True)
+    cdCargoBase = serializers.IntegerField(
+        source="cd_cargo_base",
+        allow_null=True,
+    )
+    cargoBase = serializers.CharField(source="cargo_base", allow_null=True)
+    cdDreCargoBase = serializers.CharField(
+        source="cd_dre_cargo_base",
+        allow_null=True,
+    )
+    cdUeCargoBase = serializers.CharField(
+        source="cd_ue_cargo_base",
+        allow_null=True,
+    )
+    ueCargoBase = serializers.CharField(
+        source="ue_cargo_base",
+        allow_null=True,
+    )
+    tipoVinculoCargoBase = serializers.IntegerField(
+        source="tipo_vinculo_cargo_base",
+        allow_null=True,
+    )
+    dataInicioCargoBase = serializers.CharField(
+        source="data_inicio_cargo_base",
+        allow_null=True,
+    )
+    cdCargoSobreposto = serializers.IntegerField(
+        source="cd_cargo_sobreposto",
+        allow_null=True,
+    )
+    cargoSobreposto = serializers.CharField(
+        source="cargo_sobreposto",
+        allow_null=True,
+    )
+    cdDreCargoSobreposto = serializers.CharField(
+        source="cd_dre_cargo_sobreposto",
+        allow_null=True,
+    )
+    cdUeCargoSobreposto = serializers.CharField(
+        source="cd_ue_cargo_sobreposto",
+        allow_null=True,
+    )
+    ueCargoSobreposto = serializers.CharField(
+        source="ue_cargo_sobreposto",
+        allow_null=True,
+    )
+    tipoVinculoCargoSobreposto = serializers.IntegerField(
+        source="tipo_vinculo_cargo_sobreposto",
+        allow_null=True,
+    )
+    dataInicioCargoSobreposto = serializers.CharField(
+        source="data_inicio_cargo_sobreposto",
+        allow_null=True,
+    )
+    cdFuncaoAtividade = serializers.IntegerField(
+        source="cd_funcao_atividade",
+        allow_null=True,
+    )
+    funcaoAtividade = serializers.CharField(
+        source="funcao_atividade",
+        allow_null=True,
+    )
+    cdDreFuncaoAtividade = serializers.CharField(
+        source="cd_dre_funcao_atividade",
+        allow_null=True,
+    )
+    cdUeFuncaoAtividade = serializers.CharField(
+        source="cd_ue_funcao_atividade",
+        allow_null=True,
+    )
+    ueFuncaoAtividade = serializers.CharField(
+        source="ue_funcao_atividade",
+        allow_null=True,
+    )
+    tipoVinculoFuncaoAtividade = serializers.IntegerField(
+        source="tipo_vinculo_funcao_atividade",
+        allow_null=True,
+    )
+    dataInicioFuncaoAtividade = serializers.CharField(
+        source="data_inicio_funcao_atividade",
+        allow_null=True,
+    )
+
+
+class FuncionarioConectaFormacaoSerializer(serializers.Serializer):
+    """Serializa funcionário do Conecta Formação."""
+
+    rf = serializers.CharField()
+    nome = serializers.CharField(allow_null=True)
+    cpf = serializers.CharField(allow_null=True)
+    cargoCodigo = serializers.CharField(
+        source="cargo_codigo",
+        allow_null=True,
+    )
+    cargo = serializers.CharField(allow_null=True)
+    cargoDreCodigo = serializers.CharField(
+        source="cargo_dre_codigo",
+        allow_null=True,
+    )
+    cargoUeCodigo = serializers.CharField(
+        source="cargo_ue_codigo",
+        allow_null=True,
+    )
+    funcaoCodigo = serializers.CharField(
+        source="funcao_codigo",
+        allow_null=True,
+    )
+    funcao = serializers.CharField(allow_null=True)
+    funcaoDreCodigo = serializers.CharField(
+        source="funcao_dre_codigo",
+        allow_null=True,
+    )
+    funcaoUeCodigo = serializers.CharField(
+        source="funcao_ue_codigo",
+        allow_null=True,
+    )
+    tipoVinculo = serializers.IntegerField(
+        source="tipo_vinculo",
+        allow_null=True,
+    )
+
+
+class FuncionariosConectaFormacaoFiltroSerializer(serializers.Serializer):
+    """Valida filtros de funcionários do Conecta Formação."""
+
+    codigos_cargos = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        allow_empty=True,
+        default=list,
+    )
+    codigos_funcoes = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        allow_empty=True,
+        default=list,
+    )
+    codigo_modalidade = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        allow_empty=True,
+        default=list,
+    )
+    anos_turma = serializers.ListField(
+        child=TextoEstritoField(allow_blank=False),
+        required=False,
+        allow_empty=True,
+        default=list,
+    )
+    codigos_dres = serializers.ListField(
+        child=TextoEstritoField(allow_blank=False),
+        required=False,
+        allow_empty=True,
+        default=list,
+    )
+    codigos_componentes_curriculares = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        allow_empty=True,
+        default=list,
+    )
+    eh_tipo_jornada_jeif = serializers.BooleanField(
+        required=False,
+        default=False,
+    )
+
+    def to_internal_value(self, data: Any) -> dict[str, Any]:
+        """Preserva parâmetros repetidos recebidos na query.
+
+        Args:
+            data: Parâmetros recebidos na requisição.
+
+        Returns:
+            Dados normalizados para validação.
+        """
+        if hasattr(data, "getlist"):
+            data = {
+                campo: data.getlist(campo)
+                for campo in self.fields
+                if data.getlist(campo)
+            }
+            if "eh_tipo_jornada_jeif" in data:
+                data["eh_tipo_jornada_jeif"] = data["eh_tipo_jornada_jeif"][0]
+        return cast(dict[str, Any], super().to_internal_value(data))
+
+
+class DreUeAtribuicaoCargoSerializer(serializers.Serializer):
+    """Serializa DRE e UE da atribuição por cargo."""
+
+    dreCodigo = serializers.CharField(source="codigo_dre", allow_null=True)
+    ueCodigo = serializers.CharField(source="codigo_ue", allow_null=True)
+
+
+class UsuarioConectaFormacaoSerializer(serializers.Serializer):
+    """Serializa usuário do Conecta Formação."""
+
+    login = serializers.CharField()
+    nome = serializers.CharField(allow_null=True)
+    nomeSocial = serializers.CharField(source="nome_social", allow_null=True)
+    perfil = serializers.CharField()
 
 
 class SupervisorLegadoSerializer(serializers.Serializer):
@@ -990,3 +1489,139 @@ class ProfessorAtribuicaoTurmaDisciplinaSerializer(serializers.Serializer):
     nomeProfessor = serializers.CharField(
         source="nome_professor", allow_null=True
     )
+
+
+class ProfessorAtribuicaoInternaSerializer(serializers.Serializer):
+    """Padroniza atribuições consumidas de diferentes domínios."""
+
+    codigo_turma = serializers.CharField(allow_null=True, default=None)
+    ano_letivo = serializers.IntegerField(allow_null=True, default=None)
+    nome_turma = serializers.CharField(allow_null=True, default=None)
+    data_inicio_atribuicao = serializers.DateTimeField(
+        allow_null=True, default=None
+    )
+    data_fim_atribuicao = serializers.DateTimeField(
+        allow_null=True, default=None
+    )
+    data_fim_turma = serializers.DateTimeField(allow_null=True, default=None)
+    ano_atribuicao = serializers.IntegerField(allow_null=True, default=None)
+    codigo_rf = serializers.CharField(allow_null=True, default=None)
+    disciplina_id = serializers.CharField(allow_null=True, default=None)
+    disciplina_nome = serializers.CharField(allow_null=True, default=None)
+    disciplinas_agrupadas_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        allow_null=True,
+        allow_empty=True,
+        default=list,
+    )
+    nome_professor = serializers.CharField(allow_null=True, default=None)
+
+
+class ProfessorRecorrenciaDataSerializer(serializers.Serializer):
+    """Serializa a permissão de persistência para uma data recorrente."""
+
+    data = serializers.CharField()  # type: ignore[assignment]
+    podePersistir = serializers.BooleanField(source="pode_persistir")
+
+
+class ProfessorAtribuicaoPeriodoPathSerializer(serializers.Serializer):
+    """Valida os parâmetros de rota da atribuição por período."""
+
+    codigo_rf = serializers.CharField(allow_blank=False)
+    codigo_turma = serializers.CharField(allow_blank=False)
+    componente_curricular_id = serializers.CharField(allow_blank=False)
+    data_inicio_periodo = serializers.DateTimeField(
+        input_formats=["iso-8601", "%Y-%m-%d"]
+    )
+    data_fim_periodo = serializers.DateTimeField(
+        input_formats=["iso-8601", "%Y-%m-%d"]
+    )
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        """Valida a ordem cronológica do período.
+
+        Args:
+            attrs: Parâmetros de rota convertidos pelo serializer.
+
+        Returns:
+            Parâmetros validados.
+
+        Raises:
+            serializers.ValidationError: Quando o período está invertido.
+        """
+        if attrs["data_inicio_periodo"] > attrs["data_fim_periodo"]:
+            raise serializers.ValidationError("Período informado é inválido.")
+        return attrs
+
+
+class ProfessoresTitularesParametrosSerializer(serializers.Serializer):
+    """Valida os filtros da busca de professores titulares."""
+
+    codigo_turma = serializers.CharField(allow_blank=False)
+    codigoRF = serializers.CharField(
+        source="codigo_rf",
+        required=False,
+        allow_blank=True,
+        default="",
+    )
+    dataReferencia = serializers.DateTimeField(
+        source="data_referencia",
+        required=False,
+        allow_null=True,
+        default=None,
+        input_formats=["iso-8601", "%Y-%m-%d"],
+    )
+    realiza_agrupamento = serializers.BooleanField()
+
+
+class BuscarProfessorTitularPorDisciplinaSerializer(serializers.Serializer):
+    """Serializa o professor titular por disciplina no contrato legado."""
+
+    professorRf = serializers.CharField(
+        source="professor_rf",
+        allow_null=True,
+    )
+    nome_Professor = serializers.CharField(
+        source="nome_professor",
+        allow_null=True,
+    )
+    disciplina = serializers.CharField(allow_null=True)
+    disciplina_Id = serializers.CharField(
+        source="disciplina_id",
+        allow_null=True,
+    )
+    disciplinas_Id = serializers.CharField(
+        source="disciplinas_id",
+        allow_null=True,
+    )
+    turma_Id = serializers.IntegerField(source="turma_id")
+
+
+class ProfessoresTitularesPorUeParametrosSerializer(serializers.Serializer):
+    """Valida os parâmetros da busca de professores titulares por UE."""
+
+    ue_codigo = serializers.CharField(allow_blank=False)
+    data_referencia = serializers.DateTimeField(
+        input_formats=["iso-8601", "%Y-%m-%d"],
+    )
+    realizaAgrupamento = serializers.BooleanField(  # noqa: N815
+        source="realiza_agrupamento",
+        required=False,
+        default=False,
+    )
+
+
+class ProfessoresTitularesPorTurmasQuerySerializer(serializers.Serializer):
+    """Valida os códigos de turmas da busca de professores titulares."""
+
+    codigosTurmas = serializers.ListField(  # noqa: N815
+        source="codigos_turmas",
+        child=serializers.CharField(allow_blank=False),
+        allow_empty=False,
+    )
+
+
+class ProfessoresTitularesPorTurmasSerializer(
+    BuscarProfessorTitularPorDisciplinaSerializer
+):
+    """Serializa professores titulares de várias turmas."""

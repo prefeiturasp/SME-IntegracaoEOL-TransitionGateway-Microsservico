@@ -1,24 +1,45 @@
 """Valida serializers do domínio professores."""
 
+from typing import Any
 from unittest.mock import patch
 
+from django.http import QueryDict
 from django.test import SimpleTestCase
 from rest_framework import serializers
 
 from apps.professores.serializers import (
+    AbrangenciaTemporariaSerializer,
+    BuscarProfessorTitularPorDisciplinaSerializer,
+    CargoFuncionarioConectaSerializer,
+    DisciplinasFuncionarioPathSerializer,
     DisciplinaTurmaAgrupamentoSerializer,
     DisciplinaTurmaAtribuidaSerializer,
+    DreUeAtribuicaoCargoSerializer,
     FuncionarioCargoSerializer,
+    FuncionarioConectaFormacaoSerializer,
     FuncionarioDadosSigpaeSerializer,
     FuncionarioExternoSerializer,
     FuncionarioFuncaoAtividadeSerializer,
     FuncionarioFuncaoExternaSerializer,
     FuncionarioLegadoSerializer,
     FuncionarioLoginSerializer,
+    FuncionariosConectaFormacaoFiltroSerializer,
+    FuncionariosEscolaCargosQuerySerializer,
+    FuncionariosEscolaFuncoesExternasQuerySerializer,
     FuncionarioSgpLegadoSerializer,
+    FuncionariosPerfisQuerySerializer,
     FuncionarioUnidadeLegadoSerializer,
+    ProfessorAtribuicaoInternaSerializer,
+    ProfessorAtribuicaoPeriodoPathSerializer,
     ProfessorAtribuicaoTurmaDisciplinaSerializer,
+    ProfessorAutocompleteQuerySerializer,
     ProfessorAutoCompleteSerializer,
+    ProfessorBuscarPorRfQuerySerializer,
+    ProfessoresTitularesParametrosSerializer,
+    ProfessoresTitularesPorTurmasQuerySerializer,
+    ProfessoresTitularesPorUeParametrosSerializer,
+    ProfessorRecorrenciaDataSerializer,
+    ProfessorRfDreUeQuerySerializer,
     ProfessorStatusAtribuicaoSerializer,
     ProfessorTurmaAtribuidaSimplificadaSerializer,
     SupervisorLegadoSerializer,
@@ -26,8 +47,34 @@ from apps.professores.serializers import (
     TurmaAtribuidaProfessorSerializer,
     TurmaElegivelLegadoSerializer,
     TurmasAtribuidasLegadoSerializer,
+    UsuarioConectaFormacaoSerializer,
     VerificarAtribuicaoDisciplinaQuerySerializer,
 )
+
+
+class ProfessoresTitularesPorTurmasQuerySerializerTest(SimpleTestCase):
+    """Valida os códigos da busca de titulares por várias turmas."""
+
+    def test_converte_nome_legado_para_snake_case(self) -> None:
+        """Disponibiliza os códigos validados com nome interno Python."""
+        serializer = ProfessoresTitularesPorTurmasQuerySerializer(
+            data={"codigosTurmas": ["3022108", "3022109"]}
+        )
+
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        self.assertEqual(
+            serializer.validated_data,
+            {"codigos_turmas": ["3022108", "3022109"]},
+        )
+
+    def test_rejeita_lista_vazia(self) -> None:
+        """Exige ao menos um código de turma."""
+        serializer = ProfessoresTitularesPorTurmasQuerySerializer(
+            data={"codigosTurmas": []}
+        )
+
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("codigosTurmas", serializer.errors)
 
 
 class TextoEstritoFieldTest(SimpleTestCase):
@@ -71,6 +118,288 @@ class VerificarAtribuicaoDisciplinaQuerySerializerTest(SimpleTestCase):
 
         self.assertFalse(serializer.is_valid())
         self.assertIn("territorioSaber", serializer.errors)
+
+
+class FuncionariosPerfisQuerySerializerTest(SimpleTestCase):
+    """Valida filtros de funcionários por perfil."""
+
+    def test_normaliza_aliases_legados(self) -> None:
+        serializer = FuncionariosPerfisQuerySerializer(
+            data={
+                "CodigoDre": " 108100 ",
+                "CodigoUe": " 000532 ",
+                "CodigoRf": " 7654321 ",
+                "NomeServidor": " ANA ",
+            }
+        )
+
+        self.assertTrue(serializer.is_valid())
+        self.assertEqual(
+            serializer.validated_data,
+            {
+                "codigo_dre": "108100",
+                "codigo_ue": "000532",
+                "codigo_rf": "7654321",
+                "nome_servidor": "ANA",
+            },
+        )
+
+    def test_rejeita_quando_sem_codigo_dre_ou_rf(self) -> None:
+        serializer = FuncionariosPerfisQuerySerializer(
+            data={"CodigoDre": " ", "CodigoRf": ""}
+        )
+
+        self.assertFalse(serializer.is_valid())
+        self.assertEqual(
+            serializer.errors["non_field_errors"][0],
+            FuncionariosPerfisQuerySerializer.mensagem_dre_ou_rf_obrigatorio,
+        )
+
+
+class CargoFuncionarioConectaSerializerTest(SimpleTestCase):
+    """Valida contrato legado de cargos por RF."""
+
+    def test_serializa_campos_legados(self) -> None:
+        serializer = CargoFuncionarioConectaSerializer(
+            {
+                "rf": 7758626,
+                "cpf": "12345678900",
+                "cd_cargo_base": 3360,
+                "cargo_base": "DIRETOR",
+                "cd_dre_cargo_base": "108100",
+                "cd_ue_cargo_base": "000532",
+                "ue_cargo_base": "ESCOLA",
+                "tipo_vinculo_cargo_base": 1,
+                "data_inicio_cargo_base": "2024-01-01T00:00:00",
+                "cd_cargo_sobreposto": None,
+                "cargo_sobreposto": None,
+                "cd_dre_cargo_sobreposto": None,
+                "cd_ue_cargo_sobreposto": None,
+                "ue_cargo_sobreposto": None,
+                "tipo_vinculo_cargo_sobreposto": None,
+                "data_inicio_cargo_sobreposto": None,
+                "cd_funcao_atividade": None,
+                "funcao_atividade": None,
+                "cd_dre_funcao_atividade": None,
+                "cd_ue_funcao_atividade": None,
+                "ue_funcao_atividade": None,
+                "tipo_vinculo_funcao_atividade": None,
+                "data_inicio_funcao_atividade": None,
+            }
+        )
+
+        self.assertEqual(serializer.data["cdCargoBase"], 3360)
+        self.assertEqual(serializer.data["cargoBase"], "DIRETOR")
+        self.assertEqual(serializer.data["cdDreCargoBase"], "108100")
+
+
+class FuncionarioConectaFormacaoSerializerTest(SimpleTestCase):
+    """Valida contrato de funcionários do Conecta Formação."""
+
+    def test_serializa_campos_legados(self) -> None:
+        serializer = FuncionarioConectaFormacaoSerializer(
+            {
+                "rf": "7758626",
+                "nome": "ANA",
+                "cpf": "12345678900",
+                "cargo_codigo": "3360",
+                "cargo": "DIRETOR",
+                "cargo_dre_codigo": "108100",
+                "cargo_ue_codigo": "000532",
+                "funcao_codigo": None,
+                "funcao": None,
+                "funcao_dre_codigo": None,
+                "funcao_ue_codigo": None,
+                "tipo_vinculo": 1,
+            }
+        )
+
+        self.assertEqual(serializer.data["cargoCodigo"], "3360")
+        self.assertEqual(serializer.data["cargoDreCodigo"], "108100")
+        self.assertEqual(serializer.data["tipoVinculo"], 1)
+
+
+class FuncionariosConectaFormacaoFiltroSerializerTest(SimpleTestCase):
+    """Valida filtros de funcionários do Conecta Formação."""
+
+    def test_preserva_parametros_repetidos(self) -> None:
+        query = QueryDict(
+            "codigos_cargos=3360&codigos_cargos=3239"
+            "&codigos_dres=108100&eh_tipo_jornada_jeif=true"
+        )
+        serializer = FuncionariosConectaFormacaoFiltroSerializer(data=query)
+
+        self.assertTrue(serializer.is_valid())
+        self.assertEqual(
+            serializer.validated_data["codigos_cargos"],
+            [3360, 3239],
+        )
+        self.assertEqual(serializer.validated_data["codigos_dres"], ["108100"])
+        self.assertIs(serializer.validated_data["eh_tipo_jornada_jeif"], True)
+
+
+class AbrangenciaTemporariaSerializerTest(SimpleTestCase):
+    """Valida parâmetros temporários de abrangência."""
+
+    def test_normaliza_parametros_temporarios(self) -> None:
+        query = QueryDict(
+            "abrangencia=4&cargos=3239&funcoesId=1&grupo=2"
+            "&dreCodigo=108100&ehPerfilManual=true"
+        )
+        serializer = AbrangenciaTemporariaSerializer(data=query)
+
+        self.assertTrue(serializer.is_valid())
+        self.assertEqual(
+            serializer.validated_data,
+            {
+                "abrangencia": 4,
+                "cargos": [3239],
+                "funcoes": [1],
+                "grupo": 2,
+                "dre_codigo": "108100",
+                "eh_perfil_manual": True,
+            },
+        )
+
+    def test_ignora_inteiros_invalidos(self) -> None:
+        query = QueryDict("abrangencia=abc&cargos=abc&funcoesId=1")
+        serializer = AbrangenciaTemporariaSerializer(data=query)
+
+        self.assertTrue(serializer.is_valid())
+        self.assertIsNone(serializer.validated_data["abrangencia"])
+        self.assertIsNone(serializer.validated_data["cargos"])
+        self.assertEqual(serializer.validated_data["funcoes"], [1])
+
+
+class DisciplinasFuncionarioPathSerializerTest(SimpleTestCase):
+    """Valida parâmetros de caminho das disciplinas do funcionário."""
+
+    def test_valida_parametros_obrigatorios(self) -> None:
+        serializer = DisciplinasFuncionarioPathSerializer(
+            data={
+                "login": "000001",
+                "id_perfil": "perfil",
+                "codigo_turma": "3030050",
+            }
+        )
+
+        self.assertTrue(serializer.is_valid())
+
+    def test_rejeita_login_vazio(self) -> None:
+        serializer = DisciplinasFuncionarioPathSerializer(
+            data={
+                "login": " ",
+                "id_perfil": "perfil",
+                "codigo_turma": "3030050",
+            }
+        )
+
+        self.assertFalse(serializer.is_valid())
+        self.assertEqual(
+            str(serializer.errors["non_field_errors"][0]),
+            "É necessário informar o login.",
+        )
+
+
+class QueryParamsSerializerTest(SimpleTestCase):
+    """Valida serializers de parâmetros de consulta."""
+
+    def test_preserva_listas_e_campos_simples(self) -> None:
+        query = QueryDict("cargos=3239&cargos=3240&dre_codigo=1")
+        serializer = FuncionariosEscolaCargosQuerySerializer(data=query)
+
+        self.assertTrue(serializer.is_valid())
+        self.assertEqual(
+            serializer.validated_data,
+            {"cargos": ["3239", "3240"], "dre_codigo": "1"},
+        )
+
+    def test_exige_codigo_dre_em_funcoes_externas(self) -> None:
+        serializer = FuncionariosEscolaFuncoesExternasQuerySerializer(
+            data=QueryDict("funcoes=5")
+        )
+
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("codigo_dre", serializer.errors)
+
+    def test_normaliza_filtros_de_rf_dre_ue(self) -> None:
+        query = QueryDict("dre_id=1&ue_id=019465&buscar_outros_cargos=true")
+        serializer = ProfessorRfDreUeQuerySerializer(data=query)
+
+        self.assertTrue(serializer.is_valid())
+        self.assertEqual(
+            serializer.validated_data,
+            {
+                "dre_id": "1",
+                "ue_id": "019465",
+                "buscar_outros_cargos": "true",
+            },
+        )
+
+    def test_normaliza_autocomplete(self) -> None:
+        query = QueryDict("ue_id=019465&nome=ana")
+        serializer = ProfessorAutocompleteQuerySerializer(data=query)
+
+        self.assertTrue(serializer.is_valid())
+        self.assertEqual(
+            serializer.validated_data,
+            {"ue_id": "019465", "nome": "ana"},
+        )
+
+
+class ProfessorBuscarPorRfQuerySerializerTest(SimpleTestCase):
+    """Valida filtros da busca de professor por RF."""
+
+    def test_converte_booleano_textual(self) -> None:
+        serializer = ProfessorBuscarPorRfQuerySerializer(
+            data=QueryDict("buscar_outros_cargos=false")
+        )
+
+        self.assertTrue(serializer.is_valid())
+        self.assertIs(
+            serializer.validated_data["buscar_outros_cargos"],
+            False,
+        )
+
+    def test_rejeita_booleano_invalido(self) -> None:
+        serializer = ProfessorBuscarPorRfQuerySerializer(
+            data=QueryDict("buscar_outros_cargos=sim")
+        )
+
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("buscar_outros_cargos", serializer.errors)
+
+
+class DreUeAtribuicaoCargoSerializerTest(SimpleTestCase):
+    """Valida contrato de atribuição por cargo."""
+
+    def test_serializa_campos_legados(self) -> None:
+        serializer = DreUeAtribuicaoCargoSerializer(
+            {
+                "codigo_dre": "108100",
+                "codigo_ue": "000532",
+            }
+        )
+
+        self.assertEqual(serializer.data["dreCodigo"], "108100")
+        self.assertEqual(serializer.data["ueCodigo"], "000532")
+
+
+class UsuarioConectaFormacaoSerializerTest(SimpleTestCase):
+    """Valida contrato de usuários do Conecta Formação."""
+
+    def test_serializa_campos_legados(self) -> None:
+        serializer = UsuarioConectaFormacaoSerializer(
+            {
+                "login": "7758626",
+                "nome": "ANA",
+                "nome_social": None,
+                "perfil": "perfil",
+            }
+        )
+
+        self.assertEqual(serializer.data["login"], "7758626")
+        self.assertIsNone(serializer.data["nomeSocial"])
 
 
 class ProfessorStatusAtribuicaoSerializerTest(SimpleTestCase):
@@ -121,6 +450,135 @@ class ProfessorAtribuicaoTurmaDisciplinaSerializerTest(SimpleTestCase):
         self.assertEqual(data["codigoTurma"], 3032577)
         self.assertEqual(data["disciplinaId"], 89)
         self.assertIsNone(data["disciplinasAgrupadasIds"])
+
+
+class ProfessorAtribuicaoInternaSerializerTest(SimpleTestCase):
+    """Valida o contrato canônico consumido pelo serviço de professores."""
+
+    def test_padroniza_tipos_e_completa_campos_ausentes(self) -> None:
+        """Normaliza dados comuns aos endpoints de atribuição."""
+        data = ProfessorAtribuicaoInternaSerializer(
+            {
+                "codigo_turma": 3032577,
+                "ano_letivo": "2026",
+                "disciplina_id": 89,
+            }
+        ).data
+
+        self.assertEqual(data["codigo_turma"], "3032577")
+        self.assertEqual(data["ano_letivo"], 2026)
+        self.assertEqual(data["disciplina_id"], "89")
+        self.assertIsNone(data["data_inicio_atribuicao"])
+        self.assertEqual(data["disciplinas_agrupadas_ids"], [])
+
+
+class ProfessorAtribuicaoPeriodoPathSerializerTest(SimpleTestCase):
+    """Valida os parâmetros da consulta de atribuição por período."""
+
+    def test_rejeita_periodo_invertido(self) -> None:
+        """Rejeita data inicial posterior à data final."""
+        serializer = ProfessorAtribuicaoPeriodoPathSerializer(
+            data={
+                "codigo_rf": "000001",
+                "codigo_turma": "3032577",
+                "componente_curricular_id": "89",
+                "data_inicio_periodo": "2026-08-01",
+                "data_fim_periodo": "2026-07-31",
+            }
+        )
+
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("non_field_errors", serializer.errors)
+
+
+class ProfessoresTitularesParametrosSerializerTest(SimpleTestCase):
+    """Valida os filtros da busca de professores titulares."""
+
+    def test_converte_data_e_booleano(self) -> None:
+        """Converte parâmetros externos para o contrato interno."""
+        serializer = ProfessoresTitularesParametrosSerializer(
+            data={
+                "codigo_turma": "3032577",
+                "codigoRF": "000001",
+                "dataReferencia": "2026-07-28",
+                "realiza_agrupamento": "true",
+            }
+        )
+
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        self.assertEqual(serializer.validated_data["codigo_rf"], "000001")
+        self.assertTrue(serializer.validated_data["realiza_agrupamento"])
+
+
+class BuscarProfessorTitularPorDisciplinaSerializerTest(SimpleTestCase):
+    """Valida o DTO legado de professor titular por disciplina."""
+
+    def test_mapeia_campos_do_contrato_legado(self) -> None:
+        """Converte os nomes internos para os nomes definidos no DTO."""
+        data = BuscarProfessorTitularPorDisciplinaSerializer(
+            {
+                "professor_rf": "000001",
+                "nome_professor": "PROFESSOR",
+                "disciplina": "CIENCIAS",
+                "disciplina_id": "89",
+                "disciplinas_id": "89,90",
+                "turma_id": 3032577,
+            }
+        ).data
+
+        self.assertEqual(
+            data,
+            {
+                "professorRf": "000001",
+                "nome_Professor": "PROFESSOR",
+                "disciplina": "CIENCIAS",
+                "disciplina_Id": "89",
+                "disciplinas_Id": "89,90",
+                "turma_Id": 3032577,
+            },
+        )
+
+
+class ProfessoresTitularesPorUeParametrosSerializerTest(SimpleTestCase):
+    """Valida os parâmetros da busca de titulares por UE."""
+
+    def test_converte_data_e_aplica_agrupamento_padrao(self) -> None:
+        """Converte a data e usa agrupamento falso quando ausente."""
+        serializer = ProfessoresTitularesPorUeParametrosSerializer(
+            data={
+                "ue_codigo": "094765",
+                "data_referencia": "2026-08-10",
+            }
+        )
+
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        self.assertEqual(
+            serializer.validated_data["data_referencia"].date().isoformat(),
+            "2026-08-10",
+        )
+        self.assertIs(serializer.validated_data["realiza_agrupamento"], False)
+
+
+class ProfessorRecorrenciaDataSerializerTest(SimpleTestCase):
+    """Valida a serialização da permissão de persistência por data."""
+
+    def test_mapeia_contrato_legado(self) -> None:
+        serializer = ProfessorRecorrenciaDataSerializer(
+            {
+                "data": "2026-07-27T00:00:00",
+                "pode_persistir": True,
+            }
+        )
+
+        data: Any = serializer.data  # type: ignore[has-type]
+
+        self.assertEqual(
+            data,
+            {
+                "data": "2026-07-27T00:00:00",
+                "podePersistir": True,
+            },
+        )
 
 
 class FuncionarioSerializerTest(SimpleTestCase):

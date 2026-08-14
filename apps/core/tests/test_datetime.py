@@ -5,8 +5,10 @@ from datetime import UTC, date, datetime
 from django.test import SimpleTestCase
 
 from apps.core.datetime import (
+    datetime_de_tick,
     datetime_legado,
     formatar_datetime_legado,
+    formatar_datetime_legado_us,
     parse_date,
     validar_data_str,
     validar_data_tick,
@@ -30,6 +32,24 @@ class FormatarDatetimeLegadoTest(SimpleTestCase):
         result = formatar_datetime_legado("2026-02-04T00:00:00")
 
         self.assertEqual(result, "2026-02-04T00:00:00")
+
+
+class FormatarDatetimeLegadoUsTest(SimpleTestCase):
+    """Valida a formatacao en-US usada por DTOs sem conversor JSON custom."""
+
+    def test_converte_utc_para_formato_americano(self) -> None:
+        result = formatar_datetime_legado_us("2026-02-04T03:00:00Z")
+
+        self.assertEqual(result, "02/04/2026 00:00:00")
+
+    def test_aceita_datetime_sem_timezone(self) -> None:
+        result = formatar_datetime_legado_us("2026-02-04T00:00:00")
+
+        self.assertEqual(result, "02/04/2026 00:00:00")
+
+    def test_retorna_none_para_valor_ausente(self) -> None:
+        self.assertIsNone(formatar_datetime_legado_us(None))
+        self.assertIsNone(formatar_datetime_legado_us(""))
 
 
 class ParseDateTest(SimpleTestCase):
@@ -86,3 +106,16 @@ class ValidarDataTickTest(SimpleTestCase):
 
     def test_rejeita_valor_nao_numerico(self) -> None:
         self.assertFalse(validar_data_tick("tick-invalido"))
+
+
+class DatetimeDeTickTest(SimpleTestCase):
+    """Valida a conversão de ticks do DateTime do .NET."""
+
+    def test_converte_ticks_para_datetime(self) -> None:
+        resultado = datetime_de_tick("639207072000000000")
+
+        self.assertEqual(resultado, datetime(2026, 7, 27))
+
+    def test_rejeita_ticks_invalidos(self) -> None:
+        with self.assertRaisesRegex(ValueError, "Valor de ticks inválido"):
+            datetime_de_tick("inválido")

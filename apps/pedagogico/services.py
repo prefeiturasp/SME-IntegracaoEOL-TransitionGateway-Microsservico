@@ -6,6 +6,10 @@ from typing import Any, cast
 from apps.alunos import services as alunos_services
 from apps.core.api_clients import get_api_client
 from apps.core.datetime import formatar_datetime_legado
+from apps.pedagogico.serializers import (
+    AtribuicaoTerritorioTurmaSerializer,
+    TurmaAtribuidaAnoSerializer,
+)
 from apps.professores import services as professores_services
 
 _BASE = "/api/v1/pedagogico/componentes-curriculares"
@@ -654,6 +658,130 @@ def get_itinerarios_ensino_medio() -> list[dict[str, Any]]:
     return payload
 
 
+def get_modalidades_ensino() -> list[str]:
+    """Lista as descrições das modalidades (etapas) de ensino.
+
+    Returns:
+        Descrições das etapas de ensino cadastradas.
+
+    Raises:
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
+        ValueError: Se a resposta não for uma lista de strings.
+    """
+    response = _client.get(f"{_BASE_TURMAS}/escolas/modalidades-ensino/")
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, list) or any(
+        not isinstance(item, str) for item in payload
+    ):
+        raise ValueError(
+            "Resposta de modalidades de ensino deve ser uma lista de textos."
+        )
+    return payload
+
+
+def get_turmas_por_tipo_sala(
+    codigo_ue: str,
+    tipo_sala: str,
+    ano_letivo: str,
+) -> list[dict[str, Any]]:
+    """Lista turmas de uma UE/ano letivo filtradas por tipo de sala.
+
+    Args:
+        codigo_ue: Código da unidade educacional.
+        tipo_sala: Tipo de sala informado na rota.
+        ano_letivo: Ano letivo consultado.
+
+    Returns:
+        Turmas retornadas pela API no recorte.
+
+    Raises:
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
+        ValueError: Se a resposta não for uma lista de objetos.
+    """
+    response = _client.get(
+        f"{_BASE_TURMAS}/escolas/{codigo_ue}/salas/{tipo_sala}/"
+        f"anos-letivos/{ano_letivo}/"
+    )
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, list) or any(
+        not isinstance(item, dict) for item in payload
+    ):
+        raise ValueError(
+            "Resposta de turmas por tipo de sala deve ser uma lista "
+            "de objetos."
+        )
+    return payload
+
+
+def get_turmas_por_escola(
+    codigo_ue: str,
+    ano_letivo: str,
+) -> list[dict[str, Any]]:
+    """Lista turmas de uma UE/ano letivo cujo nome começa com dígito.
+
+    Args:
+        codigo_ue: Código da unidade educacional.
+        ano_letivo: Ano letivo consultado.
+
+    Returns:
+        Turmas retornadas pela API.
+
+    Raises:
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
+        ValueError: Se a resposta não for uma lista de objetos.
+    """
+    response = _client.get(
+        f"{_BASE_TURMAS}/escolas/{codigo_ue}/anos-letivos/{ano_letivo}/"
+    )
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, list) or any(
+        not isinstance(item, dict) for item in payload
+    ):
+        raise ValueError(
+            "Resposta de turmas por escola deve ser uma lista de objetos."
+        )
+    return payload
+
+
+def get_turmas_sondagem(
+    codigo_ue: str,
+    ano_letivo: str,
+) -> list[dict[str, Any]]:
+    """Lista turmas regulares de 5º ano do Fundamental para Sondagem.
+
+    Args:
+        codigo_ue: Código da unidade educacional.
+        ano_letivo: Ano letivo consultado.
+
+    Returns:
+        Turmas retornadas pela API.
+
+    Raises:
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
+        ValueError: Se a resposta não for uma lista de objetos.
+    """
+    response = _client.get(
+        f"{_BASE_TURMAS}/escolas/{codigo_ue}/turmas-sondagem/"
+        f"anos-letivos/{ano_letivo}/"
+    )
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, list) or any(
+        not isinstance(item, dict) for item in payload
+    ):
+        raise ValueError(
+            "Resposta de turmas de sondagem deve ser uma lista de objetos."
+        )
+    return payload
+
+
 def get_componentes_por_turmas_ue(
     ue_id: str,
     turmas: list[str],
@@ -1127,3 +1255,174 @@ def verificar_atriuicao_territorio_saber(
         f"professor/{codigo_rf}/data/{data}/atribuicao/validar/"
     )
     return bool(_client.json_or_none(resp))
+
+
+def get_componentes_api_eol() -> list[dict[str, Any]]:
+    """Retorna componentes curriculares API EOL.
+
+    Returns:
+        Lista de componentes curriculares API EOL.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        ValueError: Se a resposta não puder ser convertida para JSON.
+    """
+    return cast(list[dict[str, Any]], _client.get(f"{_BASE}/api-eol/").json())
+
+
+def get_atribuicoes_territorio_saber(
+    codigo_rf: str,
+    ano_letivo: int | None = None,
+) -> list[dict[str, Any]]:
+    """Retorna atribuições do professor em território do saber.
+
+    Args:
+        codigo_rf: RF do professor usado na consulta.
+        ano_letivo: Ano letivo de referência, quando houver filtro.
+
+    Returns:
+        Atribuições do professor em território do saber.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        ValueError: Se a resposta não puder ser convertida para JSON.
+    """
+    if ano_letivo is None:
+        path = (
+            f"{_BASE}/professores/{codigo_rf}/" "atribuicoes-territorio-saber/"
+        )
+    else:
+        path = (
+            f"{_BASE}/professores/{codigo_rf}/anos-letivos/{ano_letivo}/"
+            "atribuicoes-territorio-saber/"
+        )
+    resp = _client.get(path)
+    payload = _client.json_or_none(resp)
+    if not isinstance(payload, list):
+        return []
+    serializer = TurmaAtribuidaAnoSerializer(payload, many=True)
+    return [dict(item) for item in serializer.data]
+
+
+def get_professores_turma_territorio_saber(
+    codigo_turma: str,
+) -> list[dict[str, Any]]:
+    """Retorna professores atribuídos a uma turma em território do saber.
+
+    Args:
+        codigo_turma: Código da turma usada na consulta.
+
+    Returns:
+        Lista de professores atribuídos à turma em território do saber.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        ValueError: Se a resposta não puder ser convertida para JSON.
+    """
+    resp = _client.get(
+        f"{_BASE}/turmas/{codigo_turma}/atribuicoes-territorio-saber/"
+    )
+    payload = _client.json_or_none(resp)
+    if not isinstance(payload, list):
+        return []
+    atribuicoes = [
+        _normalizar_atribuicao_territorio_turma(item)
+        for item in payload
+        if isinstance(item, dict)
+    ]
+    serializer = AtribuicaoTerritorioTurmaSerializer(atribuicoes, many=True)
+    return [dict(item) for item in serializer.data]
+
+
+def get_professores_turmas_territorio_saber(
+    codigo_turma: list[str],
+) -> list[dict[str, Any]]:
+    """Retorna professores atribuídos as turmas em território do saber.
+
+    Args:
+        codigo_turma: lista de códigos de turmas usadas na consulta.
+
+    Returns:
+        Lista de professores atribuídos às turmas em território do saber.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        ValueError: Se a resposta não puder ser convertida para JSON.
+    """
+    resp = _client.get(
+        f"{_BASE}/turmas/atribuicoes-territorio-saber/",
+        params={"codigo_turma": [int(codigo) for codigo in codigo_turma]},
+    )
+    payload = _client.json_or_none(resp)
+    if not isinstance(payload, list):
+        return []
+    atribuicoes = [
+        _normalizar_atribuicao_territorio_turma(item)
+        for item in payload
+        if isinstance(item, dict)
+    ]
+    serializer = AtribuicaoTerritorioTurmaSerializer(atribuicoes, many=True)
+    return [dict(item) for item in serializer.data]
+
+
+def _normalizar_atribuicao_territorio_turma(
+    atribuicao: dict[str, Any],
+) -> dict[str, Any]:
+    """Normaliza contratos de atribuição territorial antigos e atuais.
+
+    Args:
+        atribuicao: Atribuição territorial retornada pelo sidecar pedagógico.
+
+    Returns:
+        Atribuição no contrato interno consumido pelo app de professores.
+    """
+    descricao_territorio = atribuicao.get("descricao_territorio_saber")
+    descricao_experiencia = atribuicao.get("descricao_experiencia_pedagogica")
+    disciplina_nome = atribuicao.get("disciplina_nome") or " - ".join(
+        str(descricao)
+        for descricao in (descricao_territorio, descricao_experiencia)
+        if descricao
+    )
+    return {
+        "codigo_turma": atribuicao.get("codigo_turma"),
+        "disciplina_id": (
+            atribuicao.get("disciplina_id")
+            or atribuicao.get("cod_agrupamento")
+        ),
+        "disciplina_nome": disciplina_nome or None,
+        "disciplinas_agrupadas_ids": (
+            atribuicao.get("disciplinas_agrupadas_ids")
+            or atribuicao.get("componentes_curriculares_agrupados")
+            or []
+        ),
+        "nome_professor": atribuicao.get("nome_professor"),
+        "codigo_rf": (
+            atribuicao.get("codigo_rf") or atribuicao.get("rf_professor")
+        ),
+    }
+
+
+def get_turma_componentes_turma(
+    codigo_turma: str, codigos_componentes: list[str]
+) -> list[dict[str, Any]]:
+    """Retorna componentes curriculares de uma turma.
+
+    Args:
+        codigo_turma: Código da turma usada na consulta.
+        codigos_componentes: Lista de códigos dos componentes curriculares.
+
+    Returns:
+        Lista de componentes curriculares do componente turma.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        ValueError: Se a resposta não puder ser convertida para JSON.
+    """
+    resp = _client.get(
+        f"{_BASE}/turmas/{codigo_turma}/componentes-turma/",
+        params={"codigos_componentes": codigos_componentes},
+    )
+    payload = _client.json_or_none(resp)
+    if not isinstance(payload, list):
+        return []
+    return payload
