@@ -121,3 +121,131 @@ Cypress.Commands.add("getVerificacaoAlunosTurmasPap", () => {
     failOnStatusCode: false,
   });
 });
+
+Cypress.Commands.add("getAlunosMatriculadosQuantidade", (ano) => {
+  return cy.request({
+    method: "GET",
+    url: `${Cypress.env("API_URL")}/api/v1/alunos/ano-letivo/${ano}/matriculados/quantidade`,
+    headers: {
+      accept: "application/json",
+      [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+    },
+    failOnStatusCode: false,
+  });
+});
+
+Cypress.Commands.add(
+  "getAlunosMatriculados",
+  (ano, componentesCurriculares) => {
+    return cy.request({
+      method: "GET",
+      url: `${Cypress.env(
+        "API_URL",
+      )}/api/v1/alunos/ano-letivo/${ano}/matriculados?componentes_curriculares=${componentesCurriculares}`,
+      headers: {
+        accept: "application/json",
+        [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+      },
+      failOnStatusCode: false,
+    });
+  },
+);
+
+Cypress.Commands.add("getAlunosPorCodigo", (ano, codigoAluno) => {
+  return cy.request({
+    method: "GET",
+    url: `${Cypress.env(
+      "API_URL",
+    )}/api/v1/alunos/anoLetivo/${ano}/alunos?codigos_aluno=${codigoAluno}`,
+    headers: {
+      accept: "application/json",
+      [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+    },
+    failOnStatusCode: false,
+  });
+});
+
+Cypress.Commands.add("getDadosAcompanhamentoEscolar", (queryParams = "") => {
+  return cy.request({
+    method: "GET",
+    url: `${Cypress.env("API_URL")}/api/v1/alunos/dados-acompanhamento-escolar${queryParams}`,
+    headers: {
+      accept: "application/json",
+      [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+    },
+    failOnStatusCode: false,
+  });
+});
+
+Cypress.Commands.add("getResponsaveis", (queryParams = "") => {
+  return cy.request({
+    method: "GET",
+    url: `${Cypress.env("API_URL")}/api/v1/alunos/responsaveis${queryParams}`,
+    headers: {
+      accept: "application/json",
+      [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+    },
+    failOnStatusCode: false,
+  });
+});
+
+Cypress.Commands.add("getResponsavelResumido", (cpf) => {
+  return cy.request({
+    method: "GET",
+    url: `${Cypress.env("API_URL")}/api/v1/alunos/responsaveis/${cpf}/resumido`,
+    headers: {
+      accept: "application/json",
+      [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+    },
+    failOnStatusCode: false,
+  });
+});
+
+/////NOVOS
+
+Cypress.Commands.add("getAlunosAtivosTurma", (codigoTurma) => {
+  return cy.request({
+    method: "GET",
+    url: `${Cypress.env("API_URL")}/api/v1/alunos/turmas/${codigoTurma}/ativos`,
+    headers: {
+      accept: "application/json",
+      [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+    },
+    failOnStatusCode: false,
+  });
+});
+
+Cypress.Commands.add(
+  "getAlunosAtivosTurmaPorData",
+  (codigoTurma, dataReferenciaFim) => {
+    return cy.request({
+      method: "GET",
+      url: `${Cypress.env(
+        "API_URL",
+      )}/api/v1/alunos/turmas/${codigoTurma}/ativos/${dataReferenciaFim}`,
+      headers: {
+        accept: "application/json",
+        [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+      },
+      failOnStatusCode: false,
+    });
+  },
+);
+
+Cypress.Commands.add(
+  "getTurmasAlunoPorUeAnoLetivo",
+  (codigoUe, anoLetivo, nomeAluno) => {
+    let query = nomeAluno ? `?nome_aluno=${nomeAluno}` : "";
+    return cy.request({
+      method: "GET",
+      url: `${Cypress.env(
+        "API_URL",
+      )}/api/v1/alunos/ues/${codigoUe}/anosLetivos/${anoLetivo}${query}`,
+      headers: {
+        accept: "application/json",
+        [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+      },
+      failOnStatusCode: false,
+    });
+  },
+);
