@@ -7,6 +7,13 @@ Given("que possuo acesso à API de DREs", () => {
   expect(Cypress.env("DRE_CODIGO")).to.exist;
 });
 
+// THEN
+Then("retorna o status {int}", (statusCode) => {
+  cy.get("@response").then((response) => {
+    expect(response.status).to.eq(statusCode);
+  });
+});
+
 // LISTAGEM DE DRES
 When("realizo consulta de listagem de DREs", () => {
   cy.getDREsLista().as("response");
@@ -66,32 +73,36 @@ When("realizo consulta de unidades da DRE não encontrada", () => {
   cy.getDREsUnidades(false).as("response");
 });
 
-// THEN - Status Codes
-Then("retorna o status 200", function () {
-  cy.get("@response").then((response) => {
-    expect(response.status).to.eq(200);
-  });
+When("realizo consulta de escolas Sigpae pelo código EOL da DRE válido", () => {
+  cy.getEscolasSigpaePorDre(Cypress.env("DRE_CODIGO")).as("response");
 });
-Then("retorna o status 201", function () {
-  cy.get("@response").then((response) => {
-    expect(response.status).to.eq(201);
-  });
-});
-Then("retorna o status 204", function () {
-  cy.get("@response").then((response) => {
-    expect(response.status).to.eq(204);
-  });
-});
-Then("retorna o status 400", function () {
-  cy.get("@response").then((response) => {
-    expect(response.status).to.eq(400);
-  });
-});
-Then("retorna o status 404", function () {
-  cy.get("@response").then((response) => {
-    expect(response.status).to.eq(404);
-  });
-});
+
+When(
+  "realizo consulta de escolas Sigpae pelo código EOL da DRE inexistente",
+  () => {
+    cy.getEscolasSigpaePorDre(Cypress.env("DRE_CODIGO_INEXISTENTE")).as(
+      "response",
+    );
+  },
+);
+
+When(
+  "realizo consulta de unidades por código de integração da DRE com código EOL válido",
+  () => {
+    cy.getUnidadesCodigoIntegracaoPorDre(Cypress.env("DRE_CODIGO")).as(
+      "response",
+    );
+  },
+);
+
+When(
+  "realizo consulta de unidades por código de integração da DRE com código EOL inexistente",
+  () => {
+    cy.getUnidadesCodigoIntegracaoPorDre(
+      Cypress.env("DRE_CODIGO_INEXISTENTE"),
+    ).as("response");
+  },
+);
 
 // AND - Validações de Retorno
 And("o retorno deve conter lista de DREs", () => {
@@ -184,6 +195,40 @@ And("o retorno deve ser uma lista vazia", () => {
     if (response.status === 200) {
       expect(response.body).to.be.an("array");
       expect(response.body.length).to.eq(0);
+    }
+  });
+});
+
+And("o retorno deve conter lista de escolas Sigpae", () => {
+  cy.get("@response").then((response) => {
+    if (response.status === 200) {
+      expect(response.body).to.be.an("array");
+      if (response.body.length > 0) {
+        expect(response.body).not.be.empty;
+        expect(response.body[0]).to.have.property("codigoEscola");
+        expect(response.body[0]).to.have.property("nomeEscola");
+        expect(response.body[0]).to.have.property("codigoDRE");
+        expect(response.body[0]).to.have.property("tipoEscola");
+        expect(response.body[0]).to.have.property("siglaTipoEscola");
+        expect(response.body[0]).to.have.property("nomeDRE");
+        expect(response.body[0]).to.have.property("siglaDRE");
+        expect(response.body[0]).to.have.property("codigoSubprefeitura");
+        expect(response.body[0]).to.have.property("nomeSubprefeitura");
+      }
+    }
+  });
+});
+
+And("o retorno deve conter lista de unidades de uma DRE", () => {
+  cy.get("@response").then((response) => {
+    if (response.status === 200) {
+      expect(response.body).to.be.an("array");
+      if (response.body.length > 0) {
+        expect(response.body).not.be.empty;
+        expect(response.body[0]).to.have.property("codigoUe");
+        expect(response.body[0]).to.have.property("nomeUe");
+        expect(response.body[0]).to.have.property("codigoIntegracao");
+      }
     }
   });
 });

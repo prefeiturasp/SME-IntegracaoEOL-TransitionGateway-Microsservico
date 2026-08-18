@@ -54,6 +54,7 @@ const envKeys = [
   "DATA_REFERENCIA_FIM",
   "DATA_REFERENCIA_FIM_INVALIDA",
   "TURMA_CODIGO_INEXISTENTE",
+  "DRE_CODIGO_INEXISTENTE",
 ];
 
 export default defineConfig({
