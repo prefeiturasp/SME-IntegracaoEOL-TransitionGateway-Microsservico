@@ -8,19 +8,19 @@ from django.test import SimpleTestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
-_DRE = {"codigoDRE": "BT", "nomeDRE": "DRE BUTANTA", "siglaDRE": "DRE-BT"}
+_DRE = {"codigoDRE": "X1", "nomeDRE": "DRE FICTICIA UM", "siglaDRE": "DRE-X1"}
 
 # Escola retornada pelo sidecar, com campos extras a serem filtrados.
 _ESCOLA_RESUMO = {
-    "codigoEscola": "019308",
+    "codigoEscola": "000001",
     "nomeEscola": "EMEF TESTE",
-    "codigoDRE": "BT",
+    "codigoDRE": "X1",
     "tipoEscola": "EMEF",
     "siglaTipoEscola": "EMEF",
-    "nomeDRE": "DRE BUTANTA",
-    "siglaDRE": "DRE-BT",
+    "nomeDRE": "DRE FICTICIA UM",
+    "siglaDRE": "DRE-X1",
     "codigoSubprefeitura": "1",
-    "nomeSubprefeitura": "BUTANTA",
+    "nomeSubprefeitura": "SUBPREFEITURA FICTICIA UM",
     "tipoEscolaId": 1,
     "tipoUnidadeId": 1,
     "subprefeituraId": 1,
@@ -32,15 +32,15 @@ _ESCOLA_RESUMO = {
 _ESCOLA = {**_ESCOLA_RESUMO}
 
 _ESCOLA_POR_TIPO = {
-    "codigoEscola": "019308",
+    "codigoEscola": "000001",
     "nomeEscola": "EMEF TESTE",
-    "codigoDRE": "BT",
+    "codigoDRE": "X1",
     "tipoEscola": "ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL",
     "siglaTipoEscola": "EMEF",
-    "nomeDRE": "DIRETORIA REGIONAL DE EDUCACAO BUTANTA",
-    "siglaDRE": "DRE - BT",
+    "nomeDRE": "DIRETORIA REGIONAL FICTICIA UM",
+    "siglaDRE": "DRE - X1",
     "codigoSubprefeitura": "50",
-    "nomeSubprefeitura": "BUTANTA",
+    "nomeSubprefeitura": "SUBPREFEITURA FICTICIA UM",
 }
 
 _DADOS_ESCOLA = {
@@ -60,19 +60,19 @@ _SUBPREFEITURA = {
 }
 
 _ESCOLA_SIGPAE = {
-    "codigoEscola": "019308",
+    "codigoEscola": "000001",
     "nomeEscola": "EMEF TESTE",
-    "codigoDRE": "108100",
+    "codigoDRE": "100000",
     "tipoEscola": "EMEF",
     "siglaTipoEscola": "EMEF",
-    "nomeDRE": "DRE BUTANTA",
-    "siglaDRE": "DRE-BT",
+    "nomeDRE": "DRE FICTICIA UM",
+    "siglaDRE": "DRE-X1",
     "codigoSubprefeitura": "50",
-    "nomeSubprefeitura": "BUTANTA",
+    "nomeSubprefeitura": "SUBPREFEITURA FICTICIA UM",
 }
 
 _UNIDADE_CODIGO_INTEGRACAO = {
-    "codigoUe": "019308",
+    "codigoUe": "000001",
     "nomeUe": "EMEF TESTE",
     "codigoIntegracao": None,
 }
@@ -84,25 +84,25 @@ _TIPO_ESCOLA = {
 }
 
 _EQUIPAMENTO = {
-    "cd_equipamento": "108100",
-    "nm_exibicao_equipamento": "DRE - BT",
-    "nm_equipamento": "DIRETORIA REGIONAL DE EDUCACAO BUTANTA",
+    "cd_equipamento": "100000",
+    "nm_exibicao_equipamento": "DRE - X1",
+    "nm_equipamento": "DIRETORIA REGIONAL FICTICIA UM",
     "cd_tp_equipamento": 3,
     "dc_tp_equipamento": "UNIDADE ADMINISTRATIVA",
     "cd_tp_escola": 0,
     "dc_tipo_escola": "",
     "sg_tp_escola": "",
-    "cd_diretoria_referencia": "108100",
-    "nm_diretoria_referencia": "DIRETORIA REGIONAL DE EDUCACAO BUTANTA",
-    "nm_exibicao_diretoria_referencia": "DRE - BT",
-    "cd_diretoria_portal": "108100",
-    "nm_diretoria_portal": "DIRETORIA REGIONAL DE EDUCACAO BUTANTA",
-    "nm_exibicao_diretoria_portal": "DRE - BT",
-    "cd_logradouro": 127140,
-    "logradouro": "RUA PADRE EUGÊNIO LOPES Nº 361",
-    "bairro": "VILA PROGREDIOR",
+    "cd_diretoria_referencia": "100000",
+    "nm_diretoria_referencia": "DIRETORIA REGIONAL FICTICIA UM",
+    "nm_exibicao_diretoria_referencia": "DRE - X1",
+    "cd_diretoria_portal": "100000",
+    "nm_diretoria_portal": "DIRETORIA REGIONAL FICTICIA UM",
+    "nm_exibicao_diretoria_portal": "DRE - X1",
+    "cd_logradouro": 10001,
+    "logradouro": "RUA FICTICIA Nº 200",
+    "bairro": "BAIRRO FICTICIO DOIS",
     "codigoSubprefeitura": "50",
-    "nomeSubprefeitura": "BUTANTA",
+    "nomeSubprefeitura": "SUBPREFEITURA FICTICIA UM",
     "ehCeu": False,
 }
 
@@ -159,10 +159,10 @@ class DREListViewTest(SimpleTestCase):
         """Retorna 200 com as DREs filtradas pelos códigos do body."""
         mock_svc.return_value = [_DRE]
         resp = _cliente_autenticado().post(
-            "/api/DREs/", ["108100"], format="json"
+            "/api/DREs/", ["100000"], format="json"
         )
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        mock_svc.assert_called_once_with(["108100"])
+        mock_svc.assert_called_once_with(["100000"])
 
     @patch("apps.institucional.views.services.get_dres_por_codigos")
     def test_post_204_sem_registros(self, mock_svc: MagicMock) -> None:
@@ -191,13 +191,13 @@ class EscolaProfessoresViewTest(SimpleTestCase):
         ]
 
         resp = _cliente_autenticado().get(
-            "/api/escolas/019465/professores/2026/"
+            "/api/escolas/000004/professores/2026/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json()[0]["codigoRF"], 1)
         mock_svc.get_professores_escola.assert_called_once_with(
-            "019465",
+            "000004",
             2026,
         )
 
@@ -206,12 +206,12 @@ class EscolaProfessoresViewTest(SimpleTestCase):
         """Retorna professores usando o ano padrão do legado."""
         mock_svc.get_professores_escola.return_value = []
 
-        resp = _cliente_autenticado().get("/api/escolas/019465/professores/")
+        resp = _cliente_autenticado().get("/api/escolas/000004/professores/")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
         mock_svc.get_professores_escola.assert_called_once_with(
-            "019465",
+            "000004",
             0,
         )
 
@@ -223,9 +223,9 @@ class DREDetalheViewTest(SimpleTestCase):
     def test_200_repassa_codigo_dre(self, mock_svc: MagicMock) -> None:
         """Retorna 200 repassando o código da DRE ao service."""
         mock_svc.return_value = [_DRE]
-        resp = _cliente_autenticado().get("/api/DREs/108100/")
+        resp = _cliente_autenticado().get("/api/DREs/100000/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        mock_svc.assert_called_once_with("108100")
+        mock_svc.assert_called_once_with("100000")
 
     @patch("apps.institucional.views.services.get_dre")
     def test_404_quando_sidecar_retorna_404(self, mock_svc: MagicMock) -> None:
@@ -238,7 +238,7 @@ class DREDetalheViewTest(SimpleTestCase):
     def test_404_quando_array_vazio(self, mock_svc: MagicMock) -> None:
         """Retorna 404 quando o sidecar devolve array vazio."""
         mock_svc.return_value = []
-        resp = _cliente_autenticado().get("/api/DREs/108100/")
+        resp = _cliente_autenticado().get("/api/DREs/100000/")
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
 
     @patch("apps.institucional.views.services.get_dre")
@@ -250,7 +250,7 @@ class DREDetalheViewTest(SimpleTestCase):
             "500", request=MagicMock(), response=mock_response
         )
         with self.assertRaises(httpx.HTTPStatusError):
-            _cliente_autenticado().get("/api/DREs/108100/")
+            _cliente_autenticado().get("/api/DREs/100000/")
 
 
 class SubprefeiturasPorDREViewTest(SimpleTestCase):
@@ -260,9 +260,9 @@ class SubprefeiturasPorDREViewTest(SimpleTestCase):
     def test_200_repassa_codigo_dre(self, mock_svc: MagicMock) -> None:
         """Retorna 200 repassando o código da DRE ao service."""
         mock_svc.return_value = [_SUBPREFEITURA]
-        resp = _cliente_autenticado().get("/api/DREs/108100/subprefeituras/")
+        resp = _cliente_autenticado().get("/api/DREs/100000/subprefeituras/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        mock_svc.assert_called_once_with("108100")
+        mock_svc.assert_called_once_with("100000")
 
     @patch("apps.institucional.views.services.get_subprefeituras_por_dre")
     def test_404_quando_dre_inexistente(self, mock_svc: MagicMock) -> None:
@@ -282,7 +282,7 @@ class SubprefeiturasPorDREViewTest(SimpleTestCase):
             "500", request=MagicMock(), response=mock_response
         )
         with self.assertRaises(httpx.HTTPStatusError):
-            _cliente_autenticado().get("/api/DREs/108100/subprefeituras/")
+            _cliente_autenticado().get("/api/DREs/100000/subprefeituras/")
 
 
 class EscolasPorDREViewTest(SimpleTestCase):
@@ -292,9 +292,9 @@ class EscolasPorDREViewTest(SimpleTestCase):
     def test_200_repassa_codigo_dre(self, mock_svc: MagicMock) -> None:
         """Retorna 200 repassando o código da DRE ao service."""
         mock_svc.return_value = [_ESCOLA_RESUMO]
-        resp = _cliente_autenticado().get("/api/DREs/108100/escola/")
+        resp = _cliente_autenticado().get("/api/DREs/100000/escola/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        mock_svc.assert_called_once_with("108100")
+        mock_svc.assert_called_once_with("100000")
 
     @patch("apps.institucional.views.services.get_escolas_por_dre")
     def test_404_quando_dre_inexistente(self, mock_svc: MagicMock) -> None:
@@ -312,7 +312,7 @@ class EscolasPorDREViewTest(SimpleTestCase):
             "500", request=MagicMock(), response=mock_response
         )
         with self.assertRaises(httpx.HTTPStatusError):
-            _cliente_autenticado().get("/api/DREs/108100/escola/")
+            _cliente_autenticado().get("/api/DREs/100000/escola/")
 
 
 class EscolasSigpaePorDREViewTest(SimpleTestCase):
@@ -322,9 +322,9 @@ class EscolasSigpaePorDREViewTest(SimpleTestCase):
     def test_200_repassa_codigo_dre(self, mock_svc: MagicMock) -> None:
         """Retorna 200 repassando o código da DRE ao service."""
         mock_svc.return_value = [_ESCOLA_SIGPAE]
-        resp = _cliente_autenticado().get("/api/DREs/108100/escola/Sigpae/")
+        resp = _cliente_autenticado().get("/api/DREs/100000/escola/Sigpae/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        mock_svc.assert_called_once_with("108100")
+        mock_svc.assert_called_once_with("100000")
 
     @patch("apps.institucional.views.services.get_escolas_sigpae_por_dre")
     def test_200_filtra_campos_do_contrato(self, mock_svc: MagicMock) -> None:
@@ -334,12 +334,12 @@ class EscolasSigpaePorDREViewTest(SimpleTestCase):
             "tipoEscolaId": 1,
             "tipoUnidadeId": 1,
             "subprefeituraId": 50,
-            "dreId": "108100",
+            "dreId": "100000",
             "codigoIntegracao": None,
         }
         mock_svc.return_value = [payload_expandido]
 
-        resp = _cliente_autenticado().get("/api/DREs/108100/escola/Sigpae/")
+        resp = _cliente_autenticado().get("/api/DREs/100000/escola/Sigpae/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         item = resp.json()[0]
         self.assertEqual(
@@ -363,7 +363,7 @@ class EscolasSigpaePorDREViewTest(SimpleTestCase):
     ) -> None:
         """Retorna 200 com lista vazia sem conteúdo da API."""
         mock_svc.return_value = None
-        resp = _cliente_autenticado().get("/api/DREs/108100/escola/Sigpae/")
+        resp = _cliente_autenticado().get("/api/DREs/100000/escola/Sigpae/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
 
@@ -385,7 +385,7 @@ class EscolasSigpaePorDREViewTest(SimpleTestCase):
             "500", request=MagicMock(), response=mock_response
         )
         with self.assertRaises(httpx.HTTPStatusError):
-            _cliente_autenticado().get("/api/DREs/108100/escola/Sigpae/")
+            _cliente_autenticado().get("/api/DREs/100000/escola/Sigpae/")
 
     @patch("apps.institucional.views.services.get_escolas_sigpae_por_dre")
     def test_502_quando_sidecar_indisponivel(
@@ -395,7 +395,7 @@ class EscolasSigpaePorDREViewTest(SimpleTestCase):
         mock_svc.side_effect = httpx.RequestError(
             "connection failed", request=MagicMock()
         )
-        resp = _cliente_autenticado().get("/api/DREs/108100/escola/Sigpae/")
+        resp = _cliente_autenticado().get("/api/DREs/100000/escola/Sigpae/")
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertEqual(
             resp.json(), {"detail": "Serviço de institucional indisponível."}
@@ -409,9 +409,9 @@ class EscolasPorDREeTipoViewTest(SimpleTestCase):
     def test_200_filtra_campos_do_contrato(self, mock_svc: MagicMock) -> None:
         """Retorna 200 com os campos do contrato de escola por DRE e tipo."""
         mock_svc.return_value = [_ESCOLA_POR_TIPO]
-        resp = _cliente_autenticado().get("/api/DREs/108100/escolas/EMEF/")
+        resp = _cliente_autenticado().get("/api/DREs/100000/escolas/EMEF/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        mock_svc.assert_called_once_with("108100", "EMEF")
+        mock_svc.assert_called_once_with("100000", "EMEF")
         payload = resp.json()[0]
         self.assertIn("codigoEscola", payload)
         self.assertIn("nomeEscola", payload)
@@ -441,7 +441,7 @@ class EscolasPorDREeTipoViewTest(SimpleTestCase):
             "500", request=MagicMock(), response=mock_response
         )
         with self.assertRaises(httpx.HTTPStatusError):
-            _cliente_autenticado().get("/api/DREs/108100/escolas/EMEF/")
+            _cliente_autenticado().get("/api/DREs/100000/escolas/EMEF/")
 
 
 class UesPorDREViewTest(SimpleTestCase):
@@ -450,10 +450,10 @@ class UesPorDREViewTest(SimpleTestCase):
     @patch("apps.institucional.views.services.get_ues_por_dre")
     def test_200_retorna_lista_codigos(self, mock_svc: MagicMock) -> None:
         """Retorna 200 com a lista de códigos de UEs da DRE."""
-        mock_svc.return_value = ["019251", "019252"]
-        resp = _cliente_autenticado().get("/api/DREs/108100/ues/")
+        mock_svc.return_value = ["000002", "000003"]
+        resp = _cliente_autenticado().get("/api/DREs/100000/ues/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        mock_svc.assert_called_once_with("108100")
+        mock_svc.assert_called_once_with("100000")
 
     @patch("apps.institucional.views.services.get_ues_por_dre")
     def test_404_quando_dre_inexistente(self, mock_svc: MagicMock) -> None:
@@ -471,7 +471,7 @@ class UesPorDREViewTest(SimpleTestCase):
             "500", request=MagicMock(), response=mock_response
         )
         with self.assertRaises(httpx.HTTPStatusError):
-            _cliente_autenticado().get("/api/DREs/108100/ues/")
+            _cliente_autenticado().get("/api/DREs/100000/ues/")
 
 
 class UnidadesPorDREViewTest(SimpleTestCase):
@@ -480,10 +480,10 @@ class UnidadesPorDREViewTest(SimpleTestCase):
     @patch("apps.institucional.views.services.get_unidades_por_dre")
     def test_200_retorna_lista(self, mock_svc: MagicMock) -> None:
         """Retorna 200 com a lista de unidades administrativas da DRE."""
-        mock_svc.return_value = [{"codigoEol": "019308"}]
-        resp = _cliente_autenticado().get("/api/DREs/108100/unidades/")
+        mock_svc.return_value = [{"codigoEol": "000001"}]
+        resp = _cliente_autenticado().get("/api/DREs/100000/unidades/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        mock_svc.assert_called_once_with("108100")
+        mock_svc.assert_called_once_with("100000")
 
     @patch("apps.institucional.views.services.get_unidades_por_dre")
     def test_404_quando_dre_inexistente(self, mock_svc: MagicMock) -> None:
@@ -501,7 +501,7 @@ class UnidadesPorDREViewTest(SimpleTestCase):
             "500", request=MagicMock(), response=mock_response
         )
         with self.assertRaises(httpx.HTTPStatusError):
-            _cliente_autenticado().get("/api/DREs/108100/unidades/")
+            _cliente_autenticado().get("/api/DREs/100000/unidades/")
 
 
 class UnidadeCodigoIntegracaoPorDREViewTest(SimpleTestCase):
@@ -514,10 +514,10 @@ class UnidadeCodigoIntegracaoPorDREViewTest(SimpleTestCase):
         """Retorna 200 com a lista de UEs e código de integração."""
         mock_svc.return_value = [_UNIDADE_CODIGO_INTEGRACAO]
         resp = _cliente_autenticado().get(
-            "/api/DREs/108100/unidades/codigo-integracao/"
+            "/api/DREs/100000/unidades/codigo-integracao/"
         )
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        mock_svc.assert_called_once_with("108100")
+        mock_svc.assert_called_once_with("100000")
 
     @patch(
         "apps.institucional.views.services.get_unidades_codigo_integracao_por_dre"
@@ -529,12 +529,12 @@ class UnidadeCodigoIntegracaoPorDREViewTest(SimpleTestCase):
             "tipoEscolaId": 1,
             "tipoUnidadeId": 1,
             "subprefeituraId": 50,
-            "dreId": "108100",
+            "dreId": "100000",
         }
         mock_svc.return_value = [payload_expandido]
 
         resp = _cliente_autenticado().get(
-            "/api/DREs/108100/unidades/codigo-integracao/"
+            "/api/DREs/100000/unidades/codigo-integracao/"
         )
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         item = resp.json()[0]
@@ -570,7 +570,7 @@ class UnidadeCodigoIntegracaoPorDREViewTest(SimpleTestCase):
         )
         with self.assertRaises(httpx.HTTPStatusError):
             _cliente_autenticado().get(
-                "/api/DREs/108100/unidades/codigo-integracao/"
+                "/api/DREs/100000/unidades/codigo-integracao/"
             )
 
     @patch(
@@ -584,7 +584,7 @@ class UnidadeCodigoIntegracaoPorDREViewTest(SimpleTestCase):
             "connection failed", request=MagicMock()
         )
         resp = _cliente_autenticado().get(
-            "/api/DREs/108100/unidades/codigo-integracao/"
+            "/api/DREs/100000/unidades/codigo-integracao/"
         )
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertEqual(
@@ -599,9 +599,9 @@ class DadosEscolaViewTest(SimpleTestCase):
     def test_200_repassa_codigo_escola(self, mock_svc: MagicMock) -> None:
         """Retorna 200 repassando o código da escola ao service."""
         mock_svc.return_value = _DADOS_ESCOLA
-        resp = _cliente_autenticado().get("/api/escolas/dados/019308/")
+        resp = _cliente_autenticado().get("/api/escolas/dados/000001/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        mock_svc.assert_called_once_with("019308")
+        mock_svc.assert_called_once_with("000001")
 
     @patch("apps.institucional.views.services.get_dados_escola")
     def test_200_quando_retorna_lista_com_dict(
@@ -609,7 +609,7 @@ class DadosEscolaViewTest(SimpleTestCase):
     ) -> None:
         """Retorna 200 usando o primeiro item da lista do service."""
         mock_svc.return_value = [_DADOS_ESCOLA]
-        resp = _cliente_autenticado().get("/api/escolas/dados/019308/")
+        resp = _cliente_autenticado().get("/api/escolas/dados/000001/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertIn("nomeDRE", resp.json())
 
@@ -617,7 +617,7 @@ class DadosEscolaViewTest(SimpleTestCase):
     def test_200_quando_item_nao_e_dict(self, mock_svc: MagicMock) -> None:
         """Retorna 200 quando o item da lista não é um dicionário."""
         mock_svc.return_value = ["valor_escalar"]
-        resp = _cliente_autenticado().get("/api/escolas/dados/019308/")
+        resp = _cliente_autenticado().get("/api/escolas/dados/000001/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
     @patch("apps.institucional.views.services.get_dados_escola")
@@ -643,7 +643,7 @@ class DadosEscolaViewTest(SimpleTestCase):
             "500", request=MagicMock(), response=mock_response
         )
         with self.assertRaises(httpx.HTTPStatusError):
-            _cliente_autenticado().get("/api/escolas/dados/019308/")
+            _cliente_autenticado().get("/api/escolas/dados/000001/")
 
 
 class SubprefeiturasPorEscolaViewTest(SimpleTestCase):
@@ -654,10 +654,10 @@ class SubprefeiturasPorEscolaViewTest(SimpleTestCase):
         """Retorna 200 repassando o código da escola ao service."""
         mock_svc.return_value = [_SUBPREFEITURA]
         resp = _cliente_autenticado().get(
-            "/api/escolas/019308/subprefeituras/"
+            "/api/escolas/000001/subprefeituras/"
         )
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        mock_svc.assert_called_once_with("019308")
+        mock_svc.assert_called_once_with("000001")
 
     @patch("apps.institucional.views.services.get_subprefeituras_por_escola")
     def test_404_quando_escola_inexistente(self, mock_svc: MagicMock) -> None:
@@ -677,7 +677,7 @@ class SubprefeiturasPorEscolaViewTest(SimpleTestCase):
             "500", request=MagicMock(), response=mock_response
         )
         with self.assertRaises(httpx.HTTPStatusError):
-            _cliente_autenticado().get("/api/escolas/019308/subprefeituras/")
+            _cliente_autenticado().get("/api/escolas/000001/subprefeituras/")
 
     @patch("apps.institucional.views.services.get_subprefeituras_por_escola")
     def test_502_quando_sidecar_indisponivel(
@@ -688,7 +688,7 @@ class SubprefeiturasPorEscolaViewTest(SimpleTestCase):
             "connection failed", request=MagicMock()
         )
         resp = _cliente_autenticado().get(
-            "/api/escolas/019308/subprefeituras/"
+            "/api/escolas/000001/subprefeituras/"
         )
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertEqual(
@@ -724,23 +724,23 @@ class EscolasListPostViewTest(SimpleTestCase):
         """Retorna 200 com as escolas encontradas para os códigos."""
         mock_svc.return_value = [
             {
-                "codigoEscola": "000027",
-                "nomeEscola": "LUIS MARTINS",
-                "nomeDRE": "NUCLEO DE ACAO EDUCATIVA - NAE-01",
-                "siglaDRE": "NUCLEO DE ACAO EDUCATIVA - NAE-01",
-                "codigoDRE": "100013",
+                "codigoEscola": "000008",
+                "nomeEscola": "ESCOLA FICTICIA UM",
+                "nomeDRE": "NUCLEO DE ACAO EDUCATIVA FICTICIO",
+                "siglaDRE": "NUCLEO DE ACAO EDUCATIVA FICTICIO",
+                "codigoDRE": "100010",
                 "tipoEscola": "ESC.MUN. DE ENS. SUPLETIVO DE 1.GRAU",
                 "siglaTipoEscola": "EMES 1.G",
                 "codigoTipoEscola": 30,
                 "tipoEscolaId": 30,
                 "tipoUnidadeId": 30,
-                "dreId": "100013",
+                "dreId": "100010",
                 "codigoIntegracao": None,
             }
         ]
 
         resp = _cliente_autenticado().post(
-            "/api/escolas/", ["000027"], format="json"
+            "/api/escolas/", ["000008"], format="json"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -748,17 +748,17 @@ class EscolasListPostViewTest(SimpleTestCase):
             resp.json(),
             [
                 {
-                    "codigoEscola": "000027",
-                    "nomeEscola": "LUIS MARTINS",
-                    "nomeDRE": "NUCLEO DE ACAO EDUCATIVA - NAE-01",
-                    "siglaDRE": "NUCLEO DE ACAO EDUCATIVA - NAE-01",
-                    "codigoDRE": "100013",
+                    "codigoEscola": "000008",
+                    "nomeEscola": "ESCOLA FICTICIA UM",
+                    "nomeDRE": "NUCLEO DE ACAO EDUCATIVA FICTICIO",
+                    "siglaDRE": "NUCLEO DE ACAO EDUCATIVA FICTICIO",
+                    "codigoDRE": "100010",
                     "tipoEscola": "ESC.MUN. DE ENS. SUPLETIVO DE 1.GRAU",
                     "siglaTipoEscola": "EMES 1.G",
                 }
             ],
         )
-        mock_svc.assert_called_once_with(["000027"])
+        mock_svc.assert_called_once_with(["000008"])
 
     @patch("apps.institucional.views.services.post_escolas")
     def test_200_lista_vazia_quando_sem_registros(
@@ -799,7 +799,7 @@ class EscolasListPostViewTest(SimpleTestCase):
         )
 
         resp = _cliente_autenticado().post(
-            "/api/escolas/", ["000027"], format="json"
+            "/api/escolas/", ["000008"], format="json"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
@@ -815,15 +815,15 @@ class EscolaDetalheViewTest(SimpleTestCase):
     def test_200_repassa_codigo_escola(self, mock_svc: MagicMock) -> None:
         """Retorna 200 repassando o código da escola ao service."""
         mock_svc.return_value = _ESCOLA
-        resp = _cliente_autenticado().get("/api/escolas/019308/")
+        resp = _cliente_autenticado().get("/api/escolas/000001/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        mock_svc.assert_called_once_with("019308")
+        mock_svc.assert_called_once_with("000001")
 
     @patch("apps.institucional.views.services.get_escola")
     def test_200_quando_retorna_lista(self, mock_svc: MagicMock) -> None:
         """Retorna 200 usando o primeiro item da lista do service."""
         mock_svc.return_value = [_ESCOLA]
-        resp = _cliente_autenticado().get("/api/escolas/019308/")
+        resp = _cliente_autenticado().get("/api/escolas/000001/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
     @patch("apps.institucional.views.services.get_escola")
@@ -849,7 +849,7 @@ class EscolaDetalheViewTest(SimpleTestCase):
             "500", request=MagicMock(), response=mock_response
         )
         with self.assertRaises(httpx.HTTPStatusError):
-            _cliente_autenticado().get("/api/escolas/019308/")
+            _cliente_autenticado().get("/api/escolas/000001/")
 
 
 class EquipamentosViewTest(SimpleTestCase):
@@ -875,7 +875,7 @@ class EquipamentosViewTest(SimpleTestCase):
         """Retorna 200 repassando o filtro codigoEol ao service."""
         mock_svc.return_value = [_EQUIPAMENTO]
         resp = _cliente_autenticado().get(
-            "/api/escolas/equipamentos/?codigoEol=019716"
+            "/api/escolas/equipamentos/?codigoEol=000005"
         )
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         mock_svc.assert_called_once_with(
@@ -884,7 +884,7 @@ class EquipamentosViewTest(SimpleTestCase):
             tipos_unidade=None,
             tipos_escola=None,
             nome_escola=None,
-            codigo_eol="019716",
+            codigo_eol="000005",
         )
 
     @patch("apps.institucional.views.services.get_equipamentos")
@@ -903,11 +903,11 @@ class TodasUnidadesViewTest(SimpleTestCase):
     def test_200_retorna_lista_unidades(self, mock_svc: MagicMock) -> None:
         """Retorna 200 com lista de todas as unidades."""
         mock_unidade = {
-            "codigoEscola": "400496",
-            "nomeEscola": "13 DE MAIO",
-            "nomeDRE": "DIRETORIA REGIONAL DE EDUCACAO IPIRANGA",
-            "siglaDRE": "DRE - IP",
-            "codigoDRE": "BT",
+            "codigoEscola": "000009",
+            "nomeEscola": "ESCOLA FICTICIA DOIS",
+            "nomeDRE": "DIRETORIA REGIONAL FICTICIA TRES",
+            "siglaDRE": "DRE - X3",
+            "codigoDRE": "X1",
             "tipoEscola": "CENTRO DE EDUCACAO INFANTIL DIRETO",
             "siglaTipoEscola": "CEI DIRET",
             "codigoTipoEscola": 10,
@@ -920,11 +920,11 @@ class TodasUnidadesViewTest(SimpleTestCase):
         self.assertEqual(
             resp.json()[0],
             {
-                "codigoEscola": "400496",
-                "nomeEscola": "13 DE MAIO",
-                "nomeDRE": "DIRETORIA REGIONAL DE EDUCACAO IPIRANGA",
-                "siglaDRE": "DRE - IP",
-                "codigoDRE": "BT",
+                "codigoEscola": "000009",
+                "nomeEscola": "ESCOLA FICTICIA DOIS",
+                "nomeDRE": "DIRETORIA REGIONAL FICTICIA TRES",
+                "siglaDRE": "DRE - X3",
+                "codigoDRE": "X1",
                 "tipoEscola": "CENTRO DE EDUCACAO INFANTIL DIRETO",
                 "siglaTipoEscola": "CEI DIRET",
             },
@@ -997,15 +997,15 @@ class UnidadeEolViewTest(SimpleTestCase):
     def test_200_retorna_unidade(self, mock_svc: MagicMock) -> None:
         """Retorna 200 com os dados resumidos da unidade."""
         mock_svc.return_value = {
-            "codigo": "019308",
+            "codigo": "000001",
             "sigla": "EMEF",
             "nomeUnidade": "EMEF TESTE",
             "tipo": 1,
-            "codigoReferencia": "019308",
+            "codigoReferencia": "000001",
         }
-        resp = _cliente_autenticado().get("/api/escolas/unidade-eol/019308/")
+        resp = _cliente_autenticado().get("/api/escolas/unidade-eol/000001/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        mock_svc.assert_called_once_with("019308")
+        mock_svc.assert_called_once_with("000001")
 
     @patch("apps.institucional.views.services.get_unidade_eol")
     def test_204_quando_sidecar_nao_retorna_conteudo(
@@ -1035,28 +1035,28 @@ class SincronizacoesInstitucionaisViewTest(SimpleTestCase):
     def test_200_retorna_sincronizacao(self, mock_svc: MagicMock) -> None:
         """Retorna 200 com os dados da sincronização institucional."""
         mock_svc.return_value = {
-            "ueCodigo": "019308",
+            "ueCodigo": "000001",
             "dataAtualizacao": "2019-05-06T14:42:12.843",
             "ueNome": "EMEF TESTE",
-            "dreCodigo": 108100,
+            "dreCodigo": 100000,
             "tipoEscolaCodigo": 1,
-            "dreId": "108100",
+            "dreId": "100000",
         }
         resp = _cliente_autenticado().get(
-            "/api/escolas/019308/sincronizacoes-institucionais/"
+            "/api/escolas/000001/sincronizacoes-institucionais/"
         )
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(
             resp.json(),
             {
-                "ueCodigo": "019308",
+                "ueCodigo": "000001",
                 "dataAtualizacao": "2019-05-06T14:42:12.843",
-                "dreCodigo": 108100,
+                "dreCodigo": 100000,
                 "ueNome": "EMEF TESTE",
                 "tipoEscolaCodigo": 1,
             },
         )
-        mock_svc.assert_called_once_with("019308")
+        mock_svc.assert_called_once_with("000001")
 
     @patch(
         "apps.institucional.views.services.get_sincronizacoes_institucionais"
@@ -1092,14 +1092,14 @@ class UnidadesParceirasViewTest(SimpleTestCase):
     def test_200_retorna_lista_parceiras(self, mock_svc: MagicMock) -> None:
         """Retorna 200 com a lista de unidades parceiras."""
         mock_svc.return_value = [
-            {"codigo": "019308", "nome": "UE PARCEIRA", "email": None}
+            {"codigo": "000001", "nome": "UE PARCEIRA", "email": None}
         ]
         resp = _cliente_autenticado().post(
-            "/api/escolas/unidades-parceiras/", ["019308"], format="json"
+            "/api/escolas/unidades-parceiras/", ["000001"], format="json"
         )
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), mock_svc.return_value)
-        mock_svc.assert_called_once_with(["019308"])
+        mock_svc.assert_called_once_with(["000001"])
 
     @patch("apps.institucional.views.services.get_dados_escola")
     @patch("apps.institucional.views.services.post_unidades_parceiras")
@@ -1109,15 +1109,15 @@ class UnidadesParceirasViewTest(SimpleTestCase):
         """Mantém apenas as unidades retornadas pelo serviço institucional."""
         mock_post.return_value = [
             {
-                "codigo": "092797",
-                "nome": "EMEF JULIO MESQUITA",
-                "email": "emefjmesquita@sme.prefeitura.sp.gov.br",
+                "codigo": "000012",
+                "nome": "ESCOLA FICTICIA TRES",
+                "email": "escola.ficticia@sme.prefeitura.sp.gov.br",
             }
         ]
 
         resp = _cliente_autenticado().post(
             "/api/escolas/unidades-parceiras/",
-            ["092797", "019748", "400825"],
+            ["000012", "000006", "000011"],
             format="json",
         )
 
@@ -1126,13 +1126,13 @@ class UnidadesParceirasViewTest(SimpleTestCase):
             resp.json(),
             [
                 {
-                    "codigo": "092797",
-                    "nome": "EMEF JULIO MESQUITA",
-                    "email": "emefjmesquita@sme.prefeitura.sp.gov.br",
+                    "codigo": "000012",
+                    "nome": "ESCOLA FICTICIA TRES",
+                    "email": "escola.ficticia@sme.prefeitura.sp.gov.br",
                 }
             ],
         )
-        mock_post.assert_called_once_with(["092797", "019748", "400825"])
+        mock_post.assert_called_once_with(["000012", "000006", "000011"])
         mock_dados.assert_not_called()
 
     @patch("apps.institucional.views.services.get_dados_escola")
@@ -1144,12 +1144,12 @@ class UnidadesParceirasViewTest(SimpleTestCase):
         mock_post.return_value = []
 
         resp = _cliente_autenticado().post(
-            "/api/escolas/unidades-parceiras/", ["400825"], format="json"
+            "/api/escolas/unidades-parceiras/", ["000011"], format="json"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
-        mock_post.assert_called_once_with(["400825"])
+        mock_post.assert_called_once_with(["000011"])
         mock_dados.assert_not_called()
 
     @patch("apps.institucional.views.services.post_unidades_parceiras")
@@ -1159,21 +1159,21 @@ class UnidadesParceirasViewTest(SimpleTestCase):
         """Preserva a lista retornada pelo serviço institucional."""
         mock_post.return_value = [
             {
-                "codigo": "400825",
-                "nome": "CEI INDIR PICOLO",
-                "email": "ceipicolo@gmail.com",
+                "codigo": "000011",
+                "nome": "ESCOLA FICTICIA QUATRO",
+                "email": "escola.ficticia@gmail.com",
             }
         ]
 
         resp = _cliente_autenticado().post(
             "/api/escolas/unidades-parceiras/",
-            ["400825"],
+            ["000011"],
             format="json",
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), mock_post.return_value)
-        mock_post.assert_called_once_with(["400825"])
+        mock_post.assert_called_once_with(["000011"])
 
     @patch("apps.institucional.views.services.post_unidades_parceiras")
     def test_502_quando_sidecar_falha_por_transporte(
@@ -1183,14 +1183,14 @@ class UnidadesParceirasViewTest(SimpleTestCase):
         mock_post.side_effect = httpx.ConnectError("timeout")
 
         resp = _cliente_autenticado().post(
-            "/api/escolas/unidades-parceiras/", ["092797"], format="json"
+            "/api/escolas/unidades-parceiras/", ["000012"], format="json"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertEqual(
             resp.json(), {"detail": "Serviço de institucional indisponível."}
         )
-        mock_post.assert_called_once_with(["092797"])
+        mock_post.assert_called_once_with(["000012"])
 
     @patch("apps.institucional.views.services.post_unidades_parceiras")
     def test_400_quando_sidecar_retorna_400(self, mock_svc: MagicMock) -> None:

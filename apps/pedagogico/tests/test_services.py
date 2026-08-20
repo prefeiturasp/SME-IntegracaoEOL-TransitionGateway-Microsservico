@@ -11,7 +11,7 @@ from apps.pedagogico import services
 _BASE = "/api/v1/pedagogico/componentes-curriculares"
 _BASE_TURMAS = "/api/v1/pedagogico/turmas"
 _TURMA_MS = {
-    "codigo": 3034092,
+    "codigo": 9100001,
     "ano_letivo": 2026,
     "ano": "1",
     "tipo_turma": 1,
@@ -22,7 +22,7 @@ _TURMA_MS = {
     "data_fim": None,
     "extinta": False,
     "situacao": "O",
-    "ue_codigo": "092622",
+    "ue_codigo": "000001",
     "serie_ensino": "1o Ano",
     "codigo_serie_ensino": 84,
     "modalidade": "Fundamental",
@@ -45,17 +45,17 @@ class ListarTurmasTest(SimpleTestCase):
         with patch.object(
             services._client,
             "json_or_none",
-            return_value=[{"codigo": 3034092}],
+            return_value=[{"codigo": 9100001}],
         ) as mock_json_or_none:
-            result = services.listar_turmas([3034092])
+            result = services.listar_turmas([9100001])
 
         mock_post.assert_called_once_with(
             f"{_BASE_TURMAS}/listar-turmas/",
-            payload=[3034092],
+            payload=[9100001],
         )
         response.raise_for_status.assert_called_once_with()
         mock_json_or_none.assert_called_once_with(response)
-        self.assertEqual(result, [{"codigo": 3034092}])
+        self.assertEqual(result, [{"codigo": 9100001}])
 
     @patch.object(services._client, "post")
     def test_retorna_lista_vazia_sem_payload(
@@ -86,11 +86,11 @@ class AgrupamentosTerritorioServiceTest(SimpleTestCase):
         response.json.return_value = []
         mock_get.return_value = response
 
-        result = services.get_agrupamentos_correlacionados(815274, None)
+        result = services.get_agrupamentos_correlacionados(9100016, None)
 
         self.assertEqual(result, [])
         mock_get.assert_called_once_with(
-            f"{_BASE}/815274/territorio-saber/agrupamentos-correlacionados/",
+            f"{_BASE}/9100016/territorio-saber/agrupamentos-correlacionados/",
             params={},
         )
 
@@ -103,12 +103,12 @@ class AgrupamentosTerritorioServiceTest(SimpleTestCase):
         response.json.return_value = []
         mock_post.return_value = response
 
-        result = services.post_agrupamentos_correlacionados([815274], None)
+        result = services.post_agrupamentos_correlacionados([9100016], None)
 
         self.assertEqual(result, [])
         mock_post.assert_called_once_with(
             f"{_BASE}/territorio-saber/agrupamentos-correlacionados/",
-            payload=[815274],
+            payload=[9100016],
             params={},
         )
 
@@ -123,12 +123,12 @@ class AgrupamentosTerritorioServiceTest(SimpleTestCase):
         mock_get.return_value = response
 
         services.get_agrupamentos_correlacionados(
-            815274,
+            9100016,
             638527968000000000,
         )
 
         mock_get.assert_called_once_with(
-            f"{_BASE}/815274/territorio-saber/agrupamentos-correlacionados/",
+            f"{_BASE}/9100016/territorio-saber/agrupamentos-correlacionados/",
             params={"data_base": "2024-06-01"},
         )
 
@@ -143,13 +143,13 @@ class AgrupamentosTerritorioServiceTest(SimpleTestCase):
         mock_post.return_value = response
 
         services.post_agrupamentos_correlacionados(
-            [815274],
+            [9100016],
             638527968000000000,
         )
 
         mock_post.assert_called_once_with(
             f"{_BASE}/territorio-saber/agrupamentos-correlacionados/",
-            payload=[815274],
+            payload=[9100016],
             params={"data_base": "2024-06-01"},
         )
 
@@ -162,12 +162,12 @@ class AgrupamentosTerritorioServiceTest(SimpleTestCase):
         response.json.return_value = []
         mock_post.return_value = response
 
-        result = services.post_agrupamentos_territorio([815274])
+        result = services.post_agrupamentos_territorio([9100016])
 
         self.assertEqual(result, [])
         mock_post.assert_called_once_with(
             f"{_BASE}/territorio-saber/agrupamentos/",
-            payload=[815274],
+            payload=[9100016],
         )
 
 
@@ -178,17 +178,17 @@ class PostTurmasRegularesTest(SimpleTestCase):
     def test_chama_path_correto(self, mock_client: MagicMock) -> None:
         """Monta o path e envia os codigos como inteiros."""
         mock_client.json_or_none.return_value = [
-            {"codigo": 3014194, "nome_turma": "1D"},
-            {"codigo": 3024590, "nome_turma": "1B"},
+            {"codigo": 9100002, "nome_turma": "1D"},
+            {"codigo": 9100003, "nome_turma": "1B"},
         ]
 
-        result = services.post_turmas_regulares(["3024590", "3014194"])
+        result = services.post_turmas_regulares(["9100003", "9100002"])
 
         mock_client.post.assert_called_once_with(
             f"{_BASE_TURMAS}/turmas-regulares/",
-            payload=[3024590, 3014194],
+            payload=[9100003, 9100002],
         )
-        self.assertEqual(result, ["3014194", "3024590"])
+        self.assertEqual(result, ["9100002", "9100003"])
 
     @patch("apps.pedagogico.services._client")
     def test_lista_vazia_nao_chama_sidecar(
@@ -207,10 +207,10 @@ class PostCodigosTurmasContagemTest(SimpleTestCase):
     @patch("apps.pedagogico.services._client")
     def test_monta_path_e_query(self, mock_client: MagicMock) -> None:
         """Envia as UEs no corpo e os filtros na query string."""
-        mock_client.json_or_none.return_value = [3011258, 3071054]
+        mock_client.json_or_none.return_value = [9100021, 9100022]
 
         result = services.post_codigos_turmas_contagem(
-            ["019370", "108200"],
+            ["000004", "000005"],
             ano_turma="1",
             codigo_modalidade=5,
             ano_letivo=2026,
@@ -218,14 +218,14 @@ class PostCodigosTurmasContagemTest(SimpleTestCase):
 
         mock_client.post.assert_called_once_with(
             f"{_BASE_TURMAS}/codigos-turmas-contagem/",
-            payload=["019370", "108200"],
+            payload=["000004", "000005"],
             params={
                 "ano_turma": "1",
                 "codigo_modalidade": 5,
                 "ano_letivo": 2026,
             },
         )
-        self.assertEqual(result, [3011258, 3071054])
+        self.assertEqual(result, [9100021, 9100022])
 
     @patch("apps.pedagogico.services._client")
     def test_sem_ues_nao_chama_sidecar(self, mock_client: MagicMock) -> None:
@@ -243,17 +243,17 @@ class PostTurmasProgramaTest(SimpleTestCase):
     def test_chama_path_correto(self, mock_client: MagicMock) -> None:
         """Monta o path e envia os codigos como inteiros."""
         mock_client.json_or_none.return_value = [
-            {"codigo": 3133093, "nome_turma": "1A"},
-            {"codigo": 3133096, "nome_turma": "1A"},
+            {"codigo": 9100004, "nome_turma": "1A"},
+            {"codigo": 9100005, "nome_turma": "1A"},
         ]
 
-        result = services.post_turmas_programa(["3133093", "3133096"])
+        result = services.post_turmas_programa(["9100004", "9100005"])
 
         mock_client.post.assert_called_once_with(
             f"{_BASE_TURMAS}/turmas-programa/",
-            payload=[3133093, 3133096],
+            payload=[9100004, 9100005],
         )
-        self.assertEqual(result, ["3133093", "3133096"])
+        self.assertEqual(result, ["9100004", "9100005"])
 
     @patch("apps.pedagogico.services._client")
     def test_lista_vazia_nao_chama_sidecar(
@@ -273,7 +273,7 @@ class PostTurmasProgramaTest(SimpleTestCase):
         mock_client.post.return_value = httpx.Response(200, content=b"")
         mock_client.json_or_none.return_value = None
 
-        result = services.post_turmas_programa(["3133093"])
+        result = services.post_turmas_programa(["9100004"])
 
         mock_client.json_or_none.assert_called_once_with(
             mock_client.post.return_value
@@ -285,22 +285,22 @@ class PostTurmasProgramaTest(SimpleTestCase):
         self,
         mock_client: MagicMock,
     ) -> None:
-        mock_client.json_or_none.return_value = ["3133093", "3133096"]
+        mock_client.json_or_none.return_value = ["9100004", "9100005"]
 
-        result = services.post_turmas_programa(["3133093", "3133096"])
+        result = services.post_turmas_programa(["9100004", "9100005"])
 
-        self.assertEqual(result, ["3133093", "3133096"])
+        self.assertEqual(result, ["9100004", "9100005"])
 
     @patch("apps.pedagogico.services._client")
     def test_aceita_payload_ms_com_lista_de_inteiros(
         self,
         mock_client: MagicMock,
     ) -> None:
-        mock_client.json_or_none.return_value = [3133093, 3133096]
+        mock_client.json_or_none.return_value = [9100004, 9100005]
 
-        result = services.post_turmas_programa(["3133093", "3133096"])
+        result = services.post_turmas_programa(["9100004", "9100005"])
 
-        self.assertEqual(result, ["3133093", "3133096"])
+        self.assertEqual(result, ["9100004", "9100005"])
 
 
 class GetTurmasRecorteFundMedioEjaTest(SimpleTestCase):
@@ -311,11 +311,11 @@ class GetTurmasRecorteFundMedioEjaTest(SimpleTestCase):
         """Monta o path e envia os codigos como inteiros."""
         mock_client.json_or_none.return_value = [_TURMA_MS]
 
-        result = services.get_turmas_recorte_fund_medio_eja([3034092, 3014194])
+        result = services.get_turmas_recorte_fund_medio_eja([9100001, 9100002])
 
         mock_client.post.assert_called_once_with(
             f"{_BASE_TURMAS}/recorte-fund-medio-eja/",
-            payload=[3034092, 3014194],
+            payload=[9100001, 9100002],
         )
         self.assertEqual(result, [_TURMA_MS])
 
@@ -338,7 +338,7 @@ class GetTurmasRecorteFundMedioEjaTest(SimpleTestCase):
         """Retorna lista vazia quando o sidecar responde sem corpo."""
         mock_client.json_or_none.return_value = None
 
-        result = services.get_turmas_recorte_fund_medio_eja([3034092])
+        result = services.get_turmas_recorte_fund_medio_eja([9100001])
 
         self.assertEqual(result, [])
 
@@ -350,13 +350,13 @@ class PostListarTurmasTest(SimpleTestCase):
     def test_chama_path_correto(self, mock_client: MagicMock) -> None:
         mock_client.post.return_value.json.return_value = [_TURMA_MS]
 
-        result = services.post_listar_turmas(["3034092"])
+        result = services.post_listar_turmas(["9100001"])
 
         mock_client.post.assert_called_once_with(
             f"{_BASE_TURMAS}/listar-turmas/",
-            payload=[3034092],
+            payload=[9100001],
         )
-        self.assertEqual(result[0]["codigo"], 3034092)
+        self.assertEqual(result[0]["codigo"], 9100001)
         self.assertEqual(result[0]["anoLetivo"], 2026)
         self.assertEqual(result[0]["nomeTurma"], "1A")
         self.assertEqual(result[0]["dataInicioTurma"], "2026-02-04T00:00:00")
@@ -400,14 +400,14 @@ class GetDadosTurmaTest(SimpleTestCase):
     def test_chama_path_correto(self, mock_client: MagicMock) -> None:
         mock_client.get.return_value.json.return_value = _TURMA_MS
 
-        result = services.get_dados_turma("3034092")
+        result = services.get_dados_turma("9100001")
 
         mock_client.get.assert_called_once_with(
-            f"{_BASE_TURMAS}/3034092/dados/"
+            f"{_BASE_TURMAS}/9100001/dados/"
         )
-        self.assertEqual(result["codigo"], 3034092)
+        self.assertEqual(result["codigo"], 9100001)
         self.assertEqual(result["tipoTurma"], 1)
-        self.assertEqual(result["ueCodigo"], "092622")
+        self.assertEqual(result["ueCodigo"], "000001")
         self.assertEqual(result["modalidade"], None)
         self.assertEqual(result["codigoModalidade"], 0)
         self.assertEqual(result["serieEnsino"], None)
@@ -424,7 +424,7 @@ class GetAlunosAtivosTurmaSemRedisTest(SimpleTestCase):
         self,
         mock_get: MagicMock,
     ) -> None:
-        payload = [{"codigo_aluno": 7730117}]
+        payload = [{"codigo_aluno": 7000001}]
         response = MagicMock()
         response.content = b"[]"
         response.json.return_value = payload
@@ -435,10 +435,10 @@ class GetAlunosAtivosTurmaSemRedisTest(SimpleTestCase):
             "json_or_none",
             return_value=payload,
         ) as mock_json_or_none:
-            result = services.get_alunos_ativos_turma_sem_redis("3010807")
+            result = services.get_alunos_ativos_turma_sem_redis("9100009")
 
         mock_get.assert_called_once_with(
-            "/api/v1/alunos/turmas/3010807/",
+            "/api/v1/alunos/turmas/9100009/",
             params={
                 "considerar_inativos": False,
                 "sequencia": 1,
@@ -461,7 +461,7 @@ class GetAlunosAtivosTurmaSemRedisTest(SimpleTestCase):
             "json_or_none",
             return_value=None,
         ):
-            result = services.get_alunos_ativos_turma_sem_redis("3010807")
+            result = services.get_alunos_ativos_turma_sem_redis("9100009")
 
         response.raise_for_status.assert_called_once_with()
         self.assertEqual(result, [])
@@ -475,7 +475,7 @@ class GetAlunosAtivosTurmaRedisMultplexTest(SimpleTestCase):
         self,
         mock_get: MagicMock,
     ) -> None:
-        payload = [{"codigo_aluno": 7730117}]
+        payload = [{"codigo_aluno": 7000001}]
         response = MagicMock()
         mock_get.return_value = response
 
@@ -485,11 +485,11 @@ class GetAlunosAtivosTurmaRedisMultplexTest(SimpleTestCase):
             return_value=payload,
         ) as mock_json_or_none:
             result = services.get_alunos_ativos_turma_redis_multplex(
-                "2822152",
+                "9100015",
             )
 
         mock_get.assert_called_once_with(
-            "/api/v1/alunos/turmas/2822152/",
+            "/api/v1/alunos/turmas/9100015/",
             params={"considerar_inativos": True},
         )
         response.raise_for_status.assert_called_once_with()
@@ -510,7 +510,7 @@ class GetAlunosAtivosTurmaRedisMultplexTest(SimpleTestCase):
             return_value=None,
         ):
             result = services.get_alunos_ativos_turma_redis_multplex(
-                "2822152",
+                "9100015",
             )
 
         response.raise_for_status.assert_called_once_with()
@@ -526,16 +526,16 @@ class GetAlunosTurmaConsideraInativosTest(SimpleTestCase):
         mock_get_alunos: MagicMock,
     ) -> None:
         """Repassa ``considerar_inativos`` e fixa a sequência em 1."""
-        payload = [{"codigo_aluno": 7730117}]
+        payload = [{"codigo_aluno": 7000001}]
         mock_get_alunos.return_value = payload
 
         result = services.get_alunos_turma_considera_inativos(
-            "2822152",
+            "9100015",
             considera_inativos=True,
         )
 
         mock_get_alunos.assert_called_once_with(
-            "2822152",
+            "9100015",
             considerar_inativos=True,
             sequencia=1,
         )
@@ -550,12 +550,12 @@ class GetAlunosTurmaConsideraInativosTest(SimpleTestCase):
         mock_get_alunos.return_value = []
 
         services.get_alunos_turma_considera_inativos(
-            "2822152",
+            "9100015",
             considera_inativos=None,
         )
 
         mock_get_alunos.assert_called_once_with(
-            "2822152",
+            "9100015",
             considerar_inativos=False,
             sequencia=1,
         )
@@ -576,14 +576,14 @@ class GetTurmasHistoricasGeraisProfessorTest(SimpleTestCase):
             mock_professores.get_codigos_turmas_historicas_professor
         )
         obter_codigos.return_value = [
-            2822488,
-            2822517,
-            3016391,
+            9100006,
+            9100007,
+            9100008,
         ]
         elegivel = {
             "ano": "7",
             "ano_letivo": 2025,
-            "codigo": 2822488,
+            "codigo": 9100006,
             "modalidade": "Infantil",
             "codigo_modalidade": 1,
             "nome_turma": "7E",
@@ -594,7 +594,7 @@ class GetTurmasHistoricasGeraisProfessorTest(SimpleTestCase):
         inelegivel = {
             "ano": "0",
             "ano_letivo": 2025,
-            "codigo": 3016391,
+            "codigo": 9100008,
             "modalidade": None,
             "codigo_modalidade": 1,
             "nome_turma": "CB",
@@ -617,13 +617,13 @@ class GetTurmasHistoricasGeraisProfessorTest(SimpleTestCase):
 
         result = services.get_turmas_historicas_gerais_professor(
             ano_letivo=2025,
-            professor_rf="7483147",
+            professor_rf="7900001",
         )
 
-        obter_codigos.assert_called_once_with(2025, "7483147")
+        obter_codigos.assert_called_once_with(2025, "7900001")
         mock_post.assert_called_once_with(
             f"{_BASE_TURMAS}/listar-turmas/",
-            payload=[2822488, 2822517, 3016391],
+            payload=[9100006, 9100007, 9100008],
         )
         mock_response.raise_for_status.assert_called_once_with()
         self.assertEqual(result, [elegivel])
@@ -639,9 +639,9 @@ class GetTurmasHistoricasGeraisProfessorTest(SimpleTestCase):
         obter_codigos = (
             mock_professores.get_codigos_turmas_historicas_professor
         )
-        obter_codigos.return_value = [2822488]
+        obter_codigos.return_value = [9100006]
         turma = {
-            "codigo": 2822488,
+            "codigo": 9100006,
             "codigo_etapa_ensino": 1,
         }
         mock_response = MagicMock()
@@ -650,7 +650,7 @@ class GetTurmasHistoricasGeraisProfessorTest(SimpleTestCase):
 
         result = services.get_turmas_historicas_gerais_professor(
             ano_letivo=2025,
-            professor_rf="7483147",
+            professor_rf="7900001",
         )
 
         self.assertEqual(result, [turma])
@@ -666,11 +666,11 @@ class GetTurmasHistoricasGeraisProfessorTest(SimpleTestCase):
         obter_codigos = (
             mock_professores.get_codigos_turmas_historicas_professor
         )
-        obter_codigos.return_value = [2822488]
+        obter_codigos.return_value = [9100006]
         mock_response = MagicMock()
         mock_response.json.return_value = [
             {
-                "codigo": 2822488,
+                "codigo": 9100006,
                 "codigo_etapa_ensino": 1,
                 "tipo_escola": 99,
             }
@@ -679,7 +679,7 @@ class GetTurmasHistoricasGeraisProfessorTest(SimpleTestCase):
 
         result = services.get_turmas_historicas_gerais_professor(
             ano_letivo=2025,
-            professor_rf="7483147",
+            professor_rf="7900001",
         )
 
         self.assertEqual(result, [])
@@ -699,7 +699,7 @@ class GetTurmasHistoricasGeraisProfessorTest(SimpleTestCase):
 
         result = services.get_turmas_historicas_gerais_professor(
             ano_letivo=2025,
-            professor_rf="8381399",
+            professor_rf="7900002",
         )
 
         self.assertEqual(result, [])
@@ -716,9 +716,9 @@ class GetTurmasHistoricasGeraisProfessorTest(SimpleTestCase):
         obter_codigos = (
             mock_professores.get_codigos_turmas_historicas_professor
         )
-        obter_codigos.return_value = [2822488]
+        obter_codigos.return_value = [9100006]
         mock_response = MagicMock()
-        mock_response.json.return_value = {"codigo": 2822488}
+        mock_response.json.return_value = {"codigo": 9100006}
         mock_post.return_value = mock_response
 
         with self.assertRaisesMessage(
@@ -727,7 +727,7 @@ class GetTurmasHistoricasGeraisProfessorTest(SimpleTestCase):
         ):
             services.get_turmas_historicas_gerais_professor(
                 ano_letivo=2025,
-                professor_rf="7483147",
+                professor_rf="7900001",
             )
 
     @patch.object(services, "professores_services")
@@ -741,9 +741,9 @@ class GetTurmasHistoricasGeraisProfessorTest(SimpleTestCase):
         obter_codigos = (
             mock_professores.get_codigos_turmas_historicas_professor
         )
-        obter_codigos.return_value = [2822488]
+        obter_codigos.return_value = [9100006]
         mock_response = MagicMock()
-        mock_response.json.return_value = [2822488]
+        mock_response.json.return_value = [9100006]
         mock_post.return_value = mock_response
 
         with self.assertRaisesMessage(
@@ -752,7 +752,7 @@ class GetTurmasHistoricasGeraisProfessorTest(SimpleTestCase):
         ):
             services.get_turmas_historicas_gerais_professor(
                 ano_letivo=2025,
-                professor_rf="7483147",
+                professor_rf="7900001",
             )
 
     @patch.object(services, "professores_services")
@@ -766,9 +766,9 @@ class GetTurmasHistoricasGeraisProfessorTest(SimpleTestCase):
         obter_codigos = (
             mock_professores.get_codigos_turmas_historicas_professor
         )
-        obter_codigos.return_value = [2822488]
+        obter_codigos.return_value = [9100006]
         mock_response = MagicMock()
-        mock_response.json.return_value = [{"codigo": "2822488"}]
+        mock_response.json.return_value = [{"codigo": "9100006"}]
         mock_post.return_value = mock_response
 
         with self.assertRaisesMessage(
@@ -777,7 +777,7 @@ class GetTurmasHistoricasGeraisProfessorTest(SimpleTestCase):
         ):
             services.get_turmas_historicas_gerais_professor(
                 ano_letivo=2025,
-                professor_rf="7483147",
+                professor_rf="7900001",
             )
 
 
@@ -789,19 +789,19 @@ class GetSincronizacaoInstitucionalTurmaTest(SimpleTestCase):
         self,
         mock_get: MagicMock,
     ) -> None:
-        payload = {"codigo": 3010807, "ue_codigo": "091120"}
+        payload = {"codigo": 9100009, "ue_codigo": "000002"}
         mock_response = MagicMock()
-        mock_response.content = b'{"codigo": 3010807}'
+        mock_response.content = b'{"codigo": 9100009}'
         mock_response.json.return_value = payload
         mock_get.return_value = mock_response
 
         result = services.get_sincronizacao_institucional_turma(
-            codigo_ue="091120",
-            codigo_turma="3010807",
+            codigo_ue="000002",
+            codigo_turma="9100009",
         )
 
         mock_get.assert_called_once_with(
-            f"{_BASE_TURMAS}/ues/091120/turmas/3010807/"
+            f"{_BASE_TURMAS}/ues/000002/turmas/9100009/"
             "sincronizacoes-institucionais/"
         )
         mock_response.raise_for_status.assert_called_once_with()
@@ -822,8 +822,8 @@ class GetSincronizacaoInstitucionalTurmaTest(SimpleTestCase):
             "Resposta institucional da turma deve ser um objeto.",
         ):
             services.get_sincronizacao_institucional_turma(
-                codigo_ue="091120",
-                codigo_turma="3010807",
+                codigo_ue="000002",
+                codigo_turma="9100009",
             )
 
 
@@ -835,18 +835,18 @@ class GetSincronizacoesInstitucionaisAnosLetivosTest(SimpleTestCase):
         self,
         mock_get: MagicMock,
     ) -> None:
-        payload = [3036295, 3082921, 3036225]
+        payload = [9100010, 9100011, 9100012]
         mock_response = MagicMock()
         mock_response.json.return_value = payload
         mock_get.return_value = mock_response
 
         result = services.get_sincronizacoes_institucionais_anos_letivos(
-            codigo_ue="019437",
+            codigo_ue="000003",
             anos_letivos_vigente=[2025, 2026],
         )
 
         mock_get.assert_called_once_with(
-            f"{_BASE_TURMAS}/ue/019437/"
+            f"{_BASE_TURMAS}/ue/000003/"
             "sincronizacoes-institucionais/anos-letivos/",
             params={"anos_letivos_vigente": [2025, 2026]},
         )
@@ -863,11 +863,11 @@ class GetSincronizacoesInstitucionaisAnosLetivosTest(SimpleTestCase):
         mock_get.return_value = mock_response
 
         result = services.get_sincronizacoes_institucionais_anos_letivos(
-            codigo_ue="019437",
+            codigo_ue="000003",
         )
 
         mock_get.assert_called_once_with(
-            f"{_BASE_TURMAS}/ue/019437/"
+            f"{_BASE_TURMAS}/ue/000003/"
             "sincronizacoes-institucionais/anos-letivos/",
             params=None,
         )
@@ -879,7 +879,7 @@ class GetSincronizacoesInstitucionaisAnosLetivosTest(SimpleTestCase):
         mock_get: MagicMock,
     ) -> None:
         mock_response = MagicMock()
-        mock_response.json.return_value = {"codigo": 3036295}
+        mock_response.json.return_value = {"codigo": 9100010}
         mock_get.return_value = mock_response
 
         with self.assertRaisesMessage(
@@ -887,7 +887,7 @@ class GetSincronizacoesInstitucionaisAnosLetivosTest(SimpleTestCase):
             "Resposta de anos letivos deve ser uma lista de inteiros.",
         ):
             services.get_sincronizacoes_institucionais_anos_letivos(
-                codigo_ue="019437",
+                codigo_ue="000003",
             )
 
     @patch.object(services._client, "get")
@@ -896,7 +896,7 @@ class GetSincronizacoesInstitucionaisAnosLetivosTest(SimpleTestCase):
         mock_get: MagicMock,
     ) -> None:
         mock_response = MagicMock()
-        mock_response.json.return_value = [3036295, "3082921"]
+        mock_response.json.return_value = [9100010, "9100011"]
         mock_get.return_value = mock_response
 
         with self.assertRaisesMessage(
@@ -904,7 +904,7 @@ class GetSincronizacoesInstitucionaisAnosLetivosTest(SimpleTestCase):
             "Resposta de anos letivos deve ser uma lista de inteiros.",
         ):
             services.get_sincronizacoes_institucionais_anos_letivos(
-                codigo_ue="019437",
+                codigo_ue="000003",
             )
 
 
@@ -1025,7 +1025,7 @@ class GetTurmasPorTipoSalaTest(SimpleTestCase):
 
     @patch.object(services._client, "get")
     def test_chama_path_canonico(self, mock_get: MagicMock) -> None:
-        payload = [{"codigo_turma": 2112345}]
+        payload = [{"codigo_turma": 9100018}]
         mock_response = MagicMock()
         mock_response.json.return_value = payload
         mock_get.return_value = mock_response
@@ -1059,7 +1059,7 @@ class GetTurmasPorEscolaTest(SimpleTestCase):
 
     @patch.object(services._client, "get")
     def test_chama_path_canonico(self, mock_get: MagicMock) -> None:
-        payload = [{"codigo_turma": 2112345}]
+        payload = [{"codigo_turma": 9100018}]
         mock_response = MagicMock()
         mock_response.json.return_value = payload
         mock_get.return_value = mock_response
@@ -1093,7 +1093,7 @@ class GetTurmasSondagemTest(SimpleTestCase):
 
     @patch.object(services._client, "get")
     def test_chama_path_canonico(self, mock_get: MagicMock) -> None:
-        payload = [{"codigo_turma": 2112345}]
+        payload = [{"codigo_turma": 9100018}]
         mock_response = MagicMock()
         mock_response.json.return_value = payload
         mock_get.return_value = mock_response
@@ -1434,12 +1434,12 @@ class GetTurmaComponentesTurmaTest(SimpleTestCase):
         mock_client.json_or_none.return_value = payload
 
         resultado = services.get_turma_componentes_turma(
-            "3032577",
+            "9100013",
             ["89", "90"],
         )
 
         mock_client.get.assert_called_once_with(
-            f"{_BASE}/turmas/3032577/componentes-turma/",
+            f"{_BASE}/turmas/9100013/componentes-turma/",
             params={"codigos_componentes": ["89", "90"]},
         )
         mock_client.json_or_none.assert_called_once_with(response)
@@ -1454,7 +1454,7 @@ class GetTurmaComponentesTurmaTest(SimpleTestCase):
         mock_client.json_or_none.return_value = {"detail": "erro"}
 
         resultado = services.get_turma_componentes_turma(
-            "3032577",
+            "9100013",
             ["89"],
         )
 
@@ -1639,13 +1639,13 @@ class VerificarAtribuicaoTerritorioSaberTest(SimpleTestCase):
 
         result = services.verificar_atriuicao_territorio_saber(
             "000001",
-            "3032577",
+            "9100013",
             "89",
             "2026-07-28",
         )
 
         mock_client.get.assert_called_once_with(
-            f"{_BASE}/89/turmas/3032577/professor/000001/"
+            f"{_BASE}/89/turmas/9100013/professor/000001/"
             "data/2026-07-28/atribuicao/validar/"
         )
         mock_client.json_or_none.assert_called_once_with(response)
@@ -1665,7 +1665,7 @@ class GetAtribuicoesTerritorioSaberTest(SimpleTestCase):
         mock_client.get.return_value = response
         mock_client.json_or_none.return_value = [
             {
-                "codigo_turma": "3032577",
+                "codigo_turma": "9100013",
                 "ano_letivo": None,
                 "nome_turma": "7A",
                 "data_inicio_atribuicao": None,
@@ -1687,7 +1687,7 @@ class GetAtribuicoesTerritorioSaberTest(SimpleTestCase):
             "atribuicoes-territorio-saber/"
         )
         mock_client.json_or_none.assert_called_once_with(response)
-        self.assertEqual(result[0]["codigo_turma"], "3032577")
+        self.assertEqual(result[0]["codigo_turma"], "9100013")
         self.assertIsNone(result[0]["disciplinas_agrupadas_ids"])
 
     @patch("apps.pedagogico.services._client")
@@ -1716,7 +1716,7 @@ class GetProfessoresTurmaTerritorioSaberTest(SimpleTestCase):
         mock_client.get.return_value = response
         mock_client.json_or_none.return_value = [
             {
-                "codigo_turma": "3032577",
+                "codigo_turma": "9100013",
                 "disciplina_id": "800000",
                 "disciplina_nome": "TERRITORIO DO SABER",
                 "disciplinas_agrupadas_ids": [89, 90],
@@ -1725,10 +1725,10 @@ class GetProfessoresTurmaTerritorioSaberTest(SimpleTestCase):
             }
         ]
 
-        resultado = services.get_professores_turma_territorio_saber("3032577")
+        resultado = services.get_professores_turma_territorio_saber("9100013")
 
         mock_client.get.assert_called_once_with(
-            f"{_BASE}/turmas/3032577/atribuicoes-territorio-saber/"
+            f"{_BASE}/turmas/9100013/atribuicoes-territorio-saber/"
         )
         self.assertEqual(resultado[0]["disciplina_id"], "800000")
 
@@ -1740,18 +1740,18 @@ class GetProfessoresTurmaTerritorioSaberTest(SimpleTestCase):
         """Usa o código do agrupamento como identificador da disciplina."""
         mock_client.json_or_none.return_value = [
             {
-                "codigo_turma": "3022108",
-                "cod_agrupamento": 812935,
+                "codigo_turma": "9100014",
+                "cod_agrupamento": 900001,
                 "componentes_curriculares_agrupados": [1216, 1217],
                 "descricao_territorio_saber": "III - ORIENTACAO",
                 "descricao_experiencia_pedagogica": "OUTRAS",
-                "rf_professor": "8022127",
+                "rf_professor": "7900003",
             }
         ]
 
-        resultado = services.get_professores_turma_territorio_saber("3022108")
+        resultado = services.get_professores_turma_territorio_saber("9100014")
 
-        self.assertEqual(resultado[0]["disciplina_id"], "812935")
+        self.assertEqual(resultado[0]["disciplina_id"], "900001")
         self.assertEqual(
             resultado[0]["disciplinas_agrupadas_ids"], [1216, 1217]
         )
@@ -1759,7 +1759,7 @@ class GetProfessoresTurmaTerritorioSaberTest(SimpleTestCase):
             resultado[0]["disciplina_nome"],
             "III - ORIENTACAO - OUTRAS",
         )
-        self.assertEqual(resultado[0]["codigo_rf"], "8022127")
+        self.assertEqual(resultado[0]["codigo_rf"], "7900003")
 
 
 class GetProfessoresTurmasTerritorioSaberTest(SimpleTestCase):
@@ -1776,12 +1776,12 @@ class GetProfessoresTurmasTerritorioSaberTest(SimpleTestCase):
         mock_client.json_or_none.return_value = []
 
         resultado = services.get_professores_turmas_territorio_saber(
-            ["3032577", "3032578"]
+            ["9100013", "9100020"]
         )
 
         mock_client.get.assert_called_once_with(
             f"{_BASE}/turmas/atribuicoes-territorio-saber/",
-            params={"codigo_turma": [3032577, 3032578]},
+            params={"codigo_turma": [9100013, 9100020]},
         )
         mock_client.json_or_none.assert_called_once_with(response)
         self.assertEqual(resultado, [])
@@ -1835,6 +1835,6 @@ class GetProfessoresTurmaTerritorioSaberPayloadTest(SimpleTestCase):
         """Ignora payload que não seja uma lista."""
         mock_client.json_or_none.return_value = {"detail": "Inválido"}
 
-        resultado = services.get_professores_turma_territorio_saber("3032577")
+        resultado = services.get_professores_turma_territorio_saber("9100013")
 
         self.assertEqual(resultado, [])

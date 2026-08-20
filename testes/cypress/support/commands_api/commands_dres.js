@@ -114,3 +114,27 @@ Cypress.Commands.add("getDREsUnidades", (valor) => {
     failOnStatusCode: false,
   });
 });
+
+Cypress.Commands.add("getEscolasSigpaePorDre", (codigoEolDre) => {
+  return cy.request({
+    method: "GET",
+    url: `${Cypress.env("API_URL")}/api/DREs/${codigoEolDre}/escola/Sigpae/`,
+    headers: {
+      accept: "application/json",
+      [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+    },
+    failOnStatusCode: false,
+  });
+});
+
+Cypress.Commands.add("getUnidadesCodigoIntegracaoPorDre", (codigoEolDre) => {
+  return cy.request({
+    method: "GET",
+    url: `${Cypress.env("API_URL")}/api/DREs/${codigoEolDre}/unidades/codigo-integracao/`,
+    headers: {
+      accept: "application/json",
+      [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+    },
+    failOnStatusCode: false,
+  });
+});

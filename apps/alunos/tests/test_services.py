@@ -163,7 +163,7 @@ class GetResponsaveisTest(SimpleTestCase):
         mock_get.return_value = mock_resp
 
         result = services.get_responsaveis(
-            codigo_dre="108",
+            codigo_dre="100",
             codigo_ue="100001",
             ano_letivo=2026,
         )
@@ -171,7 +171,7 @@ class GetResponsaveisTest(SimpleTestCase):
         mock_get.assert_called_once_with(
             f"{_BASE}/responsaveis",
             params={
-                "codigo_dre": "108",
+                "codigo_dre": "100",
                 "codigo_ue": "100001",
                 "ano_letivo": 2026,
             },
@@ -249,14 +249,14 @@ class GetAlunosPorTurmaTest(SimpleTestCase):
         mock_get.return_value = mock_resp
 
         services.get_alunos_por_turma(
-            "3012185",
+            "9100001",
             considerar_inativos=False,
             data_aula_ticks="0",
             sequencia=1,
         )
 
         mock_get.assert_called_once_with(
-            f"{_BASE}/turmas/3012185/",
+            f"{_BASE}/turmas/9100001/",
             params={"considerar_inativos": False, "sequencia": 1},
         )
 
@@ -270,10 +270,10 @@ class GetAlunosPorTurmaTest(SimpleTestCase):
         mock_resp.json.return_value = []
         mock_get.return_value = mock_resp
 
-        services.get_alunos_por_turma("3012185", considerar_inativos=True)
+        services.get_alunos_por_turma("9100001", considerar_inativos=True)
 
         mock_get.assert_called_once_with(
-            f"{_BASE}/turmas/3012185/",
+            f"{_BASE}/turmas/9100001/",
             params={"considerar_inativos": True},
         )
 
@@ -287,16 +287,16 @@ class GetAlunosPorTurmaTest(SimpleTestCase):
         mock_get.return_value = mock_resp
 
         services.get_alunos_por_turma(
-            "3123349",
+            "9100003",
             considerar_inativos=True,
-            codigo_aluno="7345634",
+            codigo_aluno="7000001",
         )
 
         mock_get.assert_called_once_with(
-            f"{_BASE}/turmas/3123349/",
+            f"{_BASE}/turmas/9100003/",
             params={
                 "considerar_inativos": True,
-                "codigo_aluno": "7345634",
+                "codigo_aluno": "7000001",
             },
         )
 
@@ -311,13 +311,13 @@ class GetAlunosPorTurmaTest(SimpleTestCase):
         mock_post.return_value = mock_resp
 
         total = services.post_quantidade_matriculas_turmas_periodo(
-            [3011258, 3071054], "200"
+            [9100004, 9100005], "200"
         )
 
         self.assertEqual(total, 3827)
         mock_post.assert_called_once_with(
             f"{_BASE}/matriculas-turmas/quantidade",
-            payload={"codigos_turmas": [3011258, 3071054], "data_fim": "200"},
+            payload={"codigos_turmas": [9100004, 9100005], "data_fim": "200"},
         )
 
     @patch.object(services._client, "post")
@@ -338,10 +338,10 @@ class GetAlunosPorTurmaTest(SimpleTestCase):
         mock_resp.json.return_value = []
         mock_get.return_value = mock_resp
 
-        services.get_acompanhamento_escolar_turma("3123349")
+        services.get_acompanhamento_escolar_turma("9100003")
 
         mock_get.assert_called_once_with(
-            f"{_BASE}/turmas/3123349/acompanhamento-escolar"
+            f"{_BASE}/turmas/9100003/acompanhamento-escolar"
         )
 
     @patch.object(services._client, "get")
@@ -352,10 +352,10 @@ class GetAlunosPorTurmaTest(SimpleTestCase):
         mock_resp.json.return_value = []
         mock_get.return_value = mock_resp
 
-        services.get_todos_alunos_turma("3123349")
+        services.get_todos_alunos_turma("9100003")
 
         mock_get.assert_called_once_with(
-            f"{_BASE}/turmas/3123349/todos-alunos",
+            f"{_BASE}/turmas/9100003/todos-alunos",
             params={},
         )
 
@@ -367,11 +367,11 @@ class GetAlunosPorTurmaTest(SimpleTestCase):
         mock_resp.json.return_value = []
         mock_get.return_value = mock_resp
 
-        services.get_todos_alunos_turma("3123349", codigo_aluno="7345634")
+        services.get_todos_alunos_turma("9100003", codigo_aluno="7000001")
 
         mock_get.assert_called_once_with(
-            f"{_BASE}/turmas/3123349/todos-alunos",
-            params={"codigo_aluno": "7345634"},
+            f"{_BASE}/turmas/9100003/todos-alunos",
+            params={"codigo_aluno": "7000001"},
         )
 
     @patch.object(services._client, "get")
@@ -384,10 +384,10 @@ class GetAlunosPorTurmaTest(SimpleTestCase):
         mock_resp.json.return_value = []
         mock_get.return_value = mock_resp
 
-        services.get_matriculas_turmas_aluno("7345634")
+        services.get_matriculas_turmas_aluno("7000001")
 
         mock_get.assert_called_once_with(
-            f"{_BASE}/7345634/matriculas-turmas",
+            f"{_BASE}/7000001/matriculas-turmas",
             params={},
         )
 
@@ -402,11 +402,11 @@ class GetAlunosPorTurmaTest(SimpleTestCase):
         mock_get.return_value = mock_resp
 
         services.get_matriculas_turmas_aluno(
-            "7345634", data_aula_ticks="0", ano_letivo="0"
+            "7000001", data_aula_ticks="0", ano_letivo="0"
         )
 
         mock_get.assert_called_once_with(
-            f"{_BASE}/7345634/matriculas-turmas",
+            f"{_BASE}/7000001/matriculas-turmas",
             params={"data_aula_ticks": "0"},
         )
 
@@ -421,13 +421,13 @@ class GetAlunosPorTurmaTest(SimpleTestCase):
         mock_get.return_value = mock_resp
 
         services.get_alunos_por_turma(
-            "3123349",
+            "9100003",
             considerar_inativos=True,
             ano_letivo=2025,
         )
 
         mock_get.assert_called_once_with(
-            f"{_BASE}/turmas/3123349/",
+            f"{_BASE}/turmas/9100003/",
             params={
                 "considerar_inativos": True,
                 "ano_letivo": 2025,
@@ -443,13 +443,13 @@ class GetAlunosPorTurmaTest(SimpleTestCase):
         mock_get.return_value = mock_resp
 
         services.get_alunos_por_turma(
-            "3123349",
+            "9100003",
             considerar_inativos=True,
             ano_letivo=0,
         )
 
         mock_get.assert_called_once_with(
-            f"{_BASE}/turmas/3123349/",
+            f"{_BASE}/turmas/9100003/",
             params={"considerar_inativos": True},
         )
 
@@ -463,14 +463,14 @@ class GetAlunosPorTurmaTest(SimpleTestCase):
         mock_get.return_value = mock_resp
 
         services.get_alunos_por_turma(
-            "3015603",
+            "9100002",
             considerar_inativos=True,
             data_matricula_ticks="639059616000000000",
             sequencia=1,
         )
 
         mock_get.assert_called_once_with(
-            f"{_BASE}/turmas/3015603/",
+            f"{_BASE}/turmas/9100002/",
             params={
                 "considerar_inativos": True,
                 "data_matricula_ticks": "639059616000000000",
@@ -492,12 +492,12 @@ class GetAlunosAtivosDataAulaTicksTest(SimpleTestCase):
         mock_get.return_value = mock_resp
 
         result = services.get_alunos_ativos_data_aula_ticks(
-            codigo_turma="3012185",
+            codigo_turma="9100001",
             data_ticks="639031104000000000",
         )
 
         mock_get.assert_called_once_with(
-            f"{_BASE}/turmas/3012185/",
+            f"{_BASE}/turmas/9100001/",
             params={
                 "considerar_inativos": True,
                 "data_aula_ticks": "639031104000000000",
@@ -516,7 +516,7 @@ class GetAlunosAtivosDataAulaTicksTest(SimpleTestCase):
         mock_get.return_value = mock_resp
 
         result = services.get_alunos_ativos_data_aula_ticks(
-            codigo_turma="3012185",
+            codigo_turma="9100001",
             data_ticks="639031104000000000",
         )
 
@@ -531,7 +531,7 @@ class GetAlunosDataMatriculaTicksTest(SimpleTestCase):
     def test_chama_endpoint_canonico_com_filtros(
         self, mock_get: MagicMock
     ) -> None:
-        payload = [{"codigo_aluno": 7614272}]
+        payload = [{"codigo_aluno": 7000004}]
         mock_resp = MagicMock()
         mock_resp.status_code = 200
         mock_resp.content = b"[]"
@@ -539,12 +539,12 @@ class GetAlunosDataMatriculaTicksTest(SimpleTestCase):
         mock_get.return_value = mock_resp
 
         result = services.get_alunos_data_matricula_ticks(
-            codigo_turma="3015603",
+            codigo_turma="9100002",
             data_matricula_ticks="639059616000000000",
         )
 
         mock_get.assert_called_once_with(
-            f"{_BASE}/turmas/3015603/",
+            f"{_BASE}/turmas/9100002/",
             params={
                 "considerar_inativos": True,
                 "data_matricula_ticks": "639059616000000000",
@@ -589,14 +589,14 @@ class GetAlunosDaUeTest(SimpleTestCase):
         mock_get.return_value = mock_resp
 
         result = services.get_alunos_da_ue(
-            "019362",
+            "000001",
             "2026",
             nome_aluno="Fulano",
             codigo_eol="123456",
         )
 
         mock_get.assert_called_once_with(
-            f"{_BASE}/ues/019362/anos_letivos/2026",
+            f"{_BASE}/ues/000001/anos_letivos/2026",
             params={"nome_aluno": "Fulano", "codigo_eol": "123456"},
         )
         mock_resp.raise_for_status.assert_called_once_with()
@@ -747,7 +747,7 @@ class GetTotalAlunosAtivosPeriodoTest(SimpleTestCase):
             data_inicio="2026-01-01",
             data_fim="2026-12-31",
             ue_id="100001",
-            dre_id="108800",
+            dre_id="100000",
             modalidades=["5", "6"],
         )
 
@@ -756,7 +756,7 @@ class GetTotalAlunosAtivosPeriodoTest(SimpleTestCase):
             "/inicio/2026-01-01/fim/2026-12-31",
             params={
                 "ue_id": "100001",
-                "dre_id": "108800",
+                "dre_id": "100000",
                 "modalidades": ["5", "6"],
             },
         )
@@ -821,12 +821,12 @@ class GetCodigosTurmasRegularesAlunoTest(SimpleTestCase):
         mock_get.return_value = mock_resp
 
         result = services.get_codigos_turmas_regulares_aluno(
-            "2026", "7345634", data_referencia="2026-06-01"
+            "2026", "7000001", data_referencia="2026-06-01"
         )
 
         self.assertEqual(result, [23456, 12345])
         mock_get.assert_called_once_with(
-            f"{_BASE}/anos-letivos/2026/alunos/7345634"
+            f"{_BASE}/anos-letivos/2026/alunos/7000001"
             "/codigos-turmas-regulares",
             params={"data_referencia": "2026-06-01"},
         )
@@ -860,16 +860,16 @@ class MontarCodigosTurmasRegularesAlunoTest(SimpleTestCase):
 
         result = services.montar_codigos_turmas_regulares_aluno(
             ano_letivo="2026",
-            codigo_aluno="7345634",
+            codigo_aluno="7000001",
             tipos_turma=[1],
-            ue_codigo="019370",
+            ue_codigo="000006",
             semestre=1,
         )
 
         self.assertEqual(result, [23456, 12345])
-        mock_alunos.assert_called_once_with("2026", "7345634", None)
+        mock_alunos.assert_called_once_with("2026", "7000001", None)
         mock_recorte.assert_called_once_with(
-            [23456, 12345, 99999], [1], "019370", 1
+            [23456, 12345, 99999], [1], "000006", 1
         )
 
     @patch("apps.pedagogico.services.get_turmas_recorte_por_tipo")
@@ -881,7 +881,7 @@ class MontarCodigosTurmasRegularesAlunoTest(SimpleTestCase):
         mock_alunos.return_value = []
 
         result = services.montar_codigos_turmas_regulares_aluno(
-            ano_letivo="2026", codigo_aluno="7345634"
+            ano_letivo="2026", codigo_aluno="7000001"
         )
 
         self.assertEqual(result, [])
@@ -950,22 +950,22 @@ class GetDadosAcompanhamentoEscolarTest(SimpleTestCase):
 
     @patch.object(services._client, "get")
     def test_chama_sidecar_com_filtros(self, mock_get: MagicMock) -> None:
-        payload = [{"codigo_eol": 7074492}]
+        payload = [{"codigo_eol": 7000005}]
         mock_get.return_value = _resp_lista(payload)
 
         result = services.get_dados_acompanhamento_escolar(
-            codigo_aluno="7074492",
-            codigo_dre="108200",
-            codigo_ue="019267",
+            codigo_aluno="7000005",
+            codigo_dre="100000",
+            codigo_ue="000005",
             cpf_responsavel="12345678901",
         )
 
         mock_get.assert_called_once_with(
             f"{_BASE}/dados-acompanhamento-escolar/contrato",
             params={
-                "codigo_aluno": "7074492",
-                "codigo_dre": "108200",
-                "codigo_ue": "019267",
+                "codigo_aluno": "7000005",
+                "codigo_dre": "100000",
+                "codigo_ue": "000005",
                 "cpf_responsavel": "12345678901",
             },
         )
@@ -995,11 +995,11 @@ class GetTurmasAlunoComHistoricoTest(SimpleTestCase):
         mock_get.return_value = _resp_lista(payload)
 
         result = services.get_turmas_aluno_com_historico(
-            "7074492", "2026", "false", "true", "true"
+            "7000005", "2026", "false", "true", "true"
         )
 
         mock_get.assert_called_once_with(
-            f"{_BASE}/7074492/turmas/anos_letivos/2026"
+            f"{_BASE}/7000005/turmas/anos_letivos/2026"
             "/historico/false/filtrar_situacao/true/tipo_turma/true"
         )
         self.assertEqual(result, payload)
@@ -1033,16 +1033,16 @@ class GetQuantidadeMatriculadosCCTest(SimpleTestCase):
         result = services.get_quantidade_matriculados_cc(
             ano_letivo="2026",
             componentes_curriculares=["1310"],
-            dre_id="109100",
-            ue_id="093181",
+            dre_id="100000",
+            ue_id="000003",
         )
 
         mock_get.assert_called_once_with(
             f"{_BASE}/ano-letivo/2026/matriculados/contrato",
             params={
                 "componentes_curriculares": ["1310"],
-                "dre_id": "109100",
-                "ue_id": "093181",
+                "dre_id": "100000",
+                "ue_id": "000003",
             },
         )
         self.assertEqual(result, payload)
@@ -1058,21 +1058,21 @@ class GetQuantidadeMatriculadosTest(SimpleTestCase):
 
         result = services.get_quantidade_matriculados(
             ano_letivo="2026",
-            dre_codigo="108200",
-            ue_codigo="019267",
+            dre_codigo="100000",
+            ue_codigo="000005",
             modalidade=["5"],
             ano=["3"],
-            turma=["3038818"],
+            turma=["9100006"],
         )
 
         mock_get.assert_called_once_with(
             f"{_BASE}/ano-letivo/2026/matriculados/quantidade/contrato",
             params={
-                "dre_codigo": "108200",
-                "ue_codigo": "019267",
+                "dre_codigo": "100000",
+                "ue_codigo": "000005",
                 "modalidade": ["5"],
                 "ano": ["3"],
-                "turma": ["3038818"],
+                "turma": ["9100006"],
             },
         )
         self.assertEqual(result, payload)

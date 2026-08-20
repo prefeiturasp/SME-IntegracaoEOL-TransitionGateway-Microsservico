@@ -84,3 +84,27 @@ Funcionalidade: API - DREs
     Quando realizo consulta de unidades da DRE não encontrada
     Então retorna o status 200
     E o retorno deve ser uma lista vazia
+
+  Cenário: Validar escolas Sigpae por código EOL da DRE válido
+    Dado que possuo acesso à API de DREs
+    Quando realizo consulta de escolas Sigpae pelo código EOL da DRE válido
+    Então retorna o status 200
+    E o retorno deve conter lista de escolas Sigpae
+
+  Cenário: Validar retorno vazio de escolas Sigpae para código EOL da DRE inexistente
+    Dado que possuo acesso à API de DREs
+    Quando realizo consulta de escolas Sigpae pelo código EOL da DRE inexistente
+    Então retorna o status 200
+    E o retorno deve ser uma lista vazia
+
+  Cenário: Validar unidades por código de integração da DRE com código EOL válido
+    Dado que possuo acesso à API de DREs
+    Quando realizo consulta de unidades por código de integração da DRE com código EOL válido
+    Então retorna o status 200
+    E o retorno deve conter lista de unidades de uma DRE
+
+  Cenário: Validar retorno vazio de unidades por código de integração para código EOL da DRE inexistente
+    Dado que possuo acesso à API de DREs
+    Quando realizo consulta de unidades por código de integração da DRE com código EOL inexistente
+    Então retorna o status 200
+    E o retorno deve ser uma lista vazia

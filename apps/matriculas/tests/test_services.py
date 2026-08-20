@@ -97,10 +97,10 @@ class GetTotalMatriculasPorTurnoDreTest(SimpleTestCase):
         mock_resp.json.return_value = payload
         mock_get.return_value = mock_resp
 
-        result = services.get_total_matriculas_por_turno_dre("108800")
+        result = services.get_total_matriculas_por_turno_dre("100000")
 
         mock_get.assert_called_once_with(
-            f"{_BASE}/escolas/dre/108800/quantidades"
+            f"{_BASE}/escolas/dre/100000/quantidades"
         )
         mock_resp.raise_for_status.assert_called_once_with()
         self.assertEqual(result, payload)

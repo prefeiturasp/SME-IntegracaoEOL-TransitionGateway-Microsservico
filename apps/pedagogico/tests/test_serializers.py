@@ -24,10 +24,10 @@ class CodigoTurmaListSerializerTest(SimpleTestCase):
     """Valida a lista de codigos de turma."""
 
     def test_valida_lista_de_strings_numericas(self) -> None:
-        serializer = CodigoTurmaListSerializer(data=["3024590", "3014194"])
+        serializer = CodigoTurmaListSerializer(data=["9100003", "9100002"])
 
         self.assertTrue(serializer.is_valid())
-        self.assertEqual(serializer.validated_data, ["3024590", "3014194"])
+        self.assertEqual(serializer.validated_data, ["9100003", "9100002"])
 
     def test_valida_lista_vazia(self) -> None:
         serializer = CodigoTurmaListSerializer(data=[])
@@ -36,22 +36,22 @@ class CodigoTurmaListSerializerTest(SimpleTestCase):
         self.assertEqual(serializer.validated_data, [])
 
     def test_rejeita_body_que_nao_e_lista(self) -> None:
-        serializer = CodigoTurmaListSerializer(data={"codigo": "3024590"})
+        serializer = CodigoTurmaListSerializer(data={"codigo": "9100003"})
 
         self.assertFalse(serializer.is_valid())
 
     def test_rejeita_item_vazio(self) -> None:
-        serializer = CodigoTurmaListSerializer(data=["3024590", ""])
+        serializer = CodigoTurmaListSerializer(data=["9100003", ""])
 
         self.assertFalse(serializer.is_valid())
 
     def test_rejeita_item_nao_numerico(self) -> None:
-        serializer = CodigoTurmaListSerializer(data=["3024590", "ABC"])
+        serializer = CodigoTurmaListSerializer(data=["9100003", "ABC"])
 
         self.assertFalse(serializer.is_valid())
 
     def test_rejeita_item_nulo(self) -> None:
-        serializer = CodigoTurmaListSerializer(data=["3024590", None])
+        serializer = CodigoTurmaListSerializer(data=["9100003", None])
 
         self.assertFalse(serializer.is_valid())
 
@@ -122,10 +122,10 @@ class CodigoTurmaInteiroListSerializerTest(SimpleTestCase):
 
     def test_serializa_lista_de_inteiros(self) -> None:
         serializer = CodigoTurmaInteiroListSerializer(
-            [3036295, 3082921, 3036225]
+            [9100010, 9100011, 9100012]
         )
 
-        self.assertEqual(serializer.data, [3036295, 3082921, 3036225])
+        self.assertEqual(serializer.data, [9100010, 9100011, 9100012])
 
     def test_valida_lista_vazia(self) -> None:
         serializer = CodigoTurmaInteiroListSerializer(data=[])
@@ -134,7 +134,7 @@ class CodigoTurmaInteiroListSerializerTest(SimpleTestCase):
         self.assertEqual(serializer.validated_data, [])
 
     def test_rejeita_item_nao_inteiro(self) -> None:
-        serializer = CodigoTurmaInteiroListSerializer(data=[3036295, "A"])
+        serializer = CodigoTurmaInteiroListSerializer(data=[9100010, "A"])
 
         self.assertFalse(serializer.is_valid())
 
@@ -206,7 +206,7 @@ class TurmaDadosSerializerTest(SimpleTestCase):
             {
                 "ano": "1",
                 "anoLetivo": 2026,
-                "codigo": 3034092,
+                "codigo": 9100001,
                 "tipoTurma": 1,
                 "modalidade": "Fundamental",
                 "codigoModalidade": 5,
@@ -222,7 +222,7 @@ class TurmaDadosSerializerTest(SimpleTestCase):
                 "dataInicioTurma": "2026-02-04T00:00:00",
                 "extinta": False,
                 "situacao": "O",
-                "ueCodigo": "092622",
+                "ueCodigo": "000001",
             }
         )
 
@@ -239,7 +239,7 @@ class TurmaHistoricaGeralSerializerTest(SimpleTestCase):
             data={
                 "ano": "7",
                 "ano_letivo": 2025,
-                "codigo": 2825477,
+                "codigo": 9100017,
                 "modalidade": "Infantil",
                 "codigo_modalidade": 1,
                 "nome_turma": "7A",
@@ -253,7 +253,7 @@ class TurmaHistoricaGeralSerializerTest(SimpleTestCase):
             {
                 "ano": "7",
                 "anoLetivo": 2025,
-                "codigo": 2825477,
+                "codigo": 9100017,
                 "tipoTurma": 0,
                 "modalidade": "Infantil",
                 "codigoModalidade": 1,
@@ -278,7 +278,7 @@ class TurmaHistoricaGeralSerializerTest(SimpleTestCase):
             data={
                 "ano": "7",
                 "ano_letivo": 2025,
-                "codigo": 2825477,
+                "codigo": 9100017,
                 "tipo_turma": 2,
                 "modalidade": "Infantil",
                 "codigo_modalidade": 1,
@@ -306,7 +306,7 @@ class TurmaHistoricaGeralSerializerTest(SimpleTestCase):
             data={
                 "ano": "7",
                 "ano_letivo": 2025,
-                "codigo": 2825477,
+                "codigo": 9100017,
                 "tipo_turma": 2,
                 "modalidade": "Infantil",
                 "codigo_modalidade": 1,
@@ -337,7 +337,7 @@ class TurmaHistoricaGeralSerializerTest(SimpleTestCase):
             data={
                 "ano": "7",
                 "ano_letivo": 2025,
-                "codigo": 2825477,
+                "codigo": 9100017,
                 "tipo_turma": None,
                 "modalidade": "Infantil",
                 "codigo_modalidade": 1,
@@ -392,7 +392,7 @@ class SincronizacaoInstitucionalTurmaSerializerTest(SimpleTestCase):
             {
                 "ano": "7",
                 "ano_letivo": 2026,
-                "codigo": 3010807,
+                "codigo": 9100009,
                 "tipo_turma": 1,
                 "modalidade": "Infantil",
                 "codigo_modalidade": 1,
@@ -408,7 +408,7 @@ class SincronizacaoInstitucionalTurmaSerializerTest(SimpleTestCase):
                 "data_inicio_turma": "2026-02-04T03:00:00Z",
                 "extinta": False,
                 "situacao": "O",
-                "ue_codigo": "091120",
+                "ue_codigo": "000002",
                 "data_atualizacao": "2026-06-17T08:11:45.807000Z",
                 "data_status_turma_escola": (
                     "2026-06-03T18:46:18.833000Z"
@@ -424,7 +424,7 @@ class SincronizacaoInstitucionalTurmaSerializerTest(SimpleTestCase):
                     {
                         "nome_componente_curricular": "ED.INF. EMEI 4 HS",
                         "componente_curricular_codigo": 512,
-                        "registro_funcional": "7393423",
+                        "registro_funcional": "7900004",
                         "data_disponibizacao": None,
                     }
                 ],
@@ -436,7 +436,7 @@ class SincronizacaoInstitucionalTurmaSerializerTest(SimpleTestCase):
             {
                 "ano": "7",
                 "anoLetivo": 2026,
-                "codigo": 3010807,
+                "codigo": 9100009,
                 "tipoTurma": 1,
                 "modalidade": "1",
                 "codigoModalidade": 1,
@@ -451,7 +451,7 @@ class SincronizacaoInstitucionalTurmaSerializerTest(SimpleTestCase):
                 "dataInicioTurma": "2026-02-04T00:00:00",
                 "extinta": False,
                 "situacao": "O",
-                "ueCodigo": "091120",
+                "ueCodigo": "000002",
                 "dataAtualizacao": "2026-06-17T05:11:45.807",
                 "dataStatusTurmaEscola": "2026-06-03T15:46:18.833",
                 "etapaEnsino": 1,
@@ -465,7 +465,7 @@ class SincronizacaoInstitucionalTurmaSerializerTest(SimpleTestCase):
                     {
                         "nomeComponenteCurricular": "ED.INF. EMEI 4 HS",
                         "componenteCurricularCodigo": 512,
-                        "registroFuncional": "7393423",
+                        "registroFuncional": "7900004",
                         "dataDisponibizacao": None,
                     }
                 ],
@@ -477,7 +477,7 @@ class SincronizacaoInstitucionalTurmaSerializerTest(SimpleTestCase):
             {
                 "ano": "7",
                 "ano_letivo": 2026,
-                "codigo": 3010807,
+                "codigo": 9100009,
                 "tipo_turma": 1,
                 "codigo_modalidade": 1,
                 "nome_turma": "7A",
@@ -491,7 +491,7 @@ class SincronizacaoInstitucionalTurmaSerializerTest(SimpleTestCase):
                 "data_inicio_turma": None,
                 "extinta": False,
                 "situacao": "O",
-                "ue_codigo": "091120",
+                "ue_codigo": "000002",
                 "data_atualizacao": None,
                 "data_status_turma_escola": None,
                 "etapa_ensino": 1,
@@ -505,7 +505,7 @@ class SincronizacaoInstitucionalTurmaSerializerTest(SimpleTestCase):
                     {
                         "nome_componente_curricular": "ED.INF. EMEI 4 HS",
                         "componente_curricular_codigo": 512,
-                        "registro_funcional": "7393423",
+                        "registro_funcional": "7900004",
                         "data_disponibizacao": "2026-06-17T08:11:45Z",
                     }
                 ],
@@ -542,7 +542,7 @@ class TurmaPorSalaSerializerTest(SimpleTestCase):
     def test_converte_tipo_turma_para_string(self) -> None:
         serializer = TurmaPorSalaSerializer(
             data={
-                "codigo_turma": 2112345,
+                "codigo_turma": 9100018,
                 "nome_turma": "3A EF",
                 "tipo_turma": 1,
                 "situacao": "A",
@@ -555,7 +555,7 @@ class TurmaPorSalaSerializerTest(SimpleTestCase):
         self.assertEqual(
             serializer.data,
             {
-                "codigoTurma": 2112345,
+                "codigoTurma": 9100018,
                 "nomeTurma": "3A EF",
                 "tipoTurma": "1",
                 "situacao": "A",
@@ -567,7 +567,7 @@ class TurmaPorSalaSerializerTest(SimpleTestCase):
     def test_situacao_nula(self) -> None:
         serializer = TurmaPorSalaSerializer(
             data={
-                "codigo_turma": 2112345,
+                "codigo_turma": 9100018,
                 "nome_turma": "3A EF",
                 "tipo_turma": 1,
                 "situacao": None,
@@ -586,7 +586,7 @@ class TurmaPorEscolaSerializerTest(SimpleTestCase):
     def test_inclui_nome_turma_eol_e_sigla_modalidade(self) -> None:
         serializer = TurmaPorEscolaSerializer(
             data={
-                "codigo_turma": 2112345,
+                "codigo_turma": 9100018,
                 "nome_turma_eol": "3A",
                 "nome_turma": "EF - 3A",
                 "tipo_turma": 1,
@@ -606,7 +606,7 @@ class TurmaPorEscolaSerializerTest(SimpleTestCase):
     def test_sigla_modalidade_nula(self) -> None:
         serializer = TurmaPorEscolaSerializer(
             data={
-                "codigo_turma": 2112345,
+                "codigo_turma": 9100018,
                 "nome_turma_eol": "3A",
                 "nome_turma": "3A",
                 "tipo_turma": 1,
