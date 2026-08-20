@@ -40,9 +40,9 @@ class MatriculasUrlsTest(SimpleTestCase):
         self.assertEqual(match.kwargs, {"ue_codigo": "100001"})
 
     def test_rota_matriculas_quantidades_dre_legado(self) -> None:
-        match = resolve("/api/matriculas/escolas/dre/108800/quantidades")
+        match = resolve("/api/matriculas/escolas/dre/100000/quantidades")
 
-        self.assertEqual(match.kwargs, {"dre_codigo": "108800"})
+        self.assertEqual(match.kwargs, {"dre_codigo": "100000"})
 
     def test_rota_escolas_quantidade_alunos(self) -> None:
         match = resolve("/api/escolas/100001/alunos/quantidade/")
@@ -380,7 +380,7 @@ class TotalMatriculasPorTurnoUeViewTest(SimpleTestCase):
 class TotalMatriculasPorTurnoDreViewTest(SimpleTestCase):
     """Valida o endpoint legado M04."""
 
-    _URL = "/api/matriculas/escolas/dre/108800/quantidades"
+    _URL = "/api/matriculas/escolas/dre/100000/quantidades"
 
     @patch("apps.matriculas.views._fallback_total_matriculas_por_turno_dre")
     @patch("apps.matriculas.views.services.get_total_matriculas_por_turno_dre")
@@ -392,7 +392,7 @@ class TotalMatriculasPorTurnoDreViewTest(SimpleTestCase):
         mock_service.return_value = [
             {
                 "totalMatriculas": 922,
-                "codigoEolEscola": "000191",
+                "codigoEolEscola": "000002",
                 "turnos": [
                     {
                         "turno": "Manhã",
@@ -412,7 +412,7 @@ class TotalMatriculasPorTurnoDreViewTest(SimpleTestCase):
             [
                 {
                     "totalMatriculas": 922,
-                    "codigoEolEscola": "000191",
+                    "codigoEolEscola": "000002",
                     "turnos": [
                         {
                             "turno": "Manhã",
@@ -423,7 +423,7 @@ class TotalMatriculasPorTurnoDreViewTest(SimpleTestCase):
                 }
             ],
         )
-        mock_service.assert_called_once_with("108800")
+        mock_service.assert_called_once_with("100000")
         mock_fallback.assert_not_called()
 
     @patch("apps.matriculas.views._fallback_total_matriculas_por_turno_dre")
@@ -440,7 +440,7 @@ class TotalMatriculasPorTurnoDreViewTest(SimpleTestCase):
         resp = client.get(self._URL)
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
-        mock_fallback.assert_called_once_with("108800")
+        mock_fallback.assert_called_once_with("100000")
 
     @patch("apps.matriculas.views._fallback_total_matriculas_por_turno_dre")
     @patch("apps.matriculas.views.services.get_total_matriculas_por_turno_dre")
@@ -469,7 +469,7 @@ class TotalMatriculasPorTurnoDreViewTest(SimpleTestCase):
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json()[0]["totalMatriculas"], 72)
-        mock_fallback.assert_called_once_with("108800")
+        mock_fallback.assert_called_once_with("100000")
 
     @patch("apps.matriculas.views.services.get_total_matriculas_por_turno_dre")
     def test_503_quando_sidecar_indisponivel(
@@ -616,11 +616,11 @@ class MatriculasAlunoEscolaViewTest(SimpleTestCase):
         mock_service.return_value = []
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/400496/alunos/8577981/matriculas/")
+        resp = client.get("/api/escolas/000001/alunos/7000001/matriculas/")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
-        mock_service.assert_called_once_with("400496", "8577981")
+        mock_service.assert_called_once_with("000001", "7000001")
 
     @patch("apps.matriculas.views.services.get_matriculas_aluno_escola")
     def test_400_quando_codigo_aluno_nao_numerico(
@@ -938,11 +938,11 @@ class FuncoesAuxiliaresTest(SimpleTestCase):
             None,
         ]
 
-        result = _fallback_total_matriculas_por_turno_dre("108800")
+        result = _fallback_total_matriculas_por_turno_dre("100000")
 
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["codigoEolEscola"], "100001")
         self.assertEqual(result[0]["totalMatriculas"], 10)
-        mock_get_ues.assert_called_once_with("108800")
+        mock_get_ues.assert_called_once_with("100000")
         mock_extrair.assert_called_once()
         self.assertEqual(mock_fallback_ue.call_count, 2)
