@@ -126,9 +126,9 @@ class FuncionariosPerfisQuerySerializerTest(SimpleTestCase):
     def test_normaliza_aliases_legados(self) -> None:
         serializer = FuncionariosPerfisQuerySerializer(
             data={
-                "CodigoDre": " 108100 ",
-                "CodigoUe": " 000532 ",
-                "CodigoRf": " 7654321 ",
+                "CodigoDre": " 100001 ",
+                "CodigoUe": " 000102 ",
+                "CodigoRf": " 7900003 ",
                 "NomeServidor": " ANA ",
             }
         )
@@ -137,9 +137,9 @@ class FuncionariosPerfisQuerySerializerTest(SimpleTestCase):
         self.assertEqual(
             serializer.validated_data,
             {
-                "codigo_dre": "108100",
-                "codigo_ue": "000532",
-                "codigo_rf": "7654321",
+                "codigo_dre": "100001",
+                "codigo_ue": "000102",
+                "codigo_rf": "7900003",
                 "nome_servidor": "ANA",
             },
         )
@@ -162,12 +162,12 @@ class CargoFuncionarioConectaSerializerTest(SimpleTestCase):
     def test_serializa_campos_legados(self) -> None:
         serializer = CargoFuncionarioConectaSerializer(
             {
-                "rf": 7758626,
+                "rf": 7900001,
                 "cpf": "12345678900",
                 "cd_cargo_base": 3360,
                 "cargo_base": "DIRETOR",
-                "cd_dre_cargo_base": "108100",
-                "cd_ue_cargo_base": "000532",
+                "cd_dre_cargo_base": "100001",
+                "cd_ue_cargo_base": "000102",
                 "ue_cargo_base": "ESCOLA",
                 "tipo_vinculo_cargo_base": 1,
                 "data_inicio_cargo_base": "2024-01-01T00:00:00",
@@ -190,7 +190,7 @@ class CargoFuncionarioConectaSerializerTest(SimpleTestCase):
 
         self.assertEqual(serializer.data["cdCargoBase"], 3360)
         self.assertEqual(serializer.data["cargoBase"], "DIRETOR")
-        self.assertEqual(serializer.data["cdDreCargoBase"], "108100")
+        self.assertEqual(serializer.data["cdDreCargoBase"], "100001")
 
 
 class FuncionarioConectaFormacaoSerializerTest(SimpleTestCase):
@@ -199,13 +199,13 @@ class FuncionarioConectaFormacaoSerializerTest(SimpleTestCase):
     def test_serializa_campos_legados(self) -> None:
         serializer = FuncionarioConectaFormacaoSerializer(
             {
-                "rf": "7758626",
+                "rf": "7900001",
                 "nome": "ANA",
                 "cpf": "12345678900",
                 "cargo_codigo": "3360",
                 "cargo": "DIRETOR",
-                "cargo_dre_codigo": "108100",
-                "cargo_ue_codigo": "000532",
+                "cargo_dre_codigo": "100001",
+                "cargo_ue_codigo": "000102",
                 "funcao_codigo": None,
                 "funcao": None,
                 "funcao_dre_codigo": None,
@@ -215,7 +215,7 @@ class FuncionarioConectaFormacaoSerializerTest(SimpleTestCase):
         )
 
         self.assertEqual(serializer.data["cargoCodigo"], "3360")
-        self.assertEqual(serializer.data["cargoDreCodigo"], "108100")
+        self.assertEqual(serializer.data["cargoDreCodigo"], "100001")
         self.assertEqual(serializer.data["tipoVinculo"], 1)
 
 
@@ -225,7 +225,7 @@ class FuncionariosConectaFormacaoFiltroSerializerTest(SimpleTestCase):
     def test_preserva_parametros_repetidos(self) -> None:
         query = QueryDict(
             "codigos_cargos=3360&codigos_cargos=3239"
-            "&codigos_dres=108100&eh_tipo_jornada_jeif=true"
+            "&codigos_dres=100001&eh_tipo_jornada_jeif=true"
         )
         serializer = FuncionariosConectaFormacaoFiltroSerializer(data=query)
 
@@ -234,7 +234,7 @@ class FuncionariosConectaFormacaoFiltroSerializerTest(SimpleTestCase):
             serializer.validated_data["codigos_cargos"],
             [3360, 3239],
         )
-        self.assertEqual(serializer.validated_data["codigos_dres"], ["108100"])
+        self.assertEqual(serializer.validated_data["codigos_dres"], ["100001"])
         self.assertIs(serializer.validated_data["eh_tipo_jornada_jeif"], True)
 
 
@@ -244,7 +244,7 @@ class AbrangenciaTemporariaSerializerTest(SimpleTestCase):
     def test_normaliza_parametros_temporarios(self) -> None:
         query = QueryDict(
             "abrangencia=4&cargos=3239&funcoesId=1&grupo=2"
-            "&dreCodigo=108100&ehPerfilManual=true"
+            "&dreCodigo=100001&ehPerfilManual=true"
         )
         serializer = AbrangenciaTemporariaSerializer(data=query)
 
@@ -256,7 +256,7 @@ class AbrangenciaTemporariaSerializerTest(SimpleTestCase):
                 "cargos": [3239],
                 "funcoes": [1],
                 "grupo": 2,
-                "dre_codigo": "108100",
+                "dre_codigo": "100001",
                 "eh_perfil_manual": True,
             },
         )
@@ -279,7 +279,7 @@ class DisciplinasFuncionarioPathSerializerTest(SimpleTestCase):
             data={
                 "login": "000001",
                 "id_perfil": "perfil",
-                "codigo_turma": "3030050",
+                "codigo_turma": "9100001",
             }
         )
 
@@ -290,7 +290,7 @@ class DisciplinasFuncionarioPathSerializerTest(SimpleTestCase):
             data={
                 "login": " ",
                 "id_perfil": "perfil",
-                "codigo_turma": "3030050",
+                "codigo_turma": "9100001",
             }
         )
 
@@ -323,7 +323,7 @@ class QueryParamsSerializerTest(SimpleTestCase):
         self.assertIn("codigo_dre", serializer.errors)
 
     def test_normaliza_filtros_de_rf_dre_ue(self) -> None:
-        query = QueryDict("dre_id=1&ue_id=019465&buscar_outros_cargos=true")
+        query = QueryDict("dre_id=1&ue_id=000103&buscar_outros_cargos=true")
         serializer = ProfessorRfDreUeQuerySerializer(data=query)
 
         self.assertTrue(serializer.is_valid())
@@ -331,19 +331,19 @@ class QueryParamsSerializerTest(SimpleTestCase):
             serializer.validated_data,
             {
                 "dre_id": "1",
-                "ue_id": "019465",
+                "ue_id": "000103",
                 "buscar_outros_cargos": "true",
             },
         )
 
     def test_normaliza_autocomplete(self) -> None:
-        query = QueryDict("ue_id=019465&nome=ana")
+        query = QueryDict("ue_id=000103&nome=ana")
         serializer = ProfessorAutocompleteQuerySerializer(data=query)
 
         self.assertTrue(serializer.is_valid())
         self.assertEqual(
             serializer.validated_data,
-            {"ue_id": "019465", "nome": "ana"},
+            {"ue_id": "000103", "nome": "ana"},
         )
 
 
@@ -376,13 +376,13 @@ class DreUeAtribuicaoCargoSerializerTest(SimpleTestCase):
     def test_serializa_campos_legados(self) -> None:
         serializer = DreUeAtribuicaoCargoSerializer(
             {
-                "codigo_dre": "108100",
-                "codigo_ue": "000532",
+                "codigo_dre": "100001",
+                "codigo_ue": "000102",
             }
         )
 
-        self.assertEqual(serializer.data["dreCodigo"], "108100")
-        self.assertEqual(serializer.data["ueCodigo"], "000532")
+        self.assertEqual(serializer.data["dreCodigo"], "100001")
+        self.assertEqual(serializer.data["ueCodigo"], "000102")
 
 
 class UsuarioConectaFormacaoSerializerTest(SimpleTestCase):
@@ -391,14 +391,14 @@ class UsuarioConectaFormacaoSerializerTest(SimpleTestCase):
     def test_serializa_campos_legados(self) -> None:
         serializer = UsuarioConectaFormacaoSerializer(
             {
-                "login": "7758626",
+                "login": "7900001",
                 "nome": "ANA",
                 "nome_social": None,
                 "perfil": "perfil",
             }
         )
 
-        self.assertEqual(serializer.data["login"], "7758626")
+        self.assertEqual(serializer.data["login"], "7900001")
         self.assertIsNone(serializer.data["nomeSocial"])
 
 
@@ -431,14 +431,14 @@ class ProfessorAtribuicaoTurmaDisciplinaSerializerTest(SimpleTestCase):
 
     def test_mapeia_campos_e_aceita_lista_agrupada_nula(self) -> None:
         payload = {
-            "codigo_turma": "3032577",
+            "codigo_turma": "9100002",
             "ano_letivo": None,
             "nome_turma": "7A",
             "data_inicio_atribuicao": "2026-06-09",
             "data_fim_atribuicao": "2026-12-22",
             "data_fim_turma": "2026-12-22",
             "ano_atribuicao": 2026,
-            "codigo_rf": "6230504",
+            "codigo_rf": "7900009",
             "disciplina_id": "89",
             "disciplina_nome": "CIENCIAS",
             "disciplinas_agrupadas_ids": None,
@@ -447,7 +447,7 @@ class ProfessorAtribuicaoTurmaDisciplinaSerializerTest(SimpleTestCase):
 
         data = ProfessorAtribuicaoTurmaDisciplinaSerializer(payload).data
 
-        self.assertEqual(data["codigoTurma"], 3032577)
+        self.assertEqual(data["codigoTurma"], 9100002)
         self.assertEqual(data["disciplinaId"], 89)
         self.assertIsNone(data["disciplinasAgrupadasIds"])
 
@@ -459,13 +459,13 @@ class ProfessorAtribuicaoInternaSerializerTest(SimpleTestCase):
         """Normaliza dados comuns aos endpoints de atribuição."""
         data = ProfessorAtribuicaoInternaSerializer(
             {
-                "codigo_turma": 3032577,
+                "codigo_turma": 9100002,
                 "ano_letivo": "2026",
                 "disciplina_id": 89,
             }
         ).data
 
-        self.assertEqual(data["codigo_turma"], "3032577")
+        self.assertEqual(data["codigo_turma"], "9100002")
         self.assertEqual(data["ano_letivo"], 2026)
         self.assertEqual(data["disciplina_id"], "89")
         self.assertIsNone(data["data_inicio_atribuicao"])
@@ -480,7 +480,7 @@ class ProfessorAtribuicaoPeriodoPathSerializerTest(SimpleTestCase):
         serializer = ProfessorAtribuicaoPeriodoPathSerializer(
             data={
                 "codigo_rf": "000001",
-                "codigo_turma": "3032577",
+                "codigo_turma": "9100002",
                 "componente_curricular_id": "89",
                 "data_inicio_periodo": "2026-08-01",
                 "data_fim_periodo": "2026-07-31",
@@ -498,7 +498,7 @@ class ProfessoresTitularesParametrosSerializerTest(SimpleTestCase):
         """Converte parâmetros externos para o contrato interno."""
         serializer = ProfessoresTitularesParametrosSerializer(
             data={
-                "codigo_turma": "3032577",
+                "codigo_turma": "9100002",
                 "codigoRF": "000001",
                 "dataReferencia": "2026-07-28",
                 "realiza_agrupamento": "true",
@@ -522,7 +522,7 @@ class BuscarProfessorTitularPorDisciplinaSerializerTest(SimpleTestCase):
                 "disciplina": "CIENCIAS",
                 "disciplina_id": "89",
                 "disciplinas_id": "89,90",
-                "turma_id": 3032577,
+                "turma_id": 9100002,
             }
         ).data
 
@@ -534,7 +534,7 @@ class BuscarProfessorTitularPorDisciplinaSerializerTest(SimpleTestCase):
                 "disciplina": "CIENCIAS",
                 "disciplina_Id": "89",
                 "disciplinas_Id": "89,90",
-                "turma_Id": 3032577,
+                "turma_Id": 9100002,
             },
         )
 
@@ -588,9 +588,9 @@ class FuncionarioSerializerTest(SimpleTestCase):
         casos = [
             (
                 FuncionarioCargoSerializer,
-                {"codigo_rf": "7730900", "nome": None, "cargo_id": 3239},
+                {"codigo_rf": "7900005", "nome": None, "cargo_id": 3239},
                 {
-                    "funcionarioRF": "7730900",
+                    "funcionarioRF": "7900005",
                     "funcionarioNome": None,
                     "cargoId": 3239,
                 },
@@ -598,20 +598,20 @@ class FuncionarioSerializerTest(SimpleTestCase):
             (
                 FuncionarioFuncaoAtividadeSerializer,
                 {
-                    "codigo_rf": "7795246",
+                    "codigo_rf": "7900007",
                     "nome": None,
                     "codigo_funcao_atividade": 30,
                 },
                 {
-                    "funcionarioRF": "7795246",
+                    "funcionarioRF": "7900007",
                     "funcionarioNome": None,
                     "funcaoAtividadeId": 30,
                 },
             ),
             (
                 FuncionarioFuncaoExternaSerializer,
-                {"cpf": "11610699840", "funcao_externo": 5},
-                {"funcionarioCpf": "11610699840", "funcaoExternaId": 5},
+                {"cpf": "11122233366", "funcao_externo": 5},
+                {"funcionarioCpf": "11122233366", "funcaoExternaId": 5},
             ),
             (
                 SupervisorLegadoSerializer,
@@ -635,13 +635,13 @@ class FuncionarioSerializerTest(SimpleTestCase):
             "nome_pai": "NOME PAI",
             "nome_mae": "NOME MAE",
             "data_nascimento": "1995-01-12T00:00:00",
-            "rg": "000000043171462",
-            "cpf": "42347206826",
-            "titulo_eleitoral": "401921980116",
-            "pis_pasep": "13866991818",
-            "codigo_contrato_externo": 4796,
-            "codigo_ue": "327221",
-            "nome_ue": "JARDIM NORONHA",
+            "rg": "000000000000001",
+            "cpf": "11122233355",
+            "titulo_eleitoral": "123456789012",
+            "pis_pasep": "22233344455",
+            "codigo_contrato_externo": 5001,
+            "codigo_ue": "000104",
+            "nome_ue": "EMEF FICTICIA UM DE TESTE",
             "funcao": "PROFESSOR",
             "tipo_funcionario": "FUNCIONARIO REDE PARCEIRA",
         }
@@ -653,13 +653,13 @@ class FuncionarioSerializerTest(SimpleTestCase):
                 "nomePai": "NOME PAI",
                 "nomeMae": "NOME MAE",
                 "dataNascimento": "1995-01-12T00:00:00",
-                "rg": "000000043171462",
-                "cpf": "42347206826",
-                "tituloEleitoral": "401921980116",
-                "pisPasep": "13866991818",
-                "codigoContratoExterno": 4796,
-                "codigoUE": "327221",
-                "nomeUe": "JARDIM NORONHA",
+                "rg": "000000000000001",
+                "cpf": "11122233355",
+                "tituloEleitoral": "123456789012",
+                "pisPasep": "22233344455",
+                "codigoContratoExterno": 5001,
+                "codigoUE": "000104",
+                "nomeUe": "EMEF FICTICIA UM DE TESTE",
                 "funcao": "PROFESSOR",
                 "tipoFuncionario": "FUNCIONARIO REDE PARCEIRA",
             },
@@ -667,7 +667,7 @@ class FuncionarioSerializerTest(SimpleTestCase):
 
     def test_serializa_funcionario_por_login(self) -> None:
         payload = {
-            "login": "8970971",
+            "login": "7900010",
             "nome_servidor": "NOME SERVIDOR",
             "perfil": "00000000-0000-0000-0000-000000000000",
         }
@@ -675,7 +675,7 @@ class FuncionarioSerializerTest(SimpleTestCase):
         self.assertEqual(
             FuncionarioLoginSerializer(payload).data,
             {
-                "login": "8970971",
+                "login": "7900010",
                 "nomeServidor": "NOME SERVIDOR",
                 "perfil": "00000000-0000-0000-0000-000000000000",
             },
@@ -683,56 +683,56 @@ class FuncionarioSerializerTest(SimpleTestCase):
 
     def test_serializa_funcionario_por_unidade(self) -> None:
         payload = {
-            "login": "16161610191",
-            "nome_servidor": "LUCAS SOUZA",
+            "login": "11122233388",
+            "nome_servidor": "LUCAS FICTICIO",
             "perfil": "5be1e074-37d6-e911-abd6-f81654fe895d",
         }
 
         self.assertEqual(
             FuncionarioUnidadeLegadoSerializer(payload).data,
             {
-                "login": "16161610191",
-                "nomeServidor": "LUCAS SOUZA",
+                "login": "11122233388",
+                "nomeServidor": "LUCAS FICTICIO",
                 "perfil": "5be1e074-37d6-e911-abd6-f81654fe895d",
             },
         )
 
     def test_serializa_dados_sigpae(self) -> None:
         payload = {
-            "rf": "7758626",
-            "cpf": "28386997842",
-            "email": "ingrid.marcela@sme.prefeitura.sp.gov.br",
+            "rf": "7900001",
+            "cpf": "11122233344",
+            "email": "funcionario.ficticio@sme.prefeitura.sp.gov.br",
             "cargos": [
                 {
                     "codigo_cargo": 3239,
                     "descricao_cargo": "PROF.ED.INF.E ENS.FUND.I",
-                    "codigo_unidade": "092223",
-                    "descricao_unidade": "MARIA ISABEL",
-                    "codigo_dre": "108800",
+                    "codigo_unidade": "000101",
+                    "descricao_unidade": "EMEF FICTICIA DE TESTE",
+                    "codigo_dre": "100000",
                     "contrato_externo": False,
                 }
             ],
-            "nome": "INGRID MARCELA BARBA",
+            "nome": "FUNCIONARIO FICTICIO TESTE",
             "inexistente_eol": False,
         }
 
         self.assertEqual(
             FuncionarioDadosSigpaeSerializer(payload).data,
             {
-                "rf": "7758626",
-                "cpf": "28386997842",
-                "email": "ingrid.marcela@sme.prefeitura.sp.gov.br",
+                "rf": "7900001",
+                "cpf": "11122233344",
+                "email": "funcionario.ficticio@sme.prefeitura.sp.gov.br",
                 "cargos": [
                     {
                         "codigoCargo": 3239,
                         "descricaoCargo": "PROF.ED.INF.E ENS.FUND.I",
-                        "codigoUnidade": "092223",
-                        "descricaoUnidade": "MARIA ISABEL",
-                        "codigoDre": "108800",
+                        "codigoUnidade": "000101",
+                        "descricaoUnidade": "EMEF FICTICIA DE TESTE",
+                        "codigoDre": "100000",
                         "contratoExterno": False,
                     }
                 ],
-                "nome": "INGRID MARCELA BARBA",
+                "nome": "FUNCIONARIO FICTICIO TESTE",
                 "inexistenteEol": False,
             },
         )
@@ -848,13 +848,13 @@ class TurmasAtribuidasLegadoSerializerTest(SimpleTestCase):
     def test_agrupa_por_dre_ue_e_remove_turma_repetida(self) -> None:
         payload = [
             {
-                "codigo_dre": "108100",
+                "codigo_dre": "100001",
                 "dre": "DRE TESTE",
                 "dre_abreviacao": "DRE-T",
-                "codigo_escola": "000532",
+                "codigo_escola": "000102",
                 "ue": "EMEF TESTE",
                 "codigo_tipo_escola": 1,
-                "codigo_turma": 3030050,
+                "codigo_turma": 9100001,
                 "ano": "1",
                 "ano_letivo": 2026,
                 "modalidade": "Fundamental",
@@ -865,9 +865,9 @@ class TurmasAtribuidasLegadoSerializerTest(SimpleTestCase):
                 "tipo_turno": 4,
             },
             {
-                "codigo_dre": "108100",
-                "codigo_escola": "000532",
-                "codigo_turma": 3030050,
+                "codigo_dre": "100001",
+                "codigo_escola": "000102",
+                "codigo_turma": 9100001,
             },
         ]
 
@@ -884,13 +884,13 @@ class TurmasAtribuidasLegadoSerializerTest(SimpleTestCase):
     def test_aceita_campos_da_composicao_de_professor(self) -> None:
         payload = [
             {
-                "cod_dre": "109200",
-                "dre": "DIRETORIA REGIONAL DE EDUCACAO SAO MATEUS",
-                "dre_abrev": "DRE - SM",
-                "cod_escola": "013803",
-                "ue": "JULIO DE GRAMMONT",
+                "cod_dre": "100005",
+                "dre": "DIRETORIA REGIONAL FICTICIA",
+                "dre_abrev": "DRE - X",
+                "cod_escola": "000105",
+                "ue": "EMEF FICTICIA DOIS DE TESTE",
                 "cod_tipo_escola": 1,
-                "cod_turma": 3018605,
+                "cod_turma": 9100005,
                 "ano": "7",
                 "ano_letivo": 2026,
                 "modalidade": "Fundamental",
@@ -901,13 +901,13 @@ class TurmasAtribuidasLegadoSerializerTest(SimpleTestCase):
                 "tipo_turno": 1,
             },
             {
-                "cod_dre": "109200",
-                "dre": "DIRETORIA REGIONAL DE EDUCACAO SAO MATEUS",
-                "dre_abrev": "DRE - SM",
-                "cod_escola": "013803",
-                "ue": "JULIO DE GRAMMONT",
+                "cod_dre": "100005",
+                "dre": "DIRETORIA REGIONAL FICTICIA",
+                "dre_abrev": "DRE - X",
+                "cod_escola": "000105",
+                "ue": "EMEF FICTICIA DOIS DE TESTE",
                 "cod_tipo_escola": 1,
-                "cod_turma": 3018602,
+                "cod_turma": 9100004,
                 "ano": "7",
                 "ano_letivo": 2026,
                 "modalidade": "Fundamental",
@@ -923,13 +923,13 @@ class TurmasAtribuidasLegadoSerializerTest(SimpleTestCase):
         dre = data["dres"][0]
         ue = dre["ues"][0]
 
-        self.assertEqual(dre["codigo"], "109200")
-        self.assertEqual(dre["abreviacao"], "DRE - SM")
-        self.assertEqual(ue["codigo"], "013803")
+        self.assertEqual(dre["codigo"], "100005")
+        self.assertEqual(dre["abreviacao"], "DRE - X")
+        self.assertEqual(ue["codigo"], "000105")
         self.assertEqual(ue["codTipoEscola"], 1)
         self.assertEqual(
             [turma["codigo"] for turma in ue["turmas"]],
-            [3018602, 3018605],
+            [9100004, 9100005],
         )
         self.assertEqual(ue["turmas"][0]["modalidade"], "Fundamental")
         self.assertEqual(ue["turmas"][0]["codigoModalidade"], 5)
@@ -947,11 +947,11 @@ class TurmaElegivelLegadoSerializerTest(SimpleTestCase):
     """Valida serialização de turma elegível."""
 
     def test_serializa_campos(self) -> None:
-        payload = {"nome_turma": "1A", "cod_turma": 3030050}
+        payload = {"nome_turma": "1A", "cod_turma": 9100001}
 
         self.assertEqual(
             TurmaElegivelLegadoSerializer(payload).data,
-            {"nomeTurma": "1A", "codTurma": 3030050},
+            {"nomeTurma": "1A", "codTurma": 9100001},
         )
 
 
@@ -959,13 +959,13 @@ class ProfessorAutoCompleteSerializerTest(SimpleTestCase):
     """Valida serialização de professor para autocomplete."""
 
     def test_serializa_nome_servidor_como_nome(self) -> None:
-        payload = {"codigo_rf": "000001", "nome_servidor": "ANA SILVA"}
+        payload = {"codigo_rf": "000001", "nome_servidor": "ANA FICTICIA"}
 
         data = ProfessorAutoCompleteSerializer(payload).data
 
         self.assertEqual(
             data,
-            {"codigoRF": "000001", "nome": "ANA SILVA"},
+            {"codigoRF": "000001", "nome": "ANA FICTICIA"},
         )
 
 
@@ -974,7 +974,7 @@ class ProfessorTurmaAtribuidaSimplificadaSerializerTest(SimpleTestCase):
 
     def test_serializa_campos(self) -> None:
         payload = {
-            "codigoTurma": 3030050,
+            "codigoTurma": 9100001,
             "nomeTurma": "1A",
             "componenteCurricular": "Matemática",
             "dataInicioAtribuicao": "2026-02-03",
@@ -994,13 +994,13 @@ class TurmaAtribuidaProfessorSerializerTest(SimpleTestCase):
     def test_serializa_campos(self) -> None:
         mapeamento = [
             # (campo_entrada,      campo_saida,       valor)
-            ("cod_escola", "codEscola", "019465"),
-            ("cod_turma", "codTurma", 3030050),
+            ("cod_escola", "codEscola", "000103"),
+            ("cod_turma", "codTurma", 9100001),
             ("tipo_turma", "tipoTurma", 1),
             ("ano", "ano", "1"),
             ("ano_letivo", "anoLetivo", 2026),
             ("cod_modalidade", "codModalidade", 5),
-            ("cod_dre", "codDre", "108100"),
+            ("cod_dre", "codDre", "100001"),
             ("dre", "dre", "DRE TESTE"),
             ("dre_abrev", "dreAbrev", "DRE-T"),
             ("modalidade", "modalidade", "Fundamental"),
@@ -1008,7 +1008,7 @@ class TurmaAtribuidaProfessorSerializerTest(SimpleTestCase):
             ("semestre", "semestre", 0),
             ("tipo_ue", "tipoUE", "EMEF"),
             ("cod_tipo_ue", "codTipoUE", 1),
-            ("cod_ue", "codUe", "019465"),
+            ("cod_ue", "codUe", "000103"),
             ("ue", "ue", "EMEF TESTE"),
             ("ue_abrev", "ueAbrev", "EMEF T."),
             ("tipo_escola", "tipoEscola", "EMEF"),

@@ -10,8 +10,8 @@ class AlunoMatriculaTurmaSerializerTest(SimpleTestCase):
 
     def test_serializa_item_no_contrato_legado(self) -> None:
         payload = {
-            "codigo_aluno": 7730117,
-            "nome_aluno": "ENZO MIGUEL FERREIRA SILVA",
+            "codigo_aluno": 7000003,
+            "nome_aluno": "ALUNO FICTICIO TRES",
             "nome_social_aluno": None,
             "data_nascimento": "2020-07-10",
             "codigo_situacao_matricula": 1,
@@ -19,17 +19,17 @@ class AlunoMatriculaTurmaSerializerTest(SimpleTestCase):
             "data_situacao": "2025-12-08T11:42:14.660000-03:00",
             "numero_aluno_chamada": None,
             "possui_deficiencia": False,
-            "codigo_matricula": 43790514,
-            "codigo_turma": 3012185,
-            "codigo_escola": "097144",
+            "codigo_matricula": 40000001,
+            "codigo_turma": 9100001,
+            "codigo_escola": "000002",
             "ano_letivo": 2026,
             "data_matricula": "2025-11-04T08:16:14.260000-03:00",
-            "nome_responsavel": "MARIAZINHA FERREIRA SILVA",
+            "nome_responsavel": "RESPONSAVEL FICTICIO TRES",
             "tipo_responsavel": 1,
             "celular_responsavel": None,
             "data_atualizacao_contato": ("2021-07-29T19:53:02.270000-03:00"),
             "sequencia": 1,
-            "codigo_dre": "108100",
+            "codigo_dre": "100000",
         }
 
         data = AlunoMatriculaTurmaSerializer(payload).data
@@ -38,8 +38,8 @@ class AlunoMatriculaTurmaSerializerTest(SimpleTestCase):
             data,
             {
                 "codigoComponenteCurricular": 0,
-                "codigoAluno": 7730117,
-                "nomeAluno": "ENZO MIGUEL FERREIRA SILVA",
+                "codigoAluno": 7000003,
+                "nomeAluno": "ALUNO FICTICIO TRES",
                 "dataNascimento": "2020-07-10T00:00:00Z",
                 "nomeSocialAluno": None,
                 "codigoSituacaoMatricula": 1,
@@ -54,17 +54,17 @@ class AlunoMatriculaTurmaSerializerTest(SimpleTestCase):
                 "turmaTransferencia": None,
                 "turmaRemanejamento": None,
                 "parecerConclusivo": None,
-                "nomeResponsavel": "MARIAZINHA FERREIRA SILVA",
+                "nomeResponsavel": "RESPONSAVEL FICTICIO TRES",
                 "tipoResponsavel": 1,
                 "celularResponsavel": "",
                 "dataAtualizacaoContato": "2021-07-29T19:53:02.27Z",
-                "codigoMatricula": 43790514,
+                "codigoMatricula": 40000001,
                 "sequencia": 1,
                 "tipoTurma": 0,
-                "codigoTurma": 3012185,
-                "codigoEscola": "097144",
+                "codigoTurma": 9100001,
+                "codigoEscola": "000002",
                 "ano": 2026,
-                "codigoDre": "108100",
+                "codigoDre": "100000",
                 "id": None,
             },
         )
@@ -72,14 +72,14 @@ class AlunoMatriculaTurmaSerializerTest(SimpleTestCase):
     def test_datetime_z_false_publica_datas_sem_sufixo_z(self) -> None:
         """``datetime_z=False`` publica as datas no formato ISO sem o ``Z``."""
         payload = {
-            "codigo_aluno": 7730117,
-            "nome_aluno": "ENZO MIGUEL FERREIRA SILVA",
+            "codigo_aluno": 7000003,
+            "nome_aluno": "ALUNO FICTICIO TRES",
             "data_nascimento": "2020-07-10",
             "data_situacao": "2025-12-08T11:42:14.660000-03:00",
             "data_matricula": "2025-11-04T08:16:14.260000-03:00",
             "data_atualizacao_contato": ("2021-07-29T19:53:02.270000-03:00"),
             "possui_deficiencia": False,
-            "codigo_turma": 3012185,
+            "codigo_turma": 9100001,
             "ano_letivo": 2026,
         }
 
@@ -115,14 +115,14 @@ class AlunoMatriculaTurmaSerializerTest(SimpleTestCase):
     def test_campos_parciais_zera_localizacao_turma(self) -> None:
         """``campos_parciais`` zera ano/dre/escola/turma, mantém o resto."""
         payload = {
-            "codigo_aluno": 7730117,
-            "nome_aluno": "ENZO MIGUEL FERREIRA SILVA",
+            "codigo_aluno": 7000003,
+            "nome_aluno": "ALUNO FICTICIO TRES",
             "numero_aluno_chamada": "12",
             "possui_deficiencia": False,
-            "codigo_turma": 3012185,
-            "codigo_escola": "097144",
+            "codigo_turma": 9100001,
+            "codigo_escola": "000002",
             "ano_letivo": 2026,
-            "codigo_dre": "108100",
+            "codigo_dre": "100000",
             "sequencia": 1,
         }
 
@@ -131,23 +131,23 @@ class AlunoMatriculaTurmaSerializerTest(SimpleTestCase):
             payload, campos_parciais=True
         ).data
 
-        self.assertEqual(completo["codigoTurma"], 3012185)
+        self.assertEqual(completo["codigoTurma"], 9100001)
         self.assertEqual(completo["ano"], 2026)
         self.assertEqual(parcial["ano"], 0)
         self.assertIsNone(parcial["codigoDre"])
         self.assertIsNone(parcial["codigoEscola"])
         self.assertEqual(parcial["codigoTurma"], 0)
-        self.assertEqual(parcial["codigoAluno"], 7730117)
+        self.assertEqual(parcial["codigoAluno"], 7000003)
         self.assertEqual(parcial["sequencia"], 1)
 
     def test_numero_chamada_null_conforme_modo(self) -> None:
         """Sem chamada: ``null`` no modo parcial e ``"000"`` no completo."""
         payload = {
-            "codigo_aluno": 7730117,
-            "nome_aluno": "ENZO MIGUEL FERREIRA SILVA",
+            "codigo_aluno": 7000003,
+            "nome_aluno": "ALUNO FICTICIO TRES",
             "numero_aluno_chamada": None,
             "possui_deficiencia": False,
-            "codigo_turma": 3012185,
+            "codigo_turma": 9100001,
             "ano_letivo": 2026,
         }
 

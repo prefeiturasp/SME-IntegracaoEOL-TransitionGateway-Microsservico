@@ -32,14 +32,14 @@ class GetDresPorCodigosTest(SimpleTestCase):
     def test_chama_post_com_codigos(self, mock_client: MagicMock) -> None:
         """Envia os códigos via POST e retorna as DREs correspondentes."""
         mock_client.post.return_value.raise_for_status = MagicMock()
-        mock_client.json_or_none.return_value = [{"codigoDRE": "108100"}]
+        mock_client.json_or_none.return_value = [{"codigoDRE": "100000"}]
 
-        result = services.get_dres_por_codigos(["108100"])
+        result = services.get_dres_por_codigos(["100000"])
 
         mock_client.post.assert_called_once_with(
-            f"{_BASE}/dres/", payload=["108100"]
+            f"{_BASE}/dres/", payload=["100000"]
         )
-        self.assertEqual(result[0]["codigoDRE"], "108100")
+        self.assertEqual(result[0]["codigoDRE"], "100000")
 
     @patch("apps.institucional.services._client")
     def test_retorna_none_quando_sem_registros(
@@ -61,12 +61,12 @@ class GetDRETest(SimpleTestCase):
     def test_chama_path_com_codigo_dre(self, mock_client: MagicMock) -> None:
         """Monta o path com o código da DRE e retorna os dados."""
         mock_client.get.return_value.raise_for_status = MagicMock()
-        mock_client.get.return_value.json.return_value = [{"codigoDRE": "BT"}]
+        mock_client.get.return_value.json.return_value = [{"codigoDRE": "X1"}]
 
-        result = services.get_dre("BT")
+        result = services.get_dre("X1")
 
-        mock_client.get.assert_called_once_with(f"{_BASE}/dres/BT/")
-        self.assertEqual(result[0]["codigoDRE"], "BT")
+        mock_client.get.assert_called_once_with(f"{_BASE}/dres/X1/")
+        self.assertEqual(result[0]["codigoDRE"], "X1")
 
 
 class GetSubprefeiturasPorDRETest(SimpleTestCase):
@@ -80,10 +80,10 @@ class GetSubprefeiturasPorDRETest(SimpleTestCase):
             {"codigoSubprefeitura": "00", "nomeSubprefeitura": "TESTE"}
         ]
 
-        result = services.get_subprefeituras_por_dre("BT")
+        result = services.get_subprefeituras_por_dre("X1")
 
         mock_client.get.assert_called_once_with(
-            f"{_BASE}/dres/BT/subprefeituras/"
+            f"{_BASE}/dres/X1/subprefeituras/"
         )
         self.assertEqual(result[0]["codigoSubprefeitura"], "00")
 
@@ -97,9 +97,9 @@ class GetEscolasPorDRETest(SimpleTestCase):
         mock_client.get.return_value.raise_for_status = MagicMock()
         mock_client.get.return_value.json.return_value = []
 
-        result = services.get_escolas_por_dre("BT")
+        result = services.get_escolas_por_dre("X1")
 
-        mock_client.get.assert_called_once_with(f"{_BASE}/dres/BT/escola/")
+        mock_client.get.assert_called_once_with(f"{_BASE}/dres/X1/escola/")
         self.assertEqual(result, [])
 
 
@@ -111,15 +111,15 @@ class GetEscolasSigpaePorDRETest(SimpleTestCase):
         """Monta o path SIGPAE com o código da DRE."""
         mock_client.get.return_value.raise_for_status = MagicMock()
         mock_client.json_or_none.return_value = [
-            {"codigoEscola": "019308", "nomeEscola": "EMEF TESTE"}
+            {"codigoEscola": "000001", "nomeEscola": "EMEF TESTE"}
         ]
 
-        result = services.get_escolas_sigpae_por_dre("BT")
+        result = services.get_escolas_sigpae_por_dre("X1")
 
         mock_client.get.assert_called_once_with(
-            f"{_BASE}/dres/BT/escola/Sigpae/"
+            f"{_BASE}/dres/X1/escola/Sigpae/"
         )
-        self.assertEqual(result[0]["codigoEscola"], "019308")
+        self.assertEqual(result[0]["codigoEscola"], "000001")
 
     @patch("apps.institucional.services._client")
     def test_retorna_none_quando_sem_conteudo(
@@ -129,7 +129,7 @@ class GetEscolasSigpaePorDRETest(SimpleTestCase):
         mock_client.get.return_value.raise_for_status = MagicMock()
         mock_client.json_or_none.return_value = None
 
-        result = services.get_escolas_sigpae_por_dre("BT")
+        result = services.get_escolas_sigpae_por_dre("X1")
 
         self.assertIsNone(result)
 
@@ -141,12 +141,12 @@ class GetUesPorDRETest(SimpleTestCase):
     def test_chama_path_com_codigo_dre(self, mock_client: MagicMock) -> None:
         """Monta o path de UEs com o código da DRE e retorna os códigos."""
         mock_client.get.return_value.raise_for_status = MagicMock()
-        mock_client.get.return_value.json.return_value = ["019251", "019252"]
+        mock_client.get.return_value.json.return_value = ["000002", "000003"]
 
-        result = services.get_ues_por_dre("BT")
+        result = services.get_ues_por_dre("X1")
 
-        mock_client.get.assert_called_once_with(f"{_BASE}/dres/BT/ues/")
-        self.assertEqual(result, ["019251", "019252"])
+        mock_client.get.assert_called_once_with(f"{_BASE}/dres/X1/ues/")
+        self.assertEqual(result, ["000002", "000003"])
 
 
 class GetUnidadesPorDRETest(SimpleTestCase):
@@ -158,9 +158,9 @@ class GetUnidadesPorDRETest(SimpleTestCase):
         mock_client.get.return_value.raise_for_status = MagicMock()
         mock_client.get.return_value.json.return_value = []
 
-        result = services.get_unidades_por_dre("BT")
+        result = services.get_unidades_por_dre("X1")
 
-        mock_client.get.assert_called_once_with(f"{_BASE}/dres/BT/unidades/")
+        mock_client.get.assert_called_once_with(f"{_BASE}/dres/X1/unidades/")
         self.assertEqual(result, [])
 
 
@@ -172,15 +172,15 @@ class GetUnidadesCodigoIntegracaoPorDRETest(SimpleTestCase):
         """Monta o path de código integração com o código da DRE."""
         mock_client.get.return_value.raise_for_status = MagicMock()
         mock_client.get.return_value.json.return_value = [
-            {"codigoUe": "019308", "nomeUe": "EMEF TESTE"}
+            {"codigoUe": "000001", "nomeUe": "EMEF TESTE"}
         ]
 
-        result = services.get_unidades_codigo_integracao_por_dre("BT")
+        result = services.get_unidades_codigo_integracao_por_dre("X1")
 
         mock_client.get.assert_called_once_with(
-            f"{_BASE}/dres/BT/unidades/codigo-integracao/"
+            f"{_BASE}/dres/X1/unidades/codigo-integracao/"
         )
-        self.assertEqual(result[0]["codigoUe"], "019308")
+        self.assertEqual(result[0]["codigoUe"], "000001")
 
 
 class GetEscolaTest(SimpleTestCase):
@@ -193,13 +193,13 @@ class GetEscolaTest(SimpleTestCase):
         """Monta o path com o código da escola e retorna os dados."""
         mock_client.get.return_value.raise_for_status = MagicMock()
         mock_client.get.return_value.json.return_value = {
-            "codigoEscola": "019308"
+            "codigoEscola": "000001"
         }
 
-        result = services.get_escola("019308")
+        result = services.get_escola("000001")
 
-        mock_client.get.assert_called_once_with(f"{_BASE}/escolas/019308/")
-        self.assertEqual(result["codigoEscola"], "019308")
+        mock_client.get.assert_called_once_with(f"{_BASE}/escolas/000001/")
+        self.assertEqual(result["codigoEscola"], "000001")
 
 
 class PostEscolasTest(SimpleTestCase):
@@ -212,15 +212,15 @@ class PostEscolasTest(SimpleTestCase):
         """Envia os códigos via POST e retorna as escolas encontradas."""
         mock_client.post.return_value.raise_for_status = MagicMock()
         mock_client.json_or_none.return_value = [
-            {"codigoEscola": "000027", "nomeEscola": "LUIS MARTINS"}
+            {"codigoEscola": "000008", "nomeEscola": "ESCOLA FICTICIA UM"}
         ]
 
-        result = services.post_escolas(["000027"])
+        result = services.post_escolas(["000008"])
 
         mock_client.post.assert_called_once_with(
-            f"{_BASE}/escolas/", payload=["000027"]
+            f"{_BASE}/escolas/", payload=["000008"]
         )
-        self.assertEqual(result[0]["codigoEscola"], "000027")
+        self.assertEqual(result[0]["codigoEscola"], "000008")
 
     @patch("apps.institucional.services._client")
     def test_retorna_none_quando_sem_registros(
@@ -247,14 +247,14 @@ class GetSubprefeiturasPorEscolaTest(SimpleTestCase):
         mock_client.get.return_value.json.return_value = [
             {
                 "codigoSubprefeitura": "50",
-                "nomeSubprefeitura": "BUTANTA",
+                "nomeSubprefeitura": "SUBPREFEITURA FICTICIA UM",
             }
         ]
 
-        result = services.get_subprefeituras_por_escola("019308")
+        result = services.get_subprefeituras_por_escola("000001")
 
         mock_client.get.assert_called_once_with(
-            f"{_BASE}/escolas/019308/subprefeituras/"
+            f"{_BASE}/escolas/000001/subprefeituras/"
         )
         self.assertEqual(result[0]["codigoSubprefeitura"], "50")
 
@@ -267,16 +267,16 @@ class GetUnidadeEolTest(SimpleTestCase):
         """Monta o path da unidade EOL com o código informado."""
         mock_client.get.return_value.raise_for_status = MagicMock()
         mock_client.json_or_none.return_value = {
-            "codigo": "019251",
+            "codigo": "000002",
             "nomeUnidade": "EMEF EXEMPLO",
         }
 
-        result = services.get_unidade_eol("019251")
+        result = services.get_unidade_eol("000002")
 
         mock_client.get.assert_called_once_with(
-            f"{_BASE}/escolas/unidade-eol/019251/"
+            f"{_BASE}/escolas/unidade-eol/000002/"
         )
-        self.assertEqual(result["codigo"], "019251")
+        self.assertEqual(result["codigo"], "000002")
 
     @patch("apps.institucional.services._client")
     def test_retorna_none_quando_sidecar_responde_204(
@@ -302,16 +302,16 @@ class GetDadosEscolaTest(SimpleTestCase):
         """Monta o path de dados com o código da escola."""
         mock_client.get.return_value.raise_for_status = MagicMock()
         mock_client.json_or_none.return_value = {
-            "codigo": "019308",
+            "codigo": "000001",
             "nome": "EMEF TESTE",
         }
 
-        result = services.get_dados_escola("019308")
+        result = services.get_dados_escola("000001")
 
         mock_client.get.assert_called_once_with(
-            f"{_BASE}/escolas/dados/019308/"
+            f"{_BASE}/escolas/dados/000001/"
         )
-        self.assertEqual(result["codigo"], "019308")
+        self.assertEqual(result["codigo"], "000001")
 
     @patch("apps.institucional.services._client")
     def test_retorna_none_quando_nao_encontrado(
@@ -334,16 +334,16 @@ class GetSincronizacoesInstitucionaisTest(SimpleTestCase):
         """Monta o path da sincronização institucional com a UE."""
         mock_client.get.return_value.raise_for_status = MagicMock()
         mock_client.json_or_none.return_value = {
-            "ueCodigo": "019251",
+            "ueCodigo": "000002",
             "ueNome": "EMEF EXEMPLO",
         }
 
-        result = services.get_sincronizacoes_institucionais("019251")
+        result = services.get_sincronizacoes_institucionais("000002")
 
         mock_client.get.assert_called_once_with(
-            f"{_BASE}/escolas/019251/sincronizacoes-institucionais/"
+            f"{_BASE}/escolas/000002/sincronizacoes-institucionais/"
         )
-        self.assertEqual(result["ueCodigo"], "019251")
+        self.assertEqual(result["ueCodigo"], "000002")
 
     @patch("apps.institucional.services._client")
     def test_retorna_none_quando_sidecar_responde_204(
@@ -394,15 +394,15 @@ class PostUnidadesParceirasTest(SimpleTestCase):
         """Envia os códigos via POST e retorna as unidades parceiras."""
         mock_client.post.return_value.raise_for_status = MagicMock()
         mock_client.post.return_value.json.return_value = [
-            {"codigo": "019251", "nome": "UE PARCEIRA"}
+            {"codigo": "000002", "nome": "UE PARCEIRA"}
         ]
 
-        result = services.post_unidades_parceiras(["019251"])
+        result = services.post_unidades_parceiras(["000002"])
 
         mock_client.post.assert_called_once_with(
-            f"{_BASE}/escolas/unidades-parceiras/", ["019251"]
+            f"{_BASE}/escolas/unidades-parceiras/", ["000002"]
         )
-        self.assertEqual(result[0]["codigo"], "019251")
+        self.assertEqual(result[0]["codigo"], "000002")
 
 
 class GetEquipamentosTest(SimpleTestCase):
@@ -428,16 +428,16 @@ class GetEquipamentosTest(SimpleTestCase):
         """Envia codigoEol nos params quando o filtro é informado."""
         mock_client.get.return_value.raise_for_status = MagicMock()
         mock_client.get.return_value.json.return_value = [
-            {"codigoEol": "019716"}
+            {"codigoEol": "000005"}
         ]
 
-        result = services.get_equipamentos(codigo_eol="019716")
+        result = services.get_equipamentos(codigo_eol="000005")
 
         mock_client.get.assert_called_once_with(
             f"{_BASE}/escolas/equipamentos/",
-            params={"codigoEol": "019716"},
+            params={"codigoEol": "000005"},
         )
-        self.assertEqual(result[0]["codigoEol"], "019716")
+        self.assertEqual(result[0]["codigoEol"], "000005")
 
     @patch("apps.institucional.services._client")
     def test_com_multiplos_filtros(self, mock_client: MagicMock) -> None:
@@ -482,7 +482,7 @@ class GetTodasUnidadesTest(SimpleTestCase):
                 json=MagicMock(
                     return_value={
                         "count": 2,
-                        "results": [{"codigoEscola": "400496"}],
+                        "results": [{"codigoEscola": "000009"}],
                     }
                 ),
                 raise_for_status=MagicMock(),
@@ -491,7 +491,7 @@ class GetTodasUnidadesTest(SimpleTestCase):
                 json=MagicMock(
                     return_value={
                         "count": 2,
-                        "results": [{"codigoEscola": "400497"}],
+                        "results": [{"codigoEscola": "000010"}],
                     }
                 ),
                 raise_for_status=MagicMock(),
@@ -501,8 +501,8 @@ class GetTodasUnidadesTest(SimpleTestCase):
         result = services.get_todas_unidades()
 
         self.assertEqual(len(result), 2)
-        self.assertEqual(result[0]["codigoEscola"], "400496")
-        self.assertEqual(result[1]["codigoEscola"], "400497")
+        self.assertEqual(result[0]["codigoEscola"], "000009")
+        self.assertEqual(result[1]["codigoEscola"], "000010")
         self.assertEqual(mock_client.get.call_count, 2)
 
     @patch("apps.institucional.services._client")
@@ -512,13 +512,13 @@ class GetTodasUnidadesTest(SimpleTestCase):
         """Retorna lista direta quando sidecar nao usa envelope."""
         mock_client.get.return_value.raise_for_status = MagicMock()
         mock_client.get.return_value.json.return_value = [
-            {"codigoEscola": "400496"}
+            {"codigoEscola": "000009"}
         ]
 
         result = services.get_todas_unidades()
 
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["codigoEscola"], "400496")
+        self.assertEqual(result[0]["codigoEscola"], "000009")
 
 
 class GetTiposUnidadeEducacaoTest(SimpleTestCase):
@@ -557,16 +557,16 @@ class GetUesRecorteFundMedioTest(SimpleTestCase):
     def test_chama_post_com_codigos(self, mock_client: MagicMock) -> None:
         """Envia os códigos via POST e retorna as UEs do recorte."""
         mock_client.json_or_none.return_value = [
-            {"codigo": "000532", "codigoTipoEscola": 1}
+            {"codigo": "000007", "codigoTipoEscola": 1}
         ]
 
-        result = services.get_ues_recorte_fund_medio(["000532"])
+        result = services.get_ues_recorte_fund_medio(["000007"])
 
         mock_client.post.assert_called_once_with(
             f"{_BASE}/escolas/recorte-fund-medio/",
-            payload=["000532"],
+            payload=["000007"],
         )
-        self.assertEqual(result[0]["codigo"], "000532")
+        self.assertEqual(result[0]["codigo"], "000007")
 
     @patch("apps.institucional.services._client")
     def test_lista_vazia_nao_chama_sidecar(
@@ -585,7 +585,7 @@ class GetUesRecorteFundMedioTest(SimpleTestCase):
         """Retorna lista vazia quando o sidecar não traz corpo."""
         mock_client.json_or_none.return_value = None
 
-        result = services.get_ues_recorte_fund_medio(["000532"])
+        result = services.get_ues_recorte_fund_medio(["000007"])
 
         self.assertEqual(result, [])
 
@@ -596,15 +596,15 @@ class GetCodigosUeEmeiTest(SimpleTestCase):
     @patch("apps.institucional.services._client")
     def test_chama_post_e_extrai_codigos(self, mock_client: MagicMock) -> None:
         """Envia códigos via POST e devolve só os EMEI do corpo."""
-        mock_client.json_or_none.return_value = {"codigos_ue": ["000532"]}
+        mock_client.json_or_none.return_value = {"codigos_ue": ["000007"]}
 
-        result = services.get_codigos_ue_emei(["000532", "000999"])
+        result = services.get_codigos_ue_emei(["000007", "000999"])
 
         mock_client.post.assert_called_once_with(
             f"{_BASE}/escolas/recorte-emei/",
-            payload=["000532", "000999"],
+            payload=["000007", "000999"],
         )
-        self.assertEqual(result, ["000532"])
+        self.assertEqual(result, ["000007"])
 
     @patch("apps.institucional.services._client")
     def test_lista_vazia_nao_chama_sidecar(
@@ -623,7 +623,7 @@ class GetCodigosUeEmeiTest(SimpleTestCase):
         """Retorna lista vazia quando o sidecar não traz corpo."""
         mock_client.json_or_none.return_value = None
 
-        result = services.get_codigos_ue_emei(["000532"])
+        result = services.get_codigos_ue_emei(["000007"])
 
         self.assertEqual(result, [])
 
@@ -634,15 +634,15 @@ class GetCodigosUeTipoSgpTest(SimpleTestCase):
     @patch("apps.institucional.services._client")
     def test_chama_post_e_extrai_codigos(self, mock_client: MagicMock) -> None:
         """Envia códigos via POST e devolve só os do recorte SGP."""
-        mock_client.json_or_none.return_value = {"codigos_ue": ["000532"]}
+        mock_client.json_or_none.return_value = {"codigos_ue": ["000007"]}
 
-        result = services.get_codigos_ue_tipo_sgp(["000532", "000999"])
+        result = services.get_codigos_ue_tipo_sgp(["000007", "000999"])
 
         mock_client.post.assert_called_once_with(
             f"{_BASE}/escolas/recorte-tipo-sgp/",
-            payload=["000532", "000999"],
+            payload=["000007", "000999"],
         )
-        self.assertEqual(result, ["000532"])
+        self.assertEqual(result, ["000007"])
 
     @patch("apps.institucional.services._client")
     def test_lista_vazia_nao_chama_sidecar(

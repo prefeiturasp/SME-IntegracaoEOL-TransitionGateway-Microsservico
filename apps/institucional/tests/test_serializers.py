@@ -25,16 +25,16 @@ class DRESerializerTest(SimpleTestCase):
     def test_payload_valido(self) -> None:
         """Aceita payload com todos os campos obrigatórios preenchidos."""
         data = {
-            "codigoDRE": "BT",
-            "nomeDRE": "DRE BUTANTA",
-            "siglaDRE": "DRE-BT",
+            "codigoDRE": "X1",
+            "nomeDRE": "DRE FICTICIA UM",
+            "siglaDRE": "DRE-X1",
         }
         s = DRESerializer(data=data)
         self.assertTrue(s.is_valid(), s.errors)
 
     def test_campo_ausente_invalido(self) -> None:
         """Rejeita o payload quando falta o campo siglaDRE."""
-        data = {"codigoDRE": "BT", "nomeDRE": "DRE BUTANTA"}
+        data = {"codigoDRE": "X1", "nomeDRE": "DRE FICTICIA UM"}
         s = DRESerializer(data=data)
         self.assertFalse(s.is_valid())
         self.assertIn("siglaDRE", s.errors)
@@ -66,15 +66,15 @@ class EscolaSigpaeSerializerTest(SimpleTestCase):
     def test_payload_valido(self) -> None:
         """Aceita payload completo do contrato D09."""
         data = {
-            "codigoEscola": "019308",
+            "codigoEscola": "000001",
             "nomeEscola": "EMEF TESTE",
-            "codigoDRE": "108100",
+            "codigoDRE": "100000",
             "tipoEscola": "EMEF",
             "siglaTipoEscola": "EMEF",
-            "nomeDRE": "DRE BUTANTA",
-            "siglaDRE": "DRE-BT",
+            "nomeDRE": "DRE FICTICIA UM",
+            "siglaDRE": "DRE-X1",
             "codigoSubprefeitura": "50",
-            "nomeSubprefeitura": "BUTANTA",
+            "nomeSubprefeitura": "SUBPREFEITURA FICTICIA UM",
         }
         s = EscolaSigpaeSerializer(data=data)
         self.assertTrue(s.is_valid(), s.errors)
@@ -82,15 +82,15 @@ class EscolaSigpaeSerializerTest(SimpleTestCase):
     def test_payload_com_campos_extras_nao_entra_no_contrato(self) -> None:
         """Ignora campos extras fora do contrato D09 na saída validada."""
         data = {
-            "codigoEscola": "019308",
+            "codigoEscola": "000001",
             "nomeEscola": "EMEF TESTE",
-            "codigoDRE": "108100",
+            "codigoDRE": "100000",
             "tipoEscola": "EMEF",
             "siglaTipoEscola": "EMEF",
-            "nomeDRE": "DRE BUTANTA",
-            "siglaDRE": "DRE-BT",
+            "nomeDRE": "DRE FICTICIA UM",
+            "siglaDRE": "DRE-X1",
             "codigoSubprefeitura": "50",
-            "nomeSubprefeitura": "BUTANTA",
+            "nomeSubprefeitura": "SUBPREFEITURA FICTICIA UM",
             "tipoEscolaId": 1,
         }
         s = EscolaSigpaeSerializer(data=data)
@@ -104,7 +104,7 @@ class UnidadeCodigoIntegracaoSerializerTest(SimpleTestCase):
     def test_payload_valido(self) -> None:
         """Aceita payload completo do contrato D11."""
         data = {
-            "codigoUe": "019308",
+            "codigoUe": "000001",
             "nomeUe": "EMEF TESTE",
             "codigoIntegracao": None,
         }
@@ -114,10 +114,10 @@ class UnidadeCodigoIntegracaoSerializerTest(SimpleTestCase):
     def test_payload_com_campos_extras_nao_entra_no_contrato(self) -> None:
         """Ignora campos extras fora do contrato D11 na saída validada."""
         data = {
-            "codigoUe": "019308",
+            "codigoUe": "000001",
             "nomeUe": "EMEF TESTE",
             "codigoIntegracao": None,
-            "dreId": "108100",
+            "dreId": "100000",
         }
         s = UnidadeCodigoIntegracaoSerializer(data=data)
         self.assertTrue(s.is_valid(), s.errors)
@@ -130,16 +130,16 @@ class EscolaPorDreETipoSerializerTest(SimpleTestCase):
     def test_payload_valido(self) -> None:
         """Aceita payload com todos os campos obrigatórios preenchidos."""
         data = {
-            "codigoEscola": "019308",
+            "codigoEscola": "000001",
             "nomeEscola": "EMEF TESTE",
-            "codigoDRE": "BT",
+            "codigoDRE": "X1",
         }
         s = EscolaPorDreETipoSerializer(data=data)
         self.assertTrue(s.is_valid(), s.errors)
 
     def test_campo_ausente_invalido(self) -> None:
         """Rejeita o payload quando falta o campo codigoDRE."""
-        data = {"codigoEscola": "019308", "nomeEscola": "EMEF TESTE"}
+        data = {"codigoEscola": "000001", "nomeEscola": "EMEF TESTE"}
         s = EscolaPorDreETipoSerializer(data=data)
         self.assertFalse(s.is_valid())
         self.assertIn("codigoDRE", s.errors)
@@ -150,15 +150,15 @@ class EscolaResumoSerializerTest(SimpleTestCase):
 
     # Resumo de escola completo aceito pelo serializer.
     _PAYLOAD = {
-        "codigoEscola": "019308",
+        "codigoEscola": "000001",
         "nomeEscola": "EMEF TESTE",
-        "codigoDRE": "BT",
+        "codigoDRE": "X1",
         "tipoEscola": "EMEF",
         "siglaTipoEscola": "EMEF",
-        "nomeDRE": "DRE BUTANTA",
-        "siglaDRE": "DRE-BT",
+        "nomeDRE": "DRE FICTICIA UM",
+        "siglaDRE": "DRE-X1",
         "codigoSubprefeitura": "1",
-        "nomeSubprefeitura": "BUTANTA",
+        "nomeSubprefeitura": "SUBPREFEITURA FICTICIA UM",
         "tipoEscolaId": 1,
         "tipoUnidadeId": 1,
         "subprefeituraId": 1,
@@ -189,15 +189,15 @@ class EscolaSerializerTest(SimpleTestCase):
 
     # Detalhe de escola completo aceito pelo serializer.
     _PAYLOAD = {
-        "codigoEscola": "019308",
+        "codigoEscola": "000001",
         "nomeEscola": "EMEF TESTE",
-        "codigoDRE": "BT",
+        "codigoDRE": "X1",
         "tipoEscola": "EMEF",
         "siglaTipoEscola": "EMEF",
-        "nomeDRE": "DRE BUTANTA",
-        "siglaDRE": "DRE-BT",
+        "nomeDRE": "DRE FICTICIA UM",
+        "siglaDRE": "DRE-X1",
         "codigoSubprefeitura": "1",
-        "nomeSubprefeitura": "BUTANTA",
+        "nomeSubprefeitura": "SUBPREFEITURA FICTICIA UM",
         "tipoEscolaId": 1,
         "tipoUnidadeId": 1,
         "subprefeituraId": 1,
@@ -264,11 +264,11 @@ class UnidadeEolSerializerTest(SimpleTestCase):
     def test_payload_valido(self) -> None:
         """Aceita payload completo do contrato E03."""
         data = {
-            "codigo": "019251",
+            "codigo": "000002",
             "sigla": "EMEF",
             "nomeUnidade": "EMEF EXEMPLO",
             "tipo": 1,
-            "codigoReferencia": "019251",
+            "codigoReferencia": "000002",
         }
         serializer = UnidadeEolSerializer(data=data)
         self.assertTrue(serializer.is_valid(), serializer.errors)
@@ -280,9 +280,9 @@ class SincronizacaoInstitucionalSerializerTest(SimpleTestCase):
     def test_payload_valido(self) -> None:
         """Aceita payload completo do contrato E23."""
         data = {
-            "ueCodigo": "019251",
+            "ueCodigo": "000002",
             "dataAtualizacao": None,
-            "dreCodigo": 108100,
+            "dreCodigo": 100000,
             "ueNome": "EMEF EXEMPLO",
             "tipoEscolaCodigo": 1,
         }
@@ -295,7 +295,7 @@ class UnidadeParceiraSerializerTest(SimpleTestCase):
 
     def test_payload_valido(self) -> None:
         """Aceita payload do contrato E26."""
-        data = {"codigo": "019251", "nome": "UE PARCEIRA", "email": None}
+        data = {"codigo": "000002", "nome": "UE PARCEIRA", "email": None}
         serializer = UnidadeParceiraSerializer(data=data)
         self.assertTrue(serializer.is_valid(), serializer.errors)
 
@@ -332,25 +332,25 @@ class EquipamentoSerializerTest(SimpleTestCase):
 
     # Equipamento completo aceito pelo serializer.
     _PAYLOAD = {
-        "cd_equipamento": "108901",
-        "nm_exibicao_equipamento": "ASSISTENCIA ADMINISTRATIVA-CE PE",
-        "nm_equipamento": "ASSISTENCIA ADMINISTRATIVA-CE PE",
+        "cd_equipamento": "100003",
+        "nm_exibicao_equipamento": "UNIDADE ADMINISTRATIVA FICTICIA",
+        "nm_equipamento": "UNIDADE ADMINISTRATIVA FICTICIA",
         "cd_tp_equipamento": 3,
         "dc_tp_equipamento": "UNIDADE ADMINISTRATIVA",
         "cd_tp_escola": 0,
         "dc_tipo_escola": "",
         "sg_tp_escola": "",
-        "cd_diretoria_referencia": "108900",
-        "nm_diretoria_referencia": "DRE - PE",
-        "nm_exibicao_diretoria_referencia": "DRE - PE",
-        "cd_diretoria_portal": "108900",
-        "nm_diretoria_portal": "DRE - PE",
-        "nm_exibicao_diretoria_portal": "DRE - PE",
-        "cd_logradouro": "19674",
-        "logradouro": "RUA APUCARANA Nº 215",
-        "bairro": "TATUAPE",
+        "cd_diretoria_referencia": "100002",
+        "nm_diretoria_referencia": "DRE - X2",
+        "nm_exibicao_diretoria_referencia": "DRE - X2",
+        "cd_diretoria_portal": "100002",
+        "nm_diretoria_portal": "DRE - X2",
+        "nm_exibicao_diretoria_portal": "DRE - X2",
+        "cd_logradouro": "10000",
+        "logradouro": "RUA FICTICIA Nº 100",
+        "bairro": "BAIRRO FICTICIO UM",
         "codigoSubprefeitura": "65",
-        "nomeSubprefeitura": "MOOCA",
+        "nomeSubprefeitura": "SUBPREFEITURA FICTICIA DOIS",
         "ehCeu": False,
     }
 

@@ -269,20 +269,20 @@ class ObterTurmaSrmERegularDoAlunoViewTest(SimpleTestCase):
         """Verifica a tradução camelCase da resposta composta."""
         mock_service.return_value = [
             {
-                "codigo_aluno": 7360328,
+                "codigo_aluno": 7000001,
                 "tipo_turno": 1,
                 "ano_letivo": 2026,
-                "nome_aluno": "AGATHA",
+                "nome_aluno": "ALUNO FICTICIO",
                 "nome_social_aluno": None,
                 "codigo_situacao_matricula": 11,
                 "situacao_matricula": "Deslocamento",
                 "data_situacao": "2026-01-06T15:41:55.393000+00:00",
                 "data_nascimento": "2025-11-05",
                 "numero_aluno_chamada": "000",
-                "codigo_turma": 3031432,
-                "nome_responsavel": "DARA",
+                "codigo_turma": 9100001,
+                "nome_responsavel": "RESPONSAVEL FICTICIO",
                 "tipo_responsavel": 1,
-                "celular_responsavel": "11989400396",
+                "celular_responsavel": "11988887777",
                 "data_atualizacao_contato": "2025-01-23",
                 "codigo_tipo_turma": 1,
                 "turma_nome": "2B",
@@ -296,18 +296,18 @@ class ObterTurmaSrmERegularDoAlunoViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/alunos/paee/turma-srm-e-regular/aluno/7360328/"
+            "/api/alunos/paee/turma-srm-e-regular/aluno/7000001/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         item = resp.json()[0]
-        self.assertEqual(item["codigoAluno"], 7360328)
+        self.assertEqual(item["codigoAluno"], 7000001)
         self.assertEqual(item["tipoTurno"], 1)
         self.assertEqual(item["etapaEnsino"], 5)
         self.assertEqual(item["cicloEnsino"], 3)
         self.assertEqual(item["descEtapaEnsino"], "FUND9A")
         self.assertIsNone(item["descCicloEnsino"])
-        self.assertEqual(item["celularResponsavel"], "11989400396")
+        self.assertEqual(item["celularResponsavel"], "11988887777")
         self.assertEqual(item["numeroAlunoChamada"], "000")
         self.assertEqual(item["tipoResponsavel"], "1")
         # UTC 15:41 → wall-clock de SP (UTC-3) 12:41 + Z, trim de zeros.
@@ -319,4 +319,4 @@ class ObterTurmaSrmERegularDoAlunoViewTest(SimpleTestCase):
         )
         # Sentinela de data ausente (DateTime.MinValue), sem Z.
         self.assertEqual(item["dataAtualizacaoTabela"], "0001-01-01T00:00:00")
-        mock_service.assert_called_once_with(codigo_aluno="7360328")
+        mock_service.assert_called_once_with(codigo_aluno="7000001")

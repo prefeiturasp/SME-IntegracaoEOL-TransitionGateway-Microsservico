@@ -170,25 +170,25 @@ class ObterTurmaSrmERegularDoAlunoTest(SimpleTestCase):
         """Verifica o filtro regular-ou-SRM e a composição dos campos."""
         mock_turmas.return_value = [
             {
-                "codigo_aluno": 7360328,
+                "codigo_aluno": 7000001,
                 "ano_letivo": 2026,
-                "nome_aluno": "AGATHA",
+                "nome_aluno": "ALUNO FICTICIO",
                 "nome_social_aluno": None,
                 "codigo_situacao_matricula": 11,
                 "situacao_matricula": "Deslocamento",
                 "data_situacao": "2026-01-06",
                 "data_nascimento": "2025-11-05",
                 "numero_aluno_chamada": None,
-                "codigo_turma": 3031432,
-                "nome_responsavel": "DARA",
+                "codigo_turma": 9100001,
+                "nome_responsavel": "RESPONSAVEL FICTICIO",
                 "tipo_responsavel": 1,
                 "ddd_celular": "11",
-                "numero_celular": "989400396",
+                "numero_celular": "988887777",
                 "data_atualizacao_contato": "2025-01-23",
                 "codigo_tipo_turma": 1,
             },
             {
-                "codigo_aluno": 7360328,
+                "codigo_aluno": 7000001,
                 "ano_letivo": 2026,
                 "codigo_turma": 555,
                 "codigo_tipo_turma": 3,
@@ -196,7 +196,7 @@ class ObterTurmaSrmERegularDoAlunoTest(SimpleTestCase):
                 "numero_celular": None,
             },
             {
-                "codigo_aluno": 7360328,
+                "codigo_aluno": 7000001,
                 "ano_letivo": 2026,
                 "codigo_turma": 999,
                 "codigo_tipo_turma": 3,
@@ -205,7 +205,7 @@ class ObterTurmaSrmERegularDoAlunoTest(SimpleTestCase):
         mock_srm.return_value = [{"codigo_turma": 555}]
         mock_listar.return_value = [
             {
-                "codigo": 3031432,
+                "codigo": 9100001,
                 "nome_turma": "2B",
                 "tipo_turno": 1,
                 "codigo_etapa_ensino": 5,
@@ -220,13 +220,13 @@ class ObterTurmaSrmERegularDoAlunoTest(SimpleTestCase):
             },
         ]
 
-        resultado = services.obter_turma_srm_e_regular_do_aluno("7360328")
+        resultado = services.obter_turma_srm_e_regular_do_aluno("7000001")
 
         # Programa sem SRM (999) é descartado; sobram regular e SRM.
         self.assertEqual(
-            sorted(r["codigo_turma"] for r in resultado), [555, 3031432]
+            sorted(r["codigo_turma"] for r in resultado), [555, 9100001]
         )
-        regular = next(r for r in resultado if r["codigo_turma"] == 3031432)
+        regular = next(r for r in resultado if r["codigo_turma"] == 9100001)
         self.assertEqual(regular["tipo_turno"], 1)
         self.assertEqual(regular["turma_nome"], "2B")
         self.assertEqual(regular["etapa_ensino"], 5)
@@ -234,7 +234,7 @@ class ObterTurmaSrmERegularDoAlunoTest(SimpleTestCase):
         self.assertEqual(regular["desc_etapa_ensino"], "FUND9A")
         # numero_aluno_chamada ausente → default "000" (paridade legado).
         self.assertEqual(regular["numero_aluno_chamada"], "000")
-        self.assertEqual(regular["celular_responsavel"], "11989400396")
+        self.assertEqual(regular["celular_responsavel"], "11988887777")
         self.assertIsNone(regular["desc_ciclo_ensino"])
         self.assertEqual(
             regular["data_atualizacao_tabela"], "0001-01-01T00:00:00"

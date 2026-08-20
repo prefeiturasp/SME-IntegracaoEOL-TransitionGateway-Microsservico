@@ -182,11 +182,11 @@ class AlunosUrlsTest(SimpleTestCase):
         self.assertEqual(match.kwargs, {"ue_codigo": "100001"})
 
     def test_preserva_parametros_da_rota_alunos_da_ue(self) -> None:
-        match = resolve("/api/v1/alunos/ues/019362/anosLetivos/2026")
+        match = resolve("/api/v1/alunos/ues/000001/anosLetivos/2026")
 
         self.assertEqual(
             match.kwargs,
-            {"codigo_ue": "019362", "ano_letivo": "2026"},
+            {"codigo_ue": "000001", "ano_letivo": "2026"},
         )
 
     def test_preserva_cpf_responsavel_resumido(self) -> None:
@@ -252,41 +252,41 @@ class AlunosUrlsTest(SimpleTestCase):
 
     def test_preserva_parametros_alunos_ativos_data_aula(self) -> None:
         match = resolve(
-            "/api/turmas/3012185/alunos-ativos/"
+            "/api/turmas/9100001/alunos-ativos/"
             "data-aula-ticks/639031104000000000/"
         )
 
         self.assertEqual(
             match.kwargs,
             {
-                "codigo_turma": "3012185",
+                "codigo_turma": "9100001",
                 "data_ticks": "639031104000000000",
             },
         )
 
     def test_preserva_parametros_data_matricula_ticks(self) -> None:
         match = resolve(
-            "/api/turmas/3015603/data-matricula-ticks/639059616000000000/"
+            "/api/turmas/9100002/data-matricula-ticks/639059616000000000/"
         )
 
         self.assertEqual(
             match.kwargs,
             {
-                "codigo_turma": "3015603",
+                "codigo_turma": "9100002",
                 "data_matricula_ticks": "639059616000000000",
             },
         )
 
     def test_preserva_parametros_aluno_considera_inativos(self) -> None:
         match = resolve(
-            "/api/turmas/3123349/aluno/7345634/considera-inativos/true/"
+            "/api/turmas/9100003/aluno/7000001/considera-inativos/true/"
         )
 
         self.assertEqual(
             match.kwargs,
             {
-                "codigo_turma": "3123349",
-                "codigo_aluno": "7345634",
+                "codigo_turma": "9100003",
+                "codigo_aluno": "7000001",
                 "considera_inativos": "true",
             },
         )
@@ -608,19 +608,19 @@ class DadosAcompanhamentoEscolarViewTest(SimpleTestCase):
     ) -> None:
         mock_service.return_value = [
             {
-                "codigo_eol": 7074492,
+                "codigo_eol": 7000005,
                 "nome_responsavel": "MARIA DA SILVA",
                 "cpf_responsavel": "12345678901",
                 "nome": "JOAO DA SILVA",
                 "nome_social": None,
-                "codigo_escola": "019267",
-                "codigo_dre": "108200",
+                "codigo_escola": "000005",
+                "codigo_dre": "100000",
                 "escola": "EMEF TESTE",
                 "tipo_responsavel": 1,
                 "codigo_tipo_escola": 1,
                 "descricao_tipo_escola": "EMEF",
                 "sigla_dre": "DRE - CL",
-                "codigo_turma": 3038818,
+                "codigo_turma": 9100006,
                 "turma": "5A",
                 "situacao_matricula": "Ativo",
                 "data_nascimento": "2015-04-21",
@@ -634,13 +634,13 @@ class DadosAcompanhamentoEscolarViewTest(SimpleTestCase):
 
         resp = client.get(
             "/api/v1/alunos/dados-acompanhamento-escolar"
-            "?codigo_aluno=7074492"
+            "?codigo_aluno=7000005"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         corpo = resp.json()[0]
-        self.assertEqual(corpo["codigoEol"], 7074492)
-        self.assertEqual(corpo["codigoEscola"], "019267")
+        self.assertEqual(corpo["codigoEol"], 7000005)
+        self.assertEqual(corpo["codigoEscola"], "000005")
         self.assertEqual(corpo["escola"], "EMEF TESTE")
         self.assertEqual(corpo["siglaDre"], "DRE - CL")
         self.assertEqual(corpo["dataNascimento"], "2015-04-21T00:00:00")
@@ -708,15 +708,15 @@ class QuantidadeMatriculadosViewTest(SimpleTestCase):
                 "modalidade": "EF",
                 "ano": "3",
                 "turma": "3B",
-                "dre_codigo": "108200",
-                "ue_codigo": "019267",
+                "dre_codigo": "100000",
+                "ue_codigo": "000005",
             }
         ]
         client = _cliente_autenticado()
 
         resp = client.get(
             "/api/v1/alunos/ano-letivo/2026/matriculados/quantidade"
-            "?ue_codigo=019267&modalidade=5&ano=3&turma=3038818"
+            "?ue_codigo=000005&modalidade=5&ano=3&turma=9100006"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -734,15 +734,15 @@ class QuantidadeMatriculadosViewTest(SimpleTestCase):
             ],
         )
         self.assertEqual(corpo["quantidade"], 28)
-        self.assertEqual(corpo["dreCodigo"], "108200")
-        self.assertEqual(corpo["ueCodigo"], "019267")
+        self.assertEqual(corpo["dreCodigo"], "100000")
+        self.assertEqual(corpo["ueCodigo"], "000005")
         mock_service.assert_called_once_with(
             ano_letivo="2026",
             dre_codigo=None,
-            ue_codigo="019267",
+            ue_codigo="000005",
             modalidade=["5"],
             ano=["3"],
-            turma=["3038818"],
+            turma=["9100006"],
         )
 
     @patch("apps.alunos.views.services.get_quantidade_matriculados")
@@ -1025,7 +1025,7 @@ class ResponsaveisViewTest(SimpleTestCase):
     ) -> None:
         mock_service.return_value = [
             {
-                "codigo_dre": "108",
+                "codigo_dre": "100",
                 "dre": "DRE TESTE",
                 "codigo_ue": "100001",
                 "ue": "UE TESTE",
@@ -1044,7 +1044,7 @@ class ResponsaveisViewTest(SimpleTestCase):
 
         resp = client.get(
             "/api/v1/alunos/responsaveis"
-            "?codigo_dre=108&codigo_ue=100001&ano_letivo=2026"
+            "?codigo_dre=100&codigo_ue=100001&ano_letivo=2026"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -1052,7 +1052,7 @@ class ResponsaveisViewTest(SimpleTestCase):
             resp.json(),
             [
                 {
-                    "codigoDre": "108",
+                    "codigoDre": "100",
                     "dre": "DRE TESTE",
                     "codigoUe": "100001",
                     "ue": "UE TESTE",
@@ -1070,7 +1070,7 @@ class ResponsaveisViewTest(SimpleTestCase):
             ],
         )
         mock_service.assert_called_once_with(
-            codigo_dre="108",
+            codigo_dre="100",
             codigo_ue="100001",
             ano_letivo=2026,
         )
@@ -1253,7 +1253,7 @@ class AlunosAtivosDataAulaTicksViewTest(SimpleTestCase):
     """Valida a resposta de alunos ativos na data da aula."""
 
     _PATH = (
-        "/api/turmas/3012185/alunos-ativos/"
+        "/api/turmas/9100001/alunos-ativos/"
         "data-aula-ticks/639031104000000000/"
     )
 
@@ -1263,7 +1263,7 @@ class AlunosAtivosDataAulaTicksViewTest(SimpleTestCase):
     ) -> None:
         mock_service.return_value = [
             {
-                "codigo_aluno": 7730117,
+                "codigo_aluno": 7000003,
                 "nome_aluno": "Aluno Teste",
                 "nome_social_aluno": None,
                 "data_nascimento": "2020-07-10",
@@ -1272,9 +1272,9 @@ class AlunosAtivosDataAulaTicksViewTest(SimpleTestCase):
                 "data_situacao": "2025-12-08T11:42:14.66-03:00",
                 "numero_aluno_chamada": "015",
                 "possui_deficiencia": False,
-                "codigo_matricula": 43790514,
-                "codigo_turma": 3012185,
-                "codigo_escola": "097144",
+                "codigo_matricula": 40000001,
+                "codigo_turma": 9100001,
+                "codigo_escola": "000002",
                 "ano_letivo": 2026,
                 "data_matricula": "2025-11-04T08:16:14.26-03:00",
                 "nome_responsavel": "Responsável",
@@ -1282,7 +1282,7 @@ class AlunosAtivosDataAulaTicksViewTest(SimpleTestCase):
                 "celular_responsavel": None,
                 "data_atualizacao_contato": None,
                 "sequencia": 1,
-                "codigo_dre": "108100",
+                "codigo_dre": "100000",
             }
         ]
         client = _cliente_autenticado()
@@ -1290,12 +1290,12 @@ class AlunosAtivosDataAulaTicksViewTest(SimpleTestCase):
         resp = client.get(self._PATH)
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.json()[0]["codigoAluno"], 7730117)
+        self.assertEqual(resp.json()[0]["codigoAluno"], 7000003)
         self.assertEqual(resp.json()[0]["codigoComponenteCurricular"], 0)
         self.assertEqual(resp.json()[0]["transferencia_Interna"], False)
         self.assertEqual(resp.json()[0]["numeroAlunoChamada"], "000")
         mock_service.assert_called_once_with(
-            codigo_turma="3012185",
+            codigo_turma="9100001",
             data_ticks="639031104000000000",
         )
 
@@ -1305,7 +1305,7 @@ class AlunosAtivosDataAulaTicksViewTest(SimpleTestCase):
     ) -> None:
         mock_service.return_value = [
             {
-                "codigo_aluno": 7730117,
+                "codigo_aluno": 7000003,
                 "nome_aluno": "Aluno Teste",
                 "nome_social_aluno": None,
                 "data_nascimento": "2020-07-10",
@@ -1314,9 +1314,9 @@ class AlunosAtivosDataAulaTicksViewTest(SimpleTestCase):
                 "data_situacao": "2025-12-08T11:42:14.66-03:00",
                 "numero_aluno_chamada": "",
                 "possui_deficiencia": False,
-                "codigo_matricula": 43790514,
-                "codigo_turma": 3012185,
-                "codigo_escola": "097144",
+                "codigo_matricula": 40000001,
+                "codigo_turma": 9100001,
+                "codigo_escola": "000002",
                 "ano_letivo": 2026,
                 "data_matricula": "2025-11-04T08:16:14.26-03:00",
                 "nome_responsavel": "Responsavel",
@@ -1324,7 +1324,7 @@ class AlunosAtivosDataAulaTicksViewTest(SimpleTestCase):
                 "celular_responsavel": None,
                 "data_atualizacao_contato": None,
                 "sequencia": 1,
-                "codigo_dre": "108100",
+                "codigo_dre": "100000",
             }
         ]
         client = _cliente_autenticado()
@@ -1371,7 +1371,7 @@ class AlunosAtivosDataAulaTicksViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/turmas/3012185/alunos-ativos/data-aula-ticks/abc/"
+            "/api/turmas/9100001/alunos-ativos/data-aula-ticks/abc/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -1389,7 +1389,7 @@ class AlunosAtivosDataAulaTicksViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
         mock_service.assert_called_once_with(
-            codigo_turma="3012185",
+            codigo_turma="9100001",
             data_ticks="639031104000000000",
         )
 
@@ -1434,7 +1434,7 @@ class AlunosAtivosDataAulaTicksViewTest(SimpleTestCase):
 class AlunosDataMatriculaTicksViewTest(SimpleTestCase):
     """Valida a resposta de alunos por data de matricula."""
 
-    _PATH = "/api/turmas/3015603/data-matricula-ticks/639059616000000000/"
+    _PATH = "/api/turmas/9100002/data-matricula-ticks/639059616000000000/"
 
     @patch("apps.alunos.views.services.get_alunos_data_matricula_ticks")
     def test_200_retorna_contrato_legado(
@@ -1442,8 +1442,8 @@ class AlunosDataMatriculaTicksViewTest(SimpleTestCase):
     ) -> None:
         mock_service.return_value = [
             {
-                "codigo_aluno": 7614272,
-                "nome_aluno": "ALICIA GABRIELLI FERREIRA SILVA",
+                "codigo_aluno": 7000004,
+                "nome_aluno": "ALUNO FICTICIO DOIS",
                 "nome_social_aluno": None,
                 "data_nascimento": "2020-03-19",
                 "codigo_situacao_matricula": 1,
@@ -1451,19 +1451,19 @@ class AlunosDataMatriculaTicksViewTest(SimpleTestCase):
                 "data_situacao": "2025-12-18T11:34:28.050000-03:00",
                 "numero_aluno_chamada": "001",
                 "possui_deficiencia": False,
-                "codigo_matricula": 44295982,
-                "codigo_turma": 3015603,
-                "codigo_escola": "099791",
+                "codigo_matricula": 40000002,
+                "codigo_turma": 9100002,
+                "codigo_escola": "000004",
                 "ano_letivo": 2026,
                 "data_matricula": "2025-12-18T11:34:28.050000-03:00",
-                "nome_responsavel": "KATIA CRISTINA DA SILVA",
+                "nome_responsavel": "RESPONSAVEL FICTICIO DOIS",
                 "tipo_responsavel": 1,
                 "celular_responsavel": None,
                 "data_atualizacao_contato": (
                     "2024-02-05T20:16:39.513000-03:00"
                 ),
                 "sequencia": 1,
-                "codigo_dre": "108300",
+                "codigo_dre": "100000",
             }
         ]
         client = _cliente_autenticado()
@@ -1472,7 +1472,7 @@ class AlunosDataMatriculaTicksViewTest(SimpleTestCase):
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         data = resp.json()[0]
-        self.assertEqual(data["codigoAluno"], 7614272)
+        self.assertEqual(data["codigoAluno"], 7000004)
         self.assertEqual(data["numeroAlunoChamada"], "001")
         self.assertEqual(data["celularResponsavel"], "")
         self.assertEqual(data["codigoTurma"], 0)
@@ -1481,7 +1481,7 @@ class AlunosDataMatriculaTicksViewTest(SimpleTestCase):
         self.assertIsNone(data["codigoDre"])
         self.assertFalse(data["dataMatricula"].endswith("Z"))
         mock_service.assert_called_once_with(
-            codigo_turma="3015603",
+            codigo_turma="9100002",
             data_matricula_ticks="639059616000000000",
         )
 
@@ -1519,7 +1519,7 @@ class AlunosDataMatriculaTicksViewTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/turmas/3015603/data-matricula-ticks/0/")
+        resp = client.get("/api/turmas/9100002/data-matricula-ticks/0/")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         mock_service.assert_not_called()
@@ -1536,7 +1536,7 @@ class AlunosDataMatriculaTicksViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
         mock_service.assert_called_once_with(
-            codigo_turma="3015603",
+            codigo_turma="9100002",
             data_matricula_ticks="639059616000000000",
         )
 
@@ -1583,7 +1583,7 @@ class TotalAlunosTurmasPeriodoViewTest(SimpleTestCase):
 
     _PATH = (
         "/api/turmas/todos-alunos/anoTurma/1/modalidade/5/"
-        "anoLetivo/2026/dre/108200/inicio/100/fim/200"
+        "anoLetivo/2026/dre/100000/inicio/100/fim/200"
     )
 
     @patch(_PATCH_QTD_PERIODO)
@@ -1593,8 +1593,8 @@ class TotalAlunosTurmasPeriodoViewTest(SimpleTestCase):
         self, mock_ues: MagicMock, mock_turmas: MagicMock, mock_qtd: MagicMock
     ) -> None:
         """Valida a contagem de alunos por ano/modalidade/DRE."""
-        mock_ues.return_value = {"codigos_ue": ["019370", "108200"]}
-        mock_turmas.return_value = [3011258, 3071054]
+        mock_ues.return_value = {"codigos_ue": ["000006", "100000"]}
+        mock_turmas.return_value = [9100004, 9100005]
         mock_qtd.return_value = 3827
         client = _cliente_autenticado()
 
@@ -1603,12 +1603,12 @@ class TotalAlunosTurmasPeriodoViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), 3827)
         mock_turmas.assert_called_once_with(
-            ["019370", "108200"],
+            ["000006", "100000"],
             ano_turma="1",
             codigo_modalidade=5,
             ano_letivo="2026",
         )
-        mock_qtd.assert_called_once_with([3011258, 3071054], "200")
+        mock_qtd.assert_called_once_with([9100004, 9100005], "200")
 
     @patch(_PATCH_UES_DRE)
     def test_204_quando_dre_sem_ues(self, mock_ues: MagicMock) -> None:
@@ -1626,7 +1626,7 @@ class TotalAlunosTurmasPeriodoViewTest(SimpleTestCase):
         self, mock_ues: MagicMock, mock_turmas: MagicMock
     ) -> None:
         """Valida contagem por ano/modalidade/DRE sem turmas."""
-        mock_ues.return_value = {"codigos_ue": ["019370"]}
+        mock_ues.return_value = {"codigos_ue": ["000006"]}
         mock_turmas.return_value = []
         client = _cliente_autenticado()
 
@@ -1641,8 +1641,8 @@ class TotalAlunosTurmasPeriodoViewTest(SimpleTestCase):
         self, mock_ues: MagicMock, mock_turmas: MagicMock, mock_qtd: MagicMock
     ) -> None:
         """Valida contagem por ano/modalidade/DRE com quantidade zero."""
-        mock_ues.return_value = {"codigos_ue": ["019370"]}
-        mock_turmas.return_value = [3011258]
+        mock_ues.return_value = {"codigos_ue": ["000006"]}
+        mock_turmas.return_value = [9100004]
         mock_qtd.return_value = 0
         client = _cliente_autenticado()
 
@@ -1657,7 +1657,7 @@ class TotalAlunosTurmasPeriodoViewTest(SimpleTestCase):
 
         resp = client.get(
             "/api/turmas/todos-alunos/anoTurma/1/modalidade/0/"
-            "anoLetivo/2026/dre/108200/inicio/100/fim/200"
+            "anoLetivo/2026/dre/100000/inicio/100/fim/200"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -1675,7 +1675,7 @@ class TotalAlunosTurmasPeriodoViewTest(SimpleTestCase):
 
         resp = client.get(
             "/api/turmas/todos-alunos/anoTurma/1/modalidade/5/"
-            "anoLetivo/2026/dre/108200/inicio/100/fim/0"
+            "anoLetivo/2026/dre/100000/inicio/100/fim/0"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -1685,14 +1685,14 @@ class TotalAlunosTurmasPeriodoViewTest(SimpleTestCase):
 class AcompanhamentoEscolarTurmaViewTest(SimpleTestCase):
     """Valida o acompanhamento escolar da turma."""
 
-    _PATH = "/api/turmas/3123349/acompanhamento-escolar/todos-alunos"
+    _PATH = "/api/turmas/9100003/acompanhamento-escolar/todos-alunos"
 
     _ITEM = {
         "numero_chamada": None,
-        "nome_aluno": "HELENA SILVA DOS SANTOS",
-        "codigo_eol_aluno": 7345634,
+        "nome_aluno": "ALUNO FICTICIO UM",
+        "codigo_eol_aluno": 7000001,
         "cpf": 0,
-        "nome_responsavel": "LEIDY SILVA DOS SANTOS",
+        "nome_responsavel": "RESPONSAVEL FICTICIO UM",
         "tipo_responsavel": 1,
         "ddd_celular": "11",
         "celular": "988887777",
@@ -1712,7 +1712,7 @@ class AcompanhamentoEscolarTurmaViewTest(SimpleTestCase):
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         item = resp.json()[0]
-        self.assertEqual(item["codigoEOLAluno"], 7345634)
+        self.assertEqual(item["codigoEOLAluno"], 7000001)
         self.assertEqual(item["cpf"], 0)
         self.assertIsNone(item["numeroChamada"])
         self.assertEqual(item["dddFixo"], "11")
@@ -1720,7 +1720,7 @@ class AcompanhamentoEscolarTurmaViewTest(SimpleTestCase):
         self.assertEqual(item["situacaoAluno"], 8)
         # DateTime sem sufixo Z, ao contrário dos demais endpoints.
         self.assertNotIn("Z", item["dataSituacaoAluno"])
-        mock_service.assert_called_once_with("3123349")
+        mock_service.assert_called_once_with("9100003")
 
     @patch("apps.alunos.views.services.get_acompanhamento_escolar_turma")
     def test_200_lista_vazia(self, mock_service: MagicMock) -> None:
@@ -1773,11 +1773,11 @@ class AcompanhamentoEscolarTurmaViewTest(SimpleTestCase):
 class TodosAlunosTurmaViewTest(SimpleTestCase):
     """Valida o histórico de vínculos dos alunos com a turma."""
 
-    _PATH = "/api/turmas/3123349/todos-alunos"
+    _PATH = "/api/turmas/9100003/todos-alunos"
 
     _VINCULO = {
-        "codigo_aluno": 7345634,
-        "nome_aluno": "HELENA SILVA DOS SANTOS",
+        "codigo_aluno": 7000001,
+        "nome_aluno": "ALUNO FICTICIO UM",
         "nome_social_aluno": None,
         "data_nascimento": "2018-06-21",
         "codigo_situacao_matricula": 14,
@@ -1785,17 +1785,17 @@ class TodosAlunosTurmaViewTest(SimpleTestCase):
         "data_situacao": "2025-12-16T12:32:50.857000-03:00",
         "numero_aluno_chamada": "12",
         "possui_deficiencia": False,
-        "codigo_matricula": 44267709,
-        "codigo_turma": 3123349,
-        "codigo_escola": "019370",
+        "codigo_matricula": 40000003,
+        "codigo_turma": 9100003,
+        "codigo_escola": "000006",
         "ano_letivo": 2025,
         "data_matricula": "2025-12-16T12:10:53.233000-03:00",
-        "nome_responsavel": "LEIDY SILVA DOS SANTOS",
+        "nome_responsavel": "RESPONSAVEL FICTICIO UM",
         "tipo_responsavel": 1,
         "celular_responsavel": None,
         "data_atualizacao_contato": "2025-02-10T17:40:53.043000-03:00",
         "sequencia": 1,
-        "codigo_dre": "108200",
+        "codigo_dre": "100000",
     }
 
     @patch("apps.alunos.views.services.get_todos_alunos_turma")
@@ -1816,9 +1816,9 @@ class TodosAlunosTurmaViewTest(SimpleTestCase):
         self.assertEqual(item["tipoTurma"], 0)
         self.assertEqual(item["codigoComponenteCurricular"], 0)
         # codigoTurma e codigoMatricula seguem preenchidos.
-        self.assertEqual(item["codigoTurma"], 3123349)
-        self.assertEqual(item["codigoMatricula"], 44267709)
-        mock_service.assert_called_once_with("3123349", codigo_aluno=None)
+        self.assertEqual(item["codigoTurma"], 9100003)
+        self.assertEqual(item["codigoMatricula"], 40000003)
+        mock_service.assert_called_once_with("9100003", codigo_aluno=None)
 
     @patch("apps.alunos.views.services.get_todos_alunos_turma")
     def test_200_lista_vazia(self, mock_service: MagicMock) -> None:
@@ -1837,10 +1837,10 @@ class TodosAlunosTurmaViewTest(SimpleTestCase):
         mock_service.return_value = []
         client = _cliente_autenticado()
 
-        resp = client.get(f"{self._PATH}?codigoAluno=7345634")
+        resp = client.get(f"{self._PATH}?codigoAluno=7000001")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        mock_service.assert_called_once_with("3123349", codigo_aluno="7345634")
+        mock_service.assert_called_once_with("9100003", codigo_aluno="7000001")
 
     @patch("apps.alunos.views.services.get_todos_alunos_turma")
     def test_400_quando_turma_zero(self, mock_service: MagicMock) -> None:
@@ -1881,11 +1881,11 @@ class TodosAlunosTurmaViewTest(SimpleTestCase):
 class MatriculasTurmasAlunoViewTest(SimpleTestCase):
     """Valida a listagem de matrículas-turma do aluno."""
 
-    _PATH = "/api/turmas/alunos/7345634"
+    _PATH = "/api/turmas/alunos/7000001"
 
     _MATRICULA = {
-        "codigo_aluno": 7345634,
-        "nome_aluno": "HELENA SILVA DOS SANTOS",
+        "codigo_aluno": 7000001,
+        "nome_aluno": "ALUNO FICTICIO UM",
         "nome_social_aluno": None,
         "data_nascimento": "2018-06-21",
         "codigo_situacao_matricula": 1,
@@ -1893,17 +1893,17 @@ class MatriculasTurmasAlunoViewTest(SimpleTestCase):
         "data_situacao": "2025-12-16T12:32:50.857000-03:00",
         "numero_aluno_chamada": "12",
         "possui_deficiencia": False,
-        "codigo_matricula": 44267709,
-        "codigo_turma": 3123349,
-        "codigo_escola": "019370",
+        "codigo_matricula": 40000003,
+        "codigo_turma": 9100003,
+        "codigo_escola": "000006",
         "ano_letivo": 2025,
         "data_matricula": "2025-12-16T12:10:53.233000-03:00",
-        "nome_responsavel": "LEIDY SILVA DOS SANTOS",
+        "nome_responsavel": "RESPONSAVEL FICTICIO UM",
         "tipo_responsavel": 1,
         "celular_responsavel": None,
         "data_atualizacao_contato": "2025-02-10T17:40:53.043000-03:00",
         "sequencia": 1,
-        "codigo_dre": "108200",
+        "codigo_dre": "100000",
     }
 
     @patch("apps.alunos.views.services.get_matriculas_turmas_aluno")
@@ -1916,12 +1916,12 @@ class MatriculasTurmasAlunoViewTest(SimpleTestCase):
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         data = resp.json()
-        self.assertEqual(data[0]["codigoAluno"], 7345634)
-        self.assertEqual(data[0]["codigoEscola"], "019370")
-        self.assertEqual(data[0]["codigoDre"], "108200")
+        self.assertEqual(data[0]["codigoAluno"], 7000001)
+        self.assertEqual(data[0]["codigoEscola"], "000006")
+        self.assertEqual(data[0]["codigoDre"], "100000")
         self.assertEqual(data[0]["ano"], 2025)
         mock_service.assert_called_once_with(
-            "7345634",
+            "7000001",
             data_aula_ticks=None,
             ano_letivo=None,
         )
@@ -1949,7 +1949,7 @@ class MatriculasTurmasAlunoViewTest(SimpleTestCase):
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         mock_service.assert_called_once_with(
-            "7345634",
+            "7000001",
             data_aula_ticks="639059616000000000",
             ano_letivo="2025",
         )
@@ -1982,17 +1982,17 @@ class MatriculasTurmasAlunoViewTest(SimpleTestCase):
         """A rota literal ``alunos/`` tem precedência sobre a dinâmica."""
         match = resolve(self._PATH)
         self.assertEqual(match.url_name, "matriculas-turmas-aluno")
-        self.assertEqual(match.kwargs, {"codigo_aluno": "7345634"})
+        self.assertEqual(match.kwargs, {"codigo_aluno": "7000001"})
 
 
 class AlunosTurmaAnoLetivoViewTest(SimpleTestCase):
     """Valida a listagem de alunos da turma por ano letivo."""
 
-    _PATH = "/api/turmas/3123349/alunos/anosLetivos/2025"
+    _PATH = "/api/turmas/9100003/alunos/anosLetivos/2025"
 
     _ALUNO = {
-        "codigo_aluno": 7345634,
-        "nome_aluno": "HELENA SILVA DOS SANTOS",
+        "codigo_aluno": 7000001,
+        "nome_aluno": "ALUNO FICTICIO UM",
         "nome_social_aluno": None,
         "data_nascimento": "2018-06-21",
         "codigo_situacao_matricula": 1,
@@ -2000,17 +2000,17 @@ class AlunosTurmaAnoLetivoViewTest(SimpleTestCase):
         "data_situacao": "2025-12-16T12:32:50.857000-03:00",
         "numero_aluno_chamada": "12",
         "possui_deficiencia": False,
-        "codigo_matricula": 44267709,
-        "codigo_turma": 3123349,
-        "codigo_escola": "019370",
+        "codigo_matricula": 40000003,
+        "codigo_turma": 9100003,
+        "codigo_escola": "000006",
         "ano_letivo": 2025,
         "data_matricula": "2025-12-16T12:10:53.233000-03:00",
-        "nome_responsavel": "LEIDY SILVA DOS SANTOS",
+        "nome_responsavel": "RESPONSAVEL FICTICIO UM",
         "tipo_responsavel": 1,
         "celular_responsavel": None,
         "data_atualizacao_contato": "2025-02-10T17:40:53.043000-03:00",
         "sequencia": 1,
-        "codigo_dre": "108200",
+        "codigo_dre": "100000",
     }
 
     @patch("apps.alunos.views.services.get_alunos_por_turma")
@@ -2024,12 +2024,12 @@ class AlunosTurmaAnoLetivoViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         data = resp.json()
         self.assertIsInstance(data, list)
-        self.assertEqual(data[0]["codigoAluno"], 7345634)
-        self.assertEqual(data[0]["codigoEscola"], "019370")
-        self.assertEqual(data[0]["codigoDre"], "108200")
+        self.assertEqual(data[0]["codigoAluno"], 7000001)
+        self.assertEqual(data[0]["codigoEscola"], "000006")
+        self.assertEqual(data[0]["codigoDre"], "100000")
         self.assertEqual(data[0]["ano"], 2025)
         mock_service.assert_called_once_with(
-            "3123349",
+            "9100003",
             considerar_inativos=True,
             ano_letivo=2025,
         )
@@ -2050,11 +2050,11 @@ class AlunosTurmaAnoLetivoViewTest(SimpleTestCase):
         mock_service.return_value = [self._ALUNO]
         client = _cliente_autenticado()
 
-        resp = client.get("/api/turmas/3123349/alunos/anosLetivos/0")
+        resp = client.get("/api/turmas/9100003/alunos/anosLetivos/0")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         mock_service.assert_called_once_with(
-            "3123349",
+            "9100003",
             considerar_inativos=True,
             ano_letivo=0,
         )
@@ -2083,7 +2083,7 @@ class AlunosTurmaAnoLetivoViewTest(SimpleTestCase):
         """Valida alunos por ano com ano letivo inválido."""
         client = _cliente_autenticado()
 
-        resp = client.get("/api/turmas/3123349/alunos/anosLetivos/abc")
+        resp = client.get("/api/turmas/9100003/alunos/anosLetivos/abc")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         mock_service.assert_not_called()
@@ -2104,14 +2104,14 @@ class AlunosTurmaAnoLetivoViewTest(SimpleTestCase):
 class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
     """Valida a consulta de aluno da turma considerando inativos."""
 
-    _PATH = "/api/turmas/3123349/aluno/7345634/considera-inativos/true/"
+    _PATH = "/api/turmas/9100003/aluno/7000001/considera-inativos/true/"
 
     @patch("apps.alunos.views.services.get_alunos_por_turma")
     def test_200_retorna_objeto_legado(self, mock_service: MagicMock) -> None:
         mock_service.return_value = [
             {
-                "codigo_aluno": 7345634,
-                "nome_aluno": "HELENA SILVA DOS SANTOS",
+                "codigo_aluno": 7000001,
+                "nome_aluno": "ALUNO FICTICIO UM",
                 "nome_social_aluno": None,
                 "data_nascimento": "2018-06-21",
                 "codigo_situacao_matricula": 12,
@@ -2119,19 +2119,19 @@ class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
                 "data_situacao": "2025-12-16T12:32:50.857000-03:00",
                 "numero_aluno_chamada": None,
                 "possui_deficiencia": True,
-                "codigo_matricula": 44267709,
-                "codigo_turma": 3123349,
-                "codigo_escola": "019370",
+                "codigo_matricula": 40000003,
+                "codigo_turma": 9100003,
+                "codigo_escola": "000006",
                 "ano_letivo": 2025,
                 "data_matricula": "2025-12-16T12:10:53.233000-03:00",
-                "nome_responsavel": "LEIDY SILVA DOS SANTOS",
+                "nome_responsavel": "RESPONSAVEL FICTICIO UM",
                 "tipo_responsavel": 1,
                 "celular_responsavel": None,
                 "data_atualizacao_contato": (
                     "2025-02-10T17:40:53.043000-03:00"
                 ),
                 "sequencia": 1,
-                "codigo_dre": "108200",
+                "codigo_dre": "100000",
             }
         ]
         client = _cliente_autenticado()
@@ -2141,15 +2141,15 @@ class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         data = resp.json()
         self.assertIsInstance(data, dict)
-        self.assertEqual(data["codigoAluno"], 7345634)
-        self.assertEqual(data["codigoTurma"], 3123349)
+        self.assertEqual(data["codigoAluno"], 7000001)
+        self.assertEqual(data["codigoTurma"], 9100003)
         self.assertEqual(data["numeroAlunoChamada"], "000")
         self.assertEqual(data["celularResponsavel"], "")
         self.assertEqual(data["possuiDeficiencia"], 1)
         mock_service.assert_called_once_with(
-            "3123349",
+            "9100003",
             considerar_inativos=True,
-            codigo_aluno="7345634",
+            codigo_aluno="7000001",
         )
 
     @patch("apps.alunos.views.services.get_alunos_por_turma")
@@ -2157,7 +2157,7 @@ class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/turmas/0/aluno/7345634/considera-inativos/true/"
+            "/api/turmas/0/aluno/7000001/considera-inativos/true/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
@@ -2168,7 +2168,7 @@ class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/turmas/-1/aluno/7345634/considera-inativos/true/"
+            "/api/turmas/-1/aluno/7000001/considera-inativos/true/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
@@ -2181,7 +2181,7 @@ class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/turmas/abc/aluno/7345634/considera-inativos/true/"
+            "/api/turmas/abc/aluno/7000001/considera-inativos/true/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -2199,7 +2199,7 @@ class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/turmas/3123349/aluno/abc/considera-inativos/true/"
+            "/api/turmas/9100003/aluno/abc/considera-inativos/true/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -2215,7 +2215,7 @@ class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/turmas/3123349/aluno/7345634/considera-inativos/talvez/"
+            "/api/turmas/9100003/aluno/7000001/considera-inativos/talvez/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -2270,14 +2270,14 @@ class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
 class AlunoMatriculasTurmaViewTest(SimpleTestCase):
     """Valida a listagem de matrículas de um aluno em uma turma."""
 
-    _PATH = "/api/turmas/3123349/aluno/7345634/matriculas/"
+    _PATH = "/api/turmas/9100003/aluno/7000001/matriculas/"
 
     @patch("apps.alunos.views.services.get_alunos_por_turma")
     def test_200_retorna_lista_legado(self, mock_service: MagicMock) -> None:
         mock_service.return_value = [
             {
-                "codigo_aluno": 7345634,
-                "nome_aluno": "HELENA SILVA DOS SANTOS",
+                "codigo_aluno": 7000001,
+                "nome_aluno": "ALUNO FICTICIO UM",
                 "nome_social_aluno": None,
                 "data_nascimento": "2018-06-21",
                 "codigo_situacao_matricula": 1,
@@ -2285,19 +2285,19 @@ class AlunoMatriculasTurmaViewTest(SimpleTestCase):
                 "data_situacao": "2025-12-16T12:32:50.857000-03:00",
                 "numero_aluno_chamada": "15",
                 "possui_deficiencia": True,
-                "codigo_matricula": 44267709,
-                "codigo_turma": 3123349,
-                "codigo_escola": "019370",
+                "codigo_matricula": 40000003,
+                "codigo_turma": 9100003,
+                "codigo_escola": "000006",
                 "ano_letivo": 2025,
                 "data_matricula": "2025-12-16T12:10:53.233000-03:00",
-                "nome_responsavel": "LEIDY SILVA DOS SANTOS",
+                "nome_responsavel": "RESPONSAVEL FICTICIO UM",
                 "tipo_responsavel": 1,
                 "celular_responsavel": None,
                 "data_atualizacao_contato": (
                     "2025-02-10T17:40:53.043000-03:00"
                 ),
                 "sequencia": 1,
-                "codigo_dre": "108200",
+                "codigo_dre": "100000",
             }
         ]
         client = _cliente_autenticado()
@@ -2308,12 +2308,12 @@ class AlunoMatriculasTurmaViewTest(SimpleTestCase):
         data = resp.json()
         self.assertIsInstance(data, list)
         self.assertEqual(len(data), 1)
-        self.assertEqual(data[0]["codigoAluno"], 7345634)
-        self.assertEqual(data[0]["codigoTurma"], 3123349)
+        self.assertEqual(data[0]["codigoAluno"], 7000001)
+        self.assertEqual(data[0]["codigoTurma"], 9100003)
         mock_service.assert_called_once_with(
-            "3123349",
+            "9100003",
             considerar_inativos=True,
-            codigo_aluno="7345634",
+            codigo_aluno="7000001",
         )
 
     @patch("apps.alunos.views.services.get_alunos_por_turma")
@@ -2334,7 +2334,7 @@ class AlunoMatriculasTurmaViewTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/turmas/abc/aluno/7345634/matriculas/")
+        resp = client.get("/api/turmas/abc/aluno/7000001/matriculas/")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         mock_service.assert_not_called()
@@ -2345,7 +2345,7 @@ class AlunoMatriculasTurmaViewTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/turmas/3123349/aluno/abc/matriculas/")
+        resp = client.get("/api/turmas/9100003/aluno/abc/matriculas/")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         mock_service.assert_not_called()
@@ -2386,24 +2386,24 @@ class AlunoMatriculasTurmaViewTest(SimpleTestCase):
 class AlunosCalculoFrequenciaTurmaViewTest(SimpleTestCase):
     """Valida a listagem de códigos de aluno para cálculo de frequência."""
 
-    _PATH = "/api/turmas/3123349/calculo-frequencia/"
+    _PATH = "/api/turmas/9100003/calculo-frequencia/"
 
     @patch("apps.alunos.views.services.get_alunos_por_turma")
     def test_200_retorna_codigos_de_aluno(
         self, mock_service: MagicMock
     ) -> None:
         mock_service.return_value = [
-            {"codigo_aluno": 7345634},
-            {"codigo_aluno": 7345635},
+            {"codigo_aluno": 7000001},
+            {"codigo_aluno": 7000002},
         ]
         client = _cliente_autenticado()
 
         resp = client.get(self._PATH)
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.json(), ["7345634", "7345635"])
+        self.assertEqual(resp.json(), ["7000001", "7000002"])
         mock_service.assert_called_once_with(
-            "3123349", considerar_inativos=True
+            "9100003", considerar_inativos=True
         )
 
     @patch("apps.alunos.views.services.get_alunos_por_turma")
@@ -2589,7 +2589,7 @@ class AlunoTurmasViewTest(SimpleTestCase):
 class AlunosDaUeViewTest(SimpleTestCase):
     """Valida a view de alunos matriculados em uma UE."""
 
-    _URL = "/api/v1/alunos/ues/019362/anosLetivos/2026"
+    _URL = "/api/v1/alunos/ues/000001/anosLetivos/2026"
 
     @patch("apps.alunos.views.services.get_alunos_da_ue")
     def test_200_retorna_contrato_legado(
@@ -2611,7 +2611,7 @@ class AlunosDaUeViewTest(SimpleTestCase):
         self.assertEqual(aluno["descEtapaEnsino"], "Ensino Fundamental")
         self.assertEqual(aluno["descCicloEnsino"], "Ciclo Interdisciplinar")
         mock_service.assert_called_once_with(
-            "019362", "2026", "Fulano", "123456"
+            "000001", "2026", "Fulano", "123456"
         )
 
     @patch("apps.alunos.views.services.get_alunos_da_ue")
@@ -2825,7 +2825,7 @@ class TotalAlunosAtivosPeriodoViewTest(SimpleTestCase):
 
         resp = client.get(
             self._URL
-            + "?ue_id=100001&dre_id=108800&modalidades=5&modalidades=6"
+            + "?ue_id=100001&dre_id=100000&modalidades=5&modalidades=6"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -2836,7 +2836,7 @@ class TotalAlunosAtivosPeriodoViewTest(SimpleTestCase):
             data_inicio="2026-01-01",
             data_fim="2026-12-31",
             ue_id="100001",
-            dre_id="108800",
+            dre_id="100000",
             modalidades=["5", "6"],
         )
 
@@ -2910,7 +2910,7 @@ class AlunosListViewTest(SimpleTestCase):
 class CodigosTurmasRegularesAlunoViewTest(SimpleTestCase):
     """Valida o endpoint .../regulares (endpoint 3)."""
 
-    _PATH = "/api/turmas/anos-letivos/2026/alunos/7345634/regulares/"
+    _PATH = "/api/turmas/anos-letivos/2026/alunos/7000001/regulares/"
     _SVC = "apps.alunos.views.services.montar_codigos_turmas_regulares_aluno"
 
     @patch(_SVC)
@@ -2924,7 +2924,7 @@ class CodigosTurmasRegularesAlunoViewTest(SimpleTestCase):
         self.assertEqual(resp.json(), ["23456", "12345"])
         mock_service.assert_called_once_with(
             ano_letivo="2026",
-            codigo_aluno="7345634",
+            codigo_aluno="7000001",
             tipos_turma=[],
             ue_codigo=None,
             data_referencia=None,
@@ -2940,16 +2940,16 @@ class CodigosTurmasRegularesAlunoViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            self._PATH + "?tipos_turma=1&tipos_turma=5&ue_codigo=019370"
+            self._PATH + "?tipos_turma=1&tipos_turma=5&ue_codigo=000006"
             "&data_referencia=2026-06-01&semestre=1"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         mock_service.assert_called_once_with(
             ano_letivo="2026",
-            codigo_aluno="7345634",
+            codigo_aluno="7000001",
             tipos_turma=[1, 5],
-            ue_codigo="019370",
+            ue_codigo="000006",
             data_referencia="2026-06-01",
             semestre=1,
         )
@@ -3002,7 +3002,7 @@ class CodigoTurmaAlunoComponenteCurricularViewTest(SimpleTestCase):
     """Valida o endpoint componentes-curriculares (endpoint 4)."""
 
     _PATH = (
-        "/api/turmas/anos-letivos/2026/alunos/7345634/"
+        "/api/turmas/anos-letivos/2026/alunos/7000001/"
         "componentes-curriculares/512/"
     )
     _SVC = "apps.alunos.views.services.montar_codigos_turmas_regulares_aluno"
@@ -3015,7 +3015,7 @@ class CodigoTurmaAlunoComponenteCurricularViewTest(SimpleTestCase):
         mock_service.return_value = [12345]
         client = _cliente_autenticado()
 
-        resp = client.get(self._PATH + "?tipos_turma=1&ue_codigo=019370")
+        resp = client.get(self._PATH + "?tipos_turma=1&ue_codigo=000006")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), ["12345"])
@@ -3023,7 +3023,7 @@ class CodigoTurmaAlunoComponenteCurricularViewTest(SimpleTestCase):
         # ignorado (conforme a assinatura deste endpoint).
         mock_service.assert_called_once_with(
             ano_letivo="2026",
-            codigo_aluno="7345634",
+            codigo_aluno="7000001",
             tipos_turma=[1],
         )
 
@@ -3049,7 +3049,7 @@ class AlunoTurmasComHistoricoViewTest(SimpleTestCase):
     """Valida a view de turmas do aluno com histórico explícito."""
 
     _URL = (
-        "/api/v1/alunos/7074492/turmas/anosLetivos/2026/historico/false"
+        "/api/v1/alunos/7000005/turmas/anosLetivos/2026/historico/false"
         "/filtrar-situacao/true/tipo-turma/true"
     )
 
@@ -3065,7 +3065,7 @@ class AlunoTurmasComHistoricoViewTest(SimpleTestCase):
         self.assertEqual(data[0]["codigoAluno"], 123456)
         self.assertEqual(data[0]["codigoTurma"], 9001)
         mock_service.assert_called_once_with(
-            "7074492", "2026", "false", "true", "true"
+            "7000005", "2026", "false", "true", "true"
         )
 
     @patch("apps.alunos.views.services.get_turmas_aluno_com_historico")
@@ -3194,7 +3194,7 @@ class QuantidadeMatriculadosCCViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            self._URL + "?componentes_curriculares=1310&ue_id=093181"
+            self._URL + "?componentes_curriculares=1310&ue_id=000003"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -3216,7 +3216,7 @@ class QuantidadeMatriculadosCCViewTest(SimpleTestCase):
             ano_letivo="2026",
             componentes_curriculares=["1310"],
             dre_id=None,
-            ue_id="093181",
+            ue_id="000003",
         )
 
     @patch("apps.alunos.views.services.get_quantidade_matriculados_cc")
@@ -3255,8 +3255,8 @@ class Lote5ResponsaveisENomesViewTest(SimpleTestCase):
         """Verifica nomes, ordem e conversões do contrato legado."""
         mock_service.return_value = [
             {
-                "id": 3315866,
-                "cpf": "40312090889",
+                "id": 30000001,
+                "cpf": "11122233344",
                 "email": "responsavel@sme.com.br",
                 "nome": "RESPONSAVEL TESTE",
                 "tipo_responsavel": 1,
@@ -3267,10 +3267,10 @@ class Lote5ResponsaveisENomesViewTest(SimpleTestCase):
                 "nome_mae": "MAE TESTE",
                 "tipo_sigilo": 0,
                 "ddd_celular": "11",
-                "numero_celular": "982741442",
+                "numero_celular": "900009999",
                 "nome_aluno": "ALUNO TESTE",
-                "codigo_aluno": "6343226",
-                "numero_rg": "000000037112360",
+                "codigo_aluno": "60000001",
+                "numero_rg": "000000000000001",
                 "digito_rg": "4   ",
                 "uf_rg": "SP",
                 "cpf_confere": "S",
@@ -3287,7 +3287,7 @@ class Lote5ResponsaveisENomesViewTest(SimpleTestCase):
         ]
         client = _cliente_autenticado()
 
-        resp = client.get("/api/v1/alunos/responsaveis/40312090889")
+        resp = client.get("/api/v1/alunos/responsaveis/11122233344")
 
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(
@@ -3329,7 +3329,7 @@ class Lote5ResponsaveisENomesViewTest(SimpleTestCase):
             resp.json()[0]["dataNascimentoAluno"],
             "2011-08-11T00:00:00",
         )
-        mock_service.assert_called_once_with("40312090889")
+        mock_service.assert_called_once_with("11122233344")
 
     @patch("apps.alunos.views.services.atualizar_dados_responsavel")
     def test_post_responsavel_traduz_camel_case_e_retorna_booleano(
@@ -3432,8 +3432,8 @@ class Lote5ResponsaveisENomesViewTest(SimpleTestCase):
                 "situacao_matricula": "Remanejado Saída",
                 "codigo_escola": "100001",
                 "data_matricula": "2025-11-04T19:48:56.123",
-                "codigo_aluno": 7074492,
-                "codigo_turma": 3038827,
+                "codigo_aluno": 7000005,
+                "codigo_turma": 3000099,
                 "codigo_situacao_matricula": 14,
             }
         ]
@@ -3442,7 +3442,7 @@ class Lote5ResponsaveisENomesViewTest(SimpleTestCase):
         resp = client.post(
             "/api/v1/alunos/obter-nomes-alunos",
             {
-                "codigosAlunos": ["7074492"],
+                "codigosAlunos": ["7000005"],
                 "anoLetivo": 2026,
             },
             format="json",
@@ -3457,14 +3457,14 @@ class Lote5ResponsaveisENomesViewTest(SimpleTestCase):
                     "situacaoMatricula": "Remanejado Saída",
                     "codigoEscola": "100001",
                     "dataMatricula": "2025-11-04T19:48:56.123",
-                    "codigoAluno": 7074492,
-                    "codigoTurma": 3038827,
+                    "codigoAluno": 7000005,
+                    "codigoTurma": 3000099,
                     "codigoSituacaoMatricula": 14,
                 }
             ],
         )
         mock_service.assert_called_once_with(
-            codigos_alunos=["7074492"],
+            codigos_alunos=["7000005"],
             ano_letivo=2026,
         )
 
