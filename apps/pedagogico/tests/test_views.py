@@ -63,7 +63,7 @@ _REGENCIA = {
 _TURMA = {
     "ano": "1",
     "anoLetivo": 2026,
-    "codigo": 3034092,
+    "codigo": 9100001,
     "tipoTurma": 1,
     "modalidade": "Fundamental",
     "codigoModalidade": 5,
@@ -79,13 +79,13 @@ _TURMA = {
     "dataInicioTurma": "2026-02-04T00:00:00",
     "extinta": False,
     "situacao": "O",
-    "ueCodigo": "092622",
+    "ueCodigo": "000001",
 }
 
 _TURMA_HISTORICA_MS = {
     "ano": "7",
     "ano_letivo": 2025,
-    "codigo": 2825477,
+    "codigo": 9100017,
     "modalidade": "Infantil",
     "codigo_modalidade": 1,
     "nome_turma": "7A",
@@ -95,7 +95,7 @@ _TURMA_HISTORICA_MS = {
 _SINCRONIZACAO_INSTITUCIONAL = {
     "ano": "7",
     "ano_letivo": 2026,
-    "codigo": 3010807,
+    "codigo": 9100009,
     "tipo_turma": 1,
     "modalidade": "Infantil",
     "codigo_modalidade": 1,
@@ -110,7 +110,7 @@ _SINCRONIZACAO_INSTITUCIONAL = {
     "data_inicio_turma": "2026-02-04T03:00:00Z",
     "extinta": False,
     "situacao": "O",
-    "ue_codigo": "091120",
+    "ue_codigo": "000002",
     "data_atualizacao": "2026-06-17T08:11:45.807000Z",
     "data_status_turma_escola": "2026-06-03T18:46:18.833000Z",
     "etapa_ensino": 1,
@@ -124,7 +124,7 @@ _SINCRONIZACAO_INSTITUCIONAL = {
         {
             "nome_componente_curricular": "ED.INF. EMEI 4 HS",
             "componente_curricular_codigo": 512,
-            "registro_funcional": "7393423",
+            "registro_funcional": "7900004",
             "data_disponibizacao": None,
         }
     ],
@@ -144,7 +144,7 @@ _ITINERARIOS_ENSINO_MEDIO = [
 ]
 
 _ALUNO_ATIVO = {
-    "codigo_aluno": 7730117,
+    "codigo_aluno": 7000001,
     "nome_aluno": "Aluno Teste",
     "nome_social_aluno": None,
     "data_nascimento": "2020-07-10",
@@ -153,9 +153,9 @@ _ALUNO_ATIVO = {
     "data_situacao": "2025-12-08T11:42:14.66-03:00",
     "numero_aluno_chamada": None,
     "possui_deficiencia": False,
-    "codigo_matricula": 43790514,
-    "codigo_turma": 3010807,
-    "codigo_escola": "091120",
+    "codigo_matricula": 40000001,
+    "codigo_turma": 9100009,
+    "codigo_escola": "000002",
     "ano_letivo": 2026,
     "data_matricula": "2025-11-04T08:16:14.26-03:00",
     "nome_responsavel": "Responsavel",
@@ -163,7 +163,7 @@ _ALUNO_ATIVO = {
     "celular_responsavel": None,
     "data_atualizacao_contato": None,
     "sequencia": 1,
-    "codigo_dre": "109300",
+    "codigo_dre": "100000",
 }
 
 
@@ -203,18 +203,18 @@ class TurmasRegularesViewSetTest(SimpleTestCase):
         self,
         mock_svc: MagicMock,
     ) -> None:
-        mock_svc.return_value = ["3014194", "3024590"]
+        mock_svc.return_value = ["9100002", "9100003"]
         client = _cliente_autenticado()
 
         resp = client.post(
             f"{_PREFIX_TURMAS}/turmas-regulares/",
-            ["3024590", "3014194"],
+            ["9100003", "9100002"],
             format="json",
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.data, ["3014194", "3024590"])
-        mock_svc.assert_called_once_with(["3024590", "3014194"])
+        self.assertEqual(resp.data, ["9100002", "9100003"])
+        mock_svc.assert_called_once_with(["9100003", "9100002"])
 
     @patch("apps.pedagogico.views.services.post_turmas_regulares")
     def test_400_quando_payload_invalido(
@@ -225,7 +225,7 @@ class TurmasRegularesViewSetTest(SimpleTestCase):
 
         resp = client.post(
             f"{_PREFIX_TURMAS}/turmas-regulares/",
-            ["3024590", "ABC"],
+            ["9100003", "ABC"],
             format="json",
         )
 
@@ -258,18 +258,18 @@ class TurmasProgramaViewSetTest(SimpleTestCase):
         self,
         mock_svc: MagicMock,
     ) -> None:
-        mock_svc.return_value = ["3133093", "3133096"]
+        mock_svc.return_value = ["9100004", "9100005"]
         client = _cliente_autenticado()
 
         resp = client.post(
             f"{_PREFIX_TURMAS}/turmas-programa/",
-            ["3133093", "3133096"],
+            ["9100004", "9100005"],
             format="json",
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.data, ["3133093", "3133096"])
-        mock_svc.assert_called_once_with(["3133093", "3133096"])
+        self.assertEqual(resp.data, ["9100004", "9100005"])
+        mock_svc.assert_called_once_with(["9100004", "9100005"])
 
     @patch("apps.pedagogico.views.services.post_turmas_programa")
     def test_200_lista_vazia_sem_chamar_service(
@@ -302,14 +302,14 @@ class ListarTurmasViewSetTest(SimpleTestCase):
 
         resp = client.post(
             f"{_PREFIX_TURMAS}/listar-turmas/",
-            ["3034092"],
+            ["9100001"],
             format="json",
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.data[0]["codigo"], 3034092)
+        self.assertEqual(resp.data[0]["codigo"], 9100001)
         self.assertEqual(resp.data[0]["nomeTurma"], "1A")
-        mock_svc.assert_called_once_with(["3034092"])
+        mock_svc.assert_called_once_with(["9100001"])
 
     @patch("apps.pedagogico.views.services.post_listar_turmas")
     def test_200_lista_vazia_sem_chamar_service(
@@ -340,12 +340,12 @@ class DadosTurmaViewSetTest(SimpleTestCase):
         mock_svc.return_value = _TURMA
         client = _cliente_autenticado()
 
-        resp = client.get(f"{_PREFIX_TURMAS}/3034092/dados/")
+        resp = client.get(f"{_PREFIX_TURMAS}/9100001/dados/")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.data["codigo"], 3034092)
-        self.assertEqual(resp.data["ueCodigo"], "092622")
-        mock_svc.assert_called_once_with("3034092")
+        self.assertEqual(resp.data["codigo"], 9100001)
+        self.assertEqual(resp.data["ueCodigo"], "000001")
+        mock_svc.assert_called_once_with("9100001")
 
 
 class AlunosAtivosTurmaSemRedisViewSetTest(SimpleTestCase):
@@ -359,10 +359,10 @@ class AlunosAtivosTurmaSemRedisViewSetTest(SimpleTestCase):
         mock_svc.return_value = [_ALUNO_ATIVO]
         client = _cliente_autenticado()
 
-        resp = client.get(f"{_PREFIX_TURMAS}/3010807/sem-redis/")
+        resp = client.get(f"{_PREFIX_TURMAS}/9100009/sem-redis/")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.data[0]["codigoAluno"], 7730117)
+        self.assertEqual(resp.data[0]["codigoAluno"], 7000001)
         self.assertEqual(resp.data[0]["codigoComponenteCurricular"], 0)
         self.assertIsNone(resp.data[0]["numeroAlunoChamada"])
         self.assertEqual(resp.data[0]["transferencia_Interna"], False)
@@ -374,7 +374,7 @@ class AlunosAtivosTurmaSemRedisViewSetTest(SimpleTestCase):
         self.assertEqual(
             resp.data[0]["dataSituacao"], "2025-12-08T11:42:14.66"
         )
-        mock_svc.assert_called_once_with(codigo_turma="3010807")
+        mock_svc.assert_called_once_with(codigo_turma="9100009")
 
     @patch("apps.pedagogico.views.services.get_alunos_ativos_turma_sem_redis")
     def test_200_ordena_por_numero_chamada_asc(
@@ -388,7 +388,7 @@ class AlunosAtivosTurmaSemRedisViewSetTest(SimpleTestCase):
         ]
         client = _cliente_autenticado()
 
-        resp = client.get(f"{_PREFIX_TURMAS}/3010807/sem-redis/")
+        resp = client.get(f"{_PREFIX_TURMAS}/9100009/sem-redis/")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(
@@ -397,9 +397,9 @@ class AlunosAtivosTurmaSemRedisViewSetTest(SimpleTestCase):
         )
 
     def test_preserva_codigo_turma_na_rota(self) -> None:
-        match = resolve(f"{_PREFIX_TURMAS}/3010807/sem-redis/")
+        match = resolve(f"{_PREFIX_TURMAS}/9100009/sem-redis/")
 
-        self.assertEqual(match.kwargs, {"codigo_turma": "3010807"})
+        self.assertEqual(match.kwargs, {"codigo_turma": "9100009"})
 
     @patch("apps.pedagogico.views.services.get_alunos_ativos_turma_sem_redis")
     def test_204_quando_codigo_turma_invalido(
@@ -435,11 +435,11 @@ class AlunosAtivosTurmaSemRedisViewSetTest(SimpleTestCase):
         mock_svc.return_value = []
         client = _cliente_autenticado()
 
-        resp = client.get(f"{_PREFIX_TURMAS}/3010807/sem-redis/")
+        resp = client.get(f"{_PREFIX_TURMAS}/9100009/sem-redis/")
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
         self.assertIsNone(resp.data)
-        mock_svc.assert_called_once_with(codigo_turma="3010807")
+        mock_svc.assert_called_once_with(codigo_turma="9100009")
 
     @patch("apps.pedagogico.views.services.get_alunos_ativos_turma_sem_redis")
     def test_preserva_erro_http_do_sidecar(
@@ -459,7 +459,7 @@ class AlunosAtivosTurmaSemRedisViewSetTest(SimpleTestCase):
         )
         client = _cliente_autenticado()
 
-        resp = client.get(f"{_PREFIX_TURMAS}/3010807/sem-redis/")
+        resp = client.get(f"{_PREFIX_TURMAS}/9100009/sem-redis/")
 
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(resp.data, {"detail": "Turma nÃ£o encontrada."})
@@ -476,7 +476,7 @@ class AlunosAtivosTurmaSemRedisViewSetTest(SimpleTestCase):
         )
         client = _cliente_autenticado()
 
-        resp = client.get(f"{_PREFIX_TURMAS}/3010807/sem-redis/")
+        resp = client.get(f"{_PREFIX_TURMAS}/9100009/sem-redis/")
 
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertEqual(
@@ -487,7 +487,7 @@ class AlunosAtivosTurmaSemRedisViewSetTest(SimpleTestCase):
     def test_403_sem_autenticacao(self) -> None:
         client = APIClient()
 
-        resp = client.get(f"{_PREFIX_TURMAS}/3010807/sem-redis/")
+        resp = client.get(f"{_PREFIX_TURMAS}/9100009/sem-redis/")
 
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -506,23 +506,23 @@ class AlunosAtivosTurmaRedisMultplexViewSetTest(SimpleTestCase):
         mock_svc.return_value = [_ALUNO_ATIVO]
         client = _cliente_autenticado()
 
-        resp = client.get(f"{_PREFIX_TURMAS}/2822152/redis-Multplex/")
+        resp = client.get(f"{_PREFIX_TURMAS}/9100015/redis-Multplex/")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.data[0]["codigoAluno"], 7730117)
+        self.assertEqual(resp.data[0]["codigoAluno"], 7000001)
         self.assertEqual(resp.data[0]["codigoComponenteCurricular"], 0)
         self.assertEqual(resp.data[0]["numeroAlunoChamada"], "000")
         self.assertEqual(resp.data[0]["transferencia_Interna"], False)
         self.assertEqual(resp.data[0]["ano"], 2026)
-        self.assertEqual(resp.data[0]["codigoDre"], "109300")
-        self.assertEqual(resp.data[0]["codigoEscola"], "091120")
-        self.assertEqual(resp.data[0]["codigoTurma"], 3010807)
-        mock_svc.assert_called_once_with(codigo_turma="2822152")
+        self.assertEqual(resp.data[0]["codigoDre"], "100000")
+        self.assertEqual(resp.data[0]["codigoEscola"], "000002")
+        self.assertEqual(resp.data[0]["codigoTurma"], 9100009)
+        mock_svc.assert_called_once_with(codigo_turma="9100015")
 
     def test_preserva_codigo_turma_na_rota(self) -> None:
-        match = resolve(f"{_PREFIX_TURMAS}/2822152/redis-Multplex/")
+        match = resolve(f"{_PREFIX_TURMAS}/9100015/redis-Multplex/")
 
-        self.assertEqual(match.kwargs, {"codigo_turma": "2822152"})
+        self.assertEqual(match.kwargs, {"codigo_turma": "9100015"})
 
     @patch(
         "apps.pedagogico.views.services."
@@ -567,11 +567,11 @@ class AlunosAtivosTurmaRedisMultplexViewSetTest(SimpleTestCase):
         mock_svc.return_value = []
         client = _cliente_autenticado()
 
-        resp = client.get(f"{_PREFIX_TURMAS}/2822152/redis-Multplex/")
+        resp = client.get(f"{_PREFIX_TURMAS}/9100015/redis-Multplex/")
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
         self.assertIsNone(resp.data)
-        mock_svc.assert_called_once_with(codigo_turma="2822152")
+        mock_svc.assert_called_once_with(codigo_turma="9100015")
 
     @patch(
         "apps.pedagogico.views.services."
@@ -594,7 +594,7 @@ class AlunosAtivosTurmaRedisMultplexViewSetTest(SimpleTestCase):
         )
         client = _cliente_autenticado()
 
-        resp = client.get(f"{_PREFIX_TURMAS}/2822152/redis-Multplex/")
+        resp = client.get(f"{_PREFIX_TURMAS}/9100015/redis-Multplex/")
 
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(resp.data, {"detail": "Turma não encontrada."})
@@ -614,7 +614,7 @@ class AlunosAtivosTurmaRedisMultplexViewSetTest(SimpleTestCase):
         )
         client = _cliente_autenticado()
 
-        resp = client.get(f"{_PREFIX_TURMAS}/2822152/redis-Multplex/")
+        resp = client.get(f"{_PREFIX_TURMAS}/9100015/redis-Multplex/")
 
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertEqual(
@@ -625,7 +625,7 @@ class AlunosAtivosTurmaRedisMultplexViewSetTest(SimpleTestCase):
     def test_403_sem_autenticacao(self) -> None:
         client = APIClient()
 
-        resp = client.get(f"{_PREFIX_TURMAS}/2822152/redis-Multplex/")
+        resp = client.get(f"{_PREFIX_TURMAS}/9100015/redis-Multplex/")
 
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -643,13 +643,13 @@ class AlunosTurmaConsideraInativosViewSetTest(SimpleTestCase):
         mock_svc.return_value = [_ALUNO_ATIVO]
         client = _cliente_autenticado()
 
-        resp = client.get(f"{_PREFIX_TURMAS}/2822152/considera-inativos/true/")
+        resp = client.get(f"{_PREFIX_TURMAS}/9100015/considera-inativos/true/")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.data[0]["codigoAluno"], 7730117)
-        self.assertEqual(resp.data[0]["codigoTurma"], 3010807)
+        self.assertEqual(resp.data[0]["codigoAluno"], 7000001)
+        self.assertEqual(resp.data[0]["codigoTurma"], 9100009)
         mock_svc.assert_called_once_with(
-            codigo_turma="2822152",
+            codigo_turma="9100015",
             considera_inativos="true",
         )
 
@@ -664,22 +664,22 @@ class AlunosTurmaConsideraInativosViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            f"{_PREFIX_TURMAS}/2822152/considera-inativos/false/"
+            f"{_PREFIX_TURMAS}/9100015/considera-inativos/false/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.data, [])
         mock_svc.assert_called_once_with(
-            codigo_turma="2822152",
+            codigo_turma="9100015",
             considera_inativos="false",
         )
 
     def test_preserva_kwargs_na_rota(self) -> None:
-        match = resolve(f"{_PREFIX_TURMAS}/2822152/considera-inativos/true/")
+        match = resolve(f"{_PREFIX_TURMAS}/9100015/considera-inativos/true/")
 
         self.assertEqual(
             match.kwargs,
-            {"codigo_turma": "2822152", "considera_inativos": "true"},
+            {"codigo_turma": "9100015", "considera_inativos": "true"},
         )
 
     @patch(
@@ -732,7 +732,7 @@ class AlunosTurmaConsideraInativosViewSetTest(SimpleTestCase):
         )
         client = _cliente_autenticado()
 
-        resp = client.get(f"{_PREFIX_TURMAS}/2822152/considera-inativos/true/")
+        resp = client.get(f"{_PREFIX_TURMAS}/9100015/considera-inativos/true/")
 
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(resp.data, {"detail": "Turma não encontrada."})
@@ -758,7 +758,7 @@ class AlunosTurmaConsideraInativosViewSetTest(SimpleTestCase):
         )
         client = _cliente_autenticado()
 
-        resp = client.get(f"{_PREFIX_TURMAS}/2822152/considera-inativos/true/")
+        resp = client.get(f"{_PREFIX_TURMAS}/9100015/considera-inativos/true/")
 
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(resp.data, {"detail": "Bad Gateway"})
@@ -777,7 +777,7 @@ class AlunosTurmaConsideraInativosViewSetTest(SimpleTestCase):
         )
         client = _cliente_autenticado()
 
-        resp = client.get(f"{_PREFIX_TURMAS}/2822152/considera-inativos/true/")
+        resp = client.get(f"{_PREFIX_TURMAS}/9100015/considera-inativos/true/")
 
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertEqual(
@@ -788,7 +788,7 @@ class AlunosTurmaConsideraInativosViewSetTest(SimpleTestCase):
     def test_403_sem_autenticacao(self) -> None:
         client = APIClient()
 
-        resp = client.get(f"{_PREFIX_TURMAS}/2822152/considera-inativos/true/")
+        resp = client.get(f"{_PREFIX_TURMAS}/9100015/considera-inativos/true/")
 
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -808,7 +808,7 @@ class TurmasHistoricasGeraisProfessorViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         response = client.get(
-            f"{_PREFIX_TURMAS}/anos-letivos/2025/professor/08381399/"
+            f"{_PREFIX_TURMAS}/anos-letivos/2025/professor/07900002/"
             "turmas-historicas-geral/"
         )
 
@@ -819,7 +819,7 @@ class TurmasHistoricasGeraisProfessorViewSetTest(SimpleTestCase):
         self.assertIsNone(response.data[0]["ueCodigo"])
         mock_service.assert_called_once_with(
             ano_letivo=2025,
-            professor_rf="08381399",
+            professor_rf="07900002",
         )
 
     @patch(
@@ -834,7 +834,7 @@ class TurmasHistoricasGeraisProfessorViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         response = client.get(
-            f"{_PREFIX_TURMAS}/anos-letivos/2025/professor/8381399/"
+            f"{_PREFIX_TURMAS}/anos-letivos/2025/professor/7900002/"
             "turmas-historicas-geral/"
         )
 
@@ -845,7 +845,7 @@ class TurmasHistoricasGeraisProfessorViewSetTest(SimpleTestCase):
         client = APIClient()
 
         response = client.get(
-            f"{_PREFIX_TURMAS}/anos-letivos/2025/professor/8381399/"
+            f"{_PREFIX_TURMAS}/anos-letivos/2025/professor/7900002/"
             "turmas-historicas-geral/"
         )
 
@@ -873,7 +873,7 @@ class TurmasHistoricasGeraisProfessorViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         response = client.get(
-            f"{_PREFIX_TURMAS}/anos-letivos/2025/professor/8381399/"
+            f"{_PREFIX_TURMAS}/anos-letivos/2025/professor/7900002/"
             "turmas-historicas-geral/"
         )
 
@@ -905,7 +905,7 @@ class TurmasHistoricasGeraisProfessorViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         response = client.get(
-            f"{_PREFIX_TURMAS}/anos-letivos/2025/professor/8381399/"
+            f"{_PREFIX_TURMAS}/anos-letivos/2025/professor/7900002/"
             "turmas-historicas-geral/"
         )
 
@@ -931,7 +931,7 @@ class TurmasHistoricasGeraisProfessorViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         response = client.get(
-            f"{_PREFIX_TURMAS}/anos-letivos/2025/professor/8381399/"
+            f"{_PREFIX_TURMAS}/anos-letivos/2025/professor/7900002/"
             "turmas-historicas-geral/"
         )
 
@@ -958,7 +958,7 @@ class TurmasHistoricasGeraisProfessorViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         response = client.get(
-            f"{_PREFIX_TURMAS}/anos-letivos/2025/professor/8381399/"
+            f"{_PREFIX_TURMAS}/anos-letivos/2025/professor/7900002/"
             "turmas-historicas-geral/"
         )
 
@@ -980,7 +980,7 @@ class TurmasHistoricasGeraisProfessorViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         response = client.get(
-            f"{_PREFIX_TURMAS}/anos-letivos/2025/professor/8381399/"
+            f"{_PREFIX_TURMAS}/anos-letivos/2025/professor/7900002/"
             "turmas-historicas-geral/"
         )
 
@@ -1002,28 +1002,28 @@ class SincronizacaoInstitucionalTurmaViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            f"{_PREFIX_UES}/091120/turmas/3010807/"
+            f"{_PREFIX_UES}/000002/turmas/9100009/"
             "sincronizacoes-institucionais/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.data["modalidade"], "1")
         self.assertEqual(resp.data["tipoGradePrograma"], 1)
-        self.assertEqual(resp.data["ueCodigo"], "091120")
+        self.assertEqual(resp.data["ueCodigo"], "000002")
         self.assertEqual(
             resp.data["componentes"][0]["registroFuncional"],
-            "7393423",
+            "7900004",
         )
         mock_svc.assert_called_once_with(
-            codigo_ue="091120",
-            codigo_turma="3010807",
+            codigo_ue="000002",
+            codigo_turma="9100009",
         )
 
     def test_403_sem_autenticacao(self) -> None:
         client = APIClient()
 
         resp = client.get(
-            f"{_PREFIX_UES}/091120/turmas/3010807/"
+            f"{_PREFIX_UES}/000002/turmas/9100009/"
             "sincronizacoes-institucionais/"
         )
 
@@ -1040,7 +1040,7 @@ class SincronizacaoInstitucionalTurmaViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            f"{_PREFIX_UES}/091120/turmas/abc/"
+            f"{_PREFIX_UES}/000002/turmas/abc/"
             "sincronizacoes-institucionais/"
         )
 
@@ -1062,7 +1062,7 @@ class SincronizacaoInstitucionalTurmaViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            f"{_PREFIX_UES}/091120/turmas/0/sincronizacoes-institucionais/"
+            f"{_PREFIX_UES}/000002/turmas/0/sincronizacoes-institucionais/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -1094,7 +1094,7 @@ class SincronizacaoInstitucionalTurmaViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            f"{_PREFIX_UES}/091120/turmas/3010807/"
+            f"{_PREFIX_UES}/000002/turmas/9100009/"
             "sincronizacoes-institucionais/"
         )
 
@@ -1123,7 +1123,7 @@ class SincronizacaoInstitucionalTurmaViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            f"{_PREFIX_UES}/091120/turmas/3010807/"
+            f"{_PREFIX_UES}/000002/turmas/9100009/"
             "sincronizacoes-institucionais/"
         )
 
@@ -1149,7 +1149,7 @@ class SincronizacaoInstitucionalTurmaViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            f"{_PREFIX_UES}/091120/turmas/3010807/"
+            f"{_PREFIX_UES}/000002/turmas/9100009/"
             "sincronizacoes-institucionais/"
         )
 
@@ -1171,19 +1171,19 @@ class SincronizacoesInstitucionaisAnosLetivosViewSetTest(SimpleTestCase):
         self,
         mock_svc: MagicMock,
     ) -> None:
-        mock_svc.return_value = [3036295, 3082921, 3036225]
+        mock_svc.return_value = [9100010, 9100011, 9100012]
         client = _cliente_autenticado()
 
         resp = client.get(
-            f"{_PREFIX_TURMAS}/ue/019437/"
+            f"{_PREFIX_TURMAS}/ue/000003/"
             "sincronizacoes-institucionais/anos-letivos/"
             "?anos_letivos_vigente=2025&anos_letivos_vigente=2026"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.data, [3036295, 3082921, 3036225])
+        self.assertEqual(resp.data, [9100010, 9100011, 9100012])
         mock_svc.assert_called_once_with(
-            codigo_ue="019437",
+            codigo_ue="000003",
             anos_letivos_vigente=[2025, 2026],
         )
 
@@ -1199,14 +1199,14 @@ class SincronizacoesInstitucionaisAnosLetivosViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            f"{_PREFIX_TURMAS}/ue/019437/"
+            f"{_PREFIX_TURMAS}/ue/000003/"
             "sincronizacoes-institucionais/anos-letivos/",
             {"anos_letivos_vigente": "[2025, 2026]"},
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         mock_svc.assert_called_once_with(
-            codigo_ue="019437",
+            codigo_ue="000003",
             anos_letivos_vigente=[2025, 2026],
         )
 
@@ -1222,13 +1222,13 @@ class SincronizacoesInstitucionaisAnosLetivosViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            f"{_PREFIX_TURMAS}/ue/019437/"
+            f"{_PREFIX_TURMAS}/ue/000003/"
             "sincronizacoes-institucionais/anos-letivos/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         mock_svc.assert_called_once_with(
-            codigo_ue="019437",
+            codigo_ue="000003",
             anos_letivos_vigente=None,
         )
 
@@ -1243,7 +1243,7 @@ class SincronizacoesInstitucionaisAnosLetivosViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            f"{_PREFIX_TURMAS}/ue/019437/"
+            f"{_PREFIX_TURMAS}/ue/000003/"
             "sincronizacoes-institucionais/anos-letivos/"
             "?anos_letivos_vigente=invalido"
         )
@@ -1255,7 +1255,7 @@ class SincronizacoesInstitucionaisAnosLetivosViewSetTest(SimpleTestCase):
         client = APIClient()
 
         resp = client.get(
-            f"{_PREFIX_TURMAS}/ue/019437/"
+            f"{_PREFIX_TURMAS}/ue/000003/"
             "sincronizacoes-institucionais/anos-letivos/"
         )
 
@@ -1283,7 +1283,7 @@ class SincronizacoesInstitucionaisAnosLetivosViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            f"{_PREFIX_TURMAS}/ue/019437/"
+            f"{_PREFIX_TURMAS}/ue/000003/"
             "sincronizacoes-institucionais/anos-letivos/"
         )
 
@@ -1312,7 +1312,7 @@ class SincronizacoesInstitucionaisAnosLetivosViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            f"{_PREFIX_TURMAS}/ue/019437/"
+            f"{_PREFIX_TURMAS}/ue/000003/"
             "sincronizacoes-institucionais/anos-letivos/"
         )
 
@@ -1338,7 +1338,7 @@ class SincronizacoesInstitucionaisAnosLetivosViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            f"{_PREFIX_TURMAS}/ue/019437/"
+            f"{_PREFIX_TURMAS}/ue/000003/"
             "sincronizacoes-institucionais/anos-letivos/"
         )
 
@@ -1557,7 +1557,7 @@ class TurmasPorTipoSalaViewSetTest(SimpleTestCase):
     """Valida a listagem de turmas por UE/tipo de sala/ano letivo."""
 
     _TURMA = {
-        "codigo_turma": 2112345,
+        "codigo_turma": 9100018,
         "nome_turma": "3A EF",
         "tipo_turma": 1,
         "situacao": "A",
@@ -1577,7 +1577,7 @@ class TurmasPorTipoSalaViewSetTest(SimpleTestCase):
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.data[0]["codigoTurma"], 2112345)
+        self.assertEqual(resp.data[0]["codigoTurma"], 9100018)
         self.assertEqual(resp.data[0]["tipoTurma"], "1")
         mock_svc.assert_called_once_with(
             codigo_ue="000532", tipo_sala="1", ano_letivo="2024"
@@ -1613,7 +1613,7 @@ class TurmasPorEscolaViewSetTest(SimpleTestCase):
     """Valida a listagem de turmas por UE/ano letivo."""
 
     _TURMA = {
-        "codigo_turma": 2112345,
+        "codigo_turma": 9100018,
         "nome_turma_eol": "3A",
         "nome_turma": "EF - 3A",
         "tipo_turma": 1,
@@ -1668,7 +1668,7 @@ class TurmasSondagemViewSetTest(SimpleTestCase):
     """Valida a listagem de turmas de Sondagem por UE/ano letivo."""
 
     _TURMA = {
-        "codigo_turma": 2112345,
+        "codigo_turma": 9100018,
         "nome_turma": "5A EF",
         "tipo_turma": 1,
         "situacao": "A",
@@ -2306,9 +2306,9 @@ _AGRUPAMENTO: dict[str, Any] = {
     "regencia": False,
     "planejamento_regencia": False,
     "territorio_saber": True,
-    "turma_codigo": "2524172",
+    "turma_codigo": "9100019",
     "exibir_componente_eol": True,
-    "professor": "6232191",
+    "professor": "7900005",
     "codigos_territorios_agrupamento": [1214],
 }
 
@@ -2592,8 +2592,8 @@ class ListagemTurmasComponentesViewSetTest(SimpleTestCase):
         """Item de território carrega id e RF do professor da atribuição."""
         item = {
             **_ITEM_LISTAGEM,
-            "id": "808137",
-            "registro_funcional": "8285411",
+            "id": "800001",
+            "registro_funcional": "7900006",
             "territorio_saber": True,
             "componente_curricular_territorio_saber_codigo": 1214,
         }
@@ -2607,8 +2607,8 @@ class ListagemTurmasComponentesViewSetTest(SimpleTestCase):
         resp = client.get(_PATH_LISTAGEM)
 
         legado = resp.data["items"][0]
-        self.assertEqual(legado["id"], "808137")
-        self.assertEqual(legado["registroFuncional"], "8285411")
+        self.assertEqual(legado["id"], "800001")
+        self.assertEqual(legado["registroFuncional"], "7900006")
         self.assertTrue(legado["territorioSaber"])
 
     @patch("apps.pedagogico.views.services.get_listagem_turmas_componentes")
