@@ -83,6 +83,14 @@ SPECTACULAR_SETTINGS = {
     # Mantém os parâmetros na ordem declarada nas views, alinhada ao Swagger
     # do legado, em vez da ordenação alfabética padrão.
     "SORT_OPERATION_PARAMETERS": False,
+    # A ordenação padrão de tags segue a ordem alfabética dos paths
+    # (SORT_OPERATIONS), o que coloca "/api/DREs/..." antes de
+    # "/api/abrangencia/...". Força Abrangencia acima de
+    # DiretoriaRegionalEducacao no agrupamento do Swagger UI.
+    "TAGS": [
+        {"name": "Abrangencia"},
+        {"name": "DiretoriaRegionalEducacao"},
+    ],
     "APPEND_COMPONENTS": {
         "securitySchemes": {
             "ApiKeyAuth": {
