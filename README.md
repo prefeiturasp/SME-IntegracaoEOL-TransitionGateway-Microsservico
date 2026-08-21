@@ -65,6 +65,14 @@ Preserva contratos legados relacionados a turmas e alunos de programas
 educacionais. As decisões de elegibilidade e composição dos dados permanecem
 nos microserviços responsáveis.
 
+### Abrangência
+
+Preserva o contrato legado `GET/POST /api/abrangencia/estrutura-vigente`
+(árvore DRE→UE→turma). Os dados vêm inteiramente do domínio Pedagógico
+(tabela `turma_atribuida_dre_ue`, já denormalizada com DRE/UE); o gateway só
+descarta o campo interno `abrangencia` do payload do sidecar e formata as
+datas de cada turma no padrão do legado.
+
 Para detalhes de rotas, parâmetros, métodos HTTP e exemplos de resposta,
 consulte o Swagger da aplicação. Essa é a fonte mantida para o contrato
 operacional da API.
