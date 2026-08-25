@@ -1042,21 +1042,13 @@ def get_dados_aula_turma(
     if semestre is not None:
         params["semestre"] = semestre
 
-    payload = _client.get(
-        f"{_BASE}/turmas/vigencia",
-        params=params,
-    ).json()
-    return [
-        {
-            "componenteCurricularCodigo": item["componente_codigo"],
-            "componenteCurricularDescricao": item["componente_descricao"],
-            "turmaCodigo": item["turma_codigo"],
-            "dataInicioTurma": formatar_datetime_legado(
-                item.get("data_inicio_turma")
-            ),
-        }
-        for item in payload
-    ]
+    return cast(
+        list[dict[str, Any]],
+        _client.get(
+            f"{_BASE}/turmas/vigencia",
+            params=params,
+        ).json(),
+    )
 
 
 def _ticks_dotnet_para_data(data_base_tick: int) -> str:

@@ -598,10 +598,18 @@ class ComponenteRegenciaSerializer(serializers.Serializer):
 class DadosAulaTurmaSerializer(serializers.Serializer):
     """Serializa dados de aula por turma no contrato legado."""
 
-    componenteCurricularCodigo = serializers.CharField()
-    componenteCurricularDescricao = serializers.CharField()
-    turmaCodigo = serializers.CharField()
-    dataInicioTurma = serializers.CharField(allow_null=True)
+    componenteCurricularCodigo = serializers.CharField(
+        source="componente_codigo"
+    )
+    componenteCurricularDescricao = serializers.CharField(
+        source="componente_descricao"
+    )
+    turmaCodigo = serializers.CharField(source="turma_codigo")
+    dataInicioTurma = DataHoraLegadoField(
+        source="data_inicio_turma",
+        allow_null=True,
+        required=False,
+    )
 
 
 class GradeCurricularSerializer(serializers.Serializer):

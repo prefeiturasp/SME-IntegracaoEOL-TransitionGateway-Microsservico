@@ -846,7 +846,9 @@ class TurmasPorTipoSalaViewSet(PedagogicoAPIView):
 
     @extend_schema(
         tags=_TAG_ESCOLA,
-        description="Retorna as turmas da UE/ano letivo filtradas por tipo de sala.",
+        description=(
+            "Retorna as turmas da UE/ano letivo filtradas por tipo de sala."
+        ),
         responses={200: TurmaPorSalaSerializer(many=True), 404: str},
     )
     def get(

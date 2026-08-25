@@ -1635,9 +1635,7 @@ class TurmasPorEscolaViewSetTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.data[0]["nomeTurmaEOL"], "3A")
         self.assertEqual(resp.data[0]["siglaModalidade"], "EF")
-        mock_svc.assert_called_once_with(
-            codigo_ue="000532", ano_letivo="2024"
-        )
+        mock_svc.assert_called_once_with(codigo_ue="000532", ano_letivo="2024")
 
     @patch("apps.pedagogico.views.services.get_turmas_por_escola")
     def test_200_lista_vazia_sem_traducao_para_404(
@@ -1686,9 +1684,7 @@ class TurmasSondagemViewSetTest(SimpleTestCase):
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        mock_svc.assert_called_once_with(
-            codigo_ue="000532", ano_letivo="2024"
-        )
+        mock_svc.assert_called_once_with(codigo_ue="000532", ano_letivo="2024")
 
     @patch("apps.pedagogico.views.services.get_turmas_sondagem")
     def test_404_quando_vazio(self, mock_svc: MagicMock) -> None:
@@ -2181,10 +2177,10 @@ class DadosAulaTurmaViewSetTest(SimpleTestCase):
     def test_repassa_filtros(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [
             {
-                "componenteCurricularCodigo": "138",
-                "componenteCurricularDescricao": "LINGUA PORTUGUESA",
-                "turmaCodigo": "T001",
-                "dataInicioTurma": "2024-02-05T00:00:00",
+                "componente_codigo": "138",
+                "componente_descricao": "LINGUA PORTUGUESA",
+                "turma_codigo": "T001",
+                "data_inicio_turma": "2024-02-05T03:00:00Z",
             }
         ]
         client = _cliente_autenticado()

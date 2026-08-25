@@ -1118,9 +1118,7 @@ class GetTurmasSondagemTest(SimpleTestCase):
         mock_get.return_value = mock_response
 
         with self.assertRaises(ValueError):
-            services.get_turmas_sondagem(
-                codigo_ue="000532", ano_letivo="2024"
-            )
+            services.get_turmas_sondagem(codigo_ue="000532", ano_letivo="2024")
 
 
 class GetComponentesUeAnosTest(SimpleTestCase):
@@ -1329,7 +1327,7 @@ class GetDadosAulaTurmaTest(SimpleTestCase):
     """Valida a consulta de dados de aula por turma."""
 
     @patch("apps.pedagogico.services._client")
-    def test_mapeia_resposta_para_legado(
+    def test_retorna_payload_bruto(
         self,
         mock_client: MagicMock,
     ) -> None:
@@ -1362,10 +1360,10 @@ class GetDadosAulaTurmaTest(SimpleTestCase):
             result,
             [
                 {
-                    "componenteCurricularCodigo": "138",
-                    "componenteCurricularDescricao": "LINGUA PORTUGUESA",
-                    "turmaCodigo": "T001",
-                    "dataInicioTurma": "2024-02-05T00:00:00",
+                    "componente_codigo": "138",
+                    "componente_descricao": "LINGUA PORTUGUESA",
+                    "turma_codigo": "T001",
+                    "data_inicio_turma": "2024-02-05T03:00:00Z",
                 }
             ],
         )
