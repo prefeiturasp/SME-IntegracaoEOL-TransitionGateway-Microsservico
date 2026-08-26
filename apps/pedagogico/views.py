@@ -1266,6 +1266,13 @@ class ComponentesTurmaFuncionarioViewSet(PedagogicoAPIView):
         ),
         parameters=[
             OpenApiParameter(
+                "id_perfil",
+                OpenApiTypes.UUID,
+                OpenApiParameter.PATH,
+                required=True,
+                description="Identificador do perfil do funcionário (GUID).",
+            ),
+            OpenApiParameter(
                 "agrupa_componente_curricular",
                 OpenApiTypes.BOOL,
                 OpenApiParameter.PATH,

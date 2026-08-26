@@ -557,6 +557,15 @@ class ComponenteCurricularSerializer(serializers.Serializer):
         child=serializers.IntegerField(),
         allow_empty=True,
     )  # NOSONAR
+    atribuicaoAtiva = serializers.BooleanField(
+        source="atribuicao_ativa", default=False
+    )  # NOSONAR
+    inicioAtribuicao = DataHoraLegadoField(
+        source="inicio_atribuicao", allow_null=True, default=None
+    )  # NOSONAR
+    fimAtribuicao = DataHoraLegadoField(
+        source="fim_atribuicao", allow_null=True, default=None
+    )  # NOSONAR
 
 
 class ComponenteRegenciaSerializer(serializers.Serializer):
