@@ -2083,6 +2083,36 @@ class ComponentesTurmaFuncionarioViewSetTest(SimpleTestCase):
         )
 
     @patch("apps.pedagogico.views.services.get_componentes_turma_funcionario")
+    def test_get_formata_vigencia_da_atribuicao_no_padrao_legado(
+        self,
+        mock_svc: MagicMock,
+    ) -> None:
+        """Converte a vigência UTC do sidecar para o horário local do legado."""
+        mock_svc.return_value = [
+            {
+                **_CC,
+                "atribuicao_ativa": True,
+                "inicio_atribuicao": "2025-12-23T03:00:00Z",
+                "fim_atribuicao": "2026-12-22T03:00:00Z",
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX}/turmas/T001/funcionarios/RF001/perfis/P1/"
+            "agrupaComponenteCurricular/false/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertTrue(resp.data[0]["atribuicaoAtiva"])
+        self.assertEqual(
+            resp.data[0]["inicioAtribuicao"], "2025-12-23T00:00:00"
+        )
+        self.assertEqual(
+            resp.data[0]["fimAtribuicao"], "2026-12-22T00:00:00"
+        )
+
+    @patch("apps.pedagogico.views.services.get_componentes_turma_funcionario")
     def test_get_retorna_204_quando_vazio(
         self,
         mock_svc: MagicMock,
