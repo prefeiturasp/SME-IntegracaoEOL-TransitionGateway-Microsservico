@@ -40,6 +40,7 @@ from apps.alunos.serializers import (
     TodosAlunosTurmaSerializer,
     TurmaDoAlunoSerializer,
 )
+from apps.core.datetime import validar_data_str
 from apps.core.responses import (
     Response,
     api_error_response_status_livre,
@@ -69,6 +70,7 @@ _MSG_ANO_MODALIDADE_OBRIGATORIOS = (
 _MSG_DATA_TICKS_OBRIGATORIA = (
     "O código da turma e data da aula são obrigatórios"
 )
+_MSG_DATA_OBRIGATORIA = "O código da turma e data da aula são obrigatórios"
 _DOMINIO_ALUNOS = "alunos"
 _MSG_LEGADO_ERRO_INESPERADO = (
     "Houve um comportamento inesperado do sistema. Por favor, contate a SME."
@@ -1075,6 +1077,7 @@ class AlunosAtivosDataAulaTicksView(AlunosAPIView):
             ),
         ],
         responses={200: AlunoMatriculaTurmaSerializer(many=True)},
+        deprecated=True,
     )
     def get(
         self,
@@ -1112,6 +1115,71 @@ class AlunosAtivosDataAulaTicksView(AlunosAPIView):
         return Response(serializer.data)
 
 
+class AlunosAtivosDataAulaView(AlunosAPIView):
+    """Lista alunos ativos de uma turma na data da aula."""
+
+    @extend_schema(
+        tags=["Turma"],
+        description=(
+            "Retorna os alunos da turma na data da aula informada (data no "
+            "formato ISO 8601 no path)."
+        ),
+        parameters=[
+            OpenApiParameter(
+                "codigo_turma",
+                int,
+                OpenApiParameter.PATH,
+            ),
+            OpenApiParameter(
+                "data_aula",
+                OpenApiTypes.DATE,
+                OpenApiParameter.PATH,
+                description="Formato: YYYY-MM-DD",
+            ),
+        ],
+        responses={200: AlunoMatriculaTurmaSerializer(many=True)},
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_turma: str,
+        data_aula: str,
+    ) -> Response:
+        """Retorna os alunos da turma na data da aula informada.
+
+        Args:
+            codigo_turma: Código EOL da turma.
+            data_aula: Data de referência em formato ISO 8601.
+
+        Returns:
+            Lista de alunos ou ausência de conteúdo quando o
+            código da turma não for positivo e erro quando a
+            data da aula for inválida.
+
+        Raises:
+            httpx.HTTPStatusError: Se a API retornar status de erro.
+            httpx.RequestError: Se a API estiver inacessível.
+        """
+        if not _inteiro_positivo(codigo_turma):
+            return Response([])
+        if not validar_data_str(data_aula):
+            return detail_response(_MSG_DATA_OBRIGATORIA)
+
+        try:
+            data = services.get_alunos_ativos_data_aula(
+                codigo_turma=codigo_turma,
+                data_aula=data_aula,
+            )
+        except httpx.HTTPStatusError as exc:
+            return _api_error_response(exc)
+        except httpx.RequestError as exc:
+            return _api_unavailable_response(exc)
+
+        data = [{**aluno, "numero_aluno_chamada": "000"} for aluno in data]
+        serializer = AlunoMatriculaTurmaSerializer(data, many=True)
+        return Response(serializer.data)
+
+
 class AlunosDataMatriculaTicksView(AlunosAPIView):
     """Lista alunos de uma turma por data de matricula."""
 
@@ -1134,6 +1202,7 @@ class AlunosDataMatriculaTicksView(AlunosAPIView):
             ),
         ],
         responses={200: AlunoMatriculaTurmaSerializer(many=True)},
+        deprecated=True,
     )
     def get(
         self,
@@ -1151,6 +1220,75 @@ class AlunosDataMatriculaTicksView(AlunosAPIView):
             data = services.get_alunos_data_matricula_ticks(
                 codigo_turma=codigo_turma,
                 data_matricula_ticks=data_matricula_ticks,
+            )
+        except httpx.HTTPStatusError as exc:
+            return _api_error_response(exc)
+        except httpx.RequestError as exc:
+            return _api_unavailable_response(exc)
+
+        serializer = AlunoMatriculaTurmaSerializer(
+            data,
+            many=True,
+            campos_parciais=True,
+            datetime_z=False,
+        )
+        return Response(serializer.data)
+
+
+class AlunosDataMatriculaView(AlunosAPIView):
+    """Lista alunos de uma turma por data de matricula."""
+
+    @extend_schema(
+        tags=["Turma"],
+        description=(
+            "Retorna os alunos da turma na data de matricula informada "
+            "(data no formato YYYY-MM-DD no path)."
+        ),
+        parameters=[
+            OpenApiParameter(
+                "codigo_turma",
+                int,
+                OpenApiParameter.PATH,
+            ),
+            OpenApiParameter(
+                "data_matricula",
+                OpenApiTypes.DATE,
+                OpenApiParameter.PATH,
+                description="Formato: YYYY-MM-DD",
+            ),
+        ],
+        responses={200: AlunoMatriculaTurmaSerializer(many=True)},
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_turma: str,
+        data_matricula: str,
+    ) -> Response:
+        """Lista alunos de uma turma por data de matricula.
+
+        Args:
+            codigo_turma: Código EOL da turma.
+            data_matricula: Data da matrícula em formato ISO 8601 (YYYY-MM-DD).
+
+        Returns:
+            Lista de alunos ou ausência de conteúdo quando o
+            código da turma não for positivo e erro quando a data
+            da matrícula for inválida.
+
+        Raises:
+            httpx.HTTPStatusError: Se a API retornar status de erro.
+            httpx.RequestError: Se a API estiver inacessível.
+        """
+        if not _inteiro_positivo(codigo_turma):
+            return Response([])
+        if not validar_data_str(data_matricula):
+            return detail_response(_MSG_DATA_OBRIGATORIA)
+
+        try:
+            data = services.get_alunos_data_matricula(
+                codigo_turma=codigo_turma,
+                data_matricula=data_matricula,
             )
         except httpx.HTTPStatusError as exc:
             return _api_error_response(exc)

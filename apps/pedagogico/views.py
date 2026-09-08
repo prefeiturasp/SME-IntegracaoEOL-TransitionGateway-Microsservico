@@ -10,6 +10,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.alunos.serializers import AlunoMatriculaTurmaSerializer
+from apps.core.datetime import validar_data_str
 from apps.core.responses import api_unavailable_response, detail_response
 from apps.core.views import DomainAPIView
 from apps.pedagogico import services
@@ -43,6 +44,9 @@ _RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA = (
 _MSG_CODIGO_TURMA_UE_OBRIGATORIOS = "O código da turma e Ue são obrigatórios"
 _MSG_MODALIDADES_ENSINO_VAZIA = "Não foram encontradas modalidades de ensino."
 _MSG_TURMAS_SONDAGEM_VAZIA = "Não foram encontradas turmas de sondagem."
+_MSG_DATA_INVALIDA = (
+    "O código da turma e data base devem ser informados corretamente."
+)
 _TURMA_REQUEST_SCHEMA = {
     "type": "array",
     "items": {"type": "string"},
@@ -1591,6 +1595,7 @@ class ComponentesSemAtribuicaoViewSet(PedagogicoAPIView):
         ),
         operation_id="componentes_turma_sem_atribuicao",
         responses={200: OpenApiTypes.STR},
+        deprecated=True,
     )
     def get(
         self,
@@ -1617,6 +1622,76 @@ class ComponentesSemAtribuicaoViewSet(PedagogicoAPIView):
             codigo_turma=codigo_turma,
             data_base_tick=data_base_tick,
         )
+        return Response(data)
+
+
+class ComponentesSemAtribuicaoBaseDateViewSet(PedagogicoAPIView):
+    """Lista componentes sem atribuição em uma turma por data base."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Componentes da turma sem atribuição por data base",
+        description=(
+            "Retorna as descrições dos componentes curriculares da turma "
+            "que não possuem professor atribuído na data base informada. "
+            "A data é recebida em formato ISO 8601."
+        ),
+        operation_id="componentes_turma_sem_atribuicao_por_data_base",
+        parameters=[
+            OpenApiParameter(
+                "codigo_turma",
+                OpenApiTypes.STR,
+                OpenApiParameter.PATH,
+                required=True,
+                description="Código da turma.",
+            ),
+            OpenApiParameter(
+                "data_base",
+                OpenApiTypes.DATE,
+                OpenApiParameter.PATH,
+                required=True,
+                description="Formato: YYYY-MM-DD.",
+            ),
+        ],
+        responses={200: OpenApiTypes.STR},
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_turma: str,
+        data_base: str,
+    ) -> Response:
+        """Retorna componentes sem professor atribuído por data base.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            codigo_turma: Código da turma.
+            data_base: Data base representada em formato ISO 8601.
+
+        Returns:
+            Resposta HTTP com as descrições dos componentes.
+
+        Raises:
+            httpx.HTTPStatusError: Se a API retornar status de erro.
+            httpx.RequestError: Se a API estiver inacessível.
+            ValueError: Se a resposta do serviço não for JSON válido.
+        """
+        if not _inteiro_positivo(codigo_turma):
+            return Response([])
+        if not validar_data_str(data_base):
+            return detail_response(_MSG_DATA_INVALIDA)
+
+        try:
+            data = services.get_componentes_sem_atribuicao_por_data_base(
+                codigo_turma=codigo_turma,
+                data_base=data_base,
+            )
+        except ValueError:
+            return detail_response(_RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA, 502)
+        except httpx.RequestError:
+            return _api_unavailable_response()
+        except httpx.HTTPStatusError as exc:
+            return _api_error_response(exc)
         return Response(data)
 
 
