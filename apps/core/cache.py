@@ -4,14 +4,11 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from typing import TypeVar
 
 from django.core.cache import cache
 from sme_sidecar_sdk.resilience import get_circuit_breaker
 
 logger = logging.getLogger(__name__)
-
-_T = TypeVar("_T")
 
 # Nome do breaker dedicado ao KeyDB, isolado dos breakers de HTTP por domínio.
 _BREAKER_NAME = "transition-gateway-keydb-cache"
@@ -23,11 +20,11 @@ TTL_LEGADO_PADRAO_MINUTOS = 1440
 TTL_RECOMENDADO_MINUTOS = 720
 
 
-def obter_ou_calcular(
+def obter_ou_calcular[T](
     chave: str,
-    calcular: Callable[[], _T],
+    calcular: Callable[[], T],
     minutos_para_expirar: int,
-) -> _T:
+) -> T:
     """Busca ``chave`` no KeyDB ou executa ``calcular`` e grava o resultado.
 
     Args:
