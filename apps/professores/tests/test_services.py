@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, call, patch
 
 from django.test import SimpleTestCase
 
+from apps.core import cache
 from apps.professores import services
 
 
@@ -2384,6 +2385,17 @@ class BuscarProfessorTitularPorTurmaDisciplinaTest(SimpleTestCase):
 class BuscarProfessoresTitularesPorTurmasTest(SimpleTestCase):
     """Valida a integração da busca de titulares por várias turmas."""
 
+    def setUp(self) -> None:
+        """Remove o cache do caminho, mantendo os testes determinísticos."""
+        self.enterContext(
+            patch(
+                "apps.professores.services.cache.obter_ou_calcular",
+                side_effect=lambda chave, calcular, minutos_para_expirar: (
+                    calcular()
+                ),
+            )
+        )
+
     @patch(
         "apps.professores.services.pedagogico_services."
         "get_turma_componentes_turma"
@@ -2525,6 +2537,71 @@ class BuscarProfessoresTitularesPorTurmasTest(SimpleTestCase):
             {item["professor_rf"] for item in resultado},
             {"000001", "000002"},
         )
+
+    @patch("apps.professores.services.cache.obter_ou_calcular")
+    def test_usa_chave_e_ttl_recomendados(
+        self, mock_obter_ou_calcular: MagicMock
+    ) -> None:
+        """Sem cache no legado: usa a recomendação de melhoria (12h)."""
+        mock_obter_ou_calcular.return_value = []
+
+        services.buscar_professores_titulares_por_turmas(
+            ["9100003", "9100002"]
+        )
+
+        chave, _calcular, minutos_para_expirar = (
+            mock_obter_ou_calcular.call_args.args
+        )
+        self.assertEqual(chave, "professores-titulares:9100002,9100003")
+        self.assertEqual(minutos_para_expirar, cache.TTL_RECOMENDADO_MINUTOS)
+
+
+class GetDisciplinasTurmaTest(SimpleTestCase):
+    """Valida a consulta de disciplinas de uma turma (com cache)."""
+
+    def setUp(self) -> None:
+        """Remove o cache do caminho, mantendo os testes determinísticos."""
+        self.enterContext(
+            patch(
+                "apps.professores.services.cache.obter_ou_calcular",
+                side_effect=lambda chave, calcular, minutos_para_expirar: (
+                    calcular()
+                ),
+            )
+        )
+
+    @patch("apps.professores.services.pedagogico_services")
+    def test_chama_pedagogico_com_filtros_corretos(
+        self, mock_pedagogico: MagicMock
+    ) -> None:
+        payload = [{"codigo_componente": 89}]
+        mock_pedagogico.get_componentes_por_lista_turmas.return_value = (
+            payload
+        )
+
+        resultado = services.get_disciplinas_turma("9100002")
+
+        mock_pedagogico.get_componentes_por_lista_turmas.assert_called_once_with(
+            ["9100002"],
+            adicionar_componentes_planejamento=False,
+            incluir_extintas=True,
+        )
+        self.assertEqual(resultado, payload)
+
+    def test_usa_chave_e_ttl_do_legado(self) -> None:
+        """Chave e TTL espelham o cache do legado (24h/1440 min)."""
+        with patch(
+            "apps.professores.services.cache.obter_ou_calcular"
+        ) as mock_obter_ou_calcular:
+            mock_obter_ou_calcular.return_value = []
+
+            services.get_disciplinas_turma("9100002")
+
+        chave, _buscar, minutos_para_expirar = (
+            mock_obter_ou_calcular.call_args.args
+        )
+        self.assertEqual(chave, "componentes-turma:9100002")
+        self.assertEqual(minutos_para_expirar, cache.TTL_LEGADO_PADRAO_MINUTOS)
 
 
 class VerificarVigenciaComponentePaiTest(SimpleTestCase):

@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from datetime import date, datetime
 from typing import Any, cast
 
+from apps.core import cache
 from apps.core.api_clients import get_api_client
 from apps.core.datetime import (
     datetime_de_tick,
@@ -741,6 +742,24 @@ def get_turmas_professor(codigo_rf: str) -> Any:
     return _client.json_or_none(resp)
 
 
+def _buscar_disciplinas_turma(codigo_turma: str) -> Any:
+    """Busca as disciplinas de uma turma direto na origem.
+
+    Usado por `get_disciplinas_turma` quando o cache não tem o valor.
+
+    Args:
+        codigo_turma: Código da turma usada na consulta.
+
+    Returns:
+        Disciplinas retornadas pela fonte pedagógica.
+    """
+    return pedagogico_services.get_componentes_por_lista_turmas(
+        [codigo_turma],
+        adicionar_componentes_planejamento=False,
+        incluir_extintas=True,
+    )
+
+
 def get_disciplinas_turma(codigo_turma: str) -> Any:
     """Retorna disciplinas de uma turma.
 
@@ -750,12 +769,12 @@ def get_disciplinas_turma(codigo_turma: str) -> Any:
     Returns:
         Disciplinas retornadas pela fonte pedagógica.
     """
-    data = pedagogico_services.get_componentes_por_lista_turmas(
-        [codigo_turma],
-        adicionar_componentes_planejamento=False,
-        incluir_extintas=True,
+    chave = f"componentes-turma:{codigo_turma}"
+    return cache.obter_ou_calcular(
+        chave,
+        lambda: _buscar_disciplinas_turma(codigo_turma),
+        cache.TTL_LEGADO_PADRAO_MINUTOS,
     )
-    return data
 
 
 def get_disciplinas_funcionario_turma(
@@ -2439,10 +2458,13 @@ def _verificar_vigencia_componente_pai(
     return False
 
 
-def buscar_professores_titulares_por_turmas(
+def _calcular_professores_titulares_por_turmas(
     codigos_turmas: list[str],
 ) -> list[dict[str, Any]]:
-    """Busca professores titulares de uma lista de turmas.
+    """Busca e monta os professores titulares das turmas.
+
+    Usado por `buscar_professores_titulares_por_turmas` quando o cache
+    não tem o valor.
 
     Args:
         codigos_turmas: Lista de códigos das turmas consultadas.
@@ -2500,3 +2522,27 @@ def buscar_professores_titulares_por_turmas(
         componentes_retorno.extend(componentes_turma)
 
     return _agrupar_componentes_retorno(componentes_retorno)
+
+
+def buscar_professores_titulares_por_turmas(
+    codigos_turmas: list[str],
+) -> list[dict[str, Any]]:
+    """Busca professores titulares de uma lista de turmas.
+
+    Args:
+        codigos_turmas: Lista de códigos das turmas consultadas.
+
+    Returns:
+        Professores titulares encontrados ou uma lista vazia.
+
+    Raises:
+        httpx.HTTPError: Quando a chamada ao serviço de professores falha.
+        ValueError: Quando a resposta não pode ser convertida para JSON.
+    """
+    chave = "professores-titulares:" + ",".join(sorted(codigos_turmas))
+    return cache.obter_ou_calcular(
+        chave,
+        lambda: _calcular_professores_titulares_por_turmas(codigos_turmas),
+        cache.TTL_RECOMENDADO_MINUTOS,
+    )
+
