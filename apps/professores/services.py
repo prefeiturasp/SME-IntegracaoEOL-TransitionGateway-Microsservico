@@ -1954,6 +1954,65 @@ def verificar_atribuicao_professor_turma_disciplina(
     return bool(_client.json_or_none(resp))
 
 
+def _verificar_recorrencia_datas(
+    codigo_rf: str,
+    codigo_turma: str,
+    disciplina_id: str,
+    datas_consulta: list[datetime],
+    ano_letivo: int,
+    atribuicoes_rf: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    """Verifica datas recorrentes de uma atribuição docente.
+
+    Args:
+        codigo_rf: RF usado na consulta.
+        codigo_turma: Código da turma usada na consulta.
+        disciplina_id: ID da disciplina usada na consulta.
+        datas_consulta: Datas recorrentes já convertidas.
+        ano_letivo: Ano letivo derivado da primeira data da lista.
+        atribuicoes_rf: Atribuições previamente preparadas.
+
+    Returns:
+        Permissões de persistência por data.
+
+    Raises:
+        httpx.HTTPError: Quando uma das chamadas aos sidecars falha.
+    """
+    if atribuicoes_rf is None:
+        atribuicoes_rf = _get_atribuicoes_professor_turma_disciplina(
+            codigo_rf, disciplina_id, ano_letivo
+        )
+
+    componentes_api_eol = pedagogico_services.get_componentes_api_eol()
+    ids_componentes_filhos = {
+        str(componente.get("id_componente_curricular"))
+        for componente in componentes_api_eol
+        if str(componente.get("id_componente_curricular_pai")) == disciplina_id
+    }
+
+    retorno: list[dict[str, Any]] = []
+    for data_consulta in datas_consulta:
+        pode_persistir = any(
+            _atribuicao_permite_persistir(
+                atribuicao,
+                codigo_turma,
+                disciplina_id,
+                ids_componentes_filhos,
+                data_consulta,
+            )
+            for atribuicao in atribuicoes_rf
+            if isinstance(atribuicao, dict)
+        )
+        retorno.append(
+            {
+                "data": data_consulta.isoformat(),
+                "pode_persistir": pode_persistir,
+            }
+        )
+
+    return retorno
+
+
 def verificar_recorrencia_datas(
     codigo_rf: str,
     codigo_turma: str,
@@ -1961,7 +2020,7 @@ def verificar_recorrencia_datas(
     datas_ticks: list[str],
     atribuicoes_rf: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
-    """Verifica datas recorrentes de uma atribuição docente.
+    """Verifica datas recorrentes de uma atribuição docente, via tick.
 
     Args:
         codigo_rf: RF usado na consulta.
@@ -1982,41 +2041,59 @@ def verificar_recorrencia_datas(
         return []
 
     ano_letivo = obter_ano_tick(data_tick_padrao)
+    datas_consulta = [datetime_de_tick(tick) for tick in datas_ticks]
 
-    if atribuicoes_rf is None:
-        atribuicoes_rf = _get_atribuicoes_professor_turma_disciplina(
-            codigo_rf, disciplina_id, ano_letivo
-        )
+    return _verificar_recorrencia_datas(
+        codigo_rf,
+        codigo_turma,
+        disciplina_id,
+        datas_consulta,
+        ano_letivo,
+        atribuicoes_rf,
+    )
 
-    componentes_api_eol = pedagogico_services.get_componentes_api_eol()
-    ids_componentes_filhos = {
-        str(componente.get("id_componente_curricular"))
-        for componente in componentes_api_eol
-        if str(componente.get("id_componente_curricular_pai")) == disciplina_id
-    }
 
-    retorno: list[dict[str, Any]] = []
-    for data_tick in datas_ticks:
-        data_consulta = datetime_de_tick(data_tick)
-        pode_persistir = any(
-            _atribuicao_permite_persistir(
-                atribuicao,
-                codigo_turma,
-                disciplina_id,
-                ids_componentes_filhos,
-                data_consulta,
-            )
-            for atribuicao in atribuicoes_rf
-            if isinstance(atribuicao, dict)
-        )
-        retorno.append(
-            {
-                "data": data_consulta.isoformat(),
-                "pode_persistir": pode_persistir,
-            }
-        )
+def verificar_recorrencia_datas_iso(
+    codigo_rf: str,
+    codigo_turma: str,
+    disciplina_id: str,
+    datas: list[str],
+    atribuicoes_rf: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    """Verifica datas recorrentes de uma atribuição docente, via ISO 8601.
 
-    return retorno
+    Args:
+        codigo_rf: RF usado na consulta.
+        codigo_turma: Código da turma usada na consulta.
+        disciplina_id: ID da disciplina usada na consulta.
+        datas: Datas recorrentes no formato ``YYYY-MM-DD``.
+        atribuicoes_rf: Atribuições previamente preparadas.
+
+    Returns:
+        Permissões de persistência por data.
+
+    Raises:
+        httpx.HTTPError: Quando uma das chamadas aos sidecars falha.
+        ValueError: Quando uma data informada não está em formato ISO.
+    """
+    data_padrao = datas[0] if datas else None
+    if not data_padrao:
+        return []
+
+    ano_letivo = date.fromisoformat(data_padrao).year
+    datas_consulta = [
+        datetime.combine(date.fromisoformat(data), datetime.min.time())
+        for data in datas
+    ]
+
+    return _verificar_recorrencia_datas(
+        codigo_rf,
+        codigo_turma,
+        disciplina_id,
+        datas_consulta,
+        ano_letivo,
+        atribuicoes_rf,
+    )
 
 
 def verificar_atribuicao_periodo(
@@ -2298,6 +2375,31 @@ def get_atribuicoes_turma_disciplina(
         f"{_BASE}/{codigo_turma}/disciplinas/{disciplina_id}/"
         "atribuicao/data/",
         params={"data_ticks": data},
+    )
+    payload = _client.json_or_none(resp)
+    if not isinstance(payload, list):
+        return []
+
+    return payload
+
+
+def get_atribuicoes_turma_disciplina_iso(
+    codigo_turma: str, disciplina_id: str, data: str | None
+) -> list[dict[str, Any]]:
+    """Retorna as atribuições de uma turma e disciplina, via data ISO 8601.
+
+    Args:
+        codigo_turma: Código da turma usada na consulta.
+        disciplina_id: ID da disciplina usada na consulta.
+        data: Data no formato ``YYYY-MM-DD`` usada na consulta.
+
+    Returns:
+        Lista de atribuições ou ausência de conteúdo.
+    """
+    resp = _client.get(
+        f"{_BASE}/{codigo_turma}/disciplinas/{disciplina_id}/"
+        "atribuicao/data-iso/",
+        params={"data": data} if data else None,
     )
     payload = _client.json_or_none(resp)
     if not isinstance(payload, list):
