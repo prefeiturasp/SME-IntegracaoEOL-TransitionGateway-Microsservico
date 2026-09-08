@@ -1431,6 +1431,179 @@ class AlunosAtivosDataAulaTicksViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
 
+class AlunosAtivosDataAulaViewTest(SimpleTestCase):
+    """Valida a resposta de alunos ativos na data da aula em formato ISO."""
+
+    _PATH = "/api/turmas/9100001/alunos-ativos/data-aula/2026-01-04/"
+
+    @patch("apps.alunos.views.services.get_alunos_ativos_data_aula")
+    def test_200_retorna_contrato_legado(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = [
+            {
+                "codigo_aluno": 7000003,
+                "nome_aluno": "Aluno Teste",
+                "nome_social_aluno": None,
+                "data_nascimento": "2020-07-10",
+                "codigo_situacao_matricula": 1,
+                "situacao_matricula": "Ativo",
+                "data_situacao": "2025-12-08T11:42:14.66-03:00",
+                "numero_aluno_chamada": "015",
+                "possui_deficiencia": False,
+                "codigo_matricula": 40000001,
+                "codigo_turma": 9100001,
+                "codigo_escola": "000002",
+                "ano_letivo": 2026,
+                "data_matricula": "2025-11-04T08:16:14.26-03:00",
+                "nome_responsavel": "Responsável",
+                "tipo_responsavel": 1,
+                "celular_responsavel": None,
+                "data_atualizacao_contato": None,
+                "sequencia": 1,
+                "codigo_dre": "100000",
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()[0]["codigoAluno"], 7000003)
+        self.assertEqual(resp.json()[0]["codigoComponenteCurricular"], 0)
+        self.assertEqual(resp.json()[0]["transferencia_Interna"], False)
+        self.assertEqual(resp.json()[0]["numeroAlunoChamada"], "000")
+        mock_service.assert_called_once_with(
+            codigo_turma="9100001",
+            data_aula="2026-01-04",
+        )
+
+    @patch("apps.alunos.views.services.get_alunos_ativos_data_aula")
+    def test_200_retorna_numero_chamada_000_quando_vazio(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = [
+            {
+                "codigo_aluno": 7000003,
+                "nome_aluno": "Aluno Teste",
+                "nome_social_aluno": None,
+                "data_nascimento": "2020-07-10",
+                "codigo_situacao_matricula": 1,
+                "situacao_matricula": "Ativo",
+                "data_situacao": "2025-12-08T11:42:14.66-03:00",
+                "numero_aluno_chamada": "",
+                "possui_deficiencia": False,
+                "codigo_matricula": 40000001,
+                "codigo_turma": 9100001,
+                "codigo_escola": "000002",
+                "ano_letivo": 2026,
+                "data_matricula": "2025-11-04T08:16:14.26-03:00",
+                "nome_responsavel": "Responsavel",
+                "tipo_responsavel": 1,
+                "celular_responsavel": None,
+                "data_atualizacao_contato": None,
+                "sequencia": 1,
+                "codigo_dre": "100000",
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()[0]["numeroAlunoChamada"], "000")
+
+    @patch("apps.alunos.views.services.get_alunos_ativos_data_aula")
+    def test_200_vazio_quando_codigo_turma_invalido(
+        self, mock_service: MagicMock
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/turmas/abc/alunos-ativos/data-aula/2026-01-04/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+        mock_service.assert_not_called()
+
+    @patch("apps.alunos.views.services.get_alunos_ativos_data_aula")
+    def test_200_vazio_quando_codigo_turma_zero(
+        self, mock_service: MagicMock
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/turmas/0/alunos-ativos/data-aula/2026-01-04/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+        mock_service.assert_not_called()
+
+    @patch("apps.alunos.views.services.get_alunos_ativos_data_aula")
+    def test_400_quando_data_ticks_invalida(
+        self, mock_service: MagicMock
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/turmas/9100001/alunos-ativos/data-aula/abc/")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_service.assert_not_called()
+
+    @patch("apps.alunos.views.services.get_alunos_ativos_data_aula")
+    def test_200_vazio_quando_sem_resultados(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+        mock_service.assert_called_once_with(
+            codigo_turma="9100001",
+            data_aula="2026-01-04",
+        )
+
+    @patch("apps.alunos.views.services.get_alunos_ativos_data_aula")
+    def test_503_quando_sidecar_indisponivel(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.side_effect = _request_error()
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "Serviço de alunos indisponível."},
+        )
+
+    @patch("apps.alunos.views.services.get_alunos_ativos_data_aula")
+    def test_preserva_erro_http_do_sidecar(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.side_effect = _http_status_error(
+            status.HTTP_404_NOT_FOUND,
+            {"detail": "Turma não encontrada."},
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(resp.json(), {"detail": "Turma não encontrada."})
+
+    def test_403_sem_autenticacao(self) -> None:
+        client = APIClient()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
 class AlunosDataMatriculaTicksViewTest(SimpleTestCase):
     """Valida a resposta de alunos por data de matricula."""
 
@@ -1556,6 +1729,149 @@ class AlunosDataMatriculaTicksViewTest(SimpleTestCase):
         )
 
     @patch("apps.alunos.views.services.get_alunos_data_matricula_ticks")
+    def test_preserva_erro_http_do_sidecar(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.side_effect = _http_status_error(
+            status.HTTP_404_NOT_FOUND,
+            {"detail": "Turma nao encontrada."},
+        )
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(resp.json(), {"detail": "Turma nao encontrada."})
+
+    def test_403_sem_autenticacao(self) -> None:
+        client = APIClient()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class AlunosDataMatriculaViewTest(SimpleTestCase):
+    """Valida a resposta de alunos por data de matricula."""
+
+    _PATH = "/api/turmas/9100002/data-matricula/2026-02-06/"
+
+    @patch("apps.alunos.views.services.get_alunos_data_matricula")
+    def test_200_retorna_contrato_legado(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = [
+            {
+                "codigo_aluno": 7000004,
+                "nome_aluno": "ALUNO FICTICIO DOIS",
+                "nome_social_aluno": None,
+                "data_nascimento": "2020-03-19",
+                "codigo_situacao_matricula": 1,
+                "situacao_matricula": "Ativo",
+                "data_situacao": "2025-12-18T11:34:28.050000-03:00",
+                "numero_aluno_chamada": "001",
+                "possui_deficiencia": False,
+                "codigo_matricula": 40000002,
+                "codigo_turma": 9100002,
+                "codigo_escola": "000004",
+                "ano_letivo": 2026,
+                "data_matricula": "2025-12-18T11:34:28.050000-03:00",
+                "nome_responsavel": "RESPONSAVEL FICTICIO DOIS",
+                "tipo_responsavel": 1,
+                "celular_responsavel": None,
+                "data_atualizacao_contato": (
+                    "2024-02-05T20:16:39.513000-03:00"
+                ),
+                "sequencia": 1,
+                "codigo_dre": "100000",
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        data = resp.json()[0]
+        self.assertEqual(data["codigoAluno"], 7000004)
+        self.assertEqual(data["numeroAlunoChamada"], "001")
+        self.assertEqual(data["celularResponsavel"], "")
+        self.assertEqual(data["codigoTurma"], 0)
+        self.assertIsNone(data["codigoEscola"])
+        self.assertEqual(data["ano"], 0)
+        self.assertIsNone(data["codigoDre"])
+        self.assertFalse(data["dataMatricula"].endswith("Z"))
+        mock_service.assert_called_once_with(
+            codigo_turma="9100002",
+            data_matricula="2026-02-06",
+        )
+
+    @patch("apps.alunos.views.services.get_alunos_data_matricula")
+    def test_200_vazio_quando_codigo_turma_invalido(
+        self, mock_service: MagicMock
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/turmas/abc/data-matricula/2026-02-06/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+        mock_service.assert_not_called()
+
+    @patch("apps.alunos.views.services.get_alunos_data_matricula")
+    def test_200_vazio_quando_codigo_turma_zero(
+        self, mock_service: MagicMock
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/turmas/0/data-matricula/2026-02-06/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+        mock_service.assert_not_called()
+
+    @patch("apps.alunos.views.services.get_alunos_data_matricula")
+    def test_400_quando_data_matricula_ticks_invalida(
+        self, mock_service: MagicMock
+    ) -> None:
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/turmas/9100002/data-matricula/0/")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_service.assert_not_called()
+
+    @patch("apps.alunos.views.services.get_alunos_data_matricula")
+    def test_200_vazio_quando_sem_resultados(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+        mock_service.assert_called_once_with(
+            codigo_turma="9100002",
+            data_matricula="2026-02-06",
+        )
+
+    @patch("apps.alunos.views.services.get_alunos_data_matricula")
+    def test_503_quando_sidecar_indisponivel(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.side_effect = _request_error()
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(
+            resp.json(),
+            {"detail": "Serviço de alunos indisponível."},
+        )
+
+    @patch("apps.alunos.views.services.get_alunos_data_matricula")
     def test_preserva_erro_http_do_sidecar(
         self, mock_service: MagicMock
     ) -> None:

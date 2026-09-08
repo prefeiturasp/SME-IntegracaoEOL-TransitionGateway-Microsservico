@@ -1635,9 +1635,7 @@ class TurmasPorEscolaViewSetTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.data[0]["nomeTurmaEOL"], "3A")
         self.assertEqual(resp.data[0]["siglaModalidade"], "EF")
-        mock_svc.assert_called_once_with(
-            codigo_ue="000532", ano_letivo="2024"
-        )
+        mock_svc.assert_called_once_with(codigo_ue="000532", ano_letivo="2024")
 
     @patch("apps.pedagogico.views.services.get_turmas_por_escola")
     def test_200_lista_vazia_sem_traducao_para_404(
@@ -1686,9 +1684,7 @@ class TurmasSondagemViewSetTest(SimpleTestCase):
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        mock_svc.assert_called_once_with(
-            codigo_ue="000532", ano_letivo="2024"
-        )
+        mock_svc.assert_called_once_with(codigo_ue="000532", ano_letivo="2024")
 
     @patch("apps.pedagogico.views.services.get_turmas_sondagem")
     def test_404_quando_vazio(self, mock_svc: MagicMock) -> None:
@@ -2108,9 +2104,7 @@ class ComponentesTurmaFuncionarioViewSetTest(SimpleTestCase):
         self.assertEqual(
             resp.data[0]["inicioAtribuicao"], "2025-12-23T00:00:00"
         )
-        self.assertEqual(
-            resp.data[0]["fimAtribuicao"], "2026-12-22T00:00:00"
-        )
+        self.assertEqual(resp.data[0]["fimAtribuicao"], "2026-12-22T00:00:00")
 
     @patch("apps.pedagogico.views.services.get_componentes_turma_funcionario")
     def test_get_retorna_204_quando_vazio(
@@ -2275,6 +2269,26 @@ class ComponentesSemAtribuicaoViewSetTest(SimpleTestCase):
         mock_svc.assert_called_once_with(
             codigo_turma="T001",
             data_base_tick=638396640000000000,
+        )
+
+
+class ComponentesSemAtribuicaoBaseDateViewSetTest(SimpleTestCase):
+    """Valida a view de componentes sem atribuição."""
+
+    @patch("apps.pedagogico.views.services.get_componentes_sem_atribuicao")
+    def test_repassa_turma_e_ticks(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = ["ARTE", "EDUCACAO FISICA"]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX}/turmas/T001/sem-atribuicao/data-base/2023-12-12/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data, ["ARTE", "EDUCACAO FISICA"])
+        mock_svc.assert_called_once_with(
+            codigo_turma="T001",
+            data_base=2023 - 12 - 12,
         )
 
 
