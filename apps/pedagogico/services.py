@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from typing import Any, cast
 
 from apps.alunos import services as alunos_services
+from apps.core import cache
 from apps.core.api_clients import get_api_client
 from apps.core.datetime import formatar_datetime_legado
 from apps.pedagogico.serializers import (
@@ -1257,6 +1258,19 @@ def verificar_atriuicao_territorio_saber(
     return bool(_client.json_or_none(resp))
 
 
+def _buscar_componentes_api_eol() -> list[dict[str, Any]]:
+    """Busca o catálogo de componentes curriculares direto na origem.
+
+    Returns:
+        Lista de componentes curriculares API EOL.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        ValueError: Se a resposta não puder ser convertida para JSON.
+    """
+    return cast(list[dict[str, Any]], _client.get(f"{_BASE}/api-eol/").json())
+
+
 def get_componentes_api_eol() -> list[dict[str, Any]]:
     """Retorna componentes curriculares API EOL.
 
@@ -1267,7 +1281,11 @@ def get_componentes_api_eol() -> list[dict[str, Any]]:
         httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
         ValueError: Se a resposta não puder ser convertida para JSON.
     """
-    return cast(list[dict[str, Any]], _client.get(f"{_BASE}/api-eol/").json())
+    return cache.obter_ou_calcular(
+        "componentes-curriculares-api-eol",
+        _buscar_componentes_api_eol,
+        cache.TTL_LEGADO_PADRAO_MINUTOS,
+    )
 
 
 def get_atribuicoes_territorio_saber(

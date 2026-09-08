@@ -64,6 +64,21 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 API_KEY = os.getenv("API_KEY", "dev-key-default")
 API_KEY_HEADER = os.getenv("API_KEY_HEADER", "X-API-Key")
 
+# KeyDB
+URL_KEYDB = os.getenv("URL_KEYDB", "redis://localhost:6379/0")
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": URL_KEYDB,
+        "KEY_PREFIX": "transition-gateway",
+        "OPTIONS": {
+            # Mesmos timeouts do legado
+            "socket_connect_timeout": 5,
+            "socket_timeout": 10,
+        },
+    },
+}
+
 
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",

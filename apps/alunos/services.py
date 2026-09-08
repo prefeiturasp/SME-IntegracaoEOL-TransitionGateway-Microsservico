@@ -3,6 +3,7 @@
 from datetime import datetime
 from typing import Any
 
+from apps.core import cache
 from apps.core.api_clients import get_api_client
 
 _BASE = "/api/v1/alunos"
@@ -265,6 +266,32 @@ def get_quantidade_matriculados_cc(
     return _client.json_or_none(resp) or []
 
 
+def _buscar_quantidade_matriculados(
+    ano_letivo: str, params: dict[str, Any]
+) -> Any:
+    """Busca a quantidade de matriculados direto na origem.
+
+    Usado por `get_quantidade_matriculados` quando o cache não tem o valor.
+
+    Args:
+        ano_letivo: Ano letivo consultado.
+        params: Filtros já normalizados para a query string.
+
+    Returns:
+        Lista de quantidades agregadas ou lista vazia.
+
+    Raises:
+        httpx.HTTPStatusError: Se a API retornar status de erro.
+        httpx.RequestError: Se a API estiver inacessível.
+    """
+    resp = _client.get(
+        f"{_BASE}/ano-letivo/{ano_letivo}/matriculados/quantidade/contrato",
+        params=params or None,
+    )
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
 def get_quantidade_matriculados(
     ano_letivo: str,
     dre_codigo: str | None = None,
@@ -301,12 +328,20 @@ def get_quantidade_matriculados(
         params["ano"] = ano
     if turma:
         params["turma"] = turma
-    resp = _client.get(
-        f"{_BASE}/ano-letivo/{ano_letivo}/matriculados/quantidade/contrato",
-        params=params or None,
+
+    chave = "quantidade-alunos:{}:{}:{}:{}:{}:{}".format(
+        ano_letivo,
+        (dre_codigo or "").strip(),
+        (ue_codigo or "").strip(),
+        ",".join(turma or []),
+        ",".join(modalidade or []),
+        ",".join(ano or []),
     )
-    resp.raise_for_status()
-    return _client.json_or_none(resp) or []
+    return cache.obter_ou_calcular(
+        chave,
+        lambda: _buscar_quantidade_matriculados(ano_letivo, params),
+        cache.TTL_LEGADO_PADRAO_MINUTOS,
+    )
 
 
 def get_responsavel_resumido(cpf_responsavel: str) -> Any:
@@ -930,15 +965,18 @@ def get_codigos_turmas_regulares_aluno(
     return [int(codigo) for codigo in dados]
 
 
-def montar_codigos_turmas_regulares_aluno(
+def _calcular_turmas_regulares_aluno(
     ano_letivo: str,
     codigo_aluno: str,
-    tipos_turma: list[int] | None = None,
-    ue_codigo: str | None = None,
-    data_referencia: str | None = None,
-    semestre: int | None = None,
+    tipos_turma: list[int] | None,
+    ue_codigo: str | None,
+    data_referencia: str | None,
+    semestre: int | None,
 ) -> list[int]:
-    """Compõe os códigos de turma regulares do aluno.
+    """Busca e intersecta os códigos de turma regulares do aluno.
+
+    Usado por `montar_codigos_turmas_regulares_aluno` quando o cache não
+    tem o valor.
 
     Args:
         ano_letivo: Ano letivo consultado.
@@ -968,6 +1006,53 @@ def montar_codigos_turmas_regulares_aluno(
         )
     )
     return [codigo for codigo in codigos if codigo in permitidos]
+
+
+def montar_codigos_turmas_regulares_aluno(
+    ano_letivo: str,
+    codigo_aluno: str,
+    tipos_turma: list[int] | None = None,
+    ue_codigo: str | None = None,
+    data_referencia: str | None = None,
+    semestre: int | None = None,
+) -> list[int]:
+    """Compõe os códigos de turma regulares do aluno.
+
+    Args:
+        ano_letivo: Ano letivo consultado.
+        codigo_aluno: Código EOL do aluno.
+        tipos_turma: Tipos de turma aceitos; sem filtro quando vazio.
+        ue_codigo: Código da UE; sem filtro quando ausente.
+        data_referencia: Data de referência (ISO) do filtro de situação.
+        semestre: Semestre da turma; sem filtro quando ausente.
+
+    Returns:
+        Códigos de turma que atendem ao recorte, na ordem do Alunos-MS.
+
+    Raises:
+        httpx.HTTPStatusError: Se alguma API retornar erro de servidor.
+        httpx.RequestError: Se alguma API estiver inacessível.
+    """
+    chave = "turmas-regulares-aluno:{}:{}:{}:{}:{}:{}".format(
+        ano_letivo,
+        codigo_aluno,
+        ",".join(str(tipo) for tipo in sorted(tipos_turma or [])),
+        (ue_codigo or "").strip(),
+        data_referencia or "",
+        semestre if semestre is not None else "",
+    )
+    return cache.obter_ou_calcular(
+        chave,
+        lambda: _calcular_turmas_regulares_aluno(
+            ano_letivo,
+            codigo_aluno,
+            tipos_turma,
+            ue_codigo,
+            data_referencia,
+            semestre,
+        ),
+        cache.TTL_RECOMENDADO_MINUTOS,
+    )
 
 
 def listar_alunos(codigos_aluno: list[str]) -> Any:

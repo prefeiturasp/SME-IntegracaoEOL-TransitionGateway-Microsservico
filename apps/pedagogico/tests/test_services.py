@@ -6,6 +6,7 @@ import httpx
 from django.test import SimpleTestCase
 
 from apps.alunos import services as alunos_services
+from apps.core import cache
 from apps.pedagogico import services
 
 _BASE = "/api/v1/pedagogico/componentes-curriculares"
@@ -1811,6 +1812,17 @@ class GetAtribuicoesTerritorioSaberSemAnoTest(SimpleTestCase):
 class GetComponentesApiEolTest(SimpleTestCase):
     """Valida a consulta de componentes curriculares da API EOL."""
 
+    def setUp(self) -> None:
+        """Remove o cache do caminho, mantendo os testes determinísticos."""
+        self.enterContext(
+            patch(
+                "apps.pedagogico.services.cache.obter_ou_calcular",
+                side_effect=lambda chave, calcular, minutos_para_expirar: (
+                    calcular()
+                ),
+            )
+        )
+
     @patch("apps.pedagogico.services._client")
     def test_retorna_json_do_sidecar(self, mock_client: MagicMock) -> None:
         """Consulta a rota correta e retorna o JSON recebido."""
@@ -1822,6 +1834,21 @@ class GetComponentesApiEolTest(SimpleTestCase):
 
         mock_client.get.assert_called_once_with(f"{_BASE}/api-eol/")
         self.assertEqual(resultado, [{"id_componente_curricular": 89}])
+
+    @patch("apps.pedagogico.services.cache.obter_ou_calcular")
+    def test_usa_chave_e_ttl_do_legado(
+        self, mock_obter_ou_calcular: MagicMock
+    ) -> None:
+        """Chave e TTL espelham o cache do legado (24h/1440 min)."""
+        mock_obter_ou_calcular.return_value = []
+
+        services.get_componentes_api_eol()
+
+        chave, _buscar, minutos_para_expirar = (
+            mock_obter_ou_calcular.call_args.args
+        )
+        self.assertEqual(chave, "componentes-curriculares-api-eol")
+        self.assertEqual(minutos_para_expirar, cache.TTL_LEGADO_PADRAO_MINUTOS)
 
 
 class GetProfessoresTurmaTerritorioSaberPayloadTest(SimpleTestCase):
