@@ -2275,20 +2275,22 @@ class ComponentesSemAtribuicaoViewSetTest(SimpleTestCase):
 class ComponentesSemAtribuicaoBaseDateViewSetTest(SimpleTestCase):
     """Valida a view de componentes sem atribuição."""
 
-    @patch("apps.pedagogico.views.services.get_componentes_sem_atribuicao")
-    def test_repassa_turma_e_ticks(self, mock_svc: MagicMock) -> None:
+    @patch(
+        "apps.pedagogico.views.services.get_componentes_sem_atribuicao_por_data_base"
+    )
+    def test_repassa_turma_e_data_base(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = ["ARTE", "EDUCACAO FISICA"]
         client = _cliente_autenticado()
 
         resp = client.get(
-            f"{_PREFIX}/turmas/T001/sem-atribuicao/data-base/2023-12-12/"
+            f"{_PREFIX}/turmas/001/sem-atribuicao/data-base/2023-12-12/"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.data, ["ARTE", "EDUCACAO FISICA"])
         mock_svc.assert_called_once_with(
-            codigo_turma="T001",
-            data_base=2023 - 12 - 12,
+            codigo_turma="001",
+            data_base="2023-12-12",
         )
 
 
