@@ -661,6 +661,92 @@ class ProfessoresTitularesPorTurmaView(ProfessoresAPIView):
         return Response(resposta.data)
 
 
+class ProfessoresTitularesPorTurmaPorRfView(ProfessoresAPIView):
+    """Busca professores titulares de uma turma filtrando pelo RF."""
+
+    @extend_schema(
+        tags=_TAG_PROFESSOR,
+        description=(
+            "Busca professores titulares da turma, com opção de agrupar "
+            "componentes curriculares. Quando informado, o codigoRF restringe "
+            "o retorno aos componentes daquele titular."
+        ),
+        parameters=[
+            OpenApiParameter(
+                "realiza_agrupamento",
+                OpenApiTypes.BOOL,
+                OpenApiParameter.PATH,
+                required=True,
+                description=(
+                    "Indica se os componentes curriculares devem ser "
+                    "agrupados."
+                ),
+            ),
+            OpenApiParameter(
+                "codigoRF",
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                required=False,
+            ),
+            OpenApiParameter(
+                "dataReferencia",
+                OpenApiTypes.DATETIME,
+                OpenApiParameter.QUERY,
+                required=False,
+            ),
+        ],
+        responses={
+            200: BuscarProfessorTitularPorDisciplinaSerializer(many=True),
+            204: None,
+            400: OpenApiTypes.OBJECT,
+        },
+    )
+    def get(
+        self,
+        request: Request,
+        codigo_turma: str,
+        realiza_agrupamento: bool,
+    ) -> Response:
+        """Retorna professores titulares da turma filtrados pelo RF.
+
+        Args:
+            request: Requisição HTTP com os filtros opcionais.
+            codigo_turma: Código da turma consultada.
+            realiza_agrupamento: Indicador de agrupamento dos componentes.
+
+        Returns:
+            Professores encontrados, ausência de conteúdo ou erro de
+            validação.
+        """
+        serializer = ProfessoresTitularesParametrosSerializer(
+            data={
+                "codigo_turma": codigo_turma,
+                "codigoRF": request.query_params.get("codigoRF", ""),
+                "dataReferencia": request.query_params.get("dataReferencia"),
+                "realiza_agrupamento": realiza_agrupamento,
+            }
+        )
+        if not serializer.is_valid():
+            return Response(
+                "Código RF e Código de Turma, são obrigatórios.", status=400
+            )
+
+        dados = serializer.validated_data
+        professores = services.buscar_professores_titulares_por_turma(
+            dados["codigo_turma"],
+            dados["data_referencia"],
+            dados["realiza_agrupamento"],
+            dados["codigo_rf"],
+        )
+        if not professores:
+            return Response(status=204)
+        resposta = BuscarProfessorTitularPorDisciplinaSerializer(
+            professores,
+            many=True,
+        )
+        return Response(resposta.data)
+
+
 class ProfessoresTitularesPorUeView(ProfessoresAPIView):
     """Busca professores titulares de uma UE."""
 

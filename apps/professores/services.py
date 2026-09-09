@@ -1264,6 +1264,7 @@ def buscar_professores_titulares_por_turma(
     codigo_turma: str,
     data_referencia: datetime | None,
     realiza_agrupamento: bool,
+    codigo_rf: str = "",
 ) -> list[dict[str, Any]]:
     """Busca professores titulares de uma turma.
 
@@ -1271,6 +1272,8 @@ def buscar_professores_titulares_por_turma(
         codigo_turma: Código da turma consultada.
         data_referencia: Data de referência usada como filtro opcional.
         realiza_agrupamento: Indica se componentes devem ser agrupados.
+        codigo_rf: Registro funcional opcional; quando informado, mantém
+            apenas os componentes cujo titular corresponde ao RF.
 
     Returns:
         Professores titulares encontrados ou uma lista vazia.
@@ -1281,6 +1284,7 @@ def buscar_professores_titulares_por_turma(
     """
     resp = _client.get(
         f"{_BASE}/{codigo_turma}/titulares/",
+        params={"codigo_rf": codigo_rf} if codigo_rf else None,
     )
     payload = _client.json_or_none(resp)
     if not isinstance(payload, list):
@@ -1360,6 +1364,8 @@ def _aplicar_descricoes_componentes_turma(
         and str(componente["disciplina_id"]).strip()
         and str(componente["disciplina_id"]).strip().lower() != "none"
     ]
+    if not componentes_codigos:
+        return
 
     componentes_turmas = pedagogico_services.get_turma_componentes_turma(
         codigo_turma,
@@ -2545,4 +2551,3 @@ def buscar_professores_titulares_por_turmas(
         lambda: _calcular_professores_titulares_por_turmas(codigos_turmas),
         cache.TTL_RECOMENDADO_MINUTOS,
     )
-

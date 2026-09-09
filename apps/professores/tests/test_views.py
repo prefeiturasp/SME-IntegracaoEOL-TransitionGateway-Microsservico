@@ -3499,6 +3499,24 @@ class ProfessoresTitularesPorTurmaViewTest(SimpleTestCase):
         "apps.professores.views.services."
         "buscar_professores_titulares_por_turma"
     )
+    def test_nao_repassa_codigo_rf_ao_service(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        """A rota atual ignora codigoRF: não o repassa ao service."""
+        mock_service.return_value = []
+
+        _cliente_autenticado().get(self._URL, {"codigoRF": "0000001"})
+
+        argumentos = mock_service.call_args.args
+        self.assertEqual(len(argumentos), 3)
+        self.assertNotIn("0000001", argumentos)
+        self.assertEqual(mock_service.call_args.kwargs, {})
+
+    @patch(
+        "apps.professores.views.services."
+        "buscar_professores_titulares_por_turma"
+    )
     def test_204_quando_nao_encontra_professores(
         self,
         mock_service: MagicMock,
@@ -3540,6 +3558,100 @@ class ProfessoresTitularesPorTurmaViewTest(SimpleTestCase):
         mock_service: MagicMock,
     ) -> None:
         """Não chama o service quando o booleano é inválido."""
+        url = self._URL.replace("/true", "/valor-invalido")
+
+        resp = _cliente_autenticado().get(url)
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        mock_service.assert_not_called()
+
+
+class ProfessoresTitularesPorTurmaPorRfViewTest(SimpleTestCase):
+    """Valida a busca de titulares por turma com filtro de RF."""
+
+    _URL = (
+        "/api/professores/9100002/titularesPorRf/"
+        "realizaAgrupamentoComponente/true"
+    )
+
+    @patch(
+        "apps.professores.views.services."
+        "buscar_professores_titulares_por_turma"
+    )
+    def test_200_repassa_codigo_rf_ao_service(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        """Repassa o codigoRF como quarto argumento do service."""
+        mock_service.return_value = [
+            {
+                "professor_rf": "0000001",
+                "nome_professor": "PROFESSOR",
+                "disciplina": "CIENCIAS",
+                "disciplina_id": "89",
+                "disciplinas_id": "89",
+                "turma_id": 9100002,
+            }
+        ]
+
+        resp = _cliente_autenticado().get(
+            self._URL,
+            {"codigoRF": "0000001", "dataReferencia": "2026-07-28"},
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        argumentos = mock_service.call_args.args
+        self.assertEqual(argumentos[0], "9100002")
+        self.assertEqual(argumentos[1].date().isoformat(), "2026-07-28")
+        self.assertIs(argumentos[2], True)
+        self.assertEqual(argumentos[3], "0000001")
+
+    @patch(
+        "apps.professores.views.services."
+        "buscar_professores_titulares_por_turma"
+    )
+    def test_200_sem_codigo_rf_repassa_string_vazia(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        """Sem codigoRF na query, o service recebe string vazia."""
+        mock_service.return_value = []
+
+        resp = _cliente_autenticado().get(self._URL)
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        argumentos = mock_service.call_args.args
+        self.assertEqual(argumentos[3], "")
+
+    @patch(
+        "apps.professores.views.services."
+        "buscar_professores_titulares_por_turma"
+    )
+    def test_400_para_data_referencia_invalida(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        """Não chama o service quando a data de referência é inválida."""
+        resp = _cliente_autenticado().get(
+            self._URL,
+            {"dataReferencia": "data-invalida"},
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(), "Código RF e Código de Turma, são obrigatórios."
+        )
+        mock_service.assert_not_called()
+
+    @patch(
+        "apps.professores.views.services."
+        "buscar_professores_titulares_por_turma"
+    )
+    def test_404_para_realiza_agrupamento_invalido(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        """Não chama o service quando o booleano da rota é inválido."""
         url = self._URL.replace("/true", "/valor-invalido")
 
         resp = _cliente_autenticado().get(url)
