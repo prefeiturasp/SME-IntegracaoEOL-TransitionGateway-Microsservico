@@ -11,18 +11,6 @@ Given("que possuo acesso à API de professores", () => {
 });
 
 // ========================================
-// FUNCIONÁRIO ATIVO
-// ========================================
-
-When("realizo consulta de funcionário ativo", () => {
-  cy.getFuncionarioAtivo(true).as("response");
-});
-
-When("realizo consulta de funcionário não ativo", () => {
-  cy.getFuncionarioAtivo(false).as("response");
-});
-
-// ========================================
 // PROFESSOR VÁLIDO
 // ========================================
 
@@ -47,33 +35,13 @@ When("realizo consulta de professor por RF com RF inválido", () => {
 });
 
 // THEN
-
-Then("retorna o status 200", function () {
+Then("retorna o status {int}", (statusCode) => {
   cy.get("@response").then((response) => {
-    expect(response.status).to.eq(200);
-  });
-});
-
-Then("retorna o status 204", function () {
-  cy.get("@response").then((response) => {
-    expect(response.status).to.eq(204);
-  });
-});
-
-Then("retorna o status 400", function () {
-  cy.get("@response").then((response) => {
-    expect(response.status).to.eq(400);
-  });
-});
-
-Then("retorna o status 404", function () {
-  cy.get("@response").then((response) => {
-    expect(response.status).to.eq(404);
+    expect(response.status).to.eq(statusCode);
   });
 });
 
 // AND
-
 And("o retorno deve ser verdadeiro", () => {
   cy.get("@response").then((response) => {
     if (response.status === 200) {

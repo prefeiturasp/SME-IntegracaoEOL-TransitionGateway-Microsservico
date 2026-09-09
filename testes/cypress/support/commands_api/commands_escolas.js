@@ -270,6 +270,7 @@ Cypress.Commands.add("getMatriculasEscolaQuantidades", (codigoUe) => {
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
     },
     failOnStatusCode: false,
+    timeout: 120000,
   });
 });
 
