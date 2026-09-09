@@ -3503,15 +3503,14 @@ class ProfessoresTitularesPorTurmaViewTest(SimpleTestCase):
         self,
         mock_service: MagicMock,
     ) -> None:
-        """A rota atual ignora codigoRF: não o repassa ao service."""
+        """A rota atual ignora codigoRF: passa string vazia ao service."""
         mock_service.return_value = []
 
         _cliente_autenticado().get(self._URL, {"codigoRF": "0000001"})
 
         argumentos = mock_service.call_args.args
-        self.assertEqual(len(argumentos), 3)
+        self.assertEqual(argumentos[3], "")
         self.assertNotIn("0000001", argumentos)
-        self.assertEqual(mock_service.call_args.kwargs, {})
 
     @patch(
         "apps.professores.views.services."
@@ -3570,7 +3569,7 @@ class ProfessoresTitularesPorTurmaPorRfViewTest(SimpleTestCase):
     """Valida a busca de titulares por turma com filtro de RF."""
 
     _URL = (
-        "/api/professores/9100002/titularesPorRf/"
+        "/api/professores/9100002/titulares/rf/"
         "realizaAgrupamentoComponente/true"
     )
 
