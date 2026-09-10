@@ -587,6 +587,13 @@ _PARAM_REALIZA_AGRUPAMENTO = OpenApiParameter(
     required=True,
     description="Indica se os componentes curriculares devem ser agrupados.",
 )
+_PARAM_AGRUPA = OpenApiParameter(
+    "agrupa",
+    OpenApiTypes.BOOL,
+    OpenApiParameter.PATH,
+    required=True,
+    description="Indica se os componentes curriculares devem ser agrupados.",
+)
 _PARAM_DATA_REFERENCIA = OpenApiParameter(
     "dataReferencia",
     OpenApiTypes.DATETIME,
@@ -653,7 +660,7 @@ class ProfessoresTitularesPorTurmaView(ProfessoresAPIView):
 
     Depreciada: ``codigoRF`` é aceito mas ignorado (devolve sempre todos os
     titulares da turma). Para filtrar por RF use
-    ``.../titulares/rf/realizaAgrupamentoComponente/{realiza_agrupamento}``
+    ``.../titularesPorRf/realizaAgrupamentoComponente/{agrupa}``
     (:class:`ProfessoresTitularesPorTurmaPorRfView`).
     """
 
@@ -662,8 +669,8 @@ class ProfessoresTitularesPorTurmaView(ProfessoresAPIView):
         deprecated=True,
         description=(
             "DEPRECIADO — use "
-            "`.../titulares/rf/realizaAgrupamentoComponente/"
-            "{realiza_agrupamento}` para filtrar por RF. "
+            "`.../titularesPorRf/realizaAgrupamentoComponente/"
+            "{agrupa}` para filtrar por RF. "
             "Busca professores titulares da turma, com opção de agrupar "
             "componentes curriculares. `codigoRF` é aceito por "
             "compatibilidade mas NÃO filtra o resultado nesta rota."
@@ -677,8 +684,8 @@ class ProfessoresTitularesPorTurmaView(ProfessoresAPIView):
                 required=False,
                 deprecated=True,
                 description=(
-                    "Ignorado nesta rota. Use a rota `.../titulares/rf/...` "
-                    "para filtrar por RF."
+                    "Ignorado nesta rota. Use a rota "
+                    "`.../titularesPorRf/...` para filtrar por RF."
                 ),
             ),
             _PARAM_DATA_REFERENCIA,
@@ -717,7 +724,7 @@ class ProfessoresTitularesPorTurmaPorRfView(ProfessoresAPIView):
             "`.../titulares/realizaAgrupamentoComponente/{realiza_agrupamento}`."
         ),
         parameters=[
-            _PARAM_REALIZA_AGRUPAMENTO,
+            _PARAM_AGRUPA,
             OpenApiParameter(
                 "codigoRF",
                 OpenApiTypes.STR,
@@ -732,13 +739,13 @@ class ProfessoresTitularesPorTurmaPorRfView(ProfessoresAPIView):
         self,
         request: Request,
         codigo_turma: str,
-        realiza_agrupamento: bool,
+        agrupa: bool,
     ) -> Response:
         """Retorna os titulares da turma, filtrando por codigoRF se houver."""
         return _responder_titulares_por_turma(
             request,
             codigo_turma,
-            realiza_agrupamento,
+            agrupa,
             aplicar_filtro_rf=True,
         )
 

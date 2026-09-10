@@ -187,8 +187,8 @@ urlpatterns = [
         ProfessoresTitularesPorTurmaView.as_view(),
     ),
     path(
-        "professores/<str:codigo_turma>/titulares/rf/"
-        "realizaAgrupamentoComponente/<bool:realiza_agrupamento>",
+        "professores/<str:codigo_turma>/titularesPorRf/"
+        "realizaAgrupamentoComponente/<bool:agrupa>",
         ProfessoresTitularesPorTurmaPorRfView.as_view(),
     ),
     path(

@@ -3569,7 +3569,7 @@ class ProfessoresTitularesPorTurmaPorRfViewTest(SimpleTestCase):
     """Valida a busca de titulares por turma com filtro de RF."""
 
     _URL = (
-        "/api/professores/9100002/titulares/rf/"
+        "/api/professores/9100002/titularesPorRf/"
         "realizaAgrupamentoComponente/true"
     )
 
@@ -3646,7 +3646,7 @@ class ProfessoresTitularesPorTurmaPorRfViewTest(SimpleTestCase):
         "apps.professores.views.services."
         "buscar_professores_titulares_por_turma"
     )
-    def test_404_para_realiza_agrupamento_invalido(
+    def test_404_para_agrupa_invalido(
         self,
         mock_service: MagicMock,
     ) -> None:
