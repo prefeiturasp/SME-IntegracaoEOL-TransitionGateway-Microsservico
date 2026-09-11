@@ -305,7 +305,7 @@ class MatriculasParametrosLegadosTest(SimpleTestCase):
                     chamada.return_value = httpx.Response(
                         200,
                         json=[{"turma_codigo": "123", "quantidade": 2}],
-                        request=httpx.Request("GET", "http://ms.test/"),
+                        request=httpx.Request("GET", "https://ms.test/"),
                     )
                     resp = _cliente_autenticado().get(
                         f"/api/matriculas/{sufixo}?{query}"
