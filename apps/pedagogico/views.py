@@ -694,7 +694,7 @@ class SincronizacoesInstitucionaisAnosLetivosViewSet(PedagogicoAPIView):
         ),
         parameters=[
             OpenApiParameter(
-                name="anos_letivos_vigente",
+                name="anosLetivosVigente",
                 type=OpenApiTypes.INT,
                 location=OpenApiParameter.QUERY,
                 required=False,
@@ -719,9 +719,9 @@ class SincronizacoesInstitucionaisAnosLetivosViewSet(PedagogicoAPIView):
         """
         query_serializer = AnosLetivosVigentesQuerySerializer(
             data={
-                "anos_letivos_vigente": _obter_lista_query(
+                "anosLetivosVigente": _obter_lista_query(
                     request,
-                    "anos_letivos_vigente",
+                    "anosLetivosVigente",
                 )
             }
         )
