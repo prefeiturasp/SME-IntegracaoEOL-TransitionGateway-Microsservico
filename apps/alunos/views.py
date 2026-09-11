@@ -299,7 +299,16 @@ class AlunoAutocompleteAtivosView(AlunosAPIView):
         parameters=[
             OpenApiParameter("ue_codigo", str, OpenApiParameter.PATH),
             OpenApiParameter("aluno_nome", str, OpenApiParameter.QUERY),
-            OpenApiParameter("data_referencia", str, OpenApiParameter.QUERY),
+            OpenApiParameter(
+                "data_referencia",
+                str,
+                OpenApiParameter.QUERY,
+                required=True,
+                description=(
+                    "Data de referência obrigatória em formato ISO 8601 "
+                    "(ex.: 2026-02-03T10:00:00)."
+                ),
+            ),
             OpenApiParameter("aluno_codigo", int, OpenApiParameter.QUERY),
             OpenApiParameter(
                 "limite",

@@ -346,6 +346,23 @@ class AlunosUrlsTest(SimpleTestCase):
 class AlunoAutocompleteAtivosViewTest(SimpleTestCase):
     """Valida a view de autocomplete de alunos ativos."""
 
+    def test_schema_exige_data_referencia(self) -> None:
+        """Documenta a obrigatoriedade da data de referência."""
+        resp = APIClient().get("/api/v1/schema/")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        path = next(
+            path
+            for path in resp.data["paths"]
+            if path.endswith("/alunos/ues/{ue_codigo}/autocomplete/ativos")
+        )
+        parametros = resp.data["paths"][path]["get"]["parameters"]
+        parametro = next(
+            item for item in parametros if item["name"] == "data_referencia"
+        )
+        self.assertEqual(parametro["in"], "query")
+        self.assertTrue(parametro.get("required", False))
+
     @patch("apps.alunos.views.services.buscar_alunos_ativos_autocomplete")
     def test_200_retorna_lista_alunos(self, mock_service: MagicMock) -> None:
         mock_service.return_value = [
