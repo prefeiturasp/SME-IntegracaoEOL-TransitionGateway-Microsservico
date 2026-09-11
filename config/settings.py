@@ -116,8 +116,8 @@ SPECTACULAR_SETTINGS = {
         }
     },
     "APPEND_PATHS": {
-        "/api/v1/alunos/{codigo_aluno}/turmas": aluno_turmas_operation(
-            "v1_alunos_turmas_list"
+        "/api/alunos/{codigo_aluno}/turmas": aluno_turmas_operation(
+            "alunos_turmas_list"
         ),
     },
     "SECURITY": [{"ApiKeyAuth": []}],
