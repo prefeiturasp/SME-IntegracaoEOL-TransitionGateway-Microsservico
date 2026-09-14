@@ -1,5 +1,6 @@
 """Views do domínio de professores."""
 
+from datetime import date
 from typing import Any, cast
 
 import httpx
@@ -121,6 +122,7 @@ _MSG_CODIGO_TURMA_OBRIGATORIO = "É necessário informar o codigoTurma."
 _MSG_DATA_VALIDA = "Deve ser informada uma data valida."
 _MSG_DISCIPLINA_ID_OBRIGATORIO = "É necessário informar o disciplinaId."
 _MSG_DATAS_TICKS_OBRIGATORIAS = "É necessário informar as datas em ticks!"
+_MSG_DATAS_OBRIGATORIAS = "É necessário informar as datas!"
 
 
 # Parâmetros temporários usados enquanto a identidade não informa
@@ -884,6 +886,7 @@ class ProfessorVerificarAtribuicaoDataTickView(ProfessoresAPIView):
 
     @extend_schema(
         tags=_TAG_PROFESSOR,
+        deprecated=True,
         description=(
             "Verifica se o professor possui atribuição de turma e disciplina "
             "em uma data específica, informada como tick."
@@ -948,6 +951,7 @@ class ProfessorAtribuicaoTurmaDisciplinaView(ProfessoresAPIView):
 
     @extend_schema(
         tags=_TAG_PROFESSOR,
+        deprecated=True,
         description=(
             "Obtém a atribuições de uma turma e disciplina, filtrando por "
             "datas informadas como ticks."
@@ -1006,11 +1010,71 @@ class ProfessorAtribuicaoTurmaDisciplinaView(ProfessoresAPIView):
         )
 
 
+class ProfessorAtribuicaoTurmaDisciplinaDataIsoView(ProfessoresAPIView):
+    """Obtém a atribuições de uma turma e disciplina, em ISO 8601."""
+
+    @extend_schema(
+        tags=_TAG_PROFESSOR,
+        description=(
+            "Obtém a atribuições de uma turma e disciplina, filtrando por "
+            "data informada em ISO 8601."
+        ),
+        responses={
+            200: ProfessorAtribuicaoTurmaDisciplinaSerializer(many=True),
+            400: OpenApiTypes.STR,
+        },
+        parameters=[
+            OpenApiParameter(
+                "data",
+                OpenApiTypes.DATE,
+                OpenApiParameter.QUERY,
+                required=True,
+                description=("Data a ser verificada no formato YYYY-MM-DD."),
+            )
+        ],
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_turma: str,
+        disciplina_id: str,
+    ) -> Response:
+        """Obtém a atribuições de uma turma e disciplina, em ISO 8601.
+
+        Args:
+            codigo_turma: Código da turma.
+            disciplina_id: ID da disciplina.
+            data: Data a ser verificada no formato YYYY-MM-DD.
+
+        Returns:
+            Atribuições da turma e disciplina.
+        """
+        if not codigo_turma.strip():
+            return Response(_MSG_CODIGO_TURMA_OBRIGATORIO, status=400)
+        if not disciplina_id.strip():
+            return Response(_MSG_DISCIPLINA_ID_OBRIGATORIO, status=400)
+
+        data: str | None = _request.query_params.get("data")
+        if not data or validar_data_str(data) is False:
+            return Response(_MSG_DATA_VALIDA, status=400)
+
+        resposta = services.get_atribuicoes_turma_disciplina_iso(
+            codigo_turma, disciplina_id, data
+        )
+        return Response(
+            ProfessorAtribuicaoTurmaDisciplinaSerializer(
+                resposta,
+                many=True,
+            ).data
+        )
+
+
 class ProfessorVerificarRecorrenciaDatasView(ProfessoresAPIView):
     """Verifica datas de recorrência de uma atribuição docente."""
 
     @extend_schema(
         tags=_TAG_PROFESSOR,
+        deprecated=True,
         description=(
             "Verifica se as datas recorrentes de uma atribuição podem "
             "ser persistidas."
@@ -1075,11 +1139,80 @@ class ProfessorVerificarRecorrenciaDatasView(ProfessoresAPIView):
         return Response(serializer.data)  # type: ignore[has-type]
 
 
+class ProfessorVerificarRecorrenciaDatasIsoView(ProfessoresAPIView):
+    """Verifica datas de recorrência de uma atribuição docente, em ISO 8601."""
+
+    @extend_schema(
+        tags=_TAG_PROFESSOR,
+        description=(
+            "Verifica se as datas recorrentes de uma atribuição podem "
+            "ser persistidas."
+        ),
+        responses={
+            200: ProfessorRecorrenciaDataSerializer(many=True),
+            400: OpenApiTypes.STR,
+        },
+        parameters=[
+            OpenApiParameter(
+                "datas",
+                OpenApiTypes.DATE,
+                OpenApiParameter.QUERY,
+                required=True,
+                many=True,
+                description=(
+                    "Datas recorrentes no formato YYYY-MM-DD. O parâmetro "
+                    "pode ser repetido."
+                ),
+            )
+        ],
+    )
+    def get(
+        self,
+        request: Request,
+        codigo_rf: str,
+        codigo_turma: str,
+        disciplina_id: str,
+    ) -> Response:
+        """Verifica as datas de recorrência informadas, em ISO 8601.
+
+        Args:
+            request: Requisição HTTP com as datas em ISO 8601.
+            codigo_rf: RF do professor.
+            codigo_turma: Código da turma.
+            disciplina_id: ID da disciplina.
+
+        Returns:
+            Permissões de persistência para cada data informada.
+        """
+        datas = request.query_params.getlist("datas")
+        if not datas or not all(map(validar_data_str, datas)):
+            return Response(_MSG_DATAS_OBRIGATORIAS, status=400)
+
+        ano_letivo = date.fromisoformat(datas[0]).year
+        atribuicoes = _serializar_atribuicoes_internas(
+            services.get_atribuicoes_professor_turma_disciplina(
+                codigo_rf,
+                disciplina_id,
+                ano_letivo,
+            )
+        )
+        resultado = services.verificar_recorrencia_datas_iso(
+            codigo_rf,
+            codigo_turma,
+            disciplina_id,
+            datas,
+            atribuicoes,
+        )
+        serializer = ProfessorRecorrenciaDataSerializer(resultado, many=True)
+        return Response(serializer.data)  # type: ignore[has-type]
+
+
 class ProfessorVerificarAtribuicaoTurmaDisciplinaDataView(ProfessoresAPIView):
     """Verifica a atribuição do professor em uma turma e disciplina."""
 
     @extend_schema(
         tags=_TAG_PROFESSOR,
+        deprecated=True,
         description=(
             "Verifica se o professor possui atribuição de turma e disciplina "
             "em uma data específica."
@@ -1149,6 +1282,85 @@ class ProfessorVerificarAtribuicaoTurmaDisciplinaDataView(ProfessoresAPIView):
             codigo_turma,
             disciplina_id,
             data_consulta,
+            territorio_saber,
+        )
+        return Response(resposta)
+
+
+class ProfessorVerificarAtribuicaoView(ProfessoresAPIView):
+    """Verifica a atribuição do professor em uma turma e disciplina."""
+
+    @extend_schema(
+        tags=_TAG_PROFESSOR,
+        description=(
+            "Verifica se o professor possui atribuição de turma e disciplina "
+            "em uma data específica."
+        ),
+        responses={200: OpenApiTypes.BOOL, 400: OpenApiTypes.STR},
+        parameters=[
+            OpenApiParameter(
+                "data",
+                OpenApiTypes.DATE,
+                OpenApiParameter.QUERY,
+                required=True,
+                description=("Data a ser verificada no formato YYYY-MM-DD."),
+            ),
+            OpenApiParameter(
+                "territorioSaber",
+                OpenApiTypes.BOOL,
+                OpenApiParameter.QUERY,
+                required=False,
+                description=(
+                    "Indica se a verificação é para o território saber."
+                ),
+                default=False,
+            ),
+        ],
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_rf: str,
+        codigo_turma: str,
+        disciplina_id: str,
+    ) -> Response:
+        """Verifica a atribuição do professor em uma turma e disciplina.
+
+        Args:
+            codigo_rf: RF do professor.
+            codigo_turma: Código da turma.
+            disciplina_id: ID da disciplina.
+            data: Data a ser verificada.
+            territorioSaber: Indica se a verificação é para o território saber.
+
+        Returns:
+            Indicador booleano de atribuição do professor na turma
+            e disciplina.
+        """
+        if not codigo_rf.strip():
+            return Response(_MSG_CODIGO_RF_OBRIGATORIO, status=400)
+        if not codigo_turma.strip():
+            return Response(_MSG_CODIGO_TURMA_OBRIGATORIO, status=400)
+        if not disciplina_id.strip():
+            return Response(_MSG_DISCIPLINA_ID_OBRIGATORIO, status=400)
+
+        data: str | None = _request.query_params.get("data")
+        if not data or validar_data_str(data) is False:
+            return Response(_MSG_DATA_VALIDA, status=400)
+
+        query_serializer = VerificarAtribuicaoDisciplinaQuerySerializer(
+            data=_request.query_params
+        )
+        query_serializer.is_valid(raise_exception=True)
+        territorio_saber: bool = query_serializer.validated_data[
+            "territorioSaber"
+        ]
+
+        resposta = services.verificar_atribuicao_disciplina_territorio_saber(
+            codigo_rf,
+            codigo_turma,
+            disciplina_id,
+            data,
             territorio_saber,
         )
         return Response(resposta)
