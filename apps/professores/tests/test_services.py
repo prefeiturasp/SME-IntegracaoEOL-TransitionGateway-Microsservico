@@ -1973,7 +1973,7 @@ class BuscarProfessoresTitularesPorTurmaTest(SimpleTestCase):
             [
                 {
                     "disciplina": "CIENCIAS",
-                    "disciplina_id": "89",
+                    "disciplina_id": None,
                     "disciplinas_id": "89",
                     "nome_professor": "PROFESSOR",
                     "professor_rf": "000001",
@@ -3075,7 +3075,7 @@ class AgruparComponentesRetornoTest(SimpleTestCase):
             [
                 {
                     "disciplina": "CIENCIAS",
-                    "disciplina_id": "89",
+                    "disciplina_id": None,
                     "disciplinas_id": "89,90",
                     "nome_professor": "PROFESSOR",
                     "professor_rf": "000001",
@@ -3083,7 +3083,7 @@ class AgruparComponentesRetornoTest(SimpleTestCase):
                 },
                 {
                     "disciplina": "CIENCIAS",
-                    "disciplina_id": "91",
+                    "disciplina_id": None,
                     "disciplinas_id": "91",
                     "nome_professor": "OUTRO PROFESSOR",
                     "professor_rf": "000002",
@@ -3980,7 +3980,7 @@ class CoberturaBuscaProfessoresTitularesStagedTest(SimpleTestCase):
         )
 
         self.assertEqual(resultado[0]["disciplina"], "TERRITORIO DO SABER")
-        self.assertEqual(resultado[0]["disciplina_id"], "800000")
+        self.assertIsNone(resultado[0]["disciplina_id"])
         self.assertEqual(resultado[0]["disciplinas_id"], "800000")
 
     @patch(

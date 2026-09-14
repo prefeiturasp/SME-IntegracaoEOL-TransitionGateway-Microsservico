@@ -1605,6 +1605,7 @@ def buscar_professor_titular_por_turma_disciplina(
 
 def _agrupar_componentes_retorno(
     componentes_retorno: list[dict[str, Any]],
+    manter_disciplina_id: bool = False,
 ) -> list[dict[str, Any]]:
     """Agrupa componentes por disciplina e RF do professor.
 
@@ -1646,7 +1647,11 @@ def _agrupar_componentes_retorno(
         retorno.append(
             {
                 "disciplina": primeiro.get("disciplina"),
-                "disciplina_id": primeiro.get("disciplina_id"),
+                "disciplina_id": (
+                    primeiro.get("disciplina_id")
+                    if manter_disciplina_id
+                    else None
+                ),
                 "disciplinas_id": disciplinas_id,
                 "nome_professor": nomes_professores,
                 "professor_rf": professores_rf,
@@ -2629,7 +2634,9 @@ def _calcular_professores_titulares_por_turmas(
         )
         componentes_retorno.extend(componentes_turma)
 
-    return _agrupar_componentes_retorno(componentes_retorno)
+    return _agrupar_componentes_retorno(
+        componentes_retorno, manter_disciplina_id=True
+    )
 
 
 def buscar_professores_titulares_por_turmas(
