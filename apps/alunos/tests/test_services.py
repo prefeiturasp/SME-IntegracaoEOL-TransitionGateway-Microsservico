@@ -556,6 +556,33 @@ class GetAlunosDataMatriculaTicksTest(SimpleTestCase):
         self.assertEqual(result, payload)
 
 
+class GetAlunosDataMatriculaTest(SimpleTestCase):
+    """Valida a consulta de alunos por data de matricula em formato ISO."""
+
+    @patch.object(services._client, "get")
+    def test_chama_endpoint_canonico_com_filtros(
+        self, mock_get: MagicMock
+    ) -> None:
+        payload = [{"codigo_aluno": 7000004}]
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"[]"
+        mock_resp.json.return_value = payload
+        mock_get.return_value = mock_resp
+
+        result = services.get_alunos_data_matricula(
+            codigo_turma="9100002",
+            data_matricula="2026-02-06",
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/turmas/9100002/data-matricula/2026-02-06/",
+            params={"considerar_inativos": True, "sequencia": 1},
+        )
+        mock_resp.raise_for_status.assert_called_once_with()
+        self.assertEqual(result, payload)
+
+
 class GetTurmasAlunoTest(SimpleTestCase):
     """Valida a consulta de turmas do aluno."""
 
@@ -1009,9 +1036,7 @@ class GetDadosAcompanhamentoEscolarTest(SimpleTestCase):
         self.assertEqual(result, payload)
 
     @patch.object(services._client, "get")
-    def test_sem_filtros_envia_params_none(
-        self, mock_get: MagicMock
-    ) -> None:
+    def test_sem_filtros_envia_params_none(self, mock_get: MagicMock) -> None:
         mock_get.return_value = _resp_lista([])
 
         result = services.get_dados_acompanhamento_escolar()
@@ -1126,9 +1151,7 @@ class GetQuantidadeMatriculadosTest(SimpleTestCase):
         self.assertEqual(result, payload)
 
     @patch.object(services._client, "get")
-    def test_sem_filtros_envia_params_none(
-        self, mock_get: MagicMock
-    ) -> None:
+    def test_sem_filtros_envia_params_none(self, mock_get: MagicMock) -> None:
         mock_get.return_value = _resp_lista([])
 
         result = services.get_quantidade_matriculados(ano_letivo="2026")

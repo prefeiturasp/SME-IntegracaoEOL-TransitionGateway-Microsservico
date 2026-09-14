@@ -575,6 +575,64 @@ def get_alunos_por_turma(
     return _client.json_or_none(resp) or []
 
 
+def get_alunos_por_turma_e_data_aula(
+    codigo_turma: str,
+    data_aula: str,
+) -> Any:
+    """Retorna os alunos de uma turma consultando o endpoint.
+
+    Args:
+        codigo_turma: Código EOL da turma.
+        data_aula: Data de referência em formato ISO 8601.
+
+    Returns:
+        Lista de alunos, ou lista vazia quando não houver registros.
+
+    Raises:
+        httpx.HTTPStatusError: Se o serviço externo retornar status de erro.
+        httpx.RequestError: Se o serviço externo estiver inacessível.
+    """
+    resp = _client.get(
+        f"{_BASE}/turmas/{codigo_turma}/alunos-ativos/data-aula/{data_aula}/"
+    )
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
+def get_alunos_por_turma_e_data_matricula(
+    codigo_turma: str,
+    *,
+    data_matricula: str,
+    considerar_inativos: bool = True,
+    sequencia: int | None = None,
+) -> Any:
+    """Retorna os alunos de uma turma consultando o endpoint.
+
+    Args:
+        codigo_turma: Código EOL da turma.
+        data_matricula: Data da matrícula em formato ISO 8601 (YYYY-MM-DD).
+        considerar_inativos: Inclui alunos inativos quando ``True``.
+        sequencia: Sequência da matrícula a filtrar, quando aplicável.
+
+    Returns:
+        Lista de alunos, ou lista vazia quando não houver registros.
+
+    Raises:
+        httpx.HTTPStatusError: Se o serviço externo retornar status de erro.
+        httpx.RequestError: Se o serviço externo estiver inacessível.
+    """
+    params: dict[str, Any] = {"considerar_inativos": considerar_inativos}
+    if sequencia is not None:
+        params["sequencia"] = sequencia
+
+    resp = _client.get(
+        f"{_BASE}/turmas/{codigo_turma}/data-matricula/{data_matricula}/",
+        params=params,
+    )
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
 def post_quantidade_matriculas_turmas_periodo(
     codigos_turmas: list[int],
     data_fim_ticks: str | int,
@@ -713,6 +771,26 @@ def get_alunos_ativos_data_aula_ticks(
     )
 
 
+def get_alunos_ativos_data_aula(
+    codigo_turma: str,
+    data_aula: str,
+) -> Any:
+    """Retorna alunos ativos da turma na data informada em ISO 8601.
+
+    Args:
+        codigo_turma: Código EOL da turma.
+        data_aula: Data de referência em formato ISO 8601.
+
+    Returns:
+        Lista de alunos ativos, ou lista vazia quando não houver registros.
+
+    Raises:
+        httpx.HTTPStatusError: Se o serviço externo retornar status de erro.
+        httpx.RequestError: Se o serviço externo estiver inacessível.
+    """
+    return get_alunos_por_turma_e_data_aula(codigo_turma, data_aula)
+
+
 def get_alunos_data_matricula_ticks(
     codigo_turma: str,
     data_matricula_ticks: str,
@@ -722,6 +800,19 @@ def get_alunos_data_matricula_ticks(
         codigo_turma,
         considerar_inativos=True,
         data_matricula_ticks=data_matricula_ticks,
+        sequencia=1,
+    )
+
+
+def get_alunos_data_matricula(
+    codigo_turma: str,
+    data_matricula: str,
+) -> Any:
+    """Retorna alunos da turma por data de matricula."""
+    return get_alunos_por_turma_e_data_matricula(
+        codigo_turma,
+        considerar_inativos=True,
+        data_matricula=data_matricula,
         sequencia=1,
     )
 
