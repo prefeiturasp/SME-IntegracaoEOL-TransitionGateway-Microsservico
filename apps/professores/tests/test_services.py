@@ -3816,7 +3816,7 @@ class CoberturaBuscaProfessoresTitularesStagedTest(SimpleTestCase):
         )
 
         self.assertEqual(resultado[0]["disciplina"], "TERRITORIO DO SABER")
-        self.assertEqual(resultado[0]["disciplina_id"], "800000")
+        self.assertIsNone(resultado[0]["disciplina_id"])
         self.assertEqual(resultado[0]["disciplinas_id"], "800000")
 
     @patch(

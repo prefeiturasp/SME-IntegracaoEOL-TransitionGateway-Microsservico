@@ -2538,7 +2538,9 @@ def _calcular_professores_titulares_por_turmas(
         )
         componentes_retorno.extend(componentes_turma)
 
-    return _agrupar_componentes_retorno(componentes_retorno)
+    return _agrupar_componentes_retorno(
+        componentes_retorno, manter_disciplina_id=True
+    )
 
 
 def buscar_professores_titulares_por_turmas(
