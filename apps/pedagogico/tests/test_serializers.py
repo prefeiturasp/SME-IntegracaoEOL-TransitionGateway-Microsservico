@@ -73,7 +73,7 @@ class AnosLetivosVigentesQuerySerializerTest(SimpleTestCase):
 
     def test_valida_lista_de_anos(self) -> None:
         serializer = AnosLetivosVigentesQuerySerializer(
-            data={"anos_letivos_vigente": ["2025", "2026"]}
+            data={"anosLetivosVigente": ["2025", "2026"]}
         )
 
         self.assertTrue(serializer.is_valid())
@@ -93,7 +93,7 @@ class AnosLetivosVigentesQuerySerializerTest(SimpleTestCase):
 
     def test_aceita_lista_vazia(self) -> None:
         serializer = AnosLetivosVigentesQuerySerializer(
-            data={"anos_letivos_vigente": []}
+            data={"anosLetivosVigente": []}
         )
 
         self.assertTrue(serializer.is_valid())
@@ -104,14 +104,14 @@ class AnosLetivosVigentesQuerySerializerTest(SimpleTestCase):
 
     def test_rejeita_item_nao_inteiro(self) -> None:
         serializer = AnosLetivosVigentesQuerySerializer(
-            data={"anos_letivos_vigente": ["2025", "invalido"]}
+            data={"anosLetivosVigente": ["2025", "invalido"]}
         )
 
         self.assertFalse(serializer.is_valid())
 
     def test_rejeita_item_booleano(self) -> None:
         serializer = AnosLetivosVigentesQuerySerializer(
-            data={"anos_letivos_vigente": [True]}
+            data={"anosLetivosVigente": [True]}
         )
 
         self.assertFalse(serializer.is_valid())

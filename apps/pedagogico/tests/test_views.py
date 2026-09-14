@@ -1167,6 +1167,35 @@ class SincronizacoesInstitucionaisAnosLetivosViewSetTest(SimpleTestCase):
         "apps.pedagogico.views.services."
         "get_sincronizacoes_institucionais_anos_letivos"
     )
+    def test_somente_camel_case_controla_o_filtro(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Usa apenas os anos do parâmetro com o nome do legado."""
+        mock_svc.return_value = [123]
+        for query, esperado in (
+            ("anos_letivos_vigente=2024", None),
+            (
+                "anos_letivos_vigente=2024&anos_letivos_vigente=2025",
+                None,
+            ),
+            ("anos_letivos_vigente=2024&anosLetivosVigente=2026", [2026]),
+        ):
+            with self.subTest(query=query):
+                mock_svc.reset_mock()
+                resp = _cliente_autenticado().get(
+                    f"{_PREFIX_TURMAS}/ue/000001/"
+                    f"sincronizacoes-institucionais/anos-letivos/?{query}"
+                )
+                self.assertEqual(resp.status_code, status.HTTP_200_OK)
+                self.assertEqual(resp.data, [123])
+                mock_svc.assert_called_once_with(
+                    codigo_ue="000001", anos_letivos_vigente=esperado
+                )
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_sincronizacoes_institucionais_anos_letivos"
+    )
     def test_200_retorna_codigos_com_anos_repetidos(
         self,
         mock_svc: MagicMock,
@@ -1177,7 +1206,7 @@ class SincronizacoesInstitucionaisAnosLetivosViewSetTest(SimpleTestCase):
         resp = client.get(
             f"{_PREFIX_TURMAS}/ue/000003/"
             "sincronizacoes-institucionais/anos-letivos/"
-            "?anos_letivos_vigente=2025&anos_letivos_vigente=2026"
+            "?anosLetivosVigente=2025&anosLetivosVigente=2026"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -1201,7 +1230,7 @@ class SincronizacoesInstitucionaisAnosLetivosViewSetTest(SimpleTestCase):
         resp = client.get(
             f"{_PREFIX_TURMAS}/ue/000003/"
             "sincronizacoes-institucionais/anos-letivos/",
-            {"anos_letivos_vigente": "[2025, 2026]"},
+            {"anosLetivosVigente": "[2025, 2026]"},
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -1245,7 +1274,7 @@ class SincronizacoesInstitucionaisAnosLetivosViewSetTest(SimpleTestCase):
         resp = client.get(
             f"{_PREFIX_TURMAS}/ue/000003/"
             "sincronizacoes-institucionais/anos-letivos/"
-            "?anos_letivos_vigente=invalido"
+            "?anosLetivosVigente=invalido"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -1755,11 +1784,16 @@ class TurmasSchemaTest(SimpleTestCase):
         )
         operation = schema["paths"][anos_path]["get"]
         self.assertEqual(operation["tags"], ["Turma"])
+        self.assertNotIn(
+            "anos_letivos_vigente",
+            [item["name"] for item in operation["parameters"]],
+        )
         query = next(
             item
             for item in operation["parameters"]
-            if item["name"] == "anos_letivos_vigente"
+            if item["name"] == "anosLetivosVigente"
         )
+        self.assertNotIn("description", query)
         self.assertFalse(query.get("required", False))
         self.assertEqual(query["schema"]["type"], "array")
         self.assertEqual(query["schema"]["items"]["type"], "integer")
