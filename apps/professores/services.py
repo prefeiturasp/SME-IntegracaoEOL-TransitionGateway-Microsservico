@@ -1611,12 +1611,6 @@ def _agrupar_componentes_retorno(
 
     Args:
         componentes_retorno: Componentes tratados que serão agrupados.
-        manter_disciplina_id: Quando True, preenche ``disciplina_id`` com o
-            id do primeiro componente do grupo — comportamento do .NET em
-            `BuscarProfessoresTitularesDasTurmas` (busca por várias turmas).
-            Quando False (padrão), o campo fica sempre `None` — comportamento
-            do .NET em `BuscarProfessorTitularPorDisciplinaAsync` (busca por
-            turma única), que só preenche `disciplinas_id`.
 
     Returns:
         Componentes no contrato interno do DTO de professor titular.
