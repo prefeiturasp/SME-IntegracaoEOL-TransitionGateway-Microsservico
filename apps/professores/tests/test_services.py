@@ -1809,7 +1809,7 @@ class BuscarProfessoresTitularesPorTurmaTest(SimpleTestCase):
             [
                 {
                     "disciplina": "CIENCIAS",
-                    "disciplina_id": "89",
+                    "disciplina_id": None,
                     "disciplinas_id": "89",
                     "nome_professor": "PROFESSOR",
                     "professor_rf": "000001",
@@ -2911,7 +2911,7 @@ class AgruparComponentesRetornoTest(SimpleTestCase):
             [
                 {
                     "disciplina": "CIENCIAS",
-                    "disciplina_id": "89",
+                    "disciplina_id": None,
                     "disciplinas_id": "89,90",
                     "nome_professor": "PROFESSOR",
                     "professor_rf": "000001",
@@ -2919,7 +2919,7 @@ class AgruparComponentesRetornoTest(SimpleTestCase):
                 },
                 {
                     "disciplina": "CIENCIAS",
-                    "disciplina_id": "91",
+                    "disciplina_id": None,
                     "disciplinas_id": "91",
                     "nome_professor": "OUTRO PROFESSOR",
                     "professor_rf": "000002",
