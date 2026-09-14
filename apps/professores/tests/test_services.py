@@ -1961,6 +1961,7 @@ class BuscarProfessoresTitularesPorTurmaTest(SimpleTestCase):
 
         mock_client.get.assert_called_once_with(
             "/api/v1/professores/9100002/titulares/",
+            params=None,
         )
         mock_client.json_or_none.assert_called_once_with(mock_response)
         mock_componentes_turma.assert_called_once_with(
@@ -1981,6 +1982,82 @@ class BuscarProfessoresTitularesPorTurmaTest(SimpleTestCase):
             ],
         )
 
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_turma_componentes_turma"
+    )
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_professores_turma_territorio_saber"
+    )
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_componentes_api_eol"
+    )
+    @patch("apps.professores.services._client")
+    def test_repassa_codigo_rf_como_query_param(
+        self,
+        mock_client: MagicMock,
+        mock_componentes_api_eol: MagicMock,
+        mock_atribuicoes_territorio: MagicMock,
+        mock_componentes_turma: MagicMock,
+    ) -> None:
+        """Envia codigo_rf na query string do sidecar quando informado."""
+        mock_componentes_api_eol.return_value = []
+        mock_atribuicoes_territorio.return_value = []
+        mock_componentes_turma.return_value = []
+        mock_client.json_or_none.return_value = []
+
+        services.buscar_professores_titulares_por_turma(
+            "9100002",
+            None,
+            True,
+            "0000001",
+        )
+
+        mock_client.get.assert_called_once_with(
+            "/api/v1/professores/9100002/titulares/",
+            params={"codigo_rf": "0000001"},
+        )
+
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_turma_componentes_turma"
+    )
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_professores_turma_territorio_saber"
+    )
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_componentes_api_eol"
+    )
+    @patch("apps.professores.services._client")
+    def test_omite_codigo_rf_da_query_param_quando_vazio(
+        self,
+        mock_client: MagicMock,
+        mock_componentes_api_eol: MagicMock,
+        mock_atribuicoes_territorio: MagicMock,
+        mock_componentes_turma: MagicMock,
+    ) -> None:
+        """Não envia codigo_rf quando o parâmetro é uma string vazia."""
+        mock_componentes_api_eol.return_value = []
+        mock_atribuicoes_territorio.return_value = []
+        mock_componentes_turma.return_value = []
+        mock_client.json_or_none.return_value = []
+
+        services.buscar_professores_titulares_por_turma(
+            "9100002",
+            None,
+            True,
+            "",
+        )
+
+        mock_client.get.assert_called_once_with(
+            "/api/v1/professores/9100002/titulares/",
+            params=None,
+        )
+
     @patch("apps.professores.services._client")
     def test_normaliza_payload_invalido(
         self,
@@ -1997,6 +2074,7 @@ class BuscarProfessoresTitularesPorTurmaTest(SimpleTestCase):
 
         mock_client.get.assert_called_once_with(
             "/api/v1/professores/9100002/titulares/",
+            params=None,
         )
         self.assertEqual(resultado, [])
 
@@ -2192,6 +2270,41 @@ class BuscarProfessoresTitularesPorTurmaTest(SimpleTestCase):
         )
 
         self.assertEqual(resultado, [])
+
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_turma_componentes_turma"
+    )
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_professores_turma_territorio_saber"
+    )
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_componentes_api_eol"
+    )
+    @patch("apps.professores.services._client")
+    def test_nao_consulta_componentes_turma_sem_codigos(
+        self,
+        mock_client: MagicMock,
+        mock_componentes_api_eol: MagicMock,
+        mock_atribuicoes_territorio: MagicMock,
+        mock_componentes_turma: MagicMock,
+    ) -> None:
+        """Não chama o pedagógico quando o filtro por RF zera a lista."""
+        mock_componentes_api_eol.return_value = []
+        mock_atribuicoes_territorio.return_value = []
+        mock_client.json_or_none.return_value = []
+
+        resultado = services.buscar_professores_titulares_por_turma(
+            "9100002",
+            None,
+            True,
+            "0000001",
+        )
+
+        self.assertEqual(resultado, [])
+        mock_componentes_turma.assert_not_called()
 
 
 class BuscarProfessoresTitularesPorUeTest(SimpleTestCase):
@@ -2739,9 +2852,7 @@ class GetDisciplinasTurmaTest(SimpleTestCase):
         self, mock_pedagogico: MagicMock
     ) -> None:
         payload = [{"codigo_componente": 89}]
-        mock_pedagogico.get_componentes_por_lista_turmas.return_value = (
-            payload
-        )
+        mock_pedagogico.get_componentes_por_lista_turmas.return_value = payload
 
         resultado = services.get_disciplinas_turma("9100002")
 

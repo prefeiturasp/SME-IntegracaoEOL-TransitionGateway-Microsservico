@@ -46,6 +46,7 @@ from apps.professores.views import (
     ProfessorDisciplinaTurmasView,
     ProfessorEhEmeiView,
     ProfessoresBuscarPorListaRfAnoView,
+    ProfessoresTitularesPorTurmaPorRfView,
     ProfessoresTitularesPorTurmasView,
     ProfessoresTitularesPorTurmaView,
     ProfessoresTitularesPorUeView,
@@ -187,6 +188,11 @@ urlpatterns = [
         "professores/<str:codigo_turma>/titulares/"
         "realizaAgrupamentoComponente/<bool:realiza_agrupamento>",
         ProfessoresTitularesPorTurmaView.as_view(),
+    ),
+    path(
+        "professores/<str:codigo_turma>/titularesPorRf/"
+        "realizaAgrupamentoComponente/<bool:agrupa>",
+        ProfessoresTitularesPorTurmaPorRfView.as_view(),
     ),
     path(
         "professores/<str:codigo_rf>/disciplina/<str:disciplina_id>/turmas/",
