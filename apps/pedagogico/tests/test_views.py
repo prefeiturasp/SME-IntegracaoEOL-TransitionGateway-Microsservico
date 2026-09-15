@@ -1167,6 +1167,35 @@ class SincronizacoesInstitucionaisAnosLetivosViewSetTest(SimpleTestCase):
         "apps.pedagogico.views.services."
         "get_sincronizacoes_institucionais_anos_letivos"
     )
+    def test_somente_camel_case_controla_o_filtro(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Usa apenas os anos do parâmetro com o nome do legado."""
+        mock_svc.return_value = [123]
+        for query, esperado in (
+            ("anos_letivos_vigente=2024", None),
+            (
+                "anos_letivos_vigente=2024&anos_letivos_vigente=2025",
+                None,
+            ),
+            ("anos_letivos_vigente=2024&anosLetivosVigente=2026", [2026]),
+        ):
+            with self.subTest(query=query):
+                mock_svc.reset_mock()
+                resp = _cliente_autenticado().get(
+                    f"{_PREFIX_TURMAS}/ue/000001/"
+                    f"sincronizacoes-institucionais/anos-letivos/?{query}"
+                )
+                self.assertEqual(resp.status_code, status.HTTP_200_OK)
+                self.assertEqual(resp.data, [123])
+                mock_svc.assert_called_once_with(
+                    codigo_ue="000001", anos_letivos_vigente=esperado
+                )
+
+    @patch(
+        "apps.pedagogico.views.services."
+        "get_sincronizacoes_institucionais_anos_letivos"
+    )
     def test_200_retorna_codigos_com_anos_repetidos(
         self,
         mock_svc: MagicMock,
@@ -1177,7 +1206,7 @@ class SincronizacoesInstitucionaisAnosLetivosViewSetTest(SimpleTestCase):
         resp = client.get(
             f"{_PREFIX_TURMAS}/ue/000003/"
             "sincronizacoes-institucionais/anos-letivos/"
-            "?anos_letivos_vigente=2025&anos_letivos_vigente=2026"
+            "?anosLetivosVigente=2025&anosLetivosVigente=2026"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -1201,7 +1230,7 @@ class SincronizacoesInstitucionaisAnosLetivosViewSetTest(SimpleTestCase):
         resp = client.get(
             f"{_PREFIX_TURMAS}/ue/000003/"
             "sincronizacoes-institucionais/anos-letivos/",
-            {"anos_letivos_vigente": "[2025, 2026]"},
+            {"anosLetivosVigente": "[2025, 2026]"},
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -1245,7 +1274,7 @@ class SincronizacoesInstitucionaisAnosLetivosViewSetTest(SimpleTestCase):
         resp = client.get(
             f"{_PREFIX_TURMAS}/ue/000003/"
             "sincronizacoes-institucionais/anos-letivos/"
-            "?anos_letivos_vigente=invalido"
+            "?anosLetivosVigente=invalido"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -1635,9 +1664,7 @@ class TurmasPorEscolaViewSetTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.data[0]["nomeTurmaEOL"], "3A")
         self.assertEqual(resp.data[0]["siglaModalidade"], "EF")
-        mock_svc.assert_called_once_with(
-            codigo_ue="000532", ano_letivo="2024"
-        )
+        mock_svc.assert_called_once_with(codigo_ue="000532", ano_letivo="2024")
 
     @patch("apps.pedagogico.views.services.get_turmas_por_escola")
     def test_200_lista_vazia_sem_traducao_para_404(
@@ -1686,9 +1713,7 @@ class TurmasSondagemViewSetTest(SimpleTestCase):
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        mock_svc.assert_called_once_with(
-            codigo_ue="000532", ano_letivo="2024"
-        )
+        mock_svc.assert_called_once_with(codigo_ue="000532", ano_letivo="2024")
 
     @patch("apps.pedagogico.views.services.get_turmas_sondagem")
     def test_404_quando_vazio(self, mock_svc: MagicMock) -> None:
@@ -1759,11 +1784,16 @@ class TurmasSchemaTest(SimpleTestCase):
         )
         operation = schema["paths"][anos_path]["get"]
         self.assertEqual(operation["tags"], ["Turma"])
+        self.assertNotIn(
+            "anos_letivos_vigente",
+            [item["name"] for item in operation["parameters"]],
+        )
         query = next(
             item
             for item in operation["parameters"]
-            if item["name"] == "anos_letivos_vigente"
+            if item["name"] == "anosLetivosVigente"
         )
+        self.assertNotIn("description", query)
         self.assertFalse(query.get("required", False))
         self.assertEqual(query["schema"]["type"], "array")
         self.assertEqual(query["schema"]["items"]["type"], "integer")
@@ -2108,9 +2138,7 @@ class ComponentesTurmaFuncionarioViewSetTest(SimpleTestCase):
         self.assertEqual(
             resp.data[0]["inicioAtribuicao"], "2025-12-23T00:00:00"
         )
-        self.assertEqual(
-            resp.data[0]["fimAtribuicao"], "2026-12-22T00:00:00"
-        )
+        self.assertEqual(resp.data[0]["fimAtribuicao"], "2026-12-22T00:00:00")
 
     @patch("apps.pedagogico.views.services.get_componentes_turma_funcionario")
     def test_get_retorna_204_quando_vazio(
@@ -2275,6 +2303,28 @@ class ComponentesSemAtribuicaoViewSetTest(SimpleTestCase):
         mock_svc.assert_called_once_with(
             codigo_turma="T001",
             data_base_tick=638396640000000000,
+        )
+
+
+class ComponentesSemAtribuicaoBaseDateViewSetTest(SimpleTestCase):
+    """Valida a view de componentes sem atribuição."""
+
+    @patch(
+        "apps.pedagogico.views.services.get_componentes_sem_atribuicao_por_data_base"
+    )
+    def test_repassa_turma_e_data_base(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = ["ARTE", "EDUCACAO FISICA"]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX}/turmas/001/sem-atribuicao/data-base/2023-12-12/"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data, ["ARTE", "EDUCACAO FISICA"])
+        mock_svc.assert_called_once_with(
+            codigo_turma="001",
+            data_base="2023-12-12",
         )
 
 

@@ -14,6 +14,7 @@ from apps.pedagogico.views import (
     ComponentesPlanejamentoViewSet,
     ComponentesPorListaTurmasViewSet,
     ComponentesRegenciaViewSet,
+    ComponentesSemAtribuicaoBaseDateViewSet,
     ComponentesSemAtribuicaoViewSet,
     ComponentesTurmaAnoViewSet,
     ComponentesTurmaFuncionarioViewSet,
@@ -162,6 +163,10 @@ urlpatterns = [
     path(
         "turmas/<str:codigo_turma>/sem-atribuicao/" + "<int:data_base_tick>/",
         ComponentesSemAtribuicaoViewSet.as_view(),
+    ),
+    path(
+        "turmas/<str:codigo_turma>/sem-atribuicao/data-base/<str:data_base>/",
+        ComponentesSemAtribuicaoBaseDateViewSet.as_view(),
     ),
     path(
         _TURMA_FUNCIONARIO_PREFIXO + "perfis/<str:id_perfil>/validar/pap/",

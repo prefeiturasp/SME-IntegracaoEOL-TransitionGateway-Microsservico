@@ -77,7 +77,8 @@ class CodigoTurmaListSerializer(serializers.ListSerializer):
 class AnosLetivosVigentesQuerySerializer(serializers.Serializer):
     """Valida o filtro de anos letivos vigentes."""
 
-    anos_letivos_vigente = serializers.ListField(
+    anosLetivosVigente = serializers.ListField(  # NOSONAR
+        source="anos_letivos_vigente",
         child=serializers.IntegerField(),
         required=False,
         allow_empty=True,

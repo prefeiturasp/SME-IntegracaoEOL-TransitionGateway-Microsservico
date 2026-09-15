@@ -68,5 +68,5 @@ urlpatterns = [
     path("api/", include("apps.programasedu.urls")),
     path("api/", include("apps.abrangencia.urls")),
     path("api/matriculas/", include("apps.matriculas.urls")),
-    path(f"{API_PREFIX}alunos/", include("apps.alunos.urls")),
+    path("api/alunos/", include("apps.alunos.urls")),
 ]

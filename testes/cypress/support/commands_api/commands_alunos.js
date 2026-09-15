@@ -2,7 +2,7 @@ Cypress.Commands.add("getAlunoInformacoes", (valor) => {
   let codigo = valor === true ? `${Cypress.env("CODIGO_ALUNO")}` : "010101001";
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/v1/alunos/${codigo}/informacoes`,
+    url: `${Cypress.env("API_URL")}/api/alunos/${codigo}/informacoes`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -14,7 +14,7 @@ Cypress.Commands.add("getAlunoInformacoes", (valor) => {
 Cypress.Commands.add("getAlunoNecessidadesEspeciais", () => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/v1/alunos/${Cypress.env("CODIGO_ALUNO")}/necessidades-especiais`,
+    url: `${Cypress.env("API_URL")}/api/alunos/${Cypress.env("CODIGO_ALUNO")}/necessidades-especiais`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -26,7 +26,7 @@ Cypress.Commands.add("getAlunoNecessidadesEspeciais", () => {
 Cypress.Commands.add("getAlunosPorCodigos", () => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/v1/alunos/alunos`,
+    url: `${Cypress.env("API_URL")}/api/alunos/alunos`,
     qs: { codigos_aluno: [Cypress.env("CODIGO_ALUNO")] },
     headers: {
       accept: "application/json",
@@ -76,7 +76,7 @@ Cypress.Commands.add("getAlunoSrmPaee", (valor) => {
 Cypress.Commands.add("getAlunoTurmas", () => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/v1/alunos/${Cypress.env("CODIGO_ALUNO")}/turmas`,
+    url: `${Cypress.env("API_URL")}/api/alunos/${Cypress.env("CODIGO_ALUNO")}/turmas`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -125,7 +125,7 @@ Cypress.Commands.add("getVerificacaoAlunosTurmasPap", () => {
 Cypress.Commands.add("getAlunosMatriculadosQuantidade", (ano) => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/v1/alunos/ano-letivo/${ano}/matriculados/quantidade`,
+    url: `${Cypress.env("API_URL")}/api/alunos/ano-letivo/${ano}/matriculados/quantidade`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -141,7 +141,7 @@ Cypress.Commands.add(
       method: "GET",
       url: `${Cypress.env(
         "API_URL",
-      )}/api/v1/alunos/ano-letivo/${ano}/matriculados?componentes_curriculares=${componentesCurriculares}`,
+      )}/api/alunos/ano-letivo/${ano}/matriculados?componentes_curriculares=${componentesCurriculares}`,
       headers: {
         accept: "application/json",
         [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -156,7 +156,7 @@ Cypress.Commands.add("getAlunosPorCodigo", (ano, codigoAluno) => {
     method: "GET",
     url: `${Cypress.env(
       "API_URL",
-    )}/api/v1/alunos/anoLetivo/${ano}/alunos?codigos_aluno=${codigoAluno}`,
+    )}/api/alunos/anoLetivo/${ano}/alunos?codigos_aluno=${codigoAluno}`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -168,7 +168,7 @@ Cypress.Commands.add("getAlunosPorCodigo", (ano, codigoAluno) => {
 Cypress.Commands.add("getDadosAcompanhamentoEscolar", (queryParams = "") => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/v1/alunos/dados-acompanhamento-escolar${queryParams}`,
+    url: `${Cypress.env("API_URL")}/api/alunos/dados-acompanhamento-escolar${queryParams}`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -180,7 +180,7 @@ Cypress.Commands.add("getDadosAcompanhamentoEscolar", (queryParams = "") => {
 Cypress.Commands.add("getResponsaveis", (queryParams = "") => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/v1/alunos/responsaveis${queryParams}`,
+    url: `${Cypress.env("API_URL")}/api/alunos/responsaveis${queryParams}`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -192,7 +192,7 @@ Cypress.Commands.add("getResponsaveis", (queryParams = "") => {
 Cypress.Commands.add("getResponsavelResumido", (cpf) => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/v1/alunos/responsaveis/${cpf}/resumido`,
+    url: `${Cypress.env("API_URL")}/api/alunos/responsaveis/${cpf}/resumido`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -206,7 +206,7 @@ Cypress.Commands.add("getResponsavelResumido", (cpf) => {
 Cypress.Commands.add("getAlunosAtivosTurma", (codigoTurma) => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/v1/alunos/turmas/${codigoTurma}/ativos`,
+    url: `${Cypress.env("API_URL")}/api/alunos/turmas/${codigoTurma}/ativos`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -222,7 +222,7 @@ Cypress.Commands.add(
       method: "GET",
       url: `${Cypress.env(
         "API_URL",
-      )}/api/v1/alunos/turmas/${codigoTurma}/ativos/${dataReferenciaFim}`,
+      )}/api/alunos/turmas/${codigoTurma}/ativos/${dataReferenciaFim}`,
       headers: {
         accept: "application/json",
         [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -240,7 +240,7 @@ Cypress.Commands.add(
       method: "GET",
       url: `${Cypress.env(
         "API_URL",
-      )}/api/v1/alunos/ues/${codigoUe}/anosLetivos/${anoLetivo}${query}`,
+      )}/api/alunos/ues/${codigoUe}/anosLetivos/${anoLetivo}${query}`,
       headers: {
         accept: "application/json",
         [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
