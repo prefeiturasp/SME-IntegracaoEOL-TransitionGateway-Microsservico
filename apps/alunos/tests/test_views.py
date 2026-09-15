@@ -351,8 +351,8 @@ class AlunosUrlsTest(SimpleTestCase):
 class AlunoAutocompleteAtivosViewTest(SimpleTestCase):
     """Valida a view de autocomplete de alunos ativos."""
 
-    def test_schema_exige_data_referencia(self) -> None:
-        """Documenta a obrigatoriedade da data de referência."""
+    def test_schema_data_referencia_opcional(self) -> None:
+        """Documenta a data de referência como filtro opcional."""
         resp = APIClient().get("/api/v1/schema/")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -363,10 +363,18 @@ class AlunoAutocompleteAtivosViewTest(SimpleTestCase):
         )
         parametros = resp.data["paths"][path]["get"]["parameters"]
         parametro = next(
-            item for item in parametros if item["name"] == "data_referencia"
+            item for item in parametros if item["name"] == "dataReferencia"
         )
         self.assertEqual(parametro["in"], "query")
-        self.assertTrue(parametro.get("required", False))
+        self.assertFalse(parametro.get("required", False))
+        self.assertEqual(
+            {item["name"] for item in parametros if item["in"] == "query"},
+            {"alunoNome", "alunoCodigo", "dataReferencia", "limite"},
+        )
+        self.assertEqual(
+            {item["name"] for item in parametros if item["in"] == "path"},
+            {"ue_codigo"},
+        )
 
     @patch("apps.alunos.views.services.buscar_alunos_ativos_autocomplete")
     def test_200_retorna_lista_alunos(self, mock_service: MagicMock) -> None:
@@ -385,8 +393,8 @@ class AlunoAutocompleteAtivosViewTest(SimpleTestCase):
 
         resp = client.get(
             "/api/alunos/ues/100001/autocomplete/ativos"
-            "?aluno_nome=Fulano&data_referencia=2026-02-03T10:00:00"
-            "&aluno_codigo=0&limite=5"
+            "?alunoNome=Fulano&dataReferencia=2026-02-03T10:00:00"
+            "&alunoCodigo=0&limite=5"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -407,16 +415,16 @@ class AlunoAutocompleteAtivosViewTest(SimpleTestCase):
         )
 
     @patch("apps.alunos.views.services.buscar_alunos_ativos_autocomplete")
-    def test_400_quando_query_params_camelcase(
+    def test_400_quando_query_params_snake_case(
         self, mock_service: MagicMock
     ) -> None:
-        """Verifica que aliases camelCase não são aceitos na entrada."""
+        """Não aceita os nomes antigos como aliases de query."""
         client = _cliente_autenticado()
 
         resp = client.get(
             "/api/alunos/ues/100001/autocomplete/ativos"
-            "?alunoNome=Fulano&dataReferencia=2026-02-03T10:00:00"
-            "&alunoCodigo=0&limite=5"
+            "?aluno_nome=Fulano&data_referencia=2026-02-03T10:00:00"
+            "&aluno_codigo=0&limite=5"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -428,7 +436,7 @@ class AlunoAutocompleteAtivosViewTest(SimpleTestCase):
 
         resp = client.get(
             "/api/alunos/ues/%20/autocomplete/ativos"
-            "?aluno_nome=Fulano&data_referencia=2026-02-03T10:00:00"
+            "?alunoNome=Fulano&dataReferencia=2026-02-03T10:00:00"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -439,22 +447,25 @@ class AlunoAutocompleteAtivosViewTest(SimpleTestCase):
         mock_service.assert_not_called()
 
     @patch("apps.alunos.views.services.buscar_alunos_ativos_autocomplete")
-    def test_400_legado_quando_data_referencia_ausente(
+    def test_200_quando_data_referencia_ausente(
         self, mock_service: MagicMock
     ) -> None:
+        mock_service.return_value = []
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/alunos/ues/100001/autocomplete/ativos?aluno_nome=Fulano"
+            "/api/alunos/ues/100001/autocomplete/ativos?alunoNome=Fulano"
         )
 
-        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(
-            resp.json(),
-            "Houve um comportamento inesperado do sistema. "
-            "Por favor, contate a SME.",
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+        mock_service.assert_called_once_with(
+            ue_codigo="100001",
+            aluno_nome="Fulano",
+            data_referencia=None,
+            aluno_codigo=0,
+            limite=10,
         )
-        mock_service.assert_not_called()
 
     @patch("apps.alunos.views.services.buscar_alunos_ativos_autocomplete")
     def test_400_quando_nome_menor_que_tres_sem_codigo(
@@ -464,7 +475,7 @@ class AlunoAutocompleteAtivosViewTest(SimpleTestCase):
 
         resp = client.get(
             "/api/alunos/ues/100001/autocomplete/ativos"
-            "?aluno_nome=ab&data_referencia=2026-02-03T10:00:00"
+            "?alunoNome=ab&dataReferencia=2026-02-03T10:00:00"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -483,7 +494,7 @@ class AlunoAutocompleteAtivosViewTest(SimpleTestCase):
 
         resp = client.get(
             "/api/alunos/ues/100001/autocomplete/ativos"
-            "?aluno_nome=Fulano&data_referencia=2026-02-03T10:00:00"
+            "?alunoNome=Fulano&dataReferencia=2026-02-03T10:00:00"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
@@ -496,8 +507,7 @@ class AlunoAutocompleteAtivosViewTest(SimpleTestCase):
         client = APIClient()
 
         resp = client.get(
-            "/api/alunos/ues/100001/autocomplete/ativos"
-            "?aluno_nome=Fulano"
+            "/api/alunos/ues/100001/autocomplete/ativos?alunoNome=Fulano"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
@@ -505,6 +515,57 @@ class AlunoAutocompleteAtivosViewTest(SimpleTestCase):
 
 class AlunoAutocompleteUeViewTest(SimpleTestCase):
     """Valida a view de autocomplete de alunos da UE por ano letivo."""
+
+    def test_schema_preserva_rota_e_documenta_query_camel_case(self) -> None:
+        """Mantém os nomes da rota e publica filtros no padrão legado."""
+        resp = APIClient().get("/api/v1/schema/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        path = next(
+            path
+            for path in resp.data["paths"]
+            if path.endswith(
+                "/alunos/ues/{codigo_ue}/anosLetivos/{ano_letivo}/autocomplete"
+            )
+        )
+        parametros = resp.data["paths"][path]["get"]["parameters"]
+        self.assertEqual(
+            {item["name"] for item in parametros if item["in"] == "query"},
+            {
+                "codigoTurmas",
+                "nomeAluno",
+                "codigoEol",
+                "somenteAtivos",
+                "ehHistorico",
+                "limite",
+            },
+        )
+        self.assertEqual(
+            {item["name"] for item in parametros if item["in"] == "path"},
+            {"codigo_ue", "ano_letivo"},
+        )
+
+    @patch("apps.alunos.views.services.get_alunos_autocomplete_ue")
+    def test_snake_case_nao_controla_os_filtros(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Ignora os nomes de query que não pertencem ao contrato."""
+        mock_service.return_value = []
+        resp = _cliente_autenticado().get(
+            "/api/alunos/ues/100001/anosLetivos/2026/autocomplete"
+            "?nome_aluno=FICTICIO&codigo_eol=123456&codigos_turmas=9001"
+            "&somente_ativos=true&eh_historico=true"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_service.assert_called_once_with(
+            codigo_ue="100001",
+            ano_letivo="2026",
+            codigo_turmas=[],
+            nome_aluno=None,
+            codigo_eol=None,
+            somente_ativos=None,
+            eh_historico=None,
+            limite=10,
+        )
 
     @patch("apps.alunos.views.services.get_alunos_autocomplete_ue")
     def test_200_retorna_lista_alunos(self, mock_service: MagicMock) -> None:
@@ -521,8 +582,9 @@ class AlunoAutocompleteUeViewTest(SimpleTestCase):
 
         resp = client.get(
             "/api/alunos/ues/100001/anosLetivos/2026/autocomplete"
-            "?nome_aluno=Fulano&codigo_eol=123456&limite=5"
-            "&codigos_turmas=9001&eh_historico=false"
+            "?nomeAluno=Fulano&codigoEol=123456&limite=5"
+            "&codigoTurmas=9001&codigoTurmas=9002"
+            "&ehHistorico=false&somenteAtivos=true"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -534,10 +596,10 @@ class AlunoAutocompleteUeViewTest(SimpleTestCase):
         mock_service.assert_called_once_with(
             codigo_ue="100001",
             ano_letivo="2026",
-            codigo_turmas=["9001"],
+            codigo_turmas=["9001", "9002"],
             nome_aluno="Fulano",
             codigo_eol="123456",
-            somente_ativos=None,
+            somente_ativos="true",
             eh_historico="false",
             limite=5,
         )

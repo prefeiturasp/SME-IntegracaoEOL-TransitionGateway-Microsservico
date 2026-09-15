@@ -297,21 +297,20 @@ class AlunoAutocompleteAtivosView(AlunosAPIView):
     @extend_schema(
         tags=_TAG,
         summary="Autocomplete de alunos ativos",
-        description="Retorna alunos ativos de uma UE por filtro.",
+        description=(
+            "Retorna alunos ativos de uma UE por filtro. Sem dataReferencia, "
+            "utiliza a data atual no fuso horário America/Sao_Paulo."
+        ),
         parameters=[
             OpenApiParameter("ue_codigo", str, OpenApiParameter.PATH),
-            OpenApiParameter("aluno_nome", str, OpenApiParameter.QUERY),
+            OpenApiParameter("alunoNome", str, OpenApiParameter.QUERY),
             OpenApiParameter(
-                "data_referencia",
+                "dataReferencia",
                 str,
                 OpenApiParameter.QUERY,
-                required=True,
-                description=(
-                    "Data de referência obrigatória em formato ISO 8601 "
-                    "(ex.: 2026-02-03T10:00:00)."
-                ),
+                required=False,
             ),
-            OpenApiParameter("aluno_codigo", int, OpenApiParameter.QUERY),
+            OpenApiParameter("alunoCodigo", int, OpenApiParameter.QUERY),
             OpenApiParameter(
                 "limite",
                 int,
@@ -331,20 +330,14 @@ class AlunoAutocompleteAtivosView(AlunosAPIView):
         Returns:
             Alunos encontrados compatíveis com os filtros.
         """
-        if _query_value(request, "data_referencia") is None:
-            # Réplica do legado: dataReferencia é obrigatório no binding do
-            # ASP.NET e a ausência falha antes de qualquer outra validação.
-            # TODO(149612): tratar dataReferencia como opcional  # NOSONAR
-            # quando o contrato legado for descontinuado.
-            return _legacy_string_response(_MSG_LEGADO_ERRO_INESPERADO, 400)
         if not ue_codigo.strip():
             return detail_response(_MSG_CODIGO_UE_OBRIGATORIO)
-        aluno_nome = _query_value(request, "aluno_nome")
+        aluno_nome = _query_value(request, "alunoNome")
         aluno_nome = aluno_nome.strip() if aluno_nome is not None else None
         try:
-            aluno_codigo = _query_int_alias(request, 0, "aluno_codigo")
+            aluno_codigo = _query_int_alias(request, 0, "alunoCodigo")
             limite = _query_int(request, "limite", 10)
-            data_referencia = _query_datetime_alias(request, "data_referencia")
+            data_referencia = _query_datetime_alias(request, "dataReferencia")
         except ValueError as exc:
             return detail_response(str(exc))
         if aluno_codigo == 0 and len(aluno_nome or "") < 3:
@@ -375,12 +368,12 @@ class AlunoAutocompleteUeView(AlunosAPIView):
             OpenApiParameter("codigo_ue", str, OpenApiParameter.PATH),
             OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
             OpenApiParameter(
-                "codigos_turmas", int, OpenApiParameter.QUERY, many=True
+                "codigoTurmas", int, OpenApiParameter.QUERY, many=True
             ),
-            OpenApiParameter("nome_aluno", str, OpenApiParameter.QUERY),
-            OpenApiParameter("codigo_eol", str, OpenApiParameter.QUERY),
-            OpenApiParameter("somente_ativos", bool, OpenApiParameter.QUERY),
-            OpenApiParameter("eh_historico", bool, OpenApiParameter.QUERY),
+            OpenApiParameter("nomeAluno", str, OpenApiParameter.QUERY),
+            OpenApiParameter("codigoEol", str, OpenApiParameter.QUERY),
+            OpenApiParameter("somenteAtivos", bool, OpenApiParameter.QUERY),
+            OpenApiParameter("ehHistorico", bool, OpenApiParameter.QUERY),
             OpenApiParameter(
                 "limite",
                 int,
@@ -407,16 +400,16 @@ class AlunoAutocompleteUeView(AlunosAPIView):
             limite = _query_int(request, "limite", 10)
         except ValueError as exc:
             return detail_response(str(exc))
-        codigo_turmas = request.query_params.getlist("codigos_turmas")
+        codigo_turmas = request.query_params.getlist("codigoTurmas")
         try:
             data = services.get_alunos_autocomplete_ue(
                 codigo_ue=codigo_ue,
                 ano_letivo=ano_letivo,
                 codigo_turmas=codigo_turmas,
-                nome_aluno=_query_value(request, "nome_aluno"),
-                codigo_eol=_query_value(request, "codigo_eol"),
-                somente_ativos=_query_value(request, "somente_ativos"),
-                eh_historico=_query_value(request, "eh_historico"),
+                nome_aluno=_query_value(request, "nomeAluno"),
+                codigo_eol=_query_value(request, "codigoEol"),
+                somente_ativos=_query_value(request, "somenteAtivos"),
+                eh_historico=_query_value(request, "ehHistorico"),
                 limite=limite,
             )
         except httpx.HTTPStatusError as exc:
