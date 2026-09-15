@@ -24,6 +24,7 @@ from apps.professores import services
 from apps.professores.constants import (
     MSG_CODIGO_CARGO_OBRIGATORIO,
     MSG_CODIGO_RF_TURMA_OBRIGATORIOS,
+    MSG_COMPORTAMENTO_INESPERADO,
 )
 from apps.professores.serializers import (
     AbrangenciaLegadoSerializer,
@@ -630,6 +631,9 @@ def _responder_titulares_por_turma(
     Returns:
         Professores encontrados, ausência de conteúdo ou erro de validação.
     """
+    if codigo_turma and not codigo_turma.isdigit():
+        return Response(MSG_COMPORTAMENTO_INESPERADO, status=400)
+
     serializer = ProfessoresTitularesParametrosSerializer(
         data={
             "codigo_turma": codigo_turma,

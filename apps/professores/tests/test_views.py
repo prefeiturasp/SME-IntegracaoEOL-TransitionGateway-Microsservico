@@ -3580,7 +3580,40 @@ class ProfessorVerificarAtribuicaoPeriodoViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-class ProfessoresTitularesPorTurmaViewTest(SimpleTestCase):
+class _CodigoTurmaInvalidoMixin:
+    """Valida o 400 genérico do .NET para codigoTurma não numérico.
+
+    Compartilhado entre a rota depreciada e a rota atual de titulares por
+    turma, que têm o mesmo comportamento de validação de path param.
+    """
+
+    _URL: str
+
+    @patch(
+        "apps.professores.views.services."
+        "buscar_professores_titulares_por_turma"
+    )
+    def test_400_quando_codigo_turma_tem_letras(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        """Reproduz o 400 genérico do .NET para codigoTurma não numérico."""
+        url = self._URL.replace("9100002", "abc123")
+
+        resp = _cliente_autenticado().get(url)
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            "Houve um comportamento inesperado do sistema. "
+            "Por favor, contate a SME.",
+        )
+        mock_service.assert_not_called()
+
+
+class ProfessoresTitularesPorTurmaViewTest(
+    _CodigoTurmaInvalidoMixin, SimpleTestCase
+):
     """Valida a busca de professores titulares por turma."""
 
     _URL = (
@@ -3702,7 +3735,9 @@ class ProfessoresTitularesPorTurmaViewTest(SimpleTestCase):
         mock_service.assert_not_called()
 
 
-class ProfessoresTitularesPorTurmaPorRfViewTest(SimpleTestCase):
+class ProfessoresTitularesPorTurmaPorRfViewTest(
+    _CodigoTurmaInvalidoMixin, SimpleTestCase
+):
     """Valida a busca de titulares por turma com filtro de RF."""
 
     _URL = (
