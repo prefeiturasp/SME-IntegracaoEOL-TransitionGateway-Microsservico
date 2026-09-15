@@ -3706,7 +3706,7 @@ class ProfessoresTitularesPorTurmaViewTest(
         self,
         mock_service: MagicMock,
     ) -> None:
-        """Não chama o service quando a data é inválida."""
+        """Reproduz o 400 genérico do .NET para data em formato inválido."""
         resp = _cliente_autenticado().get(
             self._URL,
             {"dataReferencia": "data-invalida"},
@@ -3714,7 +3714,9 @@ class ProfessoresTitularesPorTurmaViewTest(
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
-            resp.json(), "Código RF e Código de Turma, são obrigatórios."
+            resp.json(),
+            "Houve um comportamento inesperado do sistema. "
+            "Por favor, contate a SME.",
         )
         mock_service.assert_not_called()
 
@@ -3802,7 +3804,7 @@ class ProfessoresTitularesPorTurmaPorRfViewTest(
         self,
         mock_service: MagicMock,
     ) -> None:
-        """Não chama o service quando a data de referência é inválida."""
+        """Reproduz o 400 genérico do .NET para data em formato inválido."""
         resp = _cliente_autenticado().get(
             self._URL,
             {"dataReferencia": "data-invalida"},
@@ -3810,7 +3812,9 @@ class ProfessoresTitularesPorTurmaPorRfViewTest(
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
-            resp.json(), "Código RF e Código de Turma, são obrigatórios."
+            resp.json(),
+            "Houve um comportamento inesperado do sistema. "
+            "Por favor, contate a SME.",
         )
         mock_service.assert_not_called()
 
