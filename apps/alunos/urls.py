@@ -10,10 +10,12 @@ from apps.alunos.views import (
     AlunoMatriculasTurmaView,
     AlunoNecessidadesEspeciaisView,
     AlunosAtivosDataAulaTicksView,
+    AlunosAtivosDataAulaView,
     AlunosAtivosPeriodoTurmaView,
     AlunosAtivosTurmaView,
     AlunosCalculoFrequenciaTurmaView,
     AlunosDataMatriculaTicksView,
+    AlunosDataMatriculaView,
     AlunosDaUeView,
     AlunosListView,
     AlunosPorAnoView,
@@ -63,10 +65,20 @@ turma_urlpatterns = [
         name="alunos-ativos-data-aula-ticks",
     ),
     path(
+        "<str:codigo_turma>/alunos-ativos/data-aula/<str:data_aula>/",
+        AlunosAtivosDataAulaView.as_view(),
+        name="alunos-ativos-data-aula",
+    ),
+    path(
         "<str:codigo_turma>/data-matricula-ticks/"
         "<str:data_matricula_ticks>/",
         AlunosDataMatriculaTicksView.as_view(),
         name="alunos-data-matricula-ticks",
+    ),
+    path(
+        "<str:codigo_turma>/data-matricula/<str:data_matricula>/",
+        AlunosDataMatriculaView.as_view(),
+        name="alunos-data-matricula",
     ),
     path(
         "<str:codigo_turma>/aluno/<str:codigo_aluno>/"

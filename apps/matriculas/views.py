@@ -28,7 +28,7 @@ from apps.matriculas.serializers import (
 
 _TAG_MATRICULA = ["Matricula"]
 _TAG_ESCOLA = ["Escola"]
-_MSG_ANO_LETIVO_INVALIDO = "ano_letivo deve ser um inteiro válido."
+_MSG_ANO_LETIVO_INVALIDO = "anoLetivo deve ser um inteiro válido."
 _DOMINIO_MATRICULAS = "matriculas"
 _MSG_CODIGO_UE_OBRIGATORIO = "Código da UE obrigatório."
 _MSG_CODIGO_DRE_OBRIGATORIO = "Código da DRE obrigatório."
@@ -44,6 +44,11 @@ _TIPO_TURNO_DESCRICAO = {
     5: "Noite",
     6: "Integral",
 }
+
+_PARAMETROS_CONSULTA_MATRICULAS = [
+    OpenApiParameter("anoLetivo", int, OpenApiParameter.QUERY),
+    OpenApiParameter("ueCodigo", str, OpenApiParameter.QUERY),
+]
 
 
 def _api_error_response(exc: httpx.HTTPStatusError) -> Response:
@@ -79,23 +84,6 @@ class MatriculasAPIView(DomainAPIView):
     """APIView base que padroniza falhas de comunicação com matrículas."""
 
     api_domain = _DOMINIO_MATRICULAS
-
-
-def _query_alias(request: Request, *names: str) -> str | None:
-    """Lê o primeiro alias preenchido da query string.
-
-    Args:
-        request: Requisição HTTP recebida.
-        *names: Nomes aceitos para o mesmo parâmetro.
-
-    Returns:
-        Valor recebido, ou ``None`` quando nenhum alias estiver preenchido.
-    """
-    for name in names:
-        value = request.query_params.get(name)
-        if value:
-            return str(value)
-    return None
 
 
 def _to_int(value: Any) -> int | None:
@@ -289,10 +277,7 @@ class MatriculasAnoAtualView(APIView):
         tags=_TAG_MATRICULA,
         summary="Matrículas consolidadas do ano letivo",
         description="Retorna quantidade de matrículas por turma de uma UE.",
-        parameters=[
-            OpenApiParameter("ano_letivo", int, OpenApiParameter.QUERY),
-            OpenApiParameter("ue_codigo", str, OpenApiParameter.QUERY),
-        ],
+        parameters=_PARAMETROS_CONSULTA_MATRICULAS,
         responses={200: OpenApiResponse(description="Success")},
     )
     def get(self, request: Request) -> Response:
@@ -304,12 +289,12 @@ class MatriculasAnoAtualView(APIView):
         Returns:
             Matrículas consolidadas por turma.
         """
-        ano_raw = _query_alias(request, "ano_letivo")
-        ue_codigo = _query_alias(request, "ue_codigo")
+        ano_raw = request.query_params.get("anoLetivo")
+        ue_codigo = request.query_params.get("ueCodigo")
         if not ano_raw or not ue_codigo:
             # Réplica do legado: parâmetros ausentes zeram o binding e a
             # consulta responde 200 com lista vazia.
-            # TODO(149612): exigir ano_letivo e ue_codigo  # NOSONAR
+            # TODO(149612): exigir anoLetivo e ueCodigo  # NOSONAR
             # quando o contrato legado for descontinuado.
             return Response([])
         try:
@@ -335,10 +320,7 @@ class MatriculasAnosAnterioresView(MatriculasAPIView):
         tags=_TAG_MATRICULA,
         summary="Matrículas consolidadas de anos anteriores",
         description="Retorna quantidade histórica de matrículas por turma.",
-        parameters=[
-            OpenApiParameter("ano_letivo", int, OpenApiParameter.QUERY),
-            OpenApiParameter("ue_codigo", str, OpenApiParameter.QUERY),
-        ],
+        parameters=_PARAMETROS_CONSULTA_MATRICULAS,
         responses={200: OpenApiResponse(description="Success")},
     )
     def get(self, request: Request) -> Response:
@@ -350,8 +332,8 @@ class MatriculasAnosAnterioresView(MatriculasAPIView):
         Returns:
             Matrículas históricas consolidadas por turma.
         """
-        ano_raw = _query_alias(request, "ano_letivo")
-        ue_codigo = _query_alias(request, "ue_codigo")
+        ano_raw = request.query_params.get("anoLetivo")
+        ue_codigo = request.query_params.get("ueCodigo")
         if not ano_raw or not ue_codigo:
             return Response([])
         try:

@@ -281,6 +281,170 @@ class VerificarRecorrenciaDatasTest(SimpleTestCase):
         self.assertEqual(atribuicoes_territorio[0]["disciplina_id"], 89)
 
 
+class VerificarRecorrenciaDatasIsoTest(SimpleTestCase):
+    """Valida a regra legada de recorrência, via datas ISO 8601."""
+
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_componentes_api_eol"
+    )
+    @patch("apps.professores.services._client")
+    def test_permite_disciplina_filha_dentro_da_atribuicao(
+        self,
+        mock_client: MagicMock,
+        mock_componentes: MagicMock,
+    ) -> None:
+        mock_client.json_or_none.return_value = [
+            {
+                "codigo_turma": "9100002",
+                "disciplina_id": "90",
+                "data_inicio_atribuicao": "2026-02-01T00:00:00",
+                "data_fim_atribuicao": "2026-12-01T00:00:00",
+                "data_fim_turma": "2026-12-22T00:00:00",
+            }
+        ]
+        mock_componentes.return_value = [
+            {
+                "id_componente_curricular": 90,
+                "id_componente_curricular_pai": 89,
+            }
+        ]
+
+        resultado = services.verificar_recorrencia_datas_iso(
+            "000001",
+            "9100002",
+            "89",
+            ["2026-07-27"],
+        )
+
+        self.assertEqual(
+            resultado,
+            [
+                {
+                    "data": "2026-07-27T00:00:00",
+                    "pode_persistir": True,
+                }
+            ],
+        )
+        mock_client.get.assert_called_once_with(
+            "/api/v1/professores/000001/turmas/anos_letivos/2026/"
+        )
+
+    def test_lista_vazia_retorna_vazio(self) -> None:
+        self.assertEqual(
+            services.verificar_recorrencia_datas_iso(
+                "000001", "9100002", "89", []
+            ),
+            [],
+        )
+
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_componentes_api_eol"
+    )
+    @patch("apps.professores.services._client")
+    def test_ano_letivo_deriva_da_primeira_data(
+        self,
+        mock_client: MagicMock,
+        mock_componentes: MagicMock,
+    ) -> None:
+        mock_client.json_or_none.return_value = []
+        mock_componentes.return_value = []
+
+        services.verificar_recorrencia_datas_iso(
+            "000001",
+            "9100002",
+            "89",
+            ["2025-12-31", "2026-01-05"],
+        )
+
+        mock_client.get.assert_called_once_with(
+            "/api/v1/professores/000001/turmas/anos_letivos/2025/"
+        )
+
+    @patch(
+        "apps.professores.services."
+        "_get_atribuicoes_professor_turma_disciplina"
+    )
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_componentes_api_eol"
+    )
+    def test_reaproveita_atribuicoes_previamente_preparadas(
+        self,
+        mock_componentes: MagicMock,
+        mock_atribuicoes: MagicMock,
+    ) -> None:
+        mock_componentes.return_value = []
+
+        services.verificar_recorrencia_datas_iso(
+            "000001",
+            "9100002",
+            "89",
+            ["2026-07-27"],
+            atribuicoes_rf=[],
+        )
+
+        mock_atribuicoes.assert_not_called()
+
+
+class GetAtribuicoesTurmaDisciplinaIsoTest(SimpleTestCase):
+    """Valida a consulta de atribuições da turma e disciplina, em ISO."""
+
+    @patch("apps.professores.services._client")
+    def test_retorna_lista_do_sidecar(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        mock_response = MagicMock()
+        mock_client.get.return_value = mock_response
+        mock_client.json_or_none.return_value = [
+            {
+                "codigo_turma": "9100002",
+                "ano_letivo": None,
+                "nome_turma": "7A",
+                "data_inicio_atribuicao": "2026-06-09T00:00:00",
+                "data_fim_atribuicao": "2026-12-22T00:00:00",
+                "data_fim_turma": "2026-12-22T00:00:00",
+                "ano_atribuicao": 2026,
+                "codigo_rf": "000001",
+                "disciplina_id": "89",
+                "disciplina_nome": "CIENCIAS",
+                "disciplinas_agrupadas_ids": None,
+                "nome_professor": "PROFESSOR",
+            }
+        ]
+
+        result = services.get_atribuicoes_turma_disciplina_iso(
+            "9100002",
+            "89",
+            "2026-09-03",
+        )
+
+        mock_client.get.assert_called_once_with(
+            "/api/v1/professores/9100002/disciplinas/89/atribuicao/data-iso/",
+            params={"data": "2026-09-03"},
+        )
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["codigo_turma"], "9100002")
+        self.assertEqual(result[0]["disciplina_nome"], "CIENCIAS")
+
+    @patch("apps.professores.services._client")
+    def test_retorna_lista_vazia_quando_payload_nao_e_lista(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        mock_client.json_or_none.return_value = "Not Found"
+
+        result = services.get_atribuicoes_turma_disciplina_iso(
+            "9100002",
+            "89",
+            "2026-09-03",
+        )
+
+        self.assertEqual(result, [])
+
+
 class VerificarAtribuicaoPeriodoTest(SimpleTestCase):
     """Valida atribuições que sobrepõem o período consultado."""
 
@@ -1797,6 +1961,7 @@ class BuscarProfessoresTitularesPorTurmaTest(SimpleTestCase):
 
         mock_client.get.assert_called_once_with(
             "/api/v1/professores/9100002/titulares/",
+            params=None,
         )
         mock_client.json_or_none.assert_called_once_with(mock_response)
         mock_componentes_turma.assert_called_once_with(
@@ -1808,13 +1973,89 @@ class BuscarProfessoresTitularesPorTurmaTest(SimpleTestCase):
             [
                 {
                     "disciplina": "CIENCIAS",
-                    "disciplina_id": "89",
+                    "disciplina_id": None,
                     "disciplinas_id": "89",
                     "nome_professor": "PROFESSOR",
                     "professor_rf": "000001",
                     "turma_id": 0,
                 }
             ],
+        )
+
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_turma_componentes_turma"
+    )
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_professores_turma_territorio_saber"
+    )
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_componentes_api_eol"
+    )
+    @patch("apps.professores.services._client")
+    def test_repassa_codigo_rf_como_query_param(
+        self,
+        mock_client: MagicMock,
+        mock_componentes_api_eol: MagicMock,
+        mock_atribuicoes_territorio: MagicMock,
+        mock_componentes_turma: MagicMock,
+    ) -> None:
+        """Envia codigo_rf na query string do sidecar quando informado."""
+        mock_componentes_api_eol.return_value = []
+        mock_atribuicoes_territorio.return_value = []
+        mock_componentes_turma.return_value = []
+        mock_client.json_or_none.return_value = []
+
+        services.buscar_professores_titulares_por_turma(
+            "9100002",
+            None,
+            True,
+            "0000001",
+        )
+
+        mock_client.get.assert_called_once_with(
+            "/api/v1/professores/9100002/titulares/",
+            params={"codigo_rf": "0000001"},
+        )
+
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_turma_componentes_turma"
+    )
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_professores_turma_territorio_saber"
+    )
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_componentes_api_eol"
+    )
+    @patch("apps.professores.services._client")
+    def test_omite_codigo_rf_da_query_param_quando_vazio(
+        self,
+        mock_client: MagicMock,
+        mock_componentes_api_eol: MagicMock,
+        mock_atribuicoes_territorio: MagicMock,
+        mock_componentes_turma: MagicMock,
+    ) -> None:
+        """Não envia codigo_rf quando o parâmetro é uma string vazia."""
+        mock_componentes_api_eol.return_value = []
+        mock_atribuicoes_territorio.return_value = []
+        mock_componentes_turma.return_value = []
+        mock_client.json_or_none.return_value = []
+
+        services.buscar_professores_titulares_por_turma(
+            "9100002",
+            None,
+            True,
+            "",
+        )
+
+        mock_client.get.assert_called_once_with(
+            "/api/v1/professores/9100002/titulares/",
+            params=None,
         )
 
     @patch("apps.professores.services._client")
@@ -1833,6 +2074,7 @@ class BuscarProfessoresTitularesPorTurmaTest(SimpleTestCase):
 
         mock_client.get.assert_called_once_with(
             "/api/v1/professores/9100002/titulares/",
+            params=None,
         )
         self.assertEqual(resultado, [])
 
@@ -2028,6 +2270,41 @@ class BuscarProfessoresTitularesPorTurmaTest(SimpleTestCase):
         )
 
         self.assertEqual(resultado, [])
+
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_turma_componentes_turma"
+    )
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_professores_turma_territorio_saber"
+    )
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_componentes_api_eol"
+    )
+    @patch("apps.professores.services._client")
+    def test_nao_consulta_componentes_turma_sem_codigos(
+        self,
+        mock_client: MagicMock,
+        mock_componentes_api_eol: MagicMock,
+        mock_atribuicoes_territorio: MagicMock,
+        mock_componentes_turma: MagicMock,
+    ) -> None:
+        """Não chama o pedagógico quando o filtro por RF zera a lista."""
+        mock_componentes_api_eol.return_value = []
+        mock_atribuicoes_territorio.return_value = []
+        mock_client.json_or_none.return_value = []
+
+        resultado = services.buscar_professores_titulares_por_turma(
+            "9100002",
+            None,
+            True,
+            "0000001",
+        )
+
+        self.assertEqual(resultado, [])
+        mock_componentes_turma.assert_not_called()
 
 
 class BuscarProfessoresTitularesPorUeTest(SimpleTestCase):
@@ -2575,9 +2852,7 @@ class GetDisciplinasTurmaTest(SimpleTestCase):
         self, mock_pedagogico: MagicMock
     ) -> None:
         payload = [{"codigo_componente": 89}]
-        mock_pedagogico.get_componentes_por_lista_turmas.return_value = (
-            payload
-        )
+        mock_pedagogico.get_componentes_por_lista_turmas.return_value = payload
 
         resultado = services.get_disciplinas_turma("9100002")
 
@@ -2800,7 +3075,7 @@ class AgruparComponentesRetornoTest(SimpleTestCase):
             [
                 {
                     "disciplina": "CIENCIAS",
-                    "disciplina_id": "89",
+                    "disciplina_id": None,
                     "disciplinas_id": "89,90",
                     "nome_professor": "PROFESSOR",
                     "professor_rf": "000001",
@@ -2808,7 +3083,7 @@ class AgruparComponentesRetornoTest(SimpleTestCase):
                 },
                 {
                     "disciplina": "CIENCIAS",
-                    "disciplina_id": "91",
+                    "disciplina_id": None,
                     "disciplinas_id": "91",
                     "nome_professor": "OUTRO PROFESSOR",
                     "professor_rf": "000002",
@@ -3705,7 +3980,7 @@ class CoberturaBuscaProfessoresTitularesStagedTest(SimpleTestCase):
         )
 
         self.assertEqual(resultado[0]["disciplina"], "TERRITORIO DO SABER")
-        self.assertEqual(resultado[0]["disciplina_id"], "800000")
+        self.assertIsNone(resultado[0]["disciplina_id"])
         self.assertEqual(resultado[0]["disciplinas_id"], "800000")
 
     @patch(

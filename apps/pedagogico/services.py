@@ -1106,6 +1106,32 @@ def get_componentes_sem_atribuicao(
     )
 
 
+def get_componentes_sem_atribuicao_por_data_base(
+    codigo_turma: str,
+    data_base: str,
+) -> list[str]:
+    """Retorna componentes sem atribuição na data informada.
+
+    Args:
+        codigo_turma: Código da turma usada no filtro.
+        data_base: Data base representada em formato ISO 8601.
+
+    Returns:
+        Descrições dos componentes sem professor atribuído.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        ValueError: Se a resposta não puder ser convertida para JSON.
+    """
+    return cast(
+        list[str],
+        _client.get(
+            f"{_BASE}/turmas/{codigo_turma}/sem-atribuicao",
+            params={"data_base": data_base},
+        ).json(),
+    )
+
+
 def get_componentes_ue_anos(
     ue_id: str,
     modalidade: int,

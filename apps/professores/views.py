@@ -1,5 +1,6 @@
 """Views do domínio de professores."""
 
+from datetime import date
 from typing import Any, cast
 
 import httpx
@@ -20,7 +21,10 @@ from apps.core.responses import (
 )
 from apps.core.views import DomainAPIView
 from apps.professores import services
-from apps.professores.constants import MSG_CODIGO_CARGO_OBRIGATORIO
+from apps.professores.constants import (
+    MSG_CODIGO_CARGO_OBRIGATORIO,
+    MSG_CODIGO_RF_TURMA_OBRIGATORIOS,
+)
 from apps.professores.serializers import (
     AbrangenciaLegadoSerializer,
     AbrangenciaTemporariaSerializer,
@@ -121,6 +125,7 @@ _MSG_CODIGO_TURMA_OBRIGATORIO = "É necessário informar o codigoTurma."
 _MSG_DATA_VALIDA = "Deve ser informada uma data valida."
 _MSG_DISCIPLINA_ID_OBRIGATORIO = "É necessário informar o disciplinaId."
 _MSG_DATAS_TICKS_OBRIGATORIAS = "É necessário informar as datas em ticks!"
+_MSG_DATAS_OBRIGATORIAS = "É necessário informar as datas!"
 
 
 # Parâmetros temporários usados enquanto a identidade não informa
@@ -577,44 +582,117 @@ class ProfessorVerificarAtribuicaoPeriodoView(ProfessoresAPIView):
         return Response(resposta)
 
 
+_PARAM_REALIZA_AGRUPAMENTO = OpenApiParameter(
+    "realiza_agrupamento",
+    OpenApiTypes.BOOL,
+    OpenApiParameter.PATH,
+    required=True,
+    description="Indica se os componentes curriculares devem ser agrupados.",
+)
+_PARAM_AGRUPA = OpenApiParameter(
+    "agrupa",
+    OpenApiTypes.BOOL,
+    OpenApiParameter.PATH,
+    required=True,
+    description="Indica se os componentes curriculares devem ser agrupados.",
+)
+_PARAM_DATA_REFERENCIA = OpenApiParameter(
+    "dataReferencia",
+    OpenApiTypes.DATETIME,
+    OpenApiParameter.QUERY,
+    required=False,
+)
+_RESPOSTAS_TITULARES_TURMA = {
+    200: BuscarProfessorTitularPorDisciplinaSerializer(many=True),
+    204: None,
+    400: OpenApiTypes.OBJECT,
+}
+
+
+def _responder_titulares_por_turma(
+    request: Request,
+    codigo_turma: str,
+    realiza_agrupamento: bool,
+    *,
+    aplicar_filtro_rf: bool,
+) -> Response:
+    """Valida os filtros e devolve os titulares da turma.
+
+    Corpo compartilhado entre a rota depreciada (``aplicar_filtro_rf=False``,
+    ignora ``codigoRF``) e a rota atual (``aplicar_filtro_rf=True``).
+
+    Args:
+        request: Requisição HTTP com os filtros opcionais.
+        codigo_turma: Código da turma consultada.
+        realiza_agrupamento: Indicador de agrupamento dos componentes.
+        aplicar_filtro_rf: Quando ``True``, repassa ``codigoRF`` ao serviço.
+
+    Returns:
+        Professores encontrados, ausência de conteúdo ou erro de validação.
+    """
+    serializer = ProfessoresTitularesParametrosSerializer(
+        data={
+            "codigo_turma": codigo_turma,
+            "codigoRF": request.query_params.get("codigoRF", ""),
+            "dataReferencia": request.query_params.get("dataReferencia"),
+            "realiza_agrupamento": realiza_agrupamento,
+        }
+    )
+    if not serializer.is_valid():
+        return Response(MSG_CODIGO_RF_TURMA_OBRIGATORIOS, status=400)
+
+    dados = serializer.validated_data
+    professores = services.buscar_professores_titulares_por_turma(
+        dados["codigo_turma"],
+        dados["data_referencia"],
+        dados["realiza_agrupamento"],
+        dados["codigo_rf"] if aplicar_filtro_rf else "",
+    )
+    if not professores:
+        return Response(status=204)
+    resposta = BuscarProfessorTitularPorDisciplinaSerializer(
+        professores,
+        many=True,
+    )
+    return Response(resposta.data)
+
+
 class ProfessoresTitularesPorTurmaView(ProfessoresAPIView):
-    """Busca professores titulares de uma turma."""
+    """Busca professores titulares de uma turma.
+
+    Depreciada: ``codigoRF`` é aceito mas ignorado (devolve sempre todos os
+    titulares da turma). Para filtrar por RF use
+    ``.../titularesPorRf/realizaAgrupamentoComponente/{agrupa}``
+    (:class:`ProfessoresTitularesPorTurmaPorRfView`).
+    """
 
     @extend_schema(
         tags=_TAG_PROFESSOR,
+        deprecated=True,
         description=(
+            "DEPRECIADO — use "
+            "`.../titularesPorRf/realizaAgrupamentoComponente/"
+            "{agrupa}` para filtrar por RF. "
             "Busca professores titulares da turma, com opção de agrupar "
-            "componentes curriculares."
+            "componentes curriculares. `codigoRF` é aceito por "
+            "compatibilidade mas NÃO filtra o resultado nesta rota."
         ),
         parameters=[
-            OpenApiParameter(
-                "realiza_agrupamento",
-                OpenApiTypes.BOOL,
-                OpenApiParameter.PATH,
-                required=True,
-                description=(
-                    "Indica se os componentes curriculares devem ser "
-                    "agrupados."
-                ),
-            ),
+            _PARAM_REALIZA_AGRUPAMENTO,
             OpenApiParameter(
                 "codigoRF",
                 OpenApiTypes.STR,
                 OpenApiParameter.QUERY,
                 required=False,
+                deprecated=True,
+                description=(
+                    "Ignorado nesta rota. Use a rota "
+                    "`.../titularesPorRf/...` para filtrar por RF."
+                ),
             ),
-            OpenApiParameter(
-                "dataReferencia",
-                OpenApiTypes.DATETIME,
-                OpenApiParameter.QUERY,
-                required=False,
-            ),
+            _PARAM_DATA_REFERENCIA,
         ],
-        responses={
-            200: BuscarProfessorTitularPorDisciplinaSerializer(many=True),
-            204: None,
-            400: OpenApiTypes.OBJECT,
-        },
+        responses=_RESPOSTAS_TITULARES_TURMA,
     )
     def get(
         self,
@@ -622,43 +700,56 @@ class ProfessoresTitularesPorTurmaView(ProfessoresAPIView):
         codigo_turma: str,
         realiza_agrupamento: bool,
     ) -> Response:
-        """Retorna professores titulares da turma.
-
-        Args:
-            request: Requisição HTTP com os filtros opcionais.
-            codigo_turma: Código da turma consultada.
-            realiza_agrupamento: Indicador de agrupamento dos componentes.
-
-        Returns:
-            Professores encontrados, ausência de conteúdo ou erro de
-            validação.
-        """
-        serializer = ProfessoresTitularesParametrosSerializer(
-            data={
-                "codigo_turma": codigo_turma,
-                "codigoRF": request.query_params.get("codigoRF", ""),
-                "dataReferencia": request.query_params.get("dataReferencia"),
-                "realiza_agrupamento": realiza_agrupamento,
-            }
+        """Retorna todos os titulares da turma (esta rota ignora codigoRF)."""
+        return _responder_titulares_por_turma(
+            request,
+            codigo_turma,
+            realiza_agrupamento,
+            aplicar_filtro_rf=False,
         )
-        if not serializer.is_valid():
-            return Response(
-                "Código RF e Código de Turma, são obrigatórios.", status=400
-            )
 
-        dados = serializer.validated_data
-        professores = services.buscar_professores_titulares_por_turma(
-            dados["codigo_turma"],
-            dados["data_referencia"],
-            dados["realiza_agrupamento"],
+
+class ProfessoresTitularesPorTurmaPorRfView(ProfessoresAPIView):
+    """Busca professores titulares de uma turma, com filtro por RF.
+
+    Substitui :class:`ProfessoresTitularesPorTurmaView` (depreciada). A única
+    diferença de comportamento é que ``codigoRF``, quando informado, restringe
+    o retorno aos componentes daquele titular.
+    """
+
+    @extend_schema(
+        tags=_TAG_PROFESSOR,
+        description=(
+            "Busca professores titulares da turma, com opção de agrupar "
+            "componentes curriculares. Quando informado, o codigoRF restringe "
+            "o retorno aos componentes daquele titular. Substitui a rota "
+            "`.../titulares/realizaAgrupamentoComponente/{realiza_agrupamento}`."
+        ),
+        parameters=[
+            _PARAM_AGRUPA,
+            OpenApiParameter(
+                "codigoRF",
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                required=False,
+            ),
+            _PARAM_DATA_REFERENCIA,
+        ],
+        responses=_RESPOSTAS_TITULARES_TURMA,
+    )
+    def get(
+        self,
+        request: Request,
+        codigo_turma: str,
+        agrupa: bool,
+    ) -> Response:
+        """Retorna os titulares da turma, filtrando por codigoRF se houver."""
+        return _responder_titulares_por_turma(
+            request,
+            codigo_turma,
+            agrupa,
+            aplicar_filtro_rf=True,
         )
-        if not professores:
-            return Response(status=204)
-        resposta = BuscarProfessorTitularPorDisciplinaSerializer(
-            professores,
-            many=True,
-        )
-        return Response(resposta.data)
 
 
 class ProfessoresTitularesPorUeView(ProfessoresAPIView):
@@ -774,9 +865,7 @@ class ProfessorTitularPorTurmaDisciplinaView(ProfessoresAPIView):
             validação.
         """
         if not codigo_turma.strip():
-            return Response(
-                "Código RF e Código de Turma, são obrigatórios.", status=400
-            )
+            return Response(MSG_CODIGO_RF_TURMA_OBRIGATORIOS, status=400)
 
         professor = services.buscar_professor_titular_por_turma_disciplina(
             codigo_turma,
@@ -884,6 +973,7 @@ class ProfessorVerificarAtribuicaoDataTickView(ProfessoresAPIView):
 
     @extend_schema(
         tags=_TAG_PROFESSOR,
+        deprecated=True,
         description=(
             "Verifica se o professor possui atribuição de turma e disciplina "
             "em uma data específica, informada como tick."
@@ -948,6 +1038,7 @@ class ProfessorAtribuicaoTurmaDisciplinaView(ProfessoresAPIView):
 
     @extend_schema(
         tags=_TAG_PROFESSOR,
+        deprecated=True,
         description=(
             "Obtém a atribuições de uma turma e disciplina, filtrando por "
             "datas informadas como ticks."
@@ -1006,11 +1097,71 @@ class ProfessorAtribuicaoTurmaDisciplinaView(ProfessoresAPIView):
         )
 
 
+class ProfessorAtribuicaoTurmaDisciplinaDataIsoView(ProfessoresAPIView):
+    """Obtém a atribuições de uma turma e disciplina, em ISO 8601."""
+
+    @extend_schema(
+        tags=_TAG_PROFESSOR,
+        description=(
+            "Obtém a atribuições de uma turma e disciplina, filtrando por "
+            "data informada em ISO 8601."
+        ),
+        responses={
+            200: ProfessorAtribuicaoTurmaDisciplinaSerializer(many=True),
+            400: OpenApiTypes.STR,
+        },
+        parameters=[
+            OpenApiParameter(
+                "data",
+                OpenApiTypes.DATE,
+                OpenApiParameter.QUERY,
+                required=True,
+                description=("Data a ser verificada no formato YYYY-MM-DD."),
+            )
+        ],
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_turma: str,
+        disciplina_id: str,
+    ) -> Response:
+        """Obtém a atribuições de uma turma e disciplina, em ISO 8601.
+
+        Args:
+            codigo_turma: Código da turma.
+            disciplina_id: ID da disciplina.
+            data: Data a ser verificada no formato YYYY-MM-DD.
+
+        Returns:
+            Atribuições da turma e disciplina.
+        """
+        if not codigo_turma.strip():
+            return Response(_MSG_CODIGO_TURMA_OBRIGATORIO, status=400)
+        if not disciplina_id.strip():
+            return Response(_MSG_DISCIPLINA_ID_OBRIGATORIO, status=400)
+
+        data: str | None = _request.query_params.get("data")
+        if not data or validar_data_str(data) is False:
+            return Response(_MSG_DATA_VALIDA, status=400)
+
+        resposta = services.get_atribuicoes_turma_disciplina_iso(
+            codigo_turma, disciplina_id, data
+        )
+        return Response(
+            ProfessorAtribuicaoTurmaDisciplinaSerializer(
+                resposta,
+                many=True,
+            ).data
+        )
+
+
 class ProfessorVerificarRecorrenciaDatasView(ProfessoresAPIView):
     """Verifica datas de recorrência de uma atribuição docente."""
 
     @extend_schema(
         tags=_TAG_PROFESSOR,
+        deprecated=True,
         description=(
             "Verifica se as datas recorrentes de uma atribuição podem "
             "ser persistidas."
@@ -1075,11 +1226,80 @@ class ProfessorVerificarRecorrenciaDatasView(ProfessoresAPIView):
         return Response(serializer.data)  # type: ignore[has-type]
 
 
+class ProfessorVerificarRecorrenciaDatasIsoView(ProfessoresAPIView):
+    """Verifica datas de recorrência de uma atribuição docente, em ISO 8601."""
+
+    @extend_schema(
+        tags=_TAG_PROFESSOR,
+        description=(
+            "Verifica se as datas recorrentes de uma atribuição podem "
+            "ser persistidas."
+        ),
+        responses={
+            200: ProfessorRecorrenciaDataSerializer(many=True),
+            400: OpenApiTypes.STR,
+        },
+        parameters=[
+            OpenApiParameter(
+                "datas",
+                OpenApiTypes.DATE,
+                OpenApiParameter.QUERY,
+                required=True,
+                many=True,
+                description=(
+                    "Datas recorrentes no formato YYYY-MM-DD. O parâmetro "
+                    "pode ser repetido."
+                ),
+            )
+        ],
+    )
+    def get(
+        self,
+        request: Request,
+        codigo_rf: str,
+        codigo_turma: str,
+        disciplina_id: str,
+    ) -> Response:
+        """Verifica as datas de recorrência informadas, em ISO 8601.
+
+        Args:
+            request: Requisição HTTP com as datas em ISO 8601.
+            codigo_rf: RF do professor.
+            codigo_turma: Código da turma.
+            disciplina_id: ID da disciplina.
+
+        Returns:
+            Permissões de persistência para cada data informada.
+        """
+        datas = request.query_params.getlist("datas")
+        if not datas or not all(map(validar_data_str, datas)):
+            return Response(_MSG_DATAS_OBRIGATORIAS, status=400)
+
+        ano_letivo = date.fromisoformat(datas[0]).year
+        atribuicoes = _serializar_atribuicoes_internas(
+            services.get_atribuicoes_professor_turma_disciplina(
+                codigo_rf,
+                disciplina_id,
+                ano_letivo,
+            )
+        )
+        resultado = services.verificar_recorrencia_datas_iso(
+            codigo_rf,
+            codigo_turma,
+            disciplina_id,
+            datas,
+            atribuicoes,
+        )
+        serializer = ProfessorRecorrenciaDataSerializer(resultado, many=True)
+        return Response(serializer.data)  # type: ignore[has-type]
+
+
 class ProfessorVerificarAtribuicaoTurmaDisciplinaDataView(ProfessoresAPIView):
     """Verifica a atribuição do professor em uma turma e disciplina."""
 
     @extend_schema(
         tags=_TAG_PROFESSOR,
+        deprecated=True,
         description=(
             "Verifica se o professor possui atribuição de turma e disciplina "
             "em uma data específica."
@@ -1149,6 +1369,85 @@ class ProfessorVerificarAtribuicaoTurmaDisciplinaDataView(ProfessoresAPIView):
             codigo_turma,
             disciplina_id,
             data_consulta,
+            territorio_saber,
+        )
+        return Response(resposta)
+
+
+class ProfessorVerificarAtribuicaoView(ProfessoresAPIView):
+    """Verifica a atribuição do professor em uma turma e disciplina."""
+
+    @extend_schema(
+        tags=_TAG_PROFESSOR,
+        description=(
+            "Verifica se o professor possui atribuição de turma e disciplina "
+            "em uma data específica."
+        ),
+        responses={200: OpenApiTypes.BOOL, 400: OpenApiTypes.STR},
+        parameters=[
+            OpenApiParameter(
+                "data",
+                OpenApiTypes.DATE,
+                OpenApiParameter.QUERY,
+                required=True,
+                description=("Data a ser verificada no formato YYYY-MM-DD."),
+            ),
+            OpenApiParameter(
+                "territorioSaber",
+                OpenApiTypes.BOOL,
+                OpenApiParameter.QUERY,
+                required=False,
+                description=(
+                    "Indica se a verificação é para o território saber."
+                ),
+                default=False,
+            ),
+        ],
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_rf: str,
+        codigo_turma: str,
+        disciplina_id: str,
+    ) -> Response:
+        """Verifica a atribuição do professor em uma turma e disciplina.
+
+        Args:
+            codigo_rf: RF do professor.
+            codigo_turma: Código da turma.
+            disciplina_id: ID da disciplina.
+            data: Data a ser verificada.
+            territorioSaber: Indica se a verificação é para o território saber.
+
+        Returns:
+            Indicador booleano de atribuição do professor na turma
+            e disciplina.
+        """
+        if not codigo_rf.strip():
+            return Response(_MSG_CODIGO_RF_OBRIGATORIO, status=400)
+        if not codigo_turma.strip():
+            return Response(_MSG_CODIGO_TURMA_OBRIGATORIO, status=400)
+        if not disciplina_id.strip():
+            return Response(_MSG_DISCIPLINA_ID_OBRIGATORIO, status=400)
+
+        data: str | None = _request.query_params.get("data")
+        if not data or validar_data_str(data) is False:
+            return Response(_MSG_DATA_VALIDA, status=400)
+
+        query_serializer = VerificarAtribuicaoDisciplinaQuerySerializer(
+            data=_request.query_params
+        )
+        query_serializer.is_valid(raise_exception=True)
+        territorio_saber: bool = query_serializer.validated_data[
+            "territorioSaber"
+        ]
+
+        resposta = services.verificar_atribuicao_disciplina_territorio_saber(
+            codigo_rf,
+            codigo_turma,
+            disciplina_id,
+            data,
             territorio_saber,
         )
         return Response(resposta)

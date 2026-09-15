@@ -126,6 +126,8 @@ Pedagógico
 
 .. autoclass:: apps.pedagogico.views.ComponentesSemAtribuicaoViewSet
 
+.. autoclass:: apps.pedagogico.views.ComponentesSemAtribuicaoBaseDateViewSet
+
 .. autoclass:: apps.pedagogico.views.ComponentesTurmaAnoViewSet
 
 .. autoclass:: apps.pedagogico.views.GradeComponentesCurricularesViewSet
@@ -207,6 +209,10 @@ Alunos
 .. autoclass:: apps.alunos.views.InformacoesAlunosTurmaView
 
 .. autoclass:: apps.alunos.views.AlunosAtivosDataAulaTicksView
+
+.. autoclass:: apps.alunos.views.AlunosAtivosDataAulaView
+
+.. autoclass:: apps.alunos.views.AlunosDataMatriculaView
 
 .. autoclass:: apps.alunos.views.AlunoNecessidadesEspeciaisView
 
