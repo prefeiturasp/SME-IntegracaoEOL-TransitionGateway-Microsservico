@@ -3564,6 +3564,27 @@ class ProfessoresTitularesPorTurmaViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
         mock_service.assert_not_called()
 
+    @patch(
+        "apps.professores.views.services."
+        "buscar_professores_titulares_por_turma"
+    )
+    def test_400_quando_codigo_turma_tem_letras(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        """Reproduz o 400 genérico do .NET para codigoTurma não numérico."""
+        url = self._URL.replace("9100002", "abc123")
+
+        resp = _cliente_autenticado().get(url)
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            "Houve um comportamento inesperado do sistema. "
+            "Por favor, contate a SME.",
+        )
+        mock_service.assert_not_called()
+
 
 class ProfessoresTitularesPorTurmaPorRfViewTest(SimpleTestCase):
     """Valida a busca de titulares por turma com filtro de RF."""
@@ -3656,6 +3677,27 @@ class ProfessoresTitularesPorTurmaPorRfViewTest(SimpleTestCase):
         resp = _cliente_autenticado().get(url)
 
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        mock_service.assert_not_called()
+
+    @patch(
+        "apps.professores.views.services."
+        "buscar_professores_titulares_por_turma"
+    )
+    def test_400_quando_codigo_turma_tem_letras(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        """Reproduz o 400 genérico do .NET para codigoTurma não numérico."""
+        url = self._URL.replace("9100002", "abc123")
+
+        resp = _cliente_autenticado().get(url)
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            "Houve um comportamento inesperado do sistema. "
+            "Por favor, contate a SME.",
+        )
         mock_service.assert_not_called()
 
 
