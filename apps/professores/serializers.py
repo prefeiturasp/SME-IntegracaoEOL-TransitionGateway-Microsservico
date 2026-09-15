@@ -1473,7 +1473,7 @@ class ProfessorAtribuicaoTurmaDisciplinaSerializer(serializers.Serializer):
         source="ano_atribuicao", allow_null=True
     )
     codigoRf = serializers.CharField(source="codigo_rf", allow_null=True)
-    disciplinaId = serializers.IntegerField(
+    disciplinaId = serializers.CharField(
         source="disciplina_id", allow_null=True
     )
     disciplinaNome = serializers.CharField(

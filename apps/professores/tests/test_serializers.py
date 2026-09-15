@@ -448,7 +448,7 @@ class ProfessorAtribuicaoTurmaDisciplinaSerializerTest(SimpleTestCase):
         data = ProfessorAtribuicaoTurmaDisciplinaSerializer(payload).data
 
         self.assertEqual(data["codigoTurma"], 9100002)
-        self.assertEqual(data["disciplinaId"], 89)
+        self.assertEqual(data["disciplinaId"], "89")
         self.assertIsNone(data["disciplinasAgrupadasIds"])
 
 

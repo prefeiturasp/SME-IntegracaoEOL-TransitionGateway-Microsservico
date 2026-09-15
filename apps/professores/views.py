@@ -1053,6 +1053,8 @@ class ProfessorAtribuicaoTurmaDisciplinaDataIsoView(ProfessoresAPIView):
             return Response(_MSG_CODIGO_TURMA_OBRIGATORIO, status=400)
         if not disciplina_id.strip():
             return Response(_MSG_DISCIPLINA_ID_OBRIGATORIO, status=400)
+        if not codigo_turma.isdigit() or not disciplina_id.isdigit():
+            return Response([])
 
         data: str | None = _request.query_params.get("data")
         if not data or validar_data_str(data) is False:
@@ -1343,6 +1345,8 @@ class ProfessorVerificarAtribuicaoView(ProfessoresAPIView):
             return Response(_MSG_CODIGO_TURMA_OBRIGATORIO, status=400)
         if not disciplina_id.strip():
             return Response(_MSG_DISCIPLINA_ID_OBRIGATORIO, status=400)
+        if not codigo_turma.isdigit() or not disciplina_id.isdigit():
+            return Response(False)
 
         data: str | None = _request.query_params.get("data")
         if not data or validar_data_str(data) is False:

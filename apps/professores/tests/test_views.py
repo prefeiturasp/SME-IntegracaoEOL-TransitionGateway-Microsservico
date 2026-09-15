@@ -3441,6 +3441,48 @@ class ProfessorVerificarAtribuicaoViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         mock_service.assert_not_called()
 
+    @patch(
+        "apps.professores.views.services."
+        "verificar_atribuicao_disciplina_territorio_saber"
+    )
+    def test_false_quando_codigo_turma_tem_letras(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        """Reproduz o false do .NET para codigoTurma não numérico."""
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/professores/000001/turmas/abc/disciplinas/456/"
+            "atribuicao/verificar/datas",
+            {"data": "2026-07-28"},
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertIs(resp.json(), False)
+        mock_service.assert_not_called()
+
+    @patch(
+        "apps.professores.views.services."
+        "verificar_atribuicao_disciplina_territorio_saber"
+    )
+    def test_false_quando_disciplina_id_tem_letras(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        """Reproduz o false do .NET para disciplinaId não numérico."""
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/professores/000001/turmas/123/disciplinas/abc/"
+            "atribuicao/verificar/datas",
+            {"data": "2026-07-28"},
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertIs(resp.json(), False)
+        mock_service.assert_not_called()
+
 
 class ProfessorVerificarAtribuicaoDataViewTest(SimpleTestCase):
     """Valida a verificação da atribuição por data."""
@@ -4118,6 +4160,38 @@ class ProfessorAtribuicaoTurmaDisciplinaDataIsoViewTest(SimpleTestCase):
         resp = _cliente_autenticado().get(self._URL, {"data": "03/09/2026"})
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_service.assert_not_called()
+
+    @patch(
+        "apps.professores.views.services.get_atribuicoes_turma_disciplina_iso"
+    )
+    def test_200_lista_vazia_quando_codigo_turma_tem_letras(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        """Reproduz o 200 com lista vazia do .NET para IDs não numéricos."""
+        url = self._URL.replace("9100002", "abc123")
+
+        resp = _cliente_autenticado().get(url, {"data": "2026-09-03"})
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+        mock_service.assert_not_called()
+
+    @patch(
+        "apps.professores.views.services.get_atribuicoes_turma_disciplina_iso"
+    )
+    def test_200_lista_vazia_quando_disciplina_id_tem_letras(
+        self,
+        mock_service: MagicMock,
+    ) -> None:
+        """Reproduz o 200 com lista vazia do .NET para IDs não numéricos."""
+        url = self._URL.replace("/89/", "/abc/")
+
+        resp = _cliente_autenticado().get(url, {"data": "2026-09-03"})
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
         mock_service.assert_not_called()
 
 
