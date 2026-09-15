@@ -641,6 +641,8 @@ def _responder_titulares_por_turma(
         }
     )
     if not serializer.is_valid():
+        if "dataReferencia" in serializer.errors:
+            return Response(MSG_COMPORTAMENTO_INESPERADO, status=400)
         return Response(MSG_CODIGO_RF_TURMA_OBRIGATORIOS, status=400)
 
     dados = serializer.validated_data
