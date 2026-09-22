@@ -9,6 +9,10 @@ services:
       - ../SME-Sidecar-SDK:/sdk
     env_file:
       - .env
+    environment:
+      URL_KEYDB: ${URL_KEYDB:-redis://keydb:6379/0}
+    depends_on:
+      - keydb
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -17,4 +21,10 @@ services:
              python -Xfrozen_modules=off manage.py runserver 0.0.0.0:${PORT_WEB:-8002}"
     ports:
       - "${PORT_WEB:-8002}:${PORT_WEB:-8002}"
+    restart: unless-stopped
+
+  keydb:
+    image: eqalpha/keydb:latest
+    platform: linux/amd64
+    command: keydb-server --appendonly no --save ""
     restart: unless-stopped
