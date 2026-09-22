@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>apps.institucional.services &#8212; SME-IntegracaoEOL Transition Gateway</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=27fed22d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    <script src="../../../_static/documentation_options.js?v=2346ddef"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/translations.js?v=71a39b36"></script>
+    <link rel="index" title="Índice" href="../../../genindex.html" />
+    <link rel="search" title="Buscar" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Código-fonte para apps.institucional.services</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Serviços do domínio institucional."""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">apps.core.api_clients</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_api_client</span>
+
+<span class="n">_BASE</span> <span class="o">=</span> <span class="s2">"/api/v1/institucional"</span>
+
+<span class="n">_client</span> <span class="o">=</span> <span class="n">get_api_client</span><span class="p">(</span><span class="s2">"institucional"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_codigos_ue</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Extrai códigos de UE de um payload da API.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data: Payload retornado pelo API institucional.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Códigos EOL das unidades educacionais.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="n">codigos</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"codigos_ue"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">codigos</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">codigo</span> <span class="k">for</span> <span class="n">codigo</span> <span class="ow">in</span> <span class="n">codigos</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">codigo</span><span class="p">,</span> <span class="nb">str</span><span class="p">)]</span>
+
+
+<div class="viewcode-block" id="get_dres">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.services.get_dres">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_dres</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Lista Diretorias Regionais de Educação.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Quando o serviço externo retorna status</span>
+<span class="sd">            HTTP de erro.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/dres/"</span><span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_dres_por_codigos">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.services.get_dres_por_codigos">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_dres_por_codigos</span><span class="p">(</span><span class="n">codigos</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Filtra Diretorias Regionais de Educação por lista de códigos.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigos: Lista de códigos EOL de DREs.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        DREs correspondentes aos códigos informados.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/dres/"</span><span class="p">,</span> <span class="n">payload</span><span class="o">=</span><span class="n">codigos</span><span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_dre">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.services.get_dre">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_dre</span><span class="p">(</span><span class="n">codigo_dre</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna dados de uma Diretoria Regional de Educação.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_dre: Código da Diretoria Regional de Educação.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dados da Diretoria Regional de Educação encontrada.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Quando o serviço externo retorna status</span>
+<span class="sd">            HTTP de erro.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/dres/</span><span class="si">{</span><span class="n">codigo_dre</span><span class="si">}</span><span class="s2">/"</span><span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_subprefeituras_por_dre">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.services.get_subprefeituras_por_dre">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_subprefeituras_por_dre</span><span class="p">(</span><span class="n">codigo_dre</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Lista subprefeituras vinculadas a uma Diretoria Regional de Educação.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_dre: Código da Diretoria Regional de Educação.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Subprefeituras vinculadas à DRE informada.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/dres/</span><span class="si">{</span><span class="n">codigo_dre</span><span class="si">}</span><span class="s2">/subprefeituras/"</span><span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_escolas_por_dre">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.services.get_escolas_por_dre">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_escolas_por_dre</span><span class="p">(</span><span class="n">codigo_dre</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Lista escolas vinculadas a uma Diretoria Regional de Educação.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_dre: Código da Diretoria Regional de Educação.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Escolas vinculadas à Diretoria Regional de Educação informada.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Quando o serviço externo retorna status</span>
+<span class="sd">            HTTP de erro.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/dres/</span><span class="si">{</span><span class="n">codigo_dre</span><span class="si">}</span><span class="s2">/escola/"</span><span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_escolas_sigpae_por_dre">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.services.get_escolas_sigpae_por_dre">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_escolas_sigpae_por_dre</span><span class="p">(</span><span class="n">codigo_dre</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Lista escolas por DRE no formato SIGPAE.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_dre: Código da Diretoria Regional de Educação.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Escolas vinculadas à DRE no formato do contrato D09.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Quando o serviço externo retorna status HTTP</span>
+<span class="sd">            de erro.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/dres/</span><span class="si">{</span><span class="n">codigo_dre</span><span class="si">}</span><span class="s2">/escola/Sigpae/"</span><span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_escolas_por_dre_e_tipo">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.services.get_escolas_por_dre_e_tipo">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_escolas_por_dre_e_tipo</span><span class="p">(</span><span class="n">codigo_dre</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tipo_escola</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Lista escolas de uma Diretoria Regional de Educação por tipo.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_dre: Código da Diretoria Regional de Educação.</span>
+<span class="sd">        tipo_escola: Tipo de escola usado no filtro.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Escolas vinculadas à Diretoria Regional de Educação e ao tipo</span>
+<span class="sd">        informado.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Quando o serviço externo retorna status</span>
+<span class="sd">            HTTP de erro.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/dres/</span><span class="si">{</span><span class="n">codigo_dre</span><span class="si">}</span><span class="s2">/escolas/</span><span class="si">{</span><span class="n">tipo_escola</span><span class="si">}</span><span class="s2">/"</span><span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_ues_por_dre">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.services.get_ues_por_dre">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_ues_por_dre</span><span class="p">(</span><span class="n">codigo_dre</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Lista códigos de UEs vinculadas a uma Diretoria Regional de Educação.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_dre: Código da Diretoria Regional de Educação.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Lista de códigos de UEs da DRE informada.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/dres/</span><span class="si">{</span><span class="n">codigo_dre</span><span class="si">}</span><span class="s2">/ues/"</span><span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_unidades_por_dre">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.services.get_unidades_por_dre">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_unidades_por_dre</span><span class="p">(</span><span class="n">codigo_dre</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Lista unidades administrativas vinculadas a uma DRE.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_dre: Código da Diretoria Regional de Educação.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Unidades administrativas da DRE informada.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/dres/</span><span class="si">{</span><span class="n">codigo_dre</span><span class="si">}</span><span class="s2">/unidades/"</span><span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_unidades_codigo_integracao_por_dre">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.services.get_unidades_codigo_integracao_por_dre">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_unidades_codigo_integracao_por_dre</span><span class="p">(</span><span class="n">codigo_dre</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Lista códigos de integração das UEs de uma DRE.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_dre: Código da Diretoria Regional de Educação.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        UEs com seus códigos de integração no contrato D11.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Quando o serviço externo retorna status</span>
+<span class="sd">            HTTP de erro.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/dres/</span><span class="si">{</span><span class="n">codigo_dre</span><span class="si">}</span><span class="s2">/unidades/codigo-integracao/"</span>
+    <span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_escola">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.services.get_escola">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_escola</span><span class="p">(</span><span class="n">codigo_escola</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna dados de uma escola.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_escola: Código da escola.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dados da escola encontrada.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Quando o serviço externo retorna status</span>
+<span class="sd">            HTTP de erro.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/escolas/</span><span class="si">{</span><span class="n">codigo_escola</span><span class="si">}</span><span class="s2">/"</span><span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="post_escolas">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.services.post_escolas">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">post_escolas</span><span class="p">(</span><span class="n">codigos</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna escolas pelos códigos informados.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigos: Lista de códigos EOL das escolas para consulta.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Lista de escolas encontradas.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Quando o serviço externo retorna status HTTP</span>
+<span class="sd">            de erro.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/escolas/"</span><span class="p">,</span> <span class="n">payload</span><span class="o">=</span><span class="n">codigos</span><span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_subprefeituras_por_escola">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.services.get_subprefeituras_por_escola">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_subprefeituras_por_escola</span><span class="p">(</span><span class="n">codigo_escola</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Lista subprefeituras vinculadas a uma escola.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_escola: Código EOL da escola.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Subprefeituras vinculadas à escola informada.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Quando o serviço externo retorna status</span>
+<span class="sd">            HTTP de erro.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/escolas/</span><span class="si">{</span><span class="n">codigo_escola</span><span class="si">}</span><span class="s2">/subprefeituras/"</span><span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_unidade_eol">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.services.get_unidade_eol">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_unidade_eol</span><span class="p">(</span><span class="n">codigo_eol</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna dados resumidos de uma unidade pelo código EOL.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_eol: Código EOL da unidade educacional.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dados resumidos da unidade educacional.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Quando o serviço externo retorna status</span>
+<span class="sd">            HTTP de erro.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/escolas/unidade-eol/</span><span class="si">{</span><span class="n">codigo_eol</span><span class="si">}</span><span class="s2">/"</span><span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_dados_escola">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.services.get_dados_escola">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_dados_escola</span><span class="p">(</span><span class="n">codigo_escola</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna dados completos de uma escola.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_escola: Código EOL da escola.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dados completos da escola encontrada.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/escolas/dados/</span><span class="si">{</span><span class="n">codigo_escola</span><span class="si">}</span><span class="s2">/"</span><span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_sincronizacoes_institucionais">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.services.get_sincronizacoes_institucionais">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_sincronizacoes_institucionais</span><span class="p">(</span><span class="n">codigo_ue</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna a sincronização institucional de uma UE.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_ue: Código EOL da unidade educacional.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dados de sincronização institucional da unidade ou `None` quando a</span>
+<span class="sd">        resposta não possuir conteúdo.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Quando o serviço externo retorna status</span>
+<span class="sd">            HTTP de erro.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/escolas/</span><span class="si">{</span><span class="n">codigo_ue</span><span class="si">}</span><span class="s2">/sincronizacoes-institucionais/"</span>
+    <span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_tipos_escolas">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.services.get_tipos_escolas">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_tipos_escolas</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Lista tipos de escola cadastrados.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tipos de escola cadastrados no API institucional.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/escolas/tiposEscolas/"</span><span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="post_unidades_parceiras">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.services.post_unidades_parceiras">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">post_unidades_parceiras</span><span class="p">(</span><span class="n">codigos</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna unidades parceiras pelos códigos informados.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigos: Lista de códigos EOL das unidades para consulta.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Lista de unidades parceiras encontradas.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Quando o serviço externo retorna status HTTP</span>
+<span class="sd">            de erro.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/escolas/unidades-parceiras/"</span><span class="p">,</span> <span class="n">codigos</span><span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_equipamentos">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.services.get_equipamentos">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_equipamentos</span><span class="p">(</span>
+    <span class="n">codigos_subprefeitura</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">codigos_dre</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">tipos_unidade</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">tipos_escola</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">nome_escola</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">codigo_eol</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Lista equipamentos das unidades educacionais.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigos_subprefeitura: Códigos de subprefeituras usados no filtro.</span>
+<span class="sd">        codigos_dre: Códigos de Diretorias Regionais de Educação usados no</span>
+<span class="sd">            filtro.</span>
+<span class="sd">        tipos_unidade: Tipos de unidade usados no filtro.</span>
+<span class="sd">        tipos_escola: Tipos de escola usados no filtro.</span>
+<span class="sd">        nome_escola: Nome da escola usado no filtro.</span>
+<span class="sd">        codigo_eol: Código EOL usado no filtro.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Equipamentos das unidades educacionais encontrados.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Quando o serviço externo retorna status</span>
+<span class="sd">            HTTP de erro.</span>
+<span class="sd">    """</span>
+    <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">codigos_subprefeitura</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">"codigosSubprefeitura"</span><span class="p">]</span> <span class="o">=</span> <span class="n">codigos_subprefeitura</span>
+    <span class="k">if</span> <span class="n">codigos_dre</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">"codigosDre"</span><span class="p">]</span> <span class="o">=</span> <span class="n">codigos_dre</span>
+    <span class="k">if</span> <span class="n">tipos_unidade</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">"tiposUnidade"</span><span class="p">]</span> <span class="o">=</span> <span class="n">tipos_unidade</span>
+    <span class="k">if</span> <span class="n">tipos_escola</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">"tiposEscola"</span><span class="p">]</span> <span class="o">=</span> <span class="n">tipos_escola</span>
+    <span class="k">if</span> <span class="n">nome_escola</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">"nomeEscola"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nome_escola</span>
+    <span class="k">if</span> <span class="n">codigo_eol</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">"codigoEol"</span><span class="p">]</span> <span class="o">=</span> <span class="n">codigo_eol</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/escolas/equipamentos/"</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_ues_recorte_fund_medio">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.services.get_ues_recorte_fund_medio">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_ues_recorte_fund_medio</span><span class="p">(</span>
+    <span class="n">codigos</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""Lista UEs no recorte de tipo de escola (1, 3, 4, 16).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigos: Códigos EOL das unidades educacionais a consultar.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        UEs no recorte de tipo de escola retornadas pela API.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">codigos</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/escolas/recorte-fund-medio/"</span><span class="p">,</span>
+        <span class="n">payload</span><span class="o">=</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">codigo</span><span class="p">)</span> <span class="k">for</span> <span class="n">codigo</span> <span class="ow">in</span> <span class="n">codigos</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span></div>
+
+
+
+<div class="viewcode-block" id="get_codigos_ue_emei">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.services.get_codigos_ue_emei">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_codigos_ue_emei</span><span class="p">(</span><span class="n">codigos</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Lista, dentre os códigos, os de unidade EMEI (tp_escola 2, 17).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigos: Códigos EOL das unidades educacionais a consultar.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Subconjunto dos códigos informados cujo tipo de escola é EMEI.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">codigos</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/escolas/recorte-emei/"</span><span class="p">,</span>
+        <span class="n">payload</span><span class="o">=</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">codigo</span><span class="p">)</span> <span class="k">for</span> <span class="n">codigo</span> <span class="ow">in</span> <span class="n">codigos</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">_codigos_ue</span><span class="p">(</span><span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="get_codigos_ue_tipo_sgp">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.services.get_codigos_ue_tipo_sgp">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_codigos_ue_tipo_sgp</span><span class="p">(</span><span class="n">codigos</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Lista, dentre os códigos, os do recorte ``tipo_escola_sgp``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigos: Códigos EOL das unidades educacionais a consultar.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Subconjunto dos códigos informados no recorte do perfil de professor.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">codigos</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/escolas/recorte-tipo-sgp/"</span><span class="p">,</span>
+        <span class="n">payload</span><span class="o">=</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">codigo</span><span class="p">)</span> <span class="k">for</span> <span class="n">codigo</span> <span class="ow">in</span> <span class="n">codigos</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">_codigos_ue</span><span class="p">(</span><span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="get_todas_unidades">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.services.get_todas_unidades">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_todas_unidades</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Lista todas as unidades educacionais.</span>
+
+<span class="sd">    Retorna dados paginados no formato {"count": int, "results": list},</span>
+<span class="sd">    percorrendo as páginas usando ``limite`` e ``offset`` e consolida todos</span>
+<span class="sd">    os itens em uma lista única antes de responder.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Todas as unidades educacionais cadastradas.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Quando o serviço externo retorna status</span>
+<span class="sd">            HTTP de erro.</span>
+<span class="sd">    """</span>
+    <span class="n">limite</span> <span class="o">=</span> <span class="mi">1000</span>
+    <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">acumulado</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/escolas/todas-unidades/"</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"limite"</span><span class="p">:</span> <span class="n">limite</span><span class="p">,</span> <span class="s2">"offset"</span><span class="p">:</span> <span class="n">offset</span><span class="p">},</span>
+        <span class="p">)</span>
+        <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">data</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+        <span class="n">resultados</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"results"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">resultados</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+        <span class="n">acumulado</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">resultados</span><span class="p">)</span>
+
+        <span class="n">total</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"count"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">total</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">break</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">acumulado</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">total</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">resultados</span><span class="p">:</span>
+            <span class="k">break</span>
+
+        <span class="n">offset</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">resultados</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">acumulado</span></div>
+
+
+
+<div class="viewcode-block" id="get_tipos_unidade_educacao">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.services.get_tipos_unidade_educacao">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_tipos_unidade_educacao</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Lista tipos de unidade de educação.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tipos de unidade educacional cadastrados.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Quando o serviço externo retorna status</span>
+<span class="sd">            HTTP de erro.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/escolas/tipos_unidade_educacao/"</span><span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">SME-IntegracaoEOL-TransitionGateway-Microsservico</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Ir" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navegação</h3>
+<p class="caption" role="heading"><span class="caption-text">Páginas técnicas</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../dominios/professores/divergencias-legado.html">Divergencias entre endpoints do legado e do novo EOL</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Referência de código</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Referência de código</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Código do módulo</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

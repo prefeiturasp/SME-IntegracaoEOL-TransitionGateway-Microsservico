@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Divergencias entre endpoints do legado e do novo EOL &#8212; SME-IntegracaoEOL Transition Gateway</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=27fed22d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <script src="../../_static/documentation_options.js?v=2346ddef"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/translations.js?v=71a39b36"></script>
+    <link rel="index" title="Índice" href="../../genindex.html" />
+    <link rel="search" title="Buscar" href="../../search.html" />
+    <link rel="next" title="Referência de código" href="../../api.html" />
+    <link rel="prev" title="SME-IntegracaoEOL Transition Gateway" href="../../index.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="divergencias-entre-endpoints-do-legado-e-do-novo-eol">
+<h1>Divergencias entre endpoints do legado e do novo EOL<a class="headerlink" href="#divergencias-entre-endpoints-do-legado-e-do-novo-eol" title="Link para este cabeçalho">¶</a></h1>
+<p>Este documento registra diferenças identificadas entre o comportamento dos
+endpoints legados e as respostas retornadas pelo novo EOL.</p>
+<section id="professores-escolas-str-codigo-eol-escola-turmas-anos-letivos-int-ano-letivo">
+<h2><code class="docutils literal notranslate"><span class="pre">professores/escolas/&lt;str:codigo_eol_escola&gt;/turmas/anos_letivos/&lt;int:ano_letivo&gt;/</span></code><a class="headerlink" href="#professores-escolas-str-codigo-eol-escola-turmas-anos-letivos-int-ano-letivo" title="Link para este cabeçalho">¶</a></h2>
+<p>No novo EOL, este endpoint evita a apresentacao de registros repetidos quando
+eles possuem os mesmos dados.</p>
+<p>No legado, a resposta podia trazer mais de uma ocorrencia equivalente para a
+mesma turma/professor. No novo comportamento, esses registros duplicados sao
+consolidados na resposta, mantendo apenas uma ocorrencia para cada conjunto de
+dados igual.</p>
+</section>
+<section id="abrangencia">
+<h2>Abrangencia<a class="headerlink" href="#abrangencia" title="Link para este cabeçalho">¶</a></h2>
+<p>Os dados de abrangencia que o legado obtem da identidade ainda nao tem
+integracao completa no novo fluxo. Enquanto essa dependencia externa nao estiver
+disponivel, o gateway aceita informacoes auxiliares para exercer os mesmos
+recortes de perfil.</p>
+<p>Sem esses dados, o retorno nao representa todo o vinculo que o legado resolve
+pela identidade.</p>
+</section>
+<section id="professores-por-escola-e-ano">
+<h2>Professores por escola e ano<a class="headerlink" href="#professores-por-escola-e-ano" title="Link para este cabeçalho">¶</a></h2>
+<p>Em algumas escolas, a origem pode conter mais de uma atribuicao ativa para a
+mesma turma e componente. O legado nao define um desempate completo entre essas
+atribuicoes antes de montar o retorno e, por isso, a escolha observada pode
+depender do cache ou da execucao da consulta.</p>
+<p>O novo EOL consome uma visao materializada que estabiliza essa escolha. Assim,
+as quantidades tendem a permanecer alinhadas, mas pode haver divergencia de RF
+em cenarios de empate na origem.</p>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">SME-IntegracaoEOL-TransitionGateway-Microsservico</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Ir" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navegação</h3>
+<p class="caption" role="heading"><span class="caption-text">Páginas técnicas</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Divergencias entre endpoints do legado e do novo EOL</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#professores-escolas-str-codigo-eol-escola-turmas-anos-letivos-int-ano-letivo"><code class="docutils literal notranslate"><span class="pre">professores/escolas/&lt;str:codigo_eol_escola&gt;/turmas/anos_letivos/&lt;int:ano_letivo&gt;/</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#abrangencia">Abrangencia</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#professores-por-escola-e-ano">Professores por escola e ano</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Referência de código</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">Referência de código</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="../../index.html" title="capítulo anterior">SME-IntegracaoEOL Transition Gateway</a></li>
+      <li>Next: <a href="../../api.html" title="próximo capítulo">Referência de código</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../../_sources/dominios/professores/divergencias-legado.md.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

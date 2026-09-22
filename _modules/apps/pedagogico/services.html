@@ -1,0 +1,1719 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>apps.pedagogico.services &#8212; SME-IntegracaoEOL Transition Gateway</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=27fed22d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    <script src="../../../_static/documentation_options.js?v=2346ddef"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/translations.js?v=71a39b36"></script>
+    <link rel="index" title="Índice" href="../../../genindex.html" />
+    <link rel="search" title="Buscar" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Código-fonte para apps.pedagogico.services</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Serviços do domínio pedagógico."""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">cast</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">apps.alunos</span><span class="w"> </span><span class="kn">import</span> <span class="n">services</span> <span class="k">as</span> <span class="n">alunos_services</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">apps.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">apps.core.api_clients</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_api_client</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">apps.core.datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">formatar_datetime_legado</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">apps.pedagogico.serializers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AtribuicaoTerritorioTurmaSerializer</span><span class="p">,</span>
+    <span class="n">TurmaAtribuidaAnoSerializer</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">apps.professores</span><span class="w"> </span><span class="kn">import</span> <span class="n">services</span> <span class="k">as</span> <span class="n">professores_services</span>
+
+<span class="n">_BASE</span> <span class="o">=</span> <span class="s2">"/api/v1/pedagogico/componentes-curriculares"</span>
+<span class="n">_BASE_TURMAS</span> <span class="o">=</span> <span class="s2">"/api/v1/pedagogico/turmas"</span>
+
+<span class="c1"># Elegibilidade das turmas históricas do professor (contrato legado).</span>
+<span class="n">_ETAPAS_TURMAS_HISTORICAS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span>
+    <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="mi">17</span><span class="p">}</span>
+<span class="p">)</span>
+<span class="n">_TIPOS_ESCOLA_TURMAS_HISTORICAS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">({</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">28</span><span class="p">,</span> <span class="mi">31</span><span class="p">})</span>
+
+<span class="n">_client</span> <span class="o">=</span> <span class="n">get_api_client</span><span class="p">(</span><span class="s2">"pedagogico"</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="listar_turmas">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.listar_turmas">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">listar_turmas</span><span class="p">(</span><span class="n">codigos</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Lista dados resumidos de turmas pelos códigos informados.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigos: Códigos das turmas consultadas.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Lista de turmas retornada pela API (inclui ``nome_turma``,</span>
+<span class="sd">        ``tipo_turno``, ``codigo_etapa_ensino`` e ``codigo_ciclo_ensino``).</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE_TURMAS</span><span class="si">}</span><span class="s2">/listar-turmas/"</span><span class="p">,</span> <span class="n">payload</span><span class="o">=</span><span class="n">codigos</span><span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span></div>
+
+
+
+<div class="viewcode-block" id="get_turmas_atribuidas_dre_ue">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_turmas_atribuidas_dre_ue">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_turmas_atribuidas_dre_ue</span><span class="p">(</span>
+    <span class="n">codigos_ue</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""Lista turmas atribuídas por unidades.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigos_ue: Códigos das unidades educacionais.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Turmas atribuídas retornadas pela API.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">codigos_ue</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE_TURMAS</span><span class="si">}</span><span class="s2">/turmas-atribuidas-dre-ue/"</span><span class="p">,</span>
+        <span class="n">payload</span><span class="o">=</span><span class="n">codigos_ue</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span></div>
+
+
+
+<div class="viewcode-block" id="get_todas_turmas_atribuidas_dre_ue">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_todas_turmas_atribuidas_dre_ue">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_todas_turmas_atribuidas_dre_ue</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna a abrangência SME já agrupada por DRE/UE.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Abrangência de turmas atribuídas retornada pela API.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE_TURMAS</span><span class="si">}</span><span class="s2">/turmas-atribuidas-dre-ue/todas/"</span><span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_turmas_elegiveis">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_turmas_elegiveis">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_turmas_elegiveis</span><span class="p">(</span><span class="n">payload</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""Lista turmas elegíveis por atribuição.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        payload: Dados no contrato legado.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Turmas elegíveis retornadas pela API.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">    """</span>
+    <span class="n">dados</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"codigo_rf"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"CodigoRf"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)),</span>
+        <span class="s2">"codigo_turma"</span><span class="p">:</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"CodigoTurma"</span><span class="p">),</span>
+        <span class="s2">"componente_curricular"</span><span class="p">:</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ComponenteCurricular"</span><span class="p">),</span>
+    <span class="p">}</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE_TURMAS</span><span class="si">}</span><span class="s2">/turmas-elegiveis/"</span><span class="p">,</span> <span class="n">payload</span><span class="o">=</span><span class="n">dados</span><span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span></div>
+
+
+
+<div class="viewcode-block" id="get_turmas_recorte_fund_medio_eja">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_turmas_recorte_fund_medio_eja">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_turmas_recorte_fund_medio_eja</span><span class="p">(</span>
+    <span class="n">codigos</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""Lista turmas no recorte de etapa (Fund/Médio/EJA).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigos: Códigos das turmas a consultar.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Turmas no recorte de etapa retornadas pela API.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">codigos</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE_TURMAS</span><span class="si">}</span><span class="s2">/recorte-fund-medio-eja/"</span><span class="p">,</span>
+        <span class="n">payload</span><span class="o">=</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">codigo</span><span class="p">)</span> <span class="k">for</span> <span class="n">codigo</span> <span class="ow">in</span> <span class="n">codigos</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span></div>
+
+
+
+<div class="viewcode-block" id="get_turmas_recorte_por_tipo">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_turmas_recorte_por_tipo">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_turmas_recorte_por_tipo</span><span class="p">(</span>
+    <span class="n">codigos</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">tipos_turma</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">ue_codigo</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">semestre</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Filtra códigos de turma por tipo de turma, UE e semestre.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigos: Códigos de turma candidatos (vindos do Alunos-MS).</span>
+<span class="sd">        tipos_turma: Tipos de turma aceitos; sem filtro quando vazio.</span>
+<span class="sd">        ue_codigo: Código da UE; sem filtro quando ausente.</span>
+<span class="sd">        semestre: Semestre da turma; sem filtro quando ausente.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Subconjunto dos códigos que atende ao recorte.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">codigos</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">tipos_turma</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">"tipos_turma"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">tipo</span><span class="p">)</span> <span class="k">for</span> <span class="n">tipo</span> <span class="ow">in</span> <span class="n">tipos_turma</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">ue_codigo</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">"ue_codigo"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ue_codigo</span>
+    <span class="k">if</span> <span class="n">semestre</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">"semestre"</span><span class="p">]</span> <span class="o">=</span> <span class="n">semestre</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE_TURMAS</span><span class="si">}</span><span class="s2">/recorte-por-tipo/"</span><span class="p">,</span>
+        <span class="n">payload</span><span class="o">=</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">codigo</span><span class="p">)</span> <span class="k">for</span> <span class="n">codigo</span> <span class="ow">in</span> <span class="n">codigos</span><span class="p">],</span>
+        <span class="n">params</span><span class="o">=</span><span class="n">params</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="n">dados</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+    <span class="k">return</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">codigo</span><span class="p">)</span> <span class="k">for</span> <span class="n">codigo</span> <span class="ow">in</span> <span class="n">dados</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="get_componentes_curriculares">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_componentes_curriculares">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_componentes_curriculares</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna o catálogo completo de componentes curriculares.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Catálogo de componentes curriculares ativos.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/"</span><span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_codigos_turmas</span><span class="p">(</span><span class="n">payload</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Retorna os códigos de turma do conteúdo informado.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        payload: Conteúdo recebido para conversão.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Códigos de turma como texto.</span>
+<span class="sd">    """</span>
+    <span class="n">codigos</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">payload</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">codigos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s2">"codigo"</span><span class="p">]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">codigos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">codigos</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_payload_turmas</span><span class="p">(</span><span class="n">response</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Retorna os códigos de turma da resposta recebida.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        response: Resposta recebida para leitura.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Códigos de turma encontrados.</span>
+<span class="sd">    """</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">payload</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="k">return</span> <span class="n">_codigos_turmas</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_turma_legado</span><span class="p">(</span><span class="n">item</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Retorna turma no formato esperado pelo contrato.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        item: Dados da turma recebidos para conversão.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Turma formatada para resposta.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"ano"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ano"</span><span class="p">),</span>
+        <span class="s2">"anoLetivo"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ano_letivo"</span><span class="p">),</span>
+        <span class="s2">"codigo"</span><span class="p">:</span> <span class="n">item</span><span class="p">[</span><span class="s2">"codigo"</span><span class="p">],</span>
+        <span class="s2">"tipoTurma"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"tipo_turma"</span><span class="p">),</span>
+        <span class="s2">"modalidade"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">"codigoModalidade"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s2">"nomeTurma"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"nome_turma"</span><span class="p">),</span>
+        <span class="s2">"semestre"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"semestre"</span><span class="p">),</span>
+        <span class="s2">"duracaoTurno"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"duracao_turno"</span><span class="p">),</span>
+        <span class="s2">"tipoTurno"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"tipo_turno"</span><span class="p">),</span>
+        <span class="s2">"dataFim"</span><span class="p">:</span> <span class="n">formatar_datetime_legado</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"data_fim"</span><span class="p">)),</span>
+        <span class="s2">"ehistorico"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ehistorico"</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+        <span class="s2">"ensinoEspecial"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ensino_especial"</span><span class="p">),</span>
+        <span class="s2">"etapaEJA"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"etapa_eja"</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+        <span class="s2">"serieEnsino"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">"dataInicioTurma"</span><span class="p">:</span> <span class="n">formatar_datetime_legado</span><span class="p">(</span>
+            <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"data_inicio_turma"</span><span class="p">)</span>
+        <span class="p">),</span>
+        <span class="s2">"extinta"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"extinta"</span><span class="p">),</span>
+        <span class="s2">"situacao"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">"ueCodigo"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ue_codigo"</span><span class="p">),</span>
+    <span class="p">}</span>
+
+
+<div class="viewcode-block" id="post_codigos_turmas_contagem">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.post_codigos_turmas_contagem">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">post_codigos_turmas_contagem</span><span class="p">(</span>
+    <span class="n">ues_codigos</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">ano_turma</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">codigo_modalidade</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Retorna códigos de turmas vigentes para a contagem de alunos.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ues_codigos: Códigos EOL das UEs consideradas.</span>
+<span class="sd">        ano_turma: Primeiro caractere da nomenclatura da turma.</span>
+<span class="sd">        codigo_modalidade: Modalidade materializada.</span>
+<span class="sd">        ano_letivo: Ano letivo da chamada.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Códigos das turmas que atendem ao recorte, ou lista vazia.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ues_codigos</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">ano_turma</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">"ano_turma"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ano_turma</span>
+    <span class="k">if</span> <span class="n">codigo_modalidade</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">"codigo_modalidade"</span><span class="p">]</span> <span class="o">=</span> <span class="n">codigo_modalidade</span>
+    <span class="k">if</span> <span class="n">ano_letivo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">"ano_letivo"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ano_letivo</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE_TURMAS</span><span class="si">}</span><span class="s2">/codigos-turmas-contagem/"</span><span class="p">,</span>
+        <span class="n">payload</span><span class="o">=</span><span class="n">ues_codigos</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span></div>
+
+
+
+<div class="viewcode-block" id="post_turmas_regulares">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.post_turmas_regulares">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">post_turmas_regulares</span><span class="p">(</span><span class="n">codigos</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Retorna codigos de turmas regulares existentes.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigos: Codigos das turmas recebidos no contrato legado.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Codigos das turmas regulares no formato legado.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao servico pedagogico falhar.</span>
+<span class="sd">        ValueError: Se a resposta nao puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">codigos</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE_TURMAS</span><span class="si">}</span><span class="s2">/turmas-regulares/"</span><span class="p">,</span>
+        <span class="n">payload</span><span class="o">=</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">codigo</span><span class="p">)</span> <span class="k">for</span> <span class="n">codigo</span> <span class="ow">in</span> <span class="n">codigos</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">_payload_turmas</span><span class="p">(</span><span class="n">response</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="post_turmas_programa">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.post_turmas_programa">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">post_turmas_programa</span><span class="p">(</span><span class="n">codigos</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Retorna codigos de turmas programa existentes.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigos: Codigos das turmas recebidos no contrato legado.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Codigos das turmas programa no formato legado.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao servico pedagogico falhar.</span>
+<span class="sd">        ValueError: Se a resposta nao puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">codigos</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE_TURMAS</span><span class="si">}</span><span class="s2">/turmas-programa/"</span><span class="p">,</span>
+        <span class="n">payload</span><span class="o">=</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">codigo</span><span class="p">)</span> <span class="k">for</span> <span class="n">codigo</span> <span class="ow">in</span> <span class="n">codigos</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">_payload_turmas</span><span class="p">(</span><span class="n">response</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="post_listar_turmas">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.post_listar_turmas">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">post_listar_turmas</span><span class="p">(</span><span class="n">codigos</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""Retorna dados de turmas existentes.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigos: Codigos das turmas recebidos no contrato legado.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dados das turmas no formato legado.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao servico pedagogico falhar.</span>
+<span class="sd">        ValueError: Se a resposta nao puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">codigos</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE_TURMAS</span><span class="si">}</span><span class="s2">/listar-turmas/"</span><span class="p">,</span>
+        <span class="n">payload</span><span class="o">=</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">codigo</span><span class="p">)</span> <span class="k">for</span> <span class="n">codigo</span> <span class="ow">in</span> <span class="n">codigos</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">_turma_legado</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()]</span></div>
+
+
+
+<div class="viewcode-block" id="get_dados_turma">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_dados_turma">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_dados_turma</span><span class="p">(</span><span class="n">codigo_turma</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Retorna dados de uma turma.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_turma: Codigo da turma recebida no contrato legado.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dados da turma no formato legado.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao servico pedagogico falhar.</span>
+<span class="sd">        ValueError: Se a resposta nao puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE_TURMAS</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">codigo_turma</span><span class="si">}</span><span class="s2">/dados/"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_turma_legado</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span></div>
+
+
+
+<div class="viewcode-block" id="get_alunos_ativos_turma_sem_redis">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_alunos_ativos_turma_sem_redis">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_alunos_ativos_turma_sem_redis</span><span class="p">(</span><span class="n">codigo_turma</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna alunos ativos de uma turma sem consulta a cache.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_turma: Código da turma recebida no contrato legado.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Lista de alunos ativos retornada pelo API pedagógica.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Se a API retornar status de erro.</span>
+<span class="sd">        httpx.RequestError: Se a API estiver inacessível.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">alunos_services</span><span class="o">.</span><span class="n">get_alunos_por_turma</span><span class="p">(</span>
+        <span class="n">codigo_turma</span><span class="p">,</span>
+        <span class="n">considerar_inativos</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">sequencia</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_alunos_ativos_turma_redis_multplex">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_alunos_ativos_turma_redis_multplex">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_alunos_ativos_turma_redis_multplex</span><span class="p">(</span><span class="n">codigo_turma</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna alunos ativos de uma turma pelo contrato Redis Multplex.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_turma: Código da turma recebida no contrato legado.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Lista de alunos ativos retornada pelo API pedagógica.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Se a API retornar status de erro.</span>
+<span class="sd">        httpx.RequestError: Se a API estiver inacessível.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">alunos_services</span><span class="o">.</span><span class="n">get_alunos_por_turma</span><span class="p">(</span>
+        <span class="n">codigo_turma</span><span class="p">,</span>
+        <span class="n">considerar_inativos</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_alunos_turma_considera_inativos">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_alunos_turma_considera_inativos">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_alunos_turma_considera_inativos</span><span class="p">(</span>
+    <span class="n">codigo_turma</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">considera_inativos</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna alunos na turma considerando ativos ou inativos.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_turma: Código da turma recebida no contrato legado.</span>
+<span class="sd">        considera_inativos: Considera ativos ou inativos na turma.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Lista de alunos ativos ou inativos retornada pelo API pedagógica.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Se a API retornar status de erro.</span>
+<span class="sd">        httpx.RequestError: Se a API estiver inacessível.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">alunos_services</span><span class="o">.</span><span class="n">get_alunos_por_turma</span><span class="p">(</span>
+        <span class="n">codigo_turma</span><span class="p">,</span>
+        <span class="n">considerar_inativos</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">considera_inativos</span><span class="p">),</span>
+        <span class="n">sequencia</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_turmas_historicas_gerais_professor">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_turmas_historicas_gerais_professor">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_turmas_historicas_gerais_professor</span><span class="p">(</span>
+    <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">professor_rf</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""Lista turmas históricas gerais de um professor.</span>
+
+<span class="sd">    Os códigos de turma vêm do domínio professores (cadeia de grade) e os</span>
+<span class="sd">    atributos de cada turma são obtidos no domínio pedagógico.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ano_letivo: Ano letivo usado na consulta.</span>
+<span class="sd">        professor_rf: Registro funcional do professor.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Turmas históricas com os atributos do domínio pedagógico.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Se alguma API retornar status de erro.</span>
+<span class="sd">        httpx.RequestError: Se alguma API estiver inacessível.</span>
+<span class="sd">        ValueError: Se alguma resposta não tiver o formato esperado.</span>
+<span class="sd">    """</span>
+    <span class="n">codigos</span> <span class="o">=</span> <span class="n">professores_services</span><span class="o">.</span><span class="n">get_codigos_turmas_historicas_professor</span><span class="p">(</span>
+        <span class="n">ano_letivo</span><span class="p">,</span>
+        <span class="n">professor_rf</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">codigos</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE_TURMAS</span><span class="si">}</span><span class="s2">/listar-turmas/"</span><span class="p">,</span>
+        <span class="n">payload</span><span class="o">=</span><span class="n">codigos</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span>
+        <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">payload</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"Resposta de turmas históricas deve ser uma lista de objetos."</span>
+        <span class="p">)</span>
+    <span class="n">codigos_permitidos</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">codigos</span><span class="p">)</span>
+    <span class="n">turmas</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">turma</span> <span class="ow">in</span> <span class="n">payload</span><span class="p">:</span>
+        <span class="n">codigo</span> <span class="o">=</span> <span class="n">turma</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"codigo"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">codigo</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">codigo</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"Resposta de turmas históricas deve conter código inteiro."</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">codigo</span> <span class="ow">in</span> <span class="n">codigos_permitidos</span> <span class="ow">and</span> <span class="n">_turma_historica_elegivel</span><span class="p">(</span><span class="n">turma</span><span class="p">):</span>
+            <span class="n">turmas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">turma</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">turmas</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_turma_historica_elegivel</span><span class="p">(</span><span class="n">turma</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Verifica se a turma atende às etapas e escolas do contrato legado.</span>
+
+<span class="sd">    A etapa de ensino é obrigatória; o tipo de escola só restringe quando</span>
+<span class="sd">    presente no payload.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">turma</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"codigo_etapa_ensino"</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_ETAPAS_TURMAS_HISTORICAS</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="n">tipo_escola</span> <span class="o">=</span> <span class="n">turma</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"tipo_escola"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">tipo_escola</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="n">tipo_escola</span> <span class="ow">in</span> <span class="n">_TIPOS_ESCOLA_TURMAS_HISTORICAS</span>
+
+
+<div class="viewcode-block" id="get_listagem_turmas_componentes">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_listagem_turmas_componentes">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_listagem_turmas_componentes</span><span class="p">(</span>
+    <span class="n">codigo_ue</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">modalidade</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">codigo_turma</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">qtde_registros</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">qtde_registros_ignorados</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">eh_professor</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">codigo_rf</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">considera_historico</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">periodo_escolar_inicio_tick</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">anos_infantil_desconsiderar</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Lista turmas e componentes por UE, modalidade e ano letivo.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_ue: Código da unidade educacional.</span>
+<span class="sd">        modalidade: Código da modalidade de ensino.</span>
+<span class="sd">        ano_letivo: Ano letivo consultado.</span>
+<span class="sd">        codigo_turma: Filtra por uma turma específica quando informado.</span>
+<span class="sd">        qtde_registros: Tamanho da página usado no total de páginas.</span>
+<span class="sd">        qtde_registros_ignorados: Compatibilidade legada; repassado ao MS.</span>
+<span class="sd">        eh_professor: Restringe os componentes ao RF informado.</span>
+<span class="sd">        codigo_rf: RF do professor usado no filtro e no território.</span>
+<span class="sd">        considera_historico: Inclui turmas históricas (situação C/E).</span>
+<span class="sd">        periodo_escolar_inicio_tick: Início do período escolar em ticks .NET.</span>
+<span class="sd">        anos_infantil_desconsiderar: Anos de turma removidos do retorno.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Envelope paginado (`items`, `total_registros`, `total_paginas`).</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Se a API retornar status de erro.</span>
+<span class="sd">        httpx.RequestError: Se a API estiver inacessível.</span>
+<span class="sd">        ValueError: Se a resposta não representar um objeto.</span>
+<span class="sd">        OverflowError: Se os ticks excederem o limite do datetime.</span>
+<span class="sd">    """</span>
+    <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"eh_professor"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">eh_professor</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span>
+        <span class="s2">"considera_historico"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">considera_historico</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="n">codigo_turma</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">"codigo_turma"</span><span class="p">]</span> <span class="o">=</span> <span class="n">codigo_turma</span>
+    <span class="k">if</span> <span class="n">qtde_registros</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">"qtde_registros"</span><span class="p">]</span> <span class="o">=</span> <span class="n">qtde_registros</span>
+    <span class="k">if</span> <span class="n">qtde_registros_ignorados</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">"qtde_registros_ignorados"</span><span class="p">]</span> <span class="o">=</span> <span class="n">qtde_registros_ignorados</span>
+    <span class="k">if</span> <span class="n">eh_professor</span> <span class="ow">and</span> <span class="n">codigo_rf</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">"codigo_rf"</span><span class="p">]</span> <span class="o">=</span> <span class="n">codigo_rf</span>
+    <span class="k">if</span> <span class="n">periodo_escolar_inicio_tick</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">"periodo_escolar_inicio"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_ticks_dotnet_para_data</span><span class="p">(</span>
+            <span class="n">periodo_escolar_inicio_tick</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">anos_infantil_desconsiderar</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">"anos_infantil_desconsiderar"</span><span class="p">]</span> <span class="o">=</span> <span class="n">anos_infantil_desconsiderar</span>
+
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/ues/</span><span class="si">{</span><span class="n">codigo_ue</span><span class="si">}</span><span class="s2">/modalidades/</span><span class="si">{</span><span class="n">modalidade</span><span class="si">}</span><span class="s2">/anos/"</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ano_letivo</span><span class="si">}</span><span class="s2">/componentes/"</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Resposta da listagem de turmas deve ser um objeto."</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">payload</span></div>
+
+
+
+<div class="viewcode-block" id="get_sincronizacao_institucional_turma">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_sincronizacao_institucional_turma">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_sincronizacao_institucional_turma</span><span class="p">(</span>
+    <span class="n">codigo_ue</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">codigo_turma</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Retorna os dados institucionais sincronizados de uma turma.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_ue: Código da unidade educacional.</span>
+<span class="sd">        codigo_turma: Código da turma.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dados institucionais da turma.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Se a API retornar status de erro.</span>
+<span class="sd">        httpx.RequestError: Se a API estiver inacessível.</span>
+<span class="sd">        ValueError: Se a resposta não representar um objeto.</span>
+<span class="sd">    """</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE_TURMAS</span><span class="si">}</span><span class="s2">/ues/</span><span class="si">{</span><span class="n">codigo_ue</span><span class="si">}</span><span class="s2">/turmas/</span><span class="si">{</span><span class="n">codigo_turma</span><span class="si">}</span><span class="s2">/"</span>
+        <span class="s2">"sincronizacoes-institucionais/"</span>
+    <span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Resposta institucional da turma deve ser um objeto."</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">payload</span></div>
+
+
+
+<div class="viewcode-block" id="get_sincronizacoes_institucionais_anos_letivos">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_sincronizacoes_institucionais_anos_letivos">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_sincronizacoes_institucionais_anos_letivos</span><span class="p">(</span>
+    <span class="n">codigo_ue</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">anos_letivos_vigente</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Lista turmas institucionais da UE por anos letivos.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_ue: Código da unidade educacional.</span>
+<span class="sd">        anos_letivos_vigente: Anos letivos usados no filtro.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Códigos das turmas encontradas.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Se a API retornar status de erro.</span>
+<span class="sd">        httpx.RequestError: Se a API estiver inacessível.</span>
+<span class="sd">        ValueError: Se a resposta não for uma lista de inteiros.</span>
+<span class="sd">    """</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">anos_letivos_vigente</span><span class="p">:</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"anos_letivos_vigente"</span><span class="p">:</span> <span class="n">anos_letivos_vigente</span><span class="p">}</span>
+
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE_TURMAS</span><span class="si">}</span><span class="s2">/ue/</span><span class="si">{</span><span class="n">codigo_ue</span><span class="si">}</span><span class="s2">/"</span>
+        <span class="s2">"sincronizacoes-institucionais/anos-letivos/"</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span>
+        <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">codigo</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">codigo</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">codigo</span> <span class="ow">in</span> <span class="n">payload</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"Resposta de anos letivos deve ser uma lista de inteiros."</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">payload</span></div>
+
+
+
+<div class="viewcode-block" id="get_itinerarios_ensino_medio">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_itinerarios_ensino_medio">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_itinerarios_ensino_medio</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""Lista os itinerários do ensino médio.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Itinerários retornados pelo serviço pedagógico.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Se a API retornar status de erro.</span>
+<span class="sd">        httpx.RequestError: Se a API estiver inacessível.</span>
+<span class="sd">        ValueError: Se a resposta não for uma lista de objetos.</span>
+<span class="sd">    """</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE_TURMAS</span><span class="si">}</span><span class="s2">/itinerario/ensino-medio/"</span><span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span>
+        <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">payload</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"Resposta de itinerários deve ser uma lista de objetos."</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">payload</span></div>
+
+
+
+<div class="viewcode-block" id="get_modalidades_ensino">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_modalidades_ensino">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_modalidades_ensino</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Lista as descrições das modalidades (etapas) de ensino.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Descrições das etapas de ensino cadastradas.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Se a API retornar status de erro.</span>
+<span class="sd">        httpx.RequestError: Se a API estiver inacessível.</span>
+<span class="sd">        ValueError: Se a resposta não for uma lista de strings.</span>
+<span class="sd">    """</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE_TURMAS</span><span class="si">}</span><span class="s2">/escolas/modalidades-ensino/"</span><span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span>
+        <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">payload</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"Resposta de modalidades de ensino deve ser uma lista de textos."</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">payload</span></div>
+
+
+
+<div class="viewcode-block" id="get_turmas_por_tipo_sala">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_turmas_por_tipo_sala">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_turmas_por_tipo_sala</span><span class="p">(</span>
+    <span class="n">codigo_ue</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">tipo_sala</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""Lista turmas de uma UE/ano letivo filtradas por tipo de sala.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_ue: Código da unidade educacional.</span>
+<span class="sd">        tipo_sala: Tipo de sala informado na rota.</span>
+<span class="sd">        ano_letivo: Ano letivo consultado.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Turmas retornadas pela API no recorte.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Se a API retornar status de erro.</span>
+<span class="sd">        httpx.RequestError: Se a API estiver inacessível.</span>
+<span class="sd">        ValueError: Se a resposta não for uma lista de objetos.</span>
+<span class="sd">    """</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE_TURMAS</span><span class="si">}</span><span class="s2">/escolas/</span><span class="si">{</span><span class="n">codigo_ue</span><span class="si">}</span><span class="s2">/salas/</span><span class="si">{</span><span class="n">tipo_sala</span><span class="si">}</span><span class="s2">/"</span>
+        <span class="sa">f</span><span class="s2">"anos-letivos/</span><span class="si">{</span><span class="n">ano_letivo</span><span class="si">}</span><span class="s2">/"</span>
+    <span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span>
+        <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">payload</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"Resposta de turmas por tipo de sala deve ser uma lista "</span>
+            <span class="s2">"de objetos."</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">payload</span></div>
+
+
+
+<div class="viewcode-block" id="get_turmas_por_escola">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_turmas_por_escola">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_turmas_por_escola</span><span class="p">(</span>
+    <span class="n">codigo_ue</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""Lista turmas de uma UE/ano letivo cujo nome começa com dígito.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_ue: Código da unidade educacional.</span>
+<span class="sd">        ano_letivo: Ano letivo consultado.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Turmas retornadas pela API.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Se a API retornar status de erro.</span>
+<span class="sd">        httpx.RequestError: Se a API estiver inacessível.</span>
+<span class="sd">        ValueError: Se a resposta não for uma lista de objetos.</span>
+<span class="sd">    """</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE_TURMAS</span><span class="si">}</span><span class="s2">/escolas/</span><span class="si">{</span><span class="n">codigo_ue</span><span class="si">}</span><span class="s2">/anos-letivos/</span><span class="si">{</span><span class="n">ano_letivo</span><span class="si">}</span><span class="s2">/"</span>
+    <span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span>
+        <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">payload</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"Resposta de turmas por escola deve ser uma lista de objetos."</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">payload</span></div>
+
+
+
+<div class="viewcode-block" id="get_turmas_sondagem">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_turmas_sondagem">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_turmas_sondagem</span><span class="p">(</span>
+    <span class="n">codigo_ue</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""Lista turmas regulares de 5º ano do Fundamental para Sondagem.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_ue: Código da unidade educacional.</span>
+<span class="sd">        ano_letivo: Ano letivo consultado.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Turmas retornadas pela API.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Se a API retornar status de erro.</span>
+<span class="sd">        httpx.RequestError: Se a API estiver inacessível.</span>
+<span class="sd">        ValueError: Se a resposta não for uma lista de objetos.</span>
+<span class="sd">    """</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE_TURMAS</span><span class="si">}</span><span class="s2">/escolas/</span><span class="si">{</span><span class="n">codigo_ue</span><span class="si">}</span><span class="s2">/turmas-sondagem/"</span>
+        <span class="sa">f</span><span class="s2">"anos-letivos/</span><span class="si">{</span><span class="n">ano_letivo</span><span class="si">}</span><span class="s2">/"</span>
+    <span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span>
+        <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">payload</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"Resposta de turmas de sondagem deve ser uma lista de objetos."</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">payload</span></div>
+
+
+
+<div class="viewcode-block" id="get_componentes_por_turmas_ue">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_componentes_por_turmas_ue">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_componentes_por_turmas_ue</span><span class="p">(</span>
+    <span class="n">ue_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">turmas</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna componentes curriculares das turmas de uma UE.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ue_id: Código da unidade educacional.</span>
+<span class="sd">        turmas: Códigos das turmas usadas no filtro.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Componentes curriculares das turmas informadas.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"turmas"</span><span class="p">:</span> <span class="n">turmas</span><span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/ues/</span><span class="si">{</span><span class="n">ue_id</span><span class="si">}</span><span class="s2">/turmas"</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_componentes_turmas_programa">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_componentes_turmas_programa">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_componentes_turmas_programa</span><span class="p">(</span>
+    <span class="n">ue_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">modalidade</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna componentes de turmas programa.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ue_id: Código da unidade educacional.</span>
+<span class="sd">        modalidade: Modalidade de ensino usada no filtro.</span>
+<span class="sd">        ano_letivo: Ano letivo usado no filtro.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Componentes das turmas programa encontradas.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/ues/</span><span class="si">{</span><span class="n">ue_id</span><span class="si">}</span><span class="s2">/modalidades/"</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">modalidade</span><span class="si">}</span><span class="s2">/anos/</span><span class="si">{</span><span class="n">ano_letivo</span><span class="si">}</span><span class="s2">/turmas-programa"</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_componentes_regencia">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_componentes_regencia">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_componentes_regencia</span><span class="p">(</span><span class="n">ano_turma</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna componentes de regência por ano de turma.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ano_turma: Ano da turma usado na consulta.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Componentes de regência do ano informado.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/anos/</span><span class="si">{</span><span class="n">ano_turma</span><span class="si">}</span><span class="s2">/regencia"</span><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="validar_componente_pap">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.validar_componente_pap">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">validar_componente_pap</span><span class="p">(</span>
+    <span class="n">codigo_turma</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">login</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">id_perfil</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Verifica se a turma possui componente PAP para o funcionário.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_turma: Código da turma usada na validação.</span>
+<span class="sd">        login: Login/RF do funcionário.</span>
+<span class="sd">        id_perfil: Identificador do perfil do funcionário.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Resultado da validação de componente PAP.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/turmas/</span><span class="si">{</span><span class="n">codigo_turma</span><span class="si">}</span><span class="s2">/pap"</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"login"</span><span class="p">:</span> <span class="n">login</span><span class="p">,</span> <span class="s2">"idPerfil"</span><span class="p">:</span> <span class="n">id_perfil</span><span class="p">},</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_componentes_funcionario">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_componentes_funcionario">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_componentes_funcionario</span><span class="p">(</span><span class="n">login</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">id_perfil</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna componentes curriculares do funcionário.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        login: Login/RF do funcionário.</span>
+<span class="sd">        id_perfil: Identificador do perfil do funcionário.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Componentes curriculares associados ao funcionário.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/funcionarios/</span><span class="si">{</span><span class="n">login</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"idPerfil"</span><span class="p">:</span> <span class="n">id_perfil</span><span class="p">},</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_componentes_turma_funcionario">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_componentes_turma_funcionario">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_componentes_turma_funcionario</span><span class="p">(</span>
+    <span class="n">codigo_turma</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">login</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">id_perfil</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">agrupa_componente_curricular</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">checa_motivo_disponibilizacao</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">considera_turma_infantil</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna componentes do funcionário em uma turma.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_turma: Código da turma usada no filtro.</span>
+<span class="sd">        login: Login/RF do funcionário.</span>
+<span class="sd">        id_perfil: Identificador do perfil do funcionário.</span>
+<span class="sd">        agrupa_componente_curricular: Indica se os componentes serão</span>
+<span class="sd">            agrupados.</span>
+<span class="sd">        checa_motivo_disponibilizacao: Indica se o motivo de</span>
+<span class="sd">            disponibilização será considerado.</span>
+<span class="sd">        considera_turma_infantil: Indica se regras de educação infantil</span>
+<span class="sd">            serão consideradas.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Componentes curriculares associados ao funcionário e à turma.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/funcionarios/</span><span class="si">{</span><span class="n">login</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">"idPerfil"</span><span class="p">:</span> <span class="n">id_perfil</span><span class="p">,</span>
+            <span class="s2">"codigoTurma"</span><span class="p">:</span> <span class="n">codigo_turma</span><span class="p">,</span>
+            <span class="s2">"agrupaComponenteCurricular"</span><span class="p">:</span> <span class="n">agrupa_componente_curricular</span><span class="p">,</span>
+            <span class="s2">"checaMotivoDisponibilizacao"</span><span class="p">:</span> <span class="n">checa_motivo_disponibilizacao</span><span class="p">,</span>
+            <span class="s2">"consideraTurmaInfantil"</span><span class="p">:</span> <span class="n">considera_turma_infantil</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_componentes_planejamento">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_componentes_planejamento">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_componentes_planejamento</span><span class="p">(</span>
+    <span class="n">codigo_turma</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">login</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">id_perfil</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna componentes de planejamento do funcionário em uma turma.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_turma: Código da turma usada no filtro.</span>
+<span class="sd">        login: Login/RF do funcionário.</span>
+<span class="sd">        id_perfil: Identificador do perfil do funcionário.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Componentes curriculares disponíveis para planejamento.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/funcionarios/</span><span class="si">{</span><span class="n">login</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">"idPerfil"</span><span class="p">:</span> <span class="n">id_perfil</span><span class="p">,</span>
+            <span class="s2">"codigoTurma"</span><span class="p">:</span> <span class="n">codigo_turma</span><span class="p">,</span>
+            <span class="s2">"planejamento"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_componentes_por_lista_turmas">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_componentes_por_lista_turmas">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_componentes_por_lista_turmas</span><span class="p">(</span>
+    <span class="n">codigos_turmas</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">adicionar_componentes_planejamento</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">incluir_extintas</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna componentes para planejamento por lista de turmas.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigos_turmas: Códigos das turmas usadas no filtro.</span>
+<span class="sd">        adicionar_componentes_planejamento: Indica se componentes de</span>
+<span class="sd">            planejamento serão adicionados.</span>
+<span class="sd">        incluir_extintas: Inclui turmas extintas no resultado.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Componentes curriculares das turmas informadas.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/turmas"</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">"codigoTurmas"</span><span class="p">:</span> <span class="n">codigos_turmas</span><span class="p">,</span>
+            <span class="s2">"adicionarComponentesPlanejamento"</span><span class="p">:</span> <span class="p">(</span>
+                <span class="n">adicionar_componentes_planejamento</span>
+            <span class="p">),</span>
+            <span class="s2">"incluirExtintas"</span><span class="p">:</span> <span class="n">incluir_extintas</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_componentes_turmas_regulares">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_componentes_turmas_regulares">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_componentes_turmas_regulares</span><span class="p">(</span><span class="n">codigos_turmas</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna componentes de turmas regulares.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigos_turmas: Códigos das turmas usadas no filtro.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Componentes curriculares das turmas regulares informadas.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/turmas/brutos"</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"codigoTurmas"</span><span class="p">:</span> <span class="n">codigos_turmas</span><span class="p">},</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_dados_aula_turma">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_dados_aula_turma">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_dados_aula_turma</span><span class="p">(</span>
+    <span class="n">ue_codigo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">componentes_curriculares</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">semestre</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""Retorna dados de aula por turma e componente.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ue_codigo: Código da unidade educacional.</span>
+<span class="sd">        ano_letivo: Ano letivo usado no filtro.</span>
+<span class="sd">        componentes_curriculares: Códigos dos componentes curriculares.</span>
+<span class="sd">        semestre: Semestre usado no filtro, quando informado.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dados de vigência dos componentes no formato legado.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"ueCodigo"</span><span class="p">:</span> <span class="n">ue_codigo</span><span class="p">,</span>
+        <span class="s2">"anoLetivo"</span><span class="p">:</span> <span class="n">ano_letivo</span><span class="p">,</span>
+        <span class="s2">"componentesCurriculares"</span><span class="p">:</span> <span class="n">componentes_curriculares</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="n">semestre</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">"semestre"</span><span class="p">]</span> <span class="o">=</span> <span class="n">semestre</span>
+
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/turmas/vigencia"</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s2">"componenteCurricularCodigo"</span><span class="p">:</span> <span class="n">item</span><span class="p">[</span><span class="s2">"componente_codigo"</span><span class="p">],</span>
+            <span class="s2">"componenteCurricularDescricao"</span><span class="p">:</span> <span class="n">item</span><span class="p">[</span><span class="s2">"componente_descricao"</span><span class="p">],</span>
+            <span class="s2">"turmaCodigo"</span><span class="p">:</span> <span class="n">item</span><span class="p">[</span><span class="s2">"turma_codigo"</span><span class="p">],</span>
+            <span class="s2">"dataInicioTurma"</span><span class="p">:</span> <span class="n">formatar_datetime_legado</span><span class="p">(</span>
+                <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"data_inicio_turma"</span><span class="p">)</span>
+            <span class="p">),</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">payload</span>
+    <span class="p">]</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_ticks_dotnet_para_data</span><span class="p">(</span><span class="n">data_base_tick</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Converta ticks de DateTime do .NET para data ISO.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data_base_tick: Quantidade de intervalos de 100 nanossegundos desde</span>
+<span class="sd">            0001-01-01.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Data no formato ISO 8601.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        OverflowError: Se os ticks excederem o limite do datetime.</span>
+<span class="sd">    """</span>
+    <span class="n">data_base</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span>
+        <span class="n">microseconds</span><span class="o">=</span><span class="n">data_base_tick</span> <span class="o">//</span> <span class="mi">10</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">data_base</span><span class="o">.</span><span class="n">date</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="get_componentes_sem_atribuicao">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_componentes_sem_atribuicao">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_componentes_sem_atribuicao</span><span class="p">(</span>
+    <span class="n">codigo_turma</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">data_base_tick</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Retorna componentes sem atribuição na data informada.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_turma: Código da turma usada no filtro.</span>
+<span class="sd">        data_base_tick: Data base representada em ticks do .NET.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Descrições dos componentes sem professor atribuído.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">        OverflowError: Se os ticks excederem o limite do datetime.</span>
+<span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">cast</span><span class="p">(</span>
+        <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/turmas/</span><span class="si">{</span><span class="n">codigo_turma</span><span class="si">}</span><span class="s2">/sem-atribuicao"</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"data_base"</span><span class="p">:</span> <span class="n">_ticks_dotnet_para_data</span><span class="p">(</span><span class="n">data_base_tick</span><span class="p">)},</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">(),</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_componentes_sem_atribuicao_por_data_base">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_componentes_sem_atribuicao_por_data_base">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_componentes_sem_atribuicao_por_data_base</span><span class="p">(</span>
+    <span class="n">codigo_turma</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">data_base</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Retorna componentes sem atribuição na data informada.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_turma: Código da turma usada no filtro.</span>
+<span class="sd">        data_base: Data base representada em formato ISO 8601.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Descrições dos componentes sem professor atribuído.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">cast</span><span class="p">(</span>
+        <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/turmas/</span><span class="si">{</span><span class="n">codigo_turma</span><span class="si">}</span><span class="s2">/sem-atribuicao"</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"data_base"</span><span class="p">:</span> <span class="n">data_base</span><span class="p">},</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">(),</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_componentes_ue_anos">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_componentes_ue_anos">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_componentes_ue_anos</span><span class="p">(</span>
+    <span class="n">ue_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">modalidade</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">anos_escolares</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna componentes filtrados por anos escolares.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ue_id: Código da unidade educacional.</span>
+<span class="sd">        modalidade: Modalidade de ensino usada no filtro.</span>
+<span class="sd">        ano_letivo: Ano letivo usado no filtro.</span>
+<span class="sd">        anos_escolares: Anos escolares usados no filtro.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Componentes curriculares encontrados para os filtros informados.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"anos_escolares"</span><span class="p">:</span> <span class="n">anos_escolares</span><span class="p">}</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/ues/"</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ue_id</span><span class="si">}</span><span class="s2">/modalidades/"</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">modalidade</span><span class="si">}</span><span class="s2">/anos/"</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ano_letivo</span><span class="si">}</span><span class="s2">"</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="n">path</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_grade_curricular">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_grade_curricular">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_grade_curricular</span><span class="p">(</span><span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna a grade curricular completa do ano letivo.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ano_letivo: Ano letivo usado na consulta.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Grade curricular do ano letivo informado.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/grade-curricular/</span><span class="si">{</span><span class="n">ano_letivo</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_agrupamentos_correlacionados">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_agrupamentos_correlacionados">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_agrupamentos_correlacionados</span><span class="p">(</span>
+    <span class="n">codigo_componente</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">data_base_tick</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna agrupamentos de Território do Saber correlacionados.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_componente: `cod_agrupamento` de origem.</span>
+<span class="sd">        data_base_tick: Data base em ticks do .NET; None para sem filtro.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Agrupamentos correlacionados ao `cod_agrupamento` informado.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">        OverflowError: Se os ticks excederem o limite do datetime.</span>
+<span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">data_base_tick</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">"data_base"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_ticks_dotnet_para_data</span><span class="p">(</span><span class="n">data_base_tick</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">codigo_componente</span><span class="si">}</span><span class="s2">/territorio-saber"</span>
+        <span class="s2">"/agrupamentos-correlacionados/"</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="post_agrupamentos_correlacionados">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.post_agrupamentos_correlacionados">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">post_agrupamentos_correlacionados</span><span class="p">(</span>
+    <span class="n">ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">data_base_tick</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna agrupamentos de Território do Saber correlacionados em lote.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ids: Lista de `cod_agrupamento` de origem.</span>
+<span class="sd">        data_base_tick: Data base em ticks do .NET; None para sem filtro.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Agrupamentos correlacionados sem duplicatas.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">        OverflowError: Se os ticks excederem o limite do datetime.</span>
+<span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">data_base_tick</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">"data_base"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_ticks_dotnet_para_data</span><span class="p">(</span><span class="n">data_base_tick</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/territorio-saber/agrupamentos-correlacionados/"</span><span class="p">,</span>
+        <span class="n">payload</span><span class="o">=</span><span class="n">ids</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="post_agrupamentos_territorio">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.post_agrupamentos_territorio">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">post_agrupamentos_territorio</span><span class="p">(</span><span class="n">ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna agrupamentos de Território do Saber por IDs.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ids: IDs dos agrupamentos a consultar.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Agrupamentos de Território do Saber encontrados.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/territorio-saber/agrupamentos/"</span><span class="p">,</span>
+        <span class="n">payload</span><span class="o">=</span><span class="n">ids</span><span class="p">,</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="verificar_atriuicao_territorio_saber">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.verificar_atriuicao_territorio_saber">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">verificar_atriuicao_territorio_saber</span><span class="p">(</span>
+    <span class="n">codigo_rf</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">codigo_turma</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">disciplina_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">data</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Verifica a atribuição do professor em território do saber.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_rf: RF do professor usado na consulta.</span>
+<span class="sd">        codigo_turma: Código da turma usada na consulta.</span>
+<span class="sd">        disciplina_id: Código do componente curricular usado na consulta.</span>
+<span class="sd">        data: Data de referência usada na consulta.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        ``True`` quando o professor possui atribuição válida.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">disciplina_id</span><span class="si">}</span><span class="s2">/turmas/</span><span class="si">{</span><span class="n">codigo_turma</span><span class="si">}</span><span class="s2">/"</span>
+        <span class="sa">f</span><span class="s2">"professor/</span><span class="si">{</span><span class="n">codigo_rf</span><span class="si">}</span><span class="s2">/data/</span><span class="si">{</span><span class="n">data</span><span class="si">}</span><span class="s2">/atribuicao/validar/"</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">))</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_buscar_componentes_api_eol</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""Busca o catálogo de componentes curriculares direto na origem.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Lista de componentes curriculares API EOL.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/api-eol/"</span><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+
+
+<div class="viewcode-block" id="get_componentes_api_eol">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_componentes_api_eol">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_componentes_api_eol</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""Retorna componentes curriculares API EOL.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Lista de componentes curriculares API EOL.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">cache</span><span class="o">.</span><span class="n">obter_ou_calcular</span><span class="p">(</span>
+        <span class="s2">"componentes-curriculares-api-eol"</span><span class="p">,</span>
+        <span class="n">_buscar_componentes_api_eol</span><span class="p">,</span>
+        <span class="n">cache</span><span class="o">.</span><span class="n">TTL_LEGADO_PADRAO_MINUTOS</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_atribuicoes_territorio_saber">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_atribuicoes_territorio_saber">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_atribuicoes_territorio_saber</span><span class="p">(</span>
+    <span class="n">codigo_rf</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""Retorna atribuições do professor em território do saber.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_rf: RF do professor usado na consulta.</span>
+<span class="sd">        ano_letivo: Ano letivo de referência, quando houver filtro.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Atribuições do professor em território do saber.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">ano_letivo</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/professores/</span><span class="si">{</span><span class="n">codigo_rf</span><span class="si">}</span><span class="s2">/"</span> <span class="s2">"atribuicoes-territorio-saber/"</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/professores/</span><span class="si">{</span><span class="n">codigo_rf</span><span class="si">}</span><span class="s2">/anos-letivos/</span><span class="si">{</span><span class="n">ano_letivo</span><span class="si">}</span><span class="s2">/"</span>
+            <span class="s2">"atribuicoes-territorio-saber/"</span>
+        <span class="p">)</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="n">serializer</span> <span class="o">=</span> <span class="n">TurmaAtribuidaAnoSerializer</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">serializer</span><span class="o">.</span><span class="n">data</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="get_professores_turma_territorio_saber">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_professores_turma_territorio_saber">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_professores_turma_territorio_saber</span><span class="p">(</span>
+    <span class="n">codigo_turma</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""Retorna professores atribuídos a uma turma em território do saber.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_turma: Código da turma usada na consulta.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Lista de professores atribuídos à turma em território do saber.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/turmas/</span><span class="si">{</span><span class="n">codigo_turma</span><span class="si">}</span><span class="s2">/atribuicoes-territorio-saber/"</span>
+    <span class="p">)</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="n">atribuicoes</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">_normalizar_atribuicao_territorio_turma</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">payload</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="n">serializer</span> <span class="o">=</span> <span class="n">AtribuicaoTerritorioTurmaSerializer</span><span class="p">(</span><span class="n">atribuicoes</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">serializer</span><span class="o">.</span><span class="n">data</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="get_professores_turmas_territorio_saber">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_professores_turmas_territorio_saber">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_professores_turmas_territorio_saber</span><span class="p">(</span>
+    <span class="n">codigo_turma</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""Retorna professores atribuídos as turmas em território do saber.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_turma: lista de códigos de turmas usadas na consulta.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Lista de professores atribuídos às turmas em território do saber.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/turmas/atribuicoes-territorio-saber/"</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"codigo_turma"</span><span class="p">:</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">codigo</span><span class="p">)</span> <span class="k">for</span> <span class="n">codigo</span> <span class="ow">in</span> <span class="n">codigo_turma</span><span class="p">]},</span>
+    <span class="p">)</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="n">atribuicoes</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">_normalizar_atribuicao_territorio_turma</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">payload</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="n">serializer</span> <span class="o">=</span> <span class="n">AtribuicaoTerritorioTurmaSerializer</span><span class="p">(</span><span class="n">atribuicoes</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">serializer</span><span class="o">.</span><span class="n">data</span><span class="p">]</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_normalizar_atribuicao_territorio_turma</span><span class="p">(</span>
+    <span class="n">atribuicao</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Normaliza contratos de atribuição territorial antigos e atuais.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        atribuicao: Atribuição territorial retornada pelo sidecar pedagógico.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Atribuição no contrato interno consumido pelo app de professores.</span>
+<span class="sd">    """</span>
+    <span class="n">descricao_territorio</span> <span class="o">=</span> <span class="n">atribuicao</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"descricao_territorio_saber"</span><span class="p">)</span>
+    <span class="n">descricao_experiencia</span> <span class="o">=</span> <span class="n">atribuicao</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"descricao_experiencia_pedagogica"</span><span class="p">)</span>
+    <span class="n">disciplina_nome</span> <span class="o">=</span> <span class="n">atribuicao</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"disciplina_nome"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">" - "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+        <span class="nb">str</span><span class="p">(</span><span class="n">descricao</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">descricao</span> <span class="ow">in</span> <span class="p">(</span><span class="n">descricao_territorio</span><span class="p">,</span> <span class="n">descricao_experiencia</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">descricao</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"codigo_turma"</span><span class="p">:</span> <span class="n">atribuicao</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"codigo_turma"</span><span class="p">),</span>
+        <span class="s2">"disciplina_id"</span><span class="p">:</span> <span class="p">(</span>
+            <span class="n">atribuicao</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"disciplina_id"</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="n">atribuicao</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cod_agrupamento"</span><span class="p">)</span>
+        <span class="p">),</span>
+        <span class="s2">"disciplina_nome"</span><span class="p">:</span> <span class="n">disciplina_nome</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">"disciplinas_agrupadas_ids"</span><span class="p">:</span> <span class="p">(</span>
+            <span class="n">atribuicao</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"disciplinas_agrupadas_ids"</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="n">atribuicao</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"componentes_curriculares_agrupados"</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="p">[]</span>
+        <span class="p">),</span>
+        <span class="s2">"nome_professor"</span><span class="p">:</span> <span class="n">atribuicao</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"nome_professor"</span><span class="p">),</span>
+        <span class="s2">"codigo_rf"</span><span class="p">:</span> <span class="p">(</span>
+            <span class="n">atribuicao</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"codigo_rf"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">atribuicao</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rf_professor"</span><span class="p">)</span>
+        <span class="p">),</span>
+    <span class="p">}</span>
+
+
+<div class="viewcode-block" id="get_turma_componentes_turma">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_turma_componentes_turma">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_turma_componentes_turma</span><span class="p">(</span>
+    <span class="n">codigo_turma</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">codigos_componentes</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""Retorna componentes curriculares de uma turma.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_turma: Código da turma usada na consulta.</span>
+<span class="sd">        codigos_componentes: Lista de códigos dos componentes curriculares.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Lista de componentes curriculares do componente turma.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/turmas/</span><span class="si">{</span><span class="n">codigo_turma</span><span class="si">}</span><span class="s2">/componentes-turma/"</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"codigos_componentes"</span><span class="p">:</span> <span class="n">codigos_componentes</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="k">return</span> <span class="n">payload</span></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">SME-IntegracaoEOL-TransitionGateway-Microsservico</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Ir" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navegação</h3>
+<p class="caption" role="heading"><span class="caption-text">Páginas técnicas</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../dominios/professores/divergencias-legado.html">Divergencias entre endpoints do legado e do novo EOL</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Referência de código</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Referência de código</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Código do módulo</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

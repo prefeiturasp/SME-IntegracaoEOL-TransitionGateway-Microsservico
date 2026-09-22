@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>apps.institucional.views &#8212; SME-IntegracaoEOL Transition Gateway</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=27fed22d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    <script src="../../../_static/documentation_options.js?v=2346ddef"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/translations.js?v=71a39b36"></script>
+    <link rel="index" title="Índice" href="../../../genindex.html" />
+    <link rel="search" title="Buscar" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Código-fonte para apps.institucional.views</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Views do domínio institucional."""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">cast</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">drf_spectacular.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenApiParameter</span><span class="p">,</span> <span class="n">extend_schema</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rest_framework</span><span class="w"> </span><span class="kn">import</span> <span class="n">status</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rest_framework.request</span><span class="w"> </span><span class="kn">import</span> <span class="n">Request</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rest_framework.response</span><span class="w"> </span><span class="kn">import</span> <span class="n">Response</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">apps.core.responses</span><span class="w"> </span><span class="kn">import</span> <span class="n">api_unavailable_response</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">apps.core.views</span><span class="w"> </span><span class="kn">import</span> <span class="n">DomainAPIView</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">apps.institucional</span><span class="w"> </span><span class="kn">import</span> <span class="n">services</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">apps.institucional.serializers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DadosEscolaSerializer</span><span class="p">,</span>
+    <span class="n">DRESerializer</span><span class="p">,</span>
+    <span class="n">EquipamentoSerializer</span><span class="p">,</span>
+    <span class="n">EscolaPorDreETipoSerializer</span><span class="p">,</span>
+    <span class="n">EscolaResumoSerializer</span><span class="p">,</span>
+    <span class="n">EscolaSerializer</span><span class="p">,</span>
+    <span class="n">EscolaSigpaeSerializer</span><span class="p">,</span>
+    <span class="n">SincronizacaoInstitucionalSerializer</span><span class="p">,</span>
+    <span class="n">SubprefeiturasSerializer</span><span class="p">,</span>
+    <span class="n">TipoEscolaSerializer</span><span class="p">,</span>
+    <span class="n">UnidadeCodigoIntegracaoSerializer</span><span class="p">,</span>
+    <span class="n">UnidadeEducacionalSerializer</span><span class="p">,</span>
+    <span class="n">UnidadeEolSerializer</span><span class="p">,</span>
+    <span class="n">UnidadeParceiraSerializer</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">apps.professores</span><span class="w"> </span><span class="kn">import</span> <span class="n">services</span> <span class="k">as</span> <span class="n">professores_services</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">apps.professores.serializers</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProfessorEscolaLegadoSerializer</span>
+
+<span class="n">_TAG_DRE</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"DiretoriaRegionalEducacao"</span><span class="p">]</span>
+<span class="n">_TAG_ESCOLA</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Escola"</span><span class="p">]</span>
+<span class="n">_DOMINIO_INSTITUCIONAL</span> <span class="o">=</span> <span class="s2">"institucional"</span>
+<span class="n">_DOMINIO_PROFESSORES</span> <span class="o">=</span> <span class="s2">"professores"</span>
+<span class="n">_MSG_CODIGO_ESCOLA_OBRIGATORIO</span> <span class="o">=</span> <span class="s2">"Código EOL da escola obrigatório."</span>
+
+<span class="n">_ESCOLA_RESUMO_CAMPOS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"codigoEscola"</span><span class="p">,</span>
+    <span class="s2">"nomeEscola"</span><span class="p">,</span>
+    <span class="s2">"codigoDRE"</span><span class="p">,</span>
+    <span class="s2">"tipoEscola"</span><span class="p">,</span>
+    <span class="s2">"siglaTipoEscola"</span><span class="p">,</span>
+    <span class="s2">"nomeDRE"</span><span class="p">,</span>
+    <span class="s2">"siglaDRE"</span><span class="p">,</span>
+    <span class="s2">"codigoSubprefeitura"</span><span class="p">,</span>
+    <span class="s2">"nomeSubprefeitura"</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">_ESCOLA_DETALHE_CAMPOS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"codigoEscola"</span><span class="p">,</span>
+    <span class="s2">"nomeEscola"</span><span class="p">,</span>
+    <span class="s2">"nomeDRE"</span><span class="p">,</span>
+    <span class="s2">"siglaDRE"</span><span class="p">,</span>
+    <span class="s2">"codigoDRE"</span><span class="p">,</span>
+    <span class="s2">"tipoEscola"</span><span class="p">,</span>
+    <span class="s2">"siglaTipoEscola"</span><span class="p">,</span>
+    <span class="s2">"codigoTipoEscola"</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">_ESCOLA_POR_DRE_TIPO_CAMPOS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"codigoEscola"</span><span class="p">,</span>
+    <span class="s2">"nomeEscola"</span><span class="p">,</span>
+    <span class="s2">"codigoDRE"</span><span class="p">,</span>
+    <span class="s2">"tipoEscola"</span><span class="p">,</span>
+    <span class="s2">"siglaTipoEscola"</span><span class="p">,</span>
+    <span class="s2">"nomeDRE"</span><span class="p">,</span>
+    <span class="s2">"siglaDRE"</span><span class="p">,</span>
+    <span class="s2">"codigoSubprefeitura"</span><span class="p">,</span>
+    <span class="s2">"nomeSubprefeitura"</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">_ESCOLA_SIGPAE_CAMPOS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"codigoEscola"</span><span class="p">,</span>
+    <span class="s2">"nomeEscola"</span><span class="p">,</span>
+    <span class="s2">"codigoDRE"</span><span class="p">,</span>
+    <span class="s2">"tipoEscola"</span><span class="p">,</span>
+    <span class="s2">"siglaTipoEscola"</span><span class="p">,</span>
+    <span class="s2">"nomeDRE"</span><span class="p">,</span>
+    <span class="s2">"siglaDRE"</span><span class="p">,</span>
+    <span class="s2">"codigoSubprefeitura"</span><span class="p">,</span>
+    <span class="s2">"nomeSubprefeitura"</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">_UNIDADE_CODIGO_INTEGRACAO_CAMPOS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"codigoUe"</span><span class="p">,</span>
+    <span class="s2">"nomeUe"</span><span class="p">,</span>
+    <span class="s2">"codigoIntegracao"</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">_DADOS_ESCOLA_CAMPOS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"nomeDRE"</span><span class="p">,</span>
+    <span class="s2">"siglaDRE"</span><span class="p">,</span>
+    <span class="s2">"codigoDRE"</span><span class="p">,</span>
+    <span class="s2">"codigoINEP"</span><span class="p">,</span>
+    <span class="s2">"siglaTipoEscola"</span><span class="p">,</span>
+    <span class="s2">"nome"</span><span class="p">,</span>
+    <span class="s2">"nomeExibicao"</span><span class="p">,</span>
+    <span class="s2">"codigo"</span><span class="p">,</span>
+    <span class="s2">"tipoUnidade"</span><span class="p">,</span>
+    <span class="s2">"email"</span><span class="p">,</span>
+    <span class="s2">"telefone"</span><span class="p">,</span>
+    <span class="s2">"tipoLogradouro"</span><span class="p">,</span>
+    <span class="s2">"logradouro"</span><span class="p">,</span>
+    <span class="s2">"numero"</span><span class="p">,</span>
+    <span class="s2">"bairro"</span><span class="p">,</span>
+    <span class="s2">"cep"</span><span class="p">,</span>
+    <span class="s2">"municipio"</span><span class="p">,</span>
+    <span class="s2">"uf"</span><span class="p">,</span>
+    <span class="s2">"tipoUnidadeAdm"</span><span class="p">,</span>
+    <span class="s2">"descTipoUnidadeAdm"</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">_TODA_UNIDADE_CAMPOS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"codigoEscola"</span><span class="p">,</span>
+    <span class="s2">"nomeEscola"</span><span class="p">,</span>
+    <span class="s2">"nomeDRE"</span><span class="p">,</span>
+    <span class="s2">"siglaDRE"</span><span class="p">,</span>
+    <span class="s2">"codigoDRE"</span><span class="p">,</span>
+    <span class="s2">"tipoEscola"</span><span class="p">,</span>
+    <span class="s2">"siglaTipoEscola"</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">_SINCRONIZACAO_INSTITUCIONAL_CAMPOS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"ueCodigo"</span><span class="p">,</span>
+    <span class="s2">"dataAtualizacao"</span><span class="p">,</span>
+    <span class="s2">"dreCodigo"</span><span class="p">,</span>
+    <span class="s2">"ueNome"</span><span class="p">,</span>
+    <span class="s2">"tipoEscolaCodigo"</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">InstitucionalAPIView</span><span class="p">(</span><span class="n">DomainAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""APIView base que padroniza falhas de comunicação institucional."""</span>
+
+    <span class="n">api_domain</span> <span class="o">=</span> <span class="n">_DOMINIO_INSTITUCIONAL</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ProfessoresEscolaAPIView</span><span class="p">(</span><span class="n">DomainAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""APIView base para dados de professores em rotas de escola."""</span>
+
+    <span class="n">api_domain</span> <span class="o">=</span> <span class="n">_DOMINIO_PROFESSORES</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_filtrar_escola_resumo</span><span class="p">(</span><span class="n">item</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">item</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">_ESCOLA_RESUMO_CAMPOS</span><span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_filtrar_escola_detalhe</span><span class="p">(</span><span class="n">item</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">item</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">_ESCOLA_DETALHE_CAMPOS</span><span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_filtrar_escola_por_dre_tipo</span><span class="p">(</span><span class="n">item</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">item</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">_ESCOLA_POR_DRE_TIPO_CAMPOS</span><span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_filtrar_escola_sigpae</span><span class="p">(</span><span class="n">item</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">item</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">_ESCOLA_SIGPAE_CAMPOS</span><span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_filtrar_unidade_codigo_integracao</span><span class="p">(</span><span class="n">item</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">item</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">_UNIDADE_CODIGO_INTEGRACAO_CAMPOS</span>
+    <span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_filtrar_dados_escola</span><span class="p">(</span><span class="n">item</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">item</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">_DADOS_ESCOLA_CAMPOS</span><span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_filtrar_toda_unidade</span><span class="p">(</span><span class="n">item</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">item</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">_TODA_UNIDADE_CAMPOS</span><span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_filtrar_sincronizacao_institucional</span><span class="p">(</span><span class="n">item</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="n">k</span><span class="p">:</span> <span class="n">v</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">item</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">_SINCRONIZACAO_INSTITUCIONAL_CAMPOS</span>
+    <span class="p">}</span>
+
+
+<div class="viewcode-block" id="DREListView">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.views.DREListView">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DREListView</span><span class="p">(</span><span class="n">InstitucionalAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Lista Diretorias Regionais de Educação."""</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_DRE</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Lista todas as DREs"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Retorna a lista completa de Diretorias Regionais de Educação "</span>
+            <span class="s2">"sincronizadas pelo ETL institucional a partir do EOL.</span><span class="se">\n\n</span><span class="s2">"</span>
+            <span class="s2">"Contrato D01: `GET /api/DREs`."</span>
+        <span class="p">),</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">DRESerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">services</span><span class="o">.</span><span class="n">get_dres</span><span class="p">())</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_DRE</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Filtra DREs por lista de códigos"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Retorna Diretorias Regionais de Educação correspondentes "</span>
+            <span class="s2">"à lista de códigos EOL informada no corpo da requisição.</span><span class="se">\n\n</span><span class="s2">"</span>
+            <span class="s2">"Contrato D02: `POST /api/DREs`."</span>
+        <span class="p">),</span>
+        <span class="n">request</span><span class="o">=</span><span class="n">DRESerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">DRESerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="mi">204</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+        <span class="n">codigos</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_dres_por_codigos</span><span class="p">(</span><span class="n">codigos</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_204_NO_CONTENT</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="DREDetalheView">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.views.DREDetalheView">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DREDetalheView</span><span class="p">(</span><span class="n">InstitucionalAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Retorna dados de uma Diretoria Regional de Educação."""</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_DRE</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Detalhe de uma DRE"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Retorna dados completos da Diretoria Regional de Educação "</span>
+            <span class="s2">"identificada pelo `codigoEolDRE`.</span><span class="se">\n\n</span><span class="s2">"</span>
+            <span class="s2">"Contrato D04: `GET /api/DREs/</span><span class="si">{codigoEolDRE}</span><span class="s2">`."</span>
+        <span class="p">),</span>
+        <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">"codigo_eol_dre"</span><span class="p">,</span>
+                <span class="n">location</span><span class="o">=</span><span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">"Código EOL da DRE"</span><span class="p">,</span>
+                <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">],</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">DRESerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="mi">404</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">codigo_eol_dre</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_dre</span><span class="p">(</span><span class="n">codigo_eol_dre</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">exc</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">404</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">)</span>
+            <span class="k">raise</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">data</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="p">[</span><span class="n">data</span><span class="p">])</span></div>
+
+
+
+<div class="viewcode-block" id="EscolasPorDREView">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.views.EscolasPorDREView">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">EscolasPorDREView</span><span class="p">(</span><span class="n">InstitucionalAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Lista escolas vinculadas a uma DRE."""</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_DRE</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Escolas de uma DRE"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Retorna lista das unidades educacionais vinculadas "</span>
+            <span class="s2">"à Diretoria Regional de Educação informada.</span><span class="se">\n\n</span><span class="s2">"</span>
+            <span class="s2">"Contrato D06: `GET /api/DREs/</span><span class="si">{codigoEolDRE}</span><span class="s2">/escola`."</span>
+        <span class="p">),</span>
+        <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">"codigo_eol_dre"</span><span class="p">,</span>
+                <span class="n">location</span><span class="o">=</span><span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">"Código EOL da DRE"</span><span class="p">,</span>
+                <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">],</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">EscolaResumoSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="mi">404</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">codigo_eol_dre</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_escolas_por_dre</span><span class="p">(</span><span class="n">codigo_eol_dre</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">exc</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">404</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">)</span>
+            <span class="k">raise</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">([</span><span class="n">_filtrar_escola_resumo</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">data</span><span class="p">])</span></div>
+
+
+
+<div class="viewcode-block" id="EscolasSigpaePorDREView">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.views.EscolasSigpaePorDREView">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">EscolasSigpaePorDREView</span><span class="p">(</span><span class="n">InstitucionalAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Lista escolas de uma DRE no formato SIGPAE."""</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_DRE</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Escolas SIGPAE de uma DRE"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Retorna lista de unidades educacionais de uma DRE "</span>
+            <span class="s2">"no formato esperado pelo SIGPAE.</span><span class="se">\n\n</span><span class="s2">"</span>
+            <span class="s2">"Contrato D09: `GET /api/dres/</span><span class="si">{codigoEolDRE}</span><span class="s2">/escola/Sigpae/`."</span>
+        <span class="p">),</span>
+        <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">"codigo_eol_dre"</span><span class="p">,</span>
+                <span class="n">location</span><span class="o">=</span><span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">"Código EOL da DRE"</span><span class="p">,</span>
+                <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">],</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span>
+            <span class="mi">200</span><span class="p">:</span> <span class="n">EscolaSigpaeSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="mi">404</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">codigo_eol_dre</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Retorna escolas SIGPAE por DRE."""</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_escolas_sigpae_por_dre</span><span class="p">(</span><span class="n">codigo_eol_dre</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">exc</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">404</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">)</span>
+            <span class="k">raise</span>
+        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">RequestError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_api_unavailable_response</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Response</span><span class="p">([])</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">Response</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="n">_filtrar_escola_sigpae</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">data</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+                <span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">Response</span><span class="p">([</span><span class="n">_filtrar_escola_sigpae</span><span class="p">(</span><span class="n">data</span><span class="p">)])</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">([])</span></div>
+
+
+
+<div class="viewcode-block" id="SubprefeiturasPorDREView">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.views.SubprefeiturasPorDREView">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SubprefeiturasPorDREView</span><span class="p">(</span><span class="n">InstitucionalAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Lista subprefeituras vinculadas à DRE."""</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_DRE</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Subprefeituras de uma DRE"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Retorna lista de subprefeituras vinculadas à Diretoria "</span>
+            <span class="s2">"Regional de Educação informada.</span><span class="se">\n\n</span><span class="s2">"</span>
+            <span class="s2">"Contrato D07: `GET /api/DREs/</span><span class="si">{dreCodigo}</span><span class="s2">/subprefeituras`."</span>
+        <span class="p">),</span>
+        <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">"dre_codigo"</span><span class="p">,</span>
+                <span class="n">location</span><span class="o">=</span><span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">"Código da DRE"</span><span class="p">,</span>
+                <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">],</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">SubprefeiturasSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="mi">404</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">dre_codigo</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_subprefeituras_por_dre</span><span class="p">(</span><span class="n">dre_codigo</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">exc</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">404</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">)</span>
+            <span class="k">raise</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="EscolasPorDREeTipoView">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.views.EscolasPorDREeTipoView">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">EscolasPorDREeTipoView</span><span class="p">(</span><span class="n">InstitucionalAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Lista escolas de uma DRE por tipo."""</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_DRE</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Escolas de uma DRE por tipo"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Retorna lista de unidades educacionais vinculadas à DRE "</span>
+            <span class="s2">"filtradas pelo tipo de escola informado.</span><span class="se">\n\n</span><span class="s2">"</span>
+            <span class="s2">"Contrato D05: "</span>
+            <span class="s2">"`GET /api/DREs/</span><span class="si">{codigoEolDRE}</span><span class="s2">/escolas/</span><span class="si">{tipoEscola}</span><span class="s2">`."</span>
+        <span class="p">),</span>
+        <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">"codigo_eol_dre"</span><span class="p">,</span>
+                <span class="n">location</span><span class="o">=</span><span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">"Código EOL da DRE"</span><span class="p">,</span>
+                <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">"tipo_escola"</span><span class="p">,</span>
+                <span class="n">location</span><span class="o">=</span><span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">"Código do tipo de escola"</span><span class="p">,</span>
+                <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">],</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">EscolaPorDreETipoSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="mi">404</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">codigo_eol_dre</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tipo_escola</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_escolas_por_dre_e_tipo</span><span class="p">(</span>
+                <span class="n">codigo_eol_dre</span><span class="p">,</span> <span class="n">tipo_escola</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">exc</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">404</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">)</span>
+            <span class="k">raise</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">([</span><span class="n">_filtrar_escola_por_dre_tipo</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">data</span><span class="p">])</span></div>
+
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">EscolaProfessoresView</span><span class="p">(</span><span class="n">ProfessoresEscolaAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Lista professores atribuídos a uma escola."""</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_ESCOLA</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Professores de uma escola"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Retorna professores atribuídos à escola informada, conforme "</span>
+            <span class="s2">"contrato legado."</span>
+        <span class="p">),</span>
+        <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">"codigo_eol_escola"</span><span class="p">,</span>
+                <span class="n">location</span><span class="o">=</span><span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">"Código EOL da escola"</span><span class="p">,</span>
+                <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">"ano_letivo"</span><span class="p">,</span>
+                <span class="n">location</span><span class="o">=</span><span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">"Ano letivo"</span><span class="p">,</span>
+                <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">],</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">ProfessorEscolaLegadoSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="mi">400</span><span class="p">:</span> <span class="nb">str</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span>
+        <span class="n">codigo_eol_escola</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Retorna professores atribuídos a uma escola.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            _request: Requisição HTTP recebida pela API.</span>
+<span class="sd">            codigo_eol_escola: Código EOL da escola usada na consulta.</span>
+<span class="sd">            ano_letivo: Ano letivo usado para filtrar as atribuições.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Resposta HTTP com os professores encontrados.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">codigo_eol_escola</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">Response</span><span class="p">(</span>
+                <span class="n">_MSG_CODIGO_ESCOLA_OBRIGATORIO</span><span class="p">,</span>
+                <span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_400_BAD_REQUEST</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">professores_services</span><span class="o">.</span><span class="n">get_professores_escola</span><span class="p">(</span>
+            <span class="n">codigo_eol_escola</span><span class="p">,</span>
+            <span class="n">ano_letivo</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">ProfessorEscolaLegadoSerializer</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="UesPorDREView">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.views.UesPorDREView">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">UesPorDREView</span><span class="p">(</span><span class="n">InstitucionalAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Lista códigos de UEs vinculadas à DRE."""</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_DRE</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Códigos de UEs de uma DRE"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Retorna lista de códigos de unidades educacionais vinculadas "</span>
+            <span class="s2">"à Diretoria Regional de Educação informada.</span><span class="se">\n\n</span><span class="s2">"</span>
+            <span class="s2">"Contrato D08: `GET /api/DREs/</span><span class="si">{dreCodigo}</span><span class="s2">/ues`."</span>
+        <span class="p">),</span>
+        <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">"dre_codigo"</span><span class="p">,</span>
+                <span class="n">location</span><span class="o">=</span><span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">"Código da DRE"</span><span class="p">,</span>
+                <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">],</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">404</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">dre_codigo</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_ues_por_dre</span><span class="p">(</span><span class="n">dre_codigo</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">exc</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">404</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">)</span>
+            <span class="k">raise</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="UnidadesPorDREView">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.views.UnidadesPorDREView">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">UnidadesPorDREView</span><span class="p">(</span><span class="n">InstitucionalAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Lista unidades administrativas vinculadas à DRE."""</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_DRE</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Unidades de uma DRE"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Retorna lista completa de unidades administrativas vinculadas "</span>
+            <span class="s2">"à Diretoria Regional de Educação informada.</span><span class="se">\n\n</span><span class="s2">"</span>
+            <span class="s2">"Contrato D10: `GET /api/DREs/</span><span class="si">{dreCodigo}</span><span class="s2">/unidades`."</span>
+        <span class="p">),</span>
+        <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">"dre_codigo"</span><span class="p">,</span>
+                <span class="n">location</span><span class="o">=</span><span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">"Código da DRE"</span><span class="p">,</span>
+                <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">],</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">404</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">dre_codigo</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_unidades_por_dre</span><span class="p">(</span><span class="n">dre_codigo</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">exc</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">404</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">)</span>
+            <span class="k">raise</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="UnidadeCodigoIntegracaoPorDREView">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.views.UnidadeCodigoIntegracaoPorDREView">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">UnidadeCodigoIntegracaoPorDREView</span><span class="p">(</span><span class="n">InstitucionalAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Lista UEs com código de integração por DRE."""</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_DRE</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"UEs com código de integração por DRE"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Retorna lista de unidades educacionais da DRE com seus "</span>
+            <span class="s2">"códigos de integração.</span><span class="se">\n\n</span><span class="s2">"</span>
+            <span class="s2">"Contrato D11: "</span>
+            <span class="s2">"`GET /api/dres/</span><span class="si">{dreCodigo}</span><span class="s2">/unidades/codigo-integracao/`."</span>
+        <span class="p">),</span>
+        <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">"dre_codigo"</span><span class="p">,</span>
+                <span class="n">location</span><span class="o">=</span><span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">"Código da DRE"</span><span class="p">,</span>
+                <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">],</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span>
+            <span class="mi">200</span><span class="p">:</span> <span class="n">UnidadeCodigoIntegracaoSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="mi">404</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">dre_codigo</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Retorna UEs com código de integração da DRE."""</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_unidades_codigo_integracao_por_dre</span><span class="p">(</span><span class="n">dre_codigo</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">exc</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">404</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">)</span>
+            <span class="k">raise</span>
+        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">RequestError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_api_unavailable_response</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Response</span><span class="p">([])</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">Response</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="n">_filtrar_unidade_codigo_integracao</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">data</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+                <span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">Response</span><span class="p">([</span><span class="n">_filtrar_unidade_codigo_integracao</span><span class="p">(</span><span class="n">data</span><span class="p">)])</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">([])</span></div>
+
+
+
+<div class="viewcode-block" id="DadosEscolaView">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.views.DadosEscolaView">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DadosEscolaView</span><span class="p">(</span><span class="n">InstitucionalAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Retorna dados completos de uma escola."""</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_ESCOLA</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Dados completos de uma escola"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Retorna dados completos da unidade educacional identificada "</span>
+            <span class="s2">"pelo `codigoEscolaEol`.</span><span class="se">\n\n</span><span class="s2">"</span>
+            <span class="s2">"Contrato E04: `GET /api/escolas/dados/</span><span class="si">{codigoEscolaEol}</span><span class="s2">`."</span>
+        <span class="p">),</span>
+        <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">"codigo_escola_eol"</span><span class="p">,</span>
+                <span class="n">location</span><span class="o">=</span><span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">"Código EOL da escola"</span><span class="p">,</span>
+                <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">],</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">DadosEscolaSerializer</span><span class="p">,</span> <span class="mi">404</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">codigo_escola_eol</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_dados_escola</span><span class="p">(</span><span class="n">codigo_escola_eol</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">exc</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">404</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">)</span>
+            <span class="k">raise</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">)</span>
+        <span class="n">item</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="n">data</span> <span class="k">else</span> <span class="n">data</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">_filtrar_dados_escola</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">item</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="SubprefeiturasPorEscolaView">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.views.SubprefeiturasPorEscolaView">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SubprefeiturasPorEscolaView</span><span class="p">(</span><span class="n">InstitucionalAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Lista subprefeituras vinculadas à escola."""</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_ESCOLA</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Subprefeituras da escola"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Retorna subprefeituras vinculadas à unidade educacional.</span><span class="se">\n\n</span><span class="s2">"</span>
+            <span class="s2">"Contrato E17: "</span>
+            <span class="s2">"`GET /api/escolas/</span><span class="si">{codigoEscolaEol}</span><span class="s2">/subprefeituras/`."</span>
+        <span class="p">),</span>
+        <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">"codigo_escola_eol"</span><span class="p">,</span>
+                <span class="n">location</span><span class="o">=</span><span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">"Código EOL da escola"</span><span class="p">,</span>
+                <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">],</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">SubprefeiturasSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="mi">404</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">codigo_escola_eol</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Retorna subprefeituras da escola."""</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_subprefeituras_por_escola</span><span class="p">(</span><span class="n">codigo_escola_eol</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">exc</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">404</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">)</span>
+            <span class="k">raise</span>
+        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">RequestError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_api_unavailable_response</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_api_error_response</span><span class="p">(</span><span class="n">exc</span><span class="p">:</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Converta erro HTTP da API em resposta do gateway."""</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">body</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">exc</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="n">detail</span> <span class="o">=</span> <span class="n">exc</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">or</span> <span class="n">exc</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">reason_phrase</span>
+        <span class="n">body</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"detail"</span><span class="p">:</span> <span class="n">detail</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">body</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="n">exc</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_api_unavailable_response</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Resposta padrão quando a API institucional não responde."""</span>
+    <span class="k">return</span> <span class="n">api_unavailable_response</span><span class="p">(</span><span class="n">_DOMINIO_INSTITUCIONAL</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="TiposEscolasView">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.views.TiposEscolasView">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TiposEscolasView</span><span class="p">(</span><span class="n">InstitucionalAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Lista tipos de escola cadastrados."""</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_ESCOLA</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Tipos de escola"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Retorna lista de tipos de escola cadastrados.</span><span class="se">\n\n</span><span class="s2">"</span>
+            <span class="s2">"Contrato E11: `GET /api/escolas/tiposEscolas`."</span>
+        <span class="p">),</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">TipoEscolaSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">services</span><span class="o">.</span><span class="n">get_tipos_escolas</span><span class="p">())</span></div>
+
+
+
+<div class="viewcode-block" id="EscolasListPostView">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.views.EscolasListPostView">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">EscolasListPostView</span><span class="p">(</span><span class="n">InstitucionalAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Lista escolas pelos códigos informados no corpo da requisição."""</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_ESCOLA</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Escolas por lista de códigos"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Retorna escolas correspondentes aos códigos EOL informados no "</span>
+            <span class="s2">"corpo da requisição."</span>
+        <span class="p">),</span>
+        <span class="n">request</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">"application/json"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">,</span> <span class="s2">"items"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">}}</span>
+        <span class="p">},</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">UnidadeEducacionalSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="mi">400</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Retorna escolas encontradas para os códigos informados."""</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">codigos</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">post_escolas</span><span class="p">(</span><span class="n">codigos</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_api_error_response</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">RequestError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_api_unavailable_response</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Response</span><span class="p">([])</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">Response</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="n">_filtrar_toda_unidade</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">data</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+                <span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">resultados</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"results"</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">resultados</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">Response</span><span class="p">(</span>
+                    <span class="p">[</span>
+                        <span class="n">_filtrar_toda_unidade</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">resultados</span>
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+                    <span class="p">]</span>
+                <span class="p">)</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">([])</span></div>
+
+
+
+<div class="viewcode-block" id="EscolaDetalheView">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.views.EscolaDetalheView">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">EscolaDetalheView</span><span class="p">(</span><span class="n">InstitucionalAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Retorna dados de uma escola."""</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_ESCOLA</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Detalhe de uma escola"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Retorna dados da unidade educacional identificada pelo "</span>
+            <span class="s2">"`codigoEscolaEol`."</span>
+        <span class="p">),</span>
+        <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">"codigo_escola_eol"</span><span class="p">,</span>
+                <span class="n">location</span><span class="o">=</span><span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">"Código EOL da escola"</span><span class="p">,</span>
+                <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">],</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">EscolaSerializer</span><span class="p">,</span> <span class="mi">404</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">codigo_escola_eol</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_escola</span><span class="p">(</span><span class="n">codigo_escola_eol</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">exc</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">404</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">)</span>
+            <span class="k">raise</span>
+        <span class="c1"># API retorna array; extrai o primeiro item para o contrato E02.</span>
+        <span class="n">item</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="n">data</span> <span class="k">else</span> <span class="n">data</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">item</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">_filtrar_escola_detalhe</span><span class="p">(</span><span class="n">item</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="UnidadeEolView">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.views.UnidadeEolView">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">UnidadeEolView</span><span class="p">(</span><span class="n">InstitucionalAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Retorna dados resumidos de uma unidade pelo código EOL."""</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_ESCOLA</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Unidade por código EOL"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Retorna os dados resumidos da unidade educacional identificada "</span>
+            <span class="s2">"pelo `codigoEol`"</span>
+        <span class="p">),</span>
+        <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">"codigo_eol"</span><span class="p">,</span>
+                <span class="n">location</span><span class="o">=</span><span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">"Código EOL da unidade educacional"</span><span class="p">,</span>
+                <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">],</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">UnidadeEolSerializer</span><span class="p">,</span> <span class="mi">204</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">codigo_eol</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Retorna dados resumidos da unidade por código EOL."""</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_unidade_eol</span><span class="p">(</span><span class="n">codigo_eol</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">exc</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_204_NO_CONTENT</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">_api_error_response</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">RequestError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_api_unavailable_response</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_204_NO_CONTENT</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="SincronizacoesInstitucionaisView">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.views.SincronizacoesInstitucionaisView">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SincronizacoesInstitucionaisView</span><span class="p">(</span><span class="n">InstitucionalAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Retorna a sincronização institucional de uma UE."""</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_ESCOLA</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Sincronizações institucionais da escola"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Retorna os dados de sincronização institucional da unidade "</span>
+            <span class="s2">"educacional identificada pelo `ueCodigo`.</span><span class="se">\n\n</span><span class="s2">"</span>
+            <span class="s2">"Contrato E23: "</span>
+            <span class="s2">"`GET /api/escolas/</span><span class="si">{ueCodigo}</span><span class="s2">/sincronizacoes-institucionais/`."</span>
+        <span class="p">),</span>
+        <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">"ue_codigo"</span><span class="p">,</span>
+                <span class="n">location</span><span class="o">=</span><span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">"Código EOL da unidade educacional"</span><span class="p">,</span>
+                <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">],</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">SincronizacaoInstitucionalSerializer</span><span class="p">,</span> <span class="mi">204</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">ue_codigo</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Retorna sincronização institucional ou 204 quando ausente."""</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_sincronizacoes_institucionais</span><span class="p">(</span><span class="n">ue_codigo</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">exc</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_204_NO_CONTENT</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">_api_error_response</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">RequestError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_api_unavailable_response</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_204_NO_CONTENT</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">_filtrar_sincronizacao_institucional</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="UnidadesParceirasView">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.views.UnidadesParceirasView">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">UnidadesParceirasView</span><span class="p">(</span><span class="n">InstitucionalAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Retorna unidades parceiras pelos códigos informados."""</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_ESCOLA</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Unidades parceiras"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Retorna a lista de unidades parceiras informadas no corpo da "</span>
+            <span class="s2">"requisição."</span>
+        <span class="p">),</span>
+        <span class="n">request</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">"application/json"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">,</span> <span class="s2">"items"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">}}</span>
+        <span class="p">},</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">UnidadeParceiraSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="mi">400</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Retorna unidades parceiras compatíveis com o legado."""</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">codigos</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">post_unidades_parceiras</span><span class="p">(</span><span class="n">codigos</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_api_error_response</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">RequestError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_api_unavailable_response</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">data</span> <span class="ow">or</span> <span class="p">[])</span></div>
+
+
+
+<span class="n">_EQUIPAMENTOS_PARAMS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">OpenApiParameter</span><span class="p">(</span>
+        <span class="s2">"codigosSubprefeitura"</span><span class="p">,</span>
+        <span class="nb">int</span><span class="p">,</span>
+        <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Lista de códigos de subprefeituras"</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">OpenApiParameter</span><span class="p">(</span>
+        <span class="s2">"codigosDre"</span><span class="p">,</span>
+        <span class="nb">int</span><span class="p">,</span>
+        <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Lista de códigos de DREs"</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">OpenApiParameter</span><span class="p">(</span>
+        <span class="s2">"tiposUnidade"</span><span class="p">,</span>
+        <span class="nb">int</span><span class="p">,</span>
+        <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Lista de códigos de tipo unidade educação"</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">OpenApiParameter</span><span class="p">(</span>
+        <span class="s2">"tiposEscola"</span><span class="p">,</span>
+        <span class="nb">int</span><span class="p">,</span>
+        <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Lista de códigos de tipo escola"</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">OpenApiParameter</span><span class="p">(</span>
+        <span class="s2">"nomeEscola"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Nome da UE"</span>
+    <span class="p">),</span>
+    <span class="n">OpenApiParameter</span><span class="p">(</span>
+        <span class="s2">"codigoEol"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Código EOL da UE"</span>
+    <span class="p">),</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="EquipamentosView">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.views.EquipamentosView">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">EquipamentosView</span><span class="p">(</span><span class="n">InstitucionalAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Lista equipamentos das unidades educacionais."""</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_ESCOLA</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Equipamentos das escolas"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Retorna lista de equipamentos cadastrados nas unidades "</span>
+            <span class="s2">"educacionais. Todos os filtros são opcionais; sem nenhum o "</span>
+            <span class="s2">"a API executa query irrestrita e pode gerar timeout.</span><span class="se">\n\n</span><span class="s2">"</span>
+            <span class="s2">"Contrato E25: `GET /api/escolas/equipamentos`."</span>
+        <span class="p">),</span>
+        <span class="n">parameters</span><span class="o">=</span><span class="n">_EQUIPAMENTOS_PARAMS</span><span class="p">,</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">EquipamentoSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+        <span class="n">qp</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">query_params</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_equipamentos</span><span class="p">(</span>
+            <span class="n">codigos_subprefeitura</span><span class="o">=</span><span class="n">qp</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s2">"codigosSubprefeitura"</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">codigos_dre</span><span class="o">=</span><span class="n">qp</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s2">"codigosDre"</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">tipos_unidade</span><span class="o">=</span><span class="n">qp</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s2">"tiposUnidade"</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">tipos_escola</span><span class="o">=</span><span class="n">qp</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s2">"tiposEscola"</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">nome_escola</span><span class="o">=</span><span class="n">qp</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"nomeEscola"</span><span class="p">),</span>
+            <span class="n">codigo_eol</span><span class="o">=</span><span class="n">qp</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"codigoEol"</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">serializer</span> <span class="o">=</span> <span class="n">EquipamentoSerializer</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">serializer</span><span class="o">.</span><span class="n">data</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="TodasUnidadesView">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.views.TodasUnidadesView">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TodasUnidadesView</span><span class="p">(</span><span class="n">InstitucionalAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Lista todas as unidades educacionais."""</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_ESCOLA</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Todas as unidades educacionais"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Retorna lista completa de todas as unidades educacionais "</span>
+            <span class="s2">"cadastradas no sistema."</span>
+        <span class="p">),</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">UnidadeEducacionalSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_todas_unidades</span><span class="p">()</span>
+        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">RequestError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_api_unavailable_response</span><span class="p">()</span>
+        <span class="n">resultados</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"results"</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="n">data</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">resultados</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Response</span><span class="p">([])</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="n">_filtrar_toda_unidade</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">resultados</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+            <span class="p">]</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="TiposUnidadeEducacaoView">
+<a class="viewcode-back" href="../../../api.html#apps.institucional.views.TiposUnidadeEducacaoView">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TiposUnidadeEducacaoView</span><span class="p">(</span><span class="n">InstitucionalAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Lista tipos de unidade educacional."""</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_ESCOLA</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Tipos de unidade educacional"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Retorna lista de tipos de unidade educacional cadastrados "</span>
+            <span class="s2">"no sistema."</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_tipos_unidade_educacao</span><span class="p">()</span>
+        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">RequestError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_api_unavailable_response</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">SME-IntegracaoEOL-TransitionGateway-Microsservico</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Ir" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navegação</h3>
+<p class="caption" role="heading"><span class="caption-text">Páginas técnicas</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../dominios/professores/divergencias-legado.html">Divergencias entre endpoints do legado e do novo EOL</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Referência de código</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Referência de código</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Código do módulo</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

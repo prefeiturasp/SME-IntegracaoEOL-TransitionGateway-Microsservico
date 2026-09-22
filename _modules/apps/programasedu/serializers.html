@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>apps.programasedu.serializers &#8212; SME-IntegracaoEOL Transition Gateway</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=27fed22d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    <script src="../../../_static/documentation_options.js?v=2346ddef"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/translations.js?v=71a39b36"></script>
+    <link rel="index" title="Índice" href="../../../genindex.html" />
+    <link rel="search" title="Buscar" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Código-fonte para apps.programasedu.serializers</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Serializers do domínio de programas educacionais."""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">date</span><span class="p">,</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span><span class="p">,</span> <span class="n">timezone</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">cast</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">rest_framework</span><span class="w"> </span><span class="kn">import</span> <span class="n">serializers</span>
+
+<span class="c1"># Fuso de São Paulo (UTC-3, sem horário de verão desde 2019).</span>
+<span class="c1"># fuso para reproduzir o tempo decorrido.</span>
+<span class="n">_FUSO</span> <span class="o">=</span> <span class="n">timezone</span><span class="p">(</span><span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=-</span><span class="mi">3</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="DataMatriculaField">
+<a class="viewcode-back" href="../../../api.html#apps.programasedu.serializers.DataMatriculaField">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DataMatriculaField</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">DateTimeField</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Serializa data_matricula em ISO para o consumidor legado."""</span>
+
+<div class="viewcode-block" id="DataMatriculaField.to_representation">
+<a class="viewcode-back" href="../../../api.html#apps.programasedu.serializers.DataMatriculaField.to_representation">[documentos]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_representation</span><span class="p">(</span>  <span class="c1"># type: ignore[override]</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Serialize a data em ISO, removendo zeros à direita."""</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">""</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"Z"</span><span class="p">,</span> <span class="s2">"+00:00"</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">datetime</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">to_representation</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">texto</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(</span><span class="n">timespec</span><span class="o">=</span><span class="s2">"milliseconds"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">texto</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"0"</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"."</span><span class="p">))</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="LegadoDateTimeField">
+<a class="viewcode-back" href="../../../api.html#apps.programasedu.serializers.LegadoDateTimeField">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LegadoDateTimeField</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Serializa datas em ISO-8601 com sentinela para valores ausentes.</span>
+
+<span class="sd">    Usa separador ``T``, remove zeros à direita da fração de segundos e</span>
+<span class="sd">    aplica o sufixo ``Z`` aos valores reais. Datas ausentes viram a</span>
+<span class="sd">    sentinela ``0001-01-01T00:00:00`` (sem ``Z``) em vez de ``null``.</span>
+<span class="sd">    """</span>
+
+    <span class="n">_SENTINELA</span> <span class="o">=</span> <span class="s2">"0001-01-01T00:00:00"</span>
+
+<div class="viewcode-block" id="LegadoDateTimeField.get_attribute">
+<a class="viewcode-back" href="../../../api.html#apps.programasedu.serializers.LegadoDateTimeField.get_attribute">[documentos]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Retorna o valor do atributo ou a sentinela se for None."""</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_attribute</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">""</span> <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">value</span></div>
+
+
+<div class="viewcode-block" id="LegadoDateTimeField.to_representation">
+<a class="viewcode-back" href="../../../api.html#apps.programasedu.serializers.LegadoDateTimeField.to_representation">[documentos]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_representation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Serializa o valor em ISO-8601 ou retorna a sentinela."""</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">""</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_SENTINELA</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_para_datetime</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dt</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">dt</span><span class="o">.</span><span class="n">year</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_SENTINELA</span>
+        <span class="k">if</span> <span class="n">dt</span><span class="o">.</span><span class="n">tzinfo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">dt</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">astimezone</span><span class="p">(</span><span class="n">_FUSO</span><span class="p">)</span>
+        <span class="n">texto</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(</span><span class="n">timespec</span><span class="o">=</span><span class="s2">"microseconds"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">"."</span> <span class="ow">in</span> <span class="n">texto</span><span class="p">:</span>
+            <span class="n">texto</span> <span class="o">=</span> <span class="n">texto</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"0"</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">texto</span><span class="si">}</span><span class="s2">Z"</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_para_datetime</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Converta o valor para datetime, retornando None quando inválido."""</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">datetime</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">value</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">date</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">datetime</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="n">value</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="n">value</span><span class="o">.</span><span class="n">day</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span>
+                    <span class="n">value</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"Z"</span><span class="p">,</span> <span class="s2">"+00:00"</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="TurmaPapResumoSerializer">
+<a class="viewcode-back" href="../../../api.html#apps.programasedu.serializers.TurmaPapResumoSerializer">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TurmaPapResumoSerializer</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">Serializer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Serializa o resumo de turmas PAP da UE."""</span>
+
+    <span class="n">codigoTurma</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"codigo_turma"</span><span class="p">)</span>
+    <span class="n">turmaNome</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"turma_nome"</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="AlunoTurmaProgramaPapSerializer">
+<a class="viewcode-back" href="../../../api.html#apps.programasedu.serializers.AlunoTurmaProgramaPapSerializer">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AlunoTurmaProgramaPapSerializer</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">Serializer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Serializa a verificação de alunos em turmas PAP."""</span>
+
+    <span class="n">codigoAluno</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"codigo_aluno"</span><span class="p">)</span>
+    <span class="n">codigoTurma</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"codigo_turma"</span><span class="p">)</span>
+    <span class="n">codigoComponente</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"codigo_componente"</span><span class="p">)</span>
+    <span class="n">descricao</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="AlunoTurmaPapSerializer">
+<a class="viewcode-back" href="../../../api.html#apps.programasedu.serializers.AlunoTurmaPapSerializer">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AlunoTurmaPapSerializer</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">Serializer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Serializa alunos vinculados a turmas PAP."""</span>
+
+    <span class="n">anoLetivo</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"ano_letivo"</span><span class="p">)</span>
+    <span class="n">codigoTurma</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"codigo_turma"</span><span class="p">)</span>
+    <span class="n">codigoUe</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"codigo_ue"</span><span class="p">)</span>
+    <span class="n">codigoDre</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"codigo_dre"</span><span class="p">)</span>
+    <span class="n">codigoAluno</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"codigo_aluno"</span><span class="p">)</span>
+    <span class="n">componenteCurricularId</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"componente_curricular_id"</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="ComponenteTurmaProgramaAlunoSerializer">
+<a class="viewcode-back" href="../../../api.html#apps.programasedu.serializers.ComponenteTurmaProgramaAlunoSerializer">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ComponenteTurmaProgramaAlunoSerializer</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">Serializer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Serializa componentes das turmas de programa do aluno."""</span>
+
+    <span class="n">codigoAluno</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"codigo_aluno"</span><span class="p">)</span>
+    <span class="n">codigoTurma</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"codigo_turma"</span><span class="p">)</span>
+    <span class="n">codigoComponenteCurricular</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"codigo_componente_curricular"</span>
+    <span class="p">)</span>
+    <span class="n">nomeComponenteCurricular</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"nome_componente_curricular"</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="DadosSrmPaeeColaborativoSerializer">
+<a class="viewcode-back" href="../../../api.html#apps.programasedu.serializers.DadosSrmPaeeColaborativoSerializer">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DadosSrmPaeeColaborativoSerializer</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">Serializer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Serializa dados de SRM/PAEE colaborativo do aluno."""</span>
+
+    <span class="n">codigoTurma</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"codigo_turma"</span><span class="p">)</span>
+    <span class="n">codigoEscola</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"codigo_escola"</span><span class="p">)</span>
+    <span class="n">turno</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">()</span>
+    <span class="n">componente</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">()</span>
+    <span class="n">codigoComponente</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"codigo_componente"</span><span class="p">)</span>
+    <span class="n">codigoAluno</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"codigo_aluno"</span><span class="p">)</span>
+    <span class="n">situacaoMatricula</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"situacao_matricula"</span><span class="p">)</span>
+    <span class="n">dataMatricula</span> <span class="o">=</span> <span class="n">DataMatriculaField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"data_matricula"</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="TurmaSrmRegularDoAlunoSerializer">
+<a class="viewcode-back" href="../../../api.html#apps.programasedu.serializers.TurmaSrmRegularDoAlunoSerializer">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TurmaSrmRegularDoAlunoSerializer</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">Serializer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Serializa turmas SRM e regulares do aluno em camelCase."""</span>
+
+    <span class="n">codigoAluno</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"codigo_aluno"</span><span class="p">)</span>
+    <span class="n">tipoTurno</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"tipo_turno"</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">anoLetivo</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"ano_letivo"</span><span class="p">)</span>
+    <span class="n">nomeAluno</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"nome_aluno"</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">nomeSocialAluno</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"nome_social_aluno"</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">codigoSituacaoMatricula</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"codigo_situacao_matricula"</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">situacaoMatricula</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"situacao_matricula"</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">dataSituacao</span> <span class="o">=</span> <span class="n">LegadoDateTimeField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"data_situacao"</span><span class="p">)</span>
+    <span class="n">dataNascimento</span> <span class="o">=</span> <span class="n">LegadoDateTimeField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"data_nascimento"</span><span class="p">)</span>
+    <span class="n">numeroAlunoChamada</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"numero_aluno_chamada"</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">codigoTurma</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"codigo_turma"</span><span class="p">)</span>
+    <span class="n">nomeResponsavel</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"nome_responsavel"</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">tipoResponsavel</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"tipo_responsavel"</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">celularResponsavel</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"celular_responsavel"</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">dataAtualizacaoContato</span> <span class="o">=</span> <span class="n">LegadoDateTimeField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"data_atualizacao_contato"</span>
+    <span class="p">)</span>
+    <span class="n">codigoTipoTurma</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"codigo_tipo_turma"</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">turmaNome</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"turma_nome"</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">etapaEnsino</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"etapa_ensino"</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">cicloEnsino</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"ciclo_ensino"</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">descEtapaEnsino</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"desc_etapa_ensino"</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">descCicloEnsino</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"desc_ciclo_ensino"</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">dataAtualizacaoTabela</span> <span class="o">=</span> <span class="n">LegadoDateTimeField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"data_atualizacao_tabela"</span>
+    <span class="p">)</span></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">SME-IntegracaoEOL-TransitionGateway-Microsservico</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Ir" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navegação</h3>
+<p class="caption" role="heading"><span class="caption-text">Páginas técnicas</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../dominios/professores/divergencias-legado.html">Divergencias entre endpoints do legado e do novo EOL</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Referência de código</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Referência de código</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Código do módulo</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>apps.matriculas.serializers &#8212; SME-IntegracaoEOL Transition Gateway</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=27fed22d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    <script src="../../../_static/documentation_options.js?v=2346ddef"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/translations.js?v=71a39b36"></script>
+    <link rel="index" title="Índice" href="../../../genindex.html" />
+    <link rel="search" title="Buscar" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Código-fonte para apps.matriculas.serializers</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Serializers de saída do domínio de matrículas."""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">rest_framework</span><span class="w"> </span><span class="kn">import</span> <span class="n">serializers</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">apps.core.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_first_value</span>
+
+
+<div class="viewcode-block" id="MatriculaSerializer">
+<a class="viewcode-back" href="../../../api.html#apps.matriculas.serializers.MatriculaSerializer">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MatriculaSerializer</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">Serializer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Serializa dados consolidados de matrícula."""</span>
+
+<div class="viewcode-block" id="MatriculaSerializer.to_representation">
+<a class="viewcode-back" href="../../../api.html#apps.matriculas.serializers.MatriculaSerializer.to_representation">[documentos]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_representation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Transforma dados de matrícula no contrato legado.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            instance: Dicionário ou objeto com consolidação da turma.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dicionário com os campos esperados pelo legado.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"turmaCodigo"</span><span class="p">:</span> <span class="n">get_first_value</span><span class="p">(</span>
+                <span class="n">instance</span><span class="p">,</span>
+                <span class="s2">"turma_codigo"</span><span class="p">,</span>
+                <span class="s2">"turmaCodigo"</span><span class="p">,</span>
+                <span class="s2">"codigo_turma"</span><span class="p">,</span>
+                <span class="s2">"codigoTurma"</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="s2">"quantidade"</span><span class="p">:</span> <span class="n">get_first_value</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="s2">"quantidade"</span><span class="p">),</span>
+        <span class="p">}</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="QuantidadeAlunosPorTurmaEscolaSerializer">
+<a class="viewcode-back" href="../../../api.html#apps.matriculas.serializers.QuantidadeAlunosPorTurmaEscolaSerializer">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">QuantidadeAlunosPorTurmaEscolaSerializer</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">Serializer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Serializa quantidade de alunos por turma da escola."""</span>
+
+<div class="viewcode-block" id="QuantidadeAlunosPorTurmaEscolaSerializer.to_representation">
+<a class="viewcode-back" href="../../../api.html#apps.matriculas.serializers.QuantidadeAlunosPorTurmaEscolaSerializer.to_representation">[documentos]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_representation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Transforma dados agregados no contrato legado.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            instance: Dicionário ou objeto com consolidação da turma.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dicionário com os campos esperados pelo legado.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"turmaCodigo"</span><span class="p">:</span> <span class="n">get_first_value</span><span class="p">(</span>
+                <span class="n">instance</span><span class="p">,</span>
+                <span class="s2">"turma_codigo"</span><span class="p">,</span>
+                <span class="s2">"turmaCodigo"</span><span class="p">,</span>
+                <span class="s2">"codigo_turma"</span><span class="p">,</span>
+                <span class="s2">"codigoTurma"</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="s2">"quantidade"</span><span class="p">:</span> <span class="n">get_first_value</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="s2">"quantidade"</span><span class="p">),</span>
+        <span class="p">}</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="MatriculaAlunoEscolaSerializer">
+<a class="viewcode-back" href="../../../api.html#apps.matriculas.serializers.MatriculaAlunoEscolaSerializer">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MatriculaAlunoEscolaSerializer</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">Serializer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Serializa matrícula de aluno em escola no contrato legado."""</span>
+
+<div class="viewcode-block" id="MatriculaAlunoEscolaSerializer.to_representation">
+<a class="viewcode-back" href="../../../api.html#apps.matriculas.serializers.MatriculaAlunoEscolaSerializer.to_representation">[documentos]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_representation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Transforma dados de matrícula no contrato legado.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            instance: Dicionário ou objeto com dados da matrícula.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dicionário com os campos esperados pelo legado.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"codigoAluno"</span><span class="p">:</span> <span class="n">get_first_value</span><span class="p">(</span>
+                <span class="n">instance</span><span class="p">,</span> <span class="s2">"codigo_aluno"</span><span class="p">,</span> <span class="s2">"codigoAluno"</span>
+            <span class="p">),</span>
+            <span class="s2">"nomeAluno"</span><span class="p">:</span> <span class="n">get_first_value</span><span class="p">(</span>
+                <span class="n">instance</span><span class="p">,</span> <span class="s2">"nome_aluno"</span><span class="p">,</span> <span class="s2">"nomeAluno"</span>
+            <span class="p">),</span>
+            <span class="s2">"nomeSocialAluno"</span><span class="p">:</span> <span class="n">get_first_value</span><span class="p">(</span>
+                <span class="n">instance</span><span class="p">,</span> <span class="s2">"nome_social_aluno"</span><span class="p">,</span> <span class="s2">"nomeSocialAluno"</span>
+            <span class="p">),</span>
+            <span class="s2">"codigoSituacaoMatricula"</span><span class="p">:</span> <span class="n">get_first_value</span><span class="p">(</span>
+                <span class="n">instance</span><span class="p">,</span>
+                <span class="s2">"codigo_situacao_matricula"</span><span class="p">,</span>
+                <span class="s2">"codigoSituacaoMatricula"</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="s2">"situacaoMatricula"</span><span class="p">:</span> <span class="n">get_first_value</span><span class="p">(</span>
+                <span class="n">instance</span><span class="p">,</span> <span class="s2">"situacao_matricula"</span><span class="p">,</span> <span class="s2">"situacaoMatricula"</span>
+            <span class="p">),</span>
+            <span class="s2">"dataSituacao"</span><span class="p">:</span> <span class="n">get_first_value</span><span class="p">(</span>
+                <span class="n">instance</span><span class="p">,</span> <span class="s2">"data_situacao"</span><span class="p">,</span> <span class="s2">"dataSituacao"</span>
+            <span class="p">),</span>
+            <span class="s2">"codigoTurma"</span><span class="p">:</span> <span class="n">get_first_value</span><span class="p">(</span>
+                <span class="n">instance</span><span class="p">,</span> <span class="s2">"codigo_turma"</span><span class="p">,</span> <span class="s2">"codigoTurma"</span>
+            <span class="p">),</span>
+            <span class="s2">"codigoMatricula"</span><span class="p">:</span> <span class="n">get_first_value</span><span class="p">(</span>
+                <span class="n">instance</span><span class="p">,</span> <span class="s2">"codigo_matricula"</span><span class="p">,</span> <span class="s2">"codigoMatricula"</span>
+            <span class="p">),</span>
+            <span class="s2">"anoLetivo"</span><span class="p">:</span> <span class="n">get_first_value</span><span class="p">(</span>
+                <span class="n">instance</span><span class="p">,</span> <span class="s2">"ano_letivo"</span><span class="p">,</span> <span class="s2">"anoLetivo"</span>
+            <span class="p">),</span>
+        <span class="p">}</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">SME-IntegracaoEOL-TransitionGateway-Microsservico</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Ir" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navegação</h3>
+<p class="caption" role="heading"><span class="caption-text">Páginas técnicas</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../dominios/professores/divergencias-legado.html">Divergencias entre endpoints do legado e do novo EOL</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Referência de código</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Referência de código</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Código do módulo</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
