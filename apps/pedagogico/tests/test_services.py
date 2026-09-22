@@ -1329,6 +1329,17 @@ class GetComponentesTurmasRegularesTest(SimpleTestCase):
 class GetDadosAulaTurmaTest(SimpleTestCase):
     """Valida a consulta de dados de aula por turma."""
 
+    def setUp(self) -> None:
+        """Remove o cache do caminho, mantendo os testes determinísticos."""
+        self.enterContext(
+            patch(
+                "apps.pedagogico.services.cache.obter_ou_calcular",
+                side_effect=lambda chave, calcular, minutos_para_expirar: (
+                    calcular()
+                ),
+            )
+        )
+
     @patch("apps.pedagogico.services._client")
     def test_mapeia_resposta_para_legado(
         self,
@@ -1370,6 +1381,61 @@ class GetDadosAulaTurmaTest(SimpleTestCase):
                 }
             ],
         )
+
+    @patch("apps.pedagogico.services.cache.obter_ou_calcular")
+    def test_usa_ttl_recomendado_sem_precedente_no_legado(
+        self, mock_obter_ou_calcular: MagicMock
+    ) -> None:
+        """TTL_RECOMENDADO (nao o do legado) — legado nao cacheia esta rota."""
+        mock_obter_ou_calcular.return_value = []
+
+        services.get_dados_aula_turma("UE001", 2024, ["138"], 1)
+
+        _chave, _calcular, minutos_para_expirar = (
+            mock_obter_ou_calcular.call_args.args
+        )
+        self.assertEqual(
+            minutos_para_expirar, cache.TTL_RECOMENDADO_MINUTOS
+        )
+
+    @patch("apps.pedagogico.services.cache.obter_ou_calcular")
+    def test_chave_varia_por_parametro(
+        self, mock_obter_ou_calcular: MagicMock
+    ) -> None:
+        """Combinacoes de parametros diferentes nao podem colidir no cache."""
+        mock_obter_ou_calcular.return_value = []
+
+        services.get_dados_aula_turma("UE001", 2024, ["138"], 1)
+        chave_base = mock_obter_ou_calcular.call_args.args[0]
+
+        services.get_dados_aula_turma("UE002", 2024, ["138"], 1)
+        chave_outra_ue = mock_obter_ou_calcular.call_args.args[0]
+
+        services.get_dados_aula_turma("UE001", 2025, ["138"], 1)
+        chave_outro_ano = mock_obter_ou_calcular.call_args.args[0]
+
+        services.get_dados_aula_turma("UE001", 2024, ["139"], 1)
+        chave_outro_componente = mock_obter_ou_calcular.call_args.args[0]
+
+        services.get_dados_aula_turma("UE001", 2024, ["138"], None)
+        chave_sem_semestre = mock_obter_ou_calcular.call_args.args[0]
+
+        services.get_dados_aula_turma("UE001", 2024, ["138", "139"], 1)
+        chave_ordem_componentes = mock_obter_ou_calcular.call_args.args[0]
+        services.get_dados_aula_turma("UE001", 2024, ["139", "138"], 1)
+        chave_ordem_invertida = mock_obter_ou_calcular.call_args.args[0]
+
+        chaves = [
+            chave_base,
+            chave_outra_ue,
+            chave_outro_ano,
+            chave_outro_componente,
+            chave_sem_semestre,
+        ]
+        self.assertEqual(len(chaves), len(set(chaves)))
+        # Mesmos componentes em ordem diferente devem gerar a MESMA chave —
+        # senão a mesma consulta gera 2 entradas de cache por acaso de ordem.
+        self.assertEqual(chave_ordem_componentes, chave_ordem_invertida)
 
 
 class GetComponentesSemAtribuicaoTest(SimpleTestCase):

@@ -1014,13 +1014,15 @@ def get_componentes_turmas_regulares(codigos_turmas: list[str]) -> Any:
     ).json()
 
 
-def get_dados_aula_turma(
+def _buscar_dados_aula_turma(
     ue_codigo: str,
     ano_letivo: int,
     componentes_curriculares: list[str],
-    semestre: int | None = None,
+    semestre: int | None,
 ) -> list[dict[str, Any]]:
-    """Retorna dados de aula por turma e componente.
+    """Busca dados de aula por turma direto na origem.
+
+    Usado por `get_dados_aula_turma` quando o cache não tem o valor.
 
     Args:
         ue_codigo: Código da unidade educacional.
@@ -1058,6 +1060,42 @@ def get_dados_aula_turma(
         }
         for item in payload
     ]
+
+
+def get_dados_aula_turma(
+    ue_codigo: str,
+    ano_letivo: int,
+    componentes_curriculares: list[str],
+    semestre: int | None = None,
+) -> list[dict[str, Any]]:
+    """Retorna dados de aula por turma e componente.
+
+    Args:
+        ue_codigo: Código da unidade educacional.
+        ano_letivo: Ano letivo usado no filtro.
+        componentes_curriculares: Códigos dos componentes curriculares.
+        semestre: Semestre usado no filtro, quando informado.
+
+    Returns:
+        Dados de vigência dos componentes no formato legado.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        ValueError: Se a resposta não puder ser convertida para JSON.
+    """
+    componentes_ordenados = sorted(componentes_curriculares)
+    chave = (
+        f"dados-aula-turma:{ue_codigo}:{ano_letivo}:"
+        f"{','.join(componentes_ordenados)}:"
+        f"{semestre if semestre is not None else ''}"
+    )
+    return cache.obter_ou_calcular(
+        chave,
+        lambda: _buscar_dados_aula_turma(
+            ue_codigo, ano_letivo, componentes_curriculares, semestre
+        ),
+        cache.TTL_RECOMENDADO_MINUTOS,
+    )
 
 
 def _ticks_dotnet_para_data(data_base_tick: int) -> str:
