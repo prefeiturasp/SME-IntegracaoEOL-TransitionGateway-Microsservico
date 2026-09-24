@@ -266,32 +266,6 @@ def get_quantidade_matriculados_cc(
     return _client.json_or_none(resp) or []
 
 
-def _buscar_quantidade_matriculados(
-    ano_letivo: str, params: dict[str, Any]
-) -> Any:
-    """Busca a quantidade de matriculados direto na origem.
-
-    Usado por `get_quantidade_matriculados` quando o cache não tem o valor.
-
-    Args:
-        ano_letivo: Ano letivo consultado.
-        params: Filtros já normalizados para a query string.
-
-    Returns:
-        Lista de quantidades agregadas ou lista vazia.
-
-    Raises:
-        httpx.HTTPStatusError: Se a API retornar status de erro.
-        httpx.RequestError: Se a API estiver inacessível.
-    """
-    resp = _client.get(
-        f"{_BASE}/ano-letivo/{ano_letivo}/matriculados/quantidade/contrato",
-        params=params or None,
-    )
-    resp.raise_for_status()
-    return _client.json_or_none(resp) or []
-
-
 def get_quantidade_matriculados(
     ano_letivo: str,
     dre_codigo: str | None = None,
@@ -329,19 +303,12 @@ def get_quantidade_matriculados(
     if turma:
         params["turma"] = turma
 
-    chave = "quantidade-alunos:{}:{}:{}:{}:{}:{}".format(
-        ano_letivo,
-        (dre_codigo or "").strip(),
-        (ue_codigo or "").strip(),
-        ",".join(turma or []),
-        ",".join(modalidade or []),
-        ",".join(ano or []),
+    resp = _client.get(
+        f"{_BASE}/ano-letivo/{ano_letivo}/matriculados/quantidade/contrato",
+        params=params or None,
     )
-    return cache.obter_ou_calcular(
-        chave,
-        lambda: _buscar_quantidade_matriculados(ano_letivo, params),
-        cache.TTL_LEGADO_PADRAO_MINUTOS,
-    )
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
 
 
 def get_responsavel_resumido(cpf_responsavel: str) -> Any:

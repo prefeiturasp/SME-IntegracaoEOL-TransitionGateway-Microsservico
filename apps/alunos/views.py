@@ -16,11 +16,13 @@ from drf_spectacular.utils import (
 from rest_framework.request import Request
 
 from apps.alunos import services
+from apps.alunos.respostas import resposta_quantidade_matriculados
 from apps.alunos.serializers import (
     AlunoAcompanhamentoEscolarSerializer,
     AlunoAtivoTurmaSerializer,
     AlunoAutocompleteSerializer,
     AlunoAutocompleteUeSerializer,
+    AlunoDaUeSerializer,
     AlunoInformacoesSerializer,
     AlunoMatriculaTurmaSerializer,
     AlunoPorCodigoSerializer,
@@ -34,7 +36,6 @@ from apps.alunos.serializers import (
     NomeAlunoSerializer,
     ObterNomesAlunosRequestSerializer,
     QuantidadeMatriculadosCCSerializer,
-    QuantidadeMatriculadosSerializer,
     ResponsavelResumidoSerializer,
     ResponsavelTurmaSerializer,
     TodosAlunosTurmaSerializer,
@@ -648,7 +649,7 @@ class QuantidadeMatriculadosView(AlunosAPIView):
         ],
         responses={200: OpenApiResponse(description="Success")},
     )
-    def get(self, request: Request, ano_letivo: str) -> Response:
+    def get(self, request: Request, ano_letivo: str) -> HttpResponse:
         """Busca a quantidade de matriculados conforme os filtros.
 
         Args:
@@ -659,19 +660,21 @@ class QuantidadeMatriculadosView(AlunosAPIView):
             Quantidades de matriculados agregadas por turma.
         """
         try:
-            data = services.get_quantidade_matriculados(
-                ano_letivo=ano_letivo,
-                dre_codigo=_query_value(request, "dre_codigo"),
-                ue_codigo=_query_value(request, "ue_codigo"),
-                modalidade=request.query_params.getlist("modalidade"),
-                ano=request.query_params.getlist("ano"),
-                turma=request.query_params.getlist("turma"),
+            return resposta_quantidade_matriculados(
+                request,
+                ano_letivo,
+                {
+                    "dre_codigo": _query_value(request, "dre_codigo"),
+                    "ue_codigo": _query_value(request, "ue_codigo"),
+                    "modalidade": request.query_params.getlist("modalidade"),
+                    "ano": request.query_params.getlist("ano"),
+                    "turma": request.query_params.getlist("turma"),
+                },
             )
         except httpx.HTTPStatusError as exc:
             return api_error_response_status_livre(exc)
         except httpx.RequestError as exc:
             return _api_unavailable_response(exc)
-        return Response(QuantidadeMatriculadosSerializer(data, many=True).data)
 
 
 class AlunoInformacoesView(AlunosAPIView):
@@ -2072,7 +2075,7 @@ class AlunosDaUeView(AlunosAPIView):
             return _api_error_response(exc)
         except httpx.RequestError as exc:
             return _api_unavailable_response(exc)
-        return Response(AlunoPorCodigoSerializer(data, many=True).data)
+        return Response(AlunoDaUeSerializer(data, many=True).data)
 
 
 class AlunoTurmasPorSituacaoView(AlunosAPIView):
