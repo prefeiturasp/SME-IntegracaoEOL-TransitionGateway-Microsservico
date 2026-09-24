@@ -42,7 +42,7 @@ Then("retorna o status {int}", (statusCode) => {
 });
 
 // AND
-And("o retorno deve ser verdadeiro", () => {
+And("o retorno deve ser um RF EMEI verdadeiro", () => {
   cy.get("@response").then((response) => {
     if (response.status === 200) {
       expect(response.body).to.be.true;
@@ -236,3 +236,203 @@ And("o retorno deve conter lista de turmas do professor por disciplina", () => {
     }
   });
 });
+
+When(
+  "realizo consulta de EMEI do professor com registro funcional válido",
+  () => {
+    cy.getProfessorEhEmei(true).as("response");
+  },
+);
+
+When(
+  "realizo consulta de EMEI do professor com registro funcional inválido",
+  () => {
+    cy.getProfessorEhEmei(false).as("response");
+  },
+);
+
+When(
+  "realizo consulta de turmas do professor com registro funcional válido",
+  () => {
+    cy.getProfessorTurmas(true).as("response");
+  },
+);
+
+When(
+  "realizo consulta de turmas do professor com registro funcional inválido",
+  () => {
+    cy.getProfessorTurmas(false).as("response");
+  },
+);
+
+When(
+  "realizo consulta de turmas do professor por ano letivo com registro funcional válido",
+  () => {
+    cy.getProfessorTurmasPorAnoLetivo(Cypress.env("ANO_LETIVO"), true).as(
+      "response",
+    );
+  },
+);
+
+When(
+  "realizo consulta de turmas do professor por ano letivo com registro funcional inválido",
+  () => {
+    cy.getProfessorTurmasPorAnoLetivo(
+      Cypress.env("ANO_LETIVO_INEXISTENTE"),
+      false,
+    ).as("response");
+  },
+);
+
+When(
+  "realizo consulta de turmas atribuídas pelo professor na escola com dados válidos",
+  () => {
+    cy.getProfessorTurmasNaEscola(Cypress.env("ANO_LETIVO"), true).as(
+      "response",
+    );
+  },
+);
+
+When(
+  "realizo consulta de turmas atribuídas pelo professor na escola com dados inválidos",
+  () => {
+    cy.getProfessorTurmasNaEscola(
+      Cypress.env("ANO_LETIVO_INEXISTENTE"),
+      false,
+    ).as("response");
+  },
+);
+
+When(
+  "realizo consulta de turmas de professores por escola e ano letivo válidos",
+  () => {
+    cy.getTurmasProfessoresNaEscola(Cypress.env("ANO_LETIVO"), true).as(
+      "response",
+    );
+  },
+);
+
+When(
+  "realizo consulta de turmas de professores por escola e ano letivo inválidos",
+  () => {
+    cy.getTurmasProfessoresNaEscola(
+      Cypress.env("ANO_LETIVO_INEXISTENTE"),
+      false,
+    ).as("response");
+  },
+);
+
+When("realizo consulta de atribuição do professor em data válida", () => {
+  cy.getProfessorAtribuicaoPorData(
+    Cypress.env("REGISTRO_FUNCIONAL"),
+    Cypress.env("TURMA_CODIGO"),
+    "2026-10-31",
+    true,
+  ).as("response");
+});
+
+When("realizo consulta de atribuição do professor em data inválida", () => {
+  cy.getProfessorAtribuicaoPorData(
+    Cypress.env("REGISTRO_FUNCIONAL"),
+    Cypress.env("TURMA_CODIGO"),
+    "2026-10-31",
+    false,
+  ).as("response");
+});
+
+When("realizo consulta de status da atribuição do professor em turma", () => {
+  cy.getProfessorStatusAtribuicao(
+    Cypress.env("REGISTRO_FUNCIONAL"),
+    Cypress.env("TURMA_CODIGO"),
+  ).as("response");
+});
+
+When(
+  "realizo consulta de atribuição do professor em turma e disciplina com data válida",
+  () => {
+    cy.getProfessorVerificarAtribuicaoDisciplina(
+      Cypress.env("REGISTRO_FUNCIONAL"),
+      Cypress.env("TURMA_CODIGO"),
+      Cypress.env("DISCIPLINA_ID"),
+      "2026-10-31",
+    ).as("response");
+  },
+);
+
+When(
+  "realizo consulta de atribuições de professor em turma e disciplina no formato ISO",
+  () => {
+    cy.getAtribuicoesTurmaDisciplinaDataIso(
+      Cypress.env("TURMA_CODIGO"),
+      Cypress.env("DISCIPLINA_ID"),
+      "2026-10-31",
+    ).as("response");
+  },
+);
+
+And("o retorno deve conter lista de turmas do professor", () => {
+  cy.get("@response").then((response) => {
+    if (response.status === 200) {
+      expect(response.body).to.be.an("array");
+      if (response.body.length > 0) {
+        expect(response.body).not.be.empty;
+      }
+    }
+  });
+});
+
+And(
+  "o retorno deve conter lista de turmas atribuídas ao professor na escola",
+  () => {
+    cy.get("@response").then((response) => {
+      if (response.status === 200) {
+        expect(response.body).to.be.an("array");
+        if (response.body.length > 0) {
+          expect(response.body).not.be.empty;
+        }
+      }
+    });
+  },
+);
+
+And("o retorno deve conter lista de turmas por escola e ano letivo", () => {
+  cy.get("@response").then((response) => {
+    if (response.status === 200) {
+      expect(response.body).to.be.an("array");
+      if (response.body.length > 0) {
+        expect(response.body).not.be.empty;
+      }
+    }
+  });
+});
+
+And("o retorno deve conter status da atribuição do professor", () => {
+  cy.get("@response").then((response) => {
+    if (response.status === 200) {
+      expect(response.body).to.exist;
+      expect(response.body).to.not.be.empty;
+    }
+  });
+});
+
+And(
+  "o retorno deve conter lista de atribuições de turma e disciplina em data ISO",
+  () => {
+    cy.get("@response").then((response) => {
+      if (response.status === 200) {
+        expect(response.body).to.be.an("array");
+      }
+    });
+  },
+);
+
+And(
+  "a mensagem de erro deve ser Não foram encontradas turmas atribuídas.",
+  () => {
+    cy.get("@response").then((response) => {
+      if (response.status === 404) {
+        expect(response.body).to.eq("Não foram encontradas turmas atribuídas.");
+      }
+    });
+  },
+);

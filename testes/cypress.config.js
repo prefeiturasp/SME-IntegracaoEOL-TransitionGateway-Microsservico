@@ -70,6 +70,7 @@ const envKeys = [
   "REGISTRO_FUNCIONAL_INEXISTENTE",
   "DISCIPLINA_ID",
   "DISCIPLINA_ID_INEXISTENTE",
+  "REGISTRO_FUNCIONAL_EMEI",
 ];
 
 export default defineConfig({

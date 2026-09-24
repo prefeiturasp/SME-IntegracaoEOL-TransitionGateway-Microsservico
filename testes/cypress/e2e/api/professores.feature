@@ -93,3 +93,89 @@ Funcionalidade: API - Professores
     Quando realizo envio de turmas de professor por disciplina com registro funcional, disciplina e turma inválidos
     Então retorna o status 200
     E o retorno deve ser uma lista vazia
+
+  Cenário: Validar professor EMEI com registro funcional válido
+    Dado que possuo acesso à API de professores
+    Quando realizo consulta de EMEI do professor com registro funcional válido
+    Então retorna o status 200
+    E o retorno deve ser um RF EMEI verdadeiro
+
+  Cenário: Validar professor EMEI com registro funcional inválido
+    Dado que possuo acesso à API de professores
+    Quando realizo consulta de EMEI do professor com registro funcional inválido
+    Então retorna o status 200
+    E o retorno deve ser falso
+
+  Cenário: Validar turmas do professor com registro funcional válido
+    Dado que possuo acesso à API de professores
+    Quando realizo consulta de turmas do professor com registro funcional válido
+    Então retorna o status 200
+    E o retorno deve conter lista de turmas do professor
+
+  Cenário: Validar retorno vazio de turmas do professor com registro funcional inválido
+    Dado que possuo acesso à API de professores
+    Quando realizo consulta de turmas do professor com registro funcional inválido
+    Então retorna o status 204
+
+  Cenário: Validar turmas do professor por ano letivo com registro funcional válido
+    Dado que possuo acesso à API de professores
+    Quando realizo consulta de turmas do professor por ano letivo com registro funcional válido
+    Então retorna o status 200
+    E o retorno deve conter lista de turmas do professor
+
+  Cenário: Validar retorno vazio de turmas do professor por ano letivo com registro funcional inválido
+    Dado que possuo acesso à API de professores
+    Quando realizo consulta de turmas do professor por ano letivo com registro funcional inválido
+    Então retorna o status 404
+    E a mensagem de erro deve ser Não foram encontradas turmas atribuídas.
+
+  Cenário: Validar turmas atribuídas pelo professor na escola com dados válidos
+    Dado que possuo acesso à API de professores
+    Quando realizo consulta de turmas atribuídas pelo professor na escola com dados válidos
+    Então retorna o status 200
+    E o retorno deve conter lista de turmas atribuídas ao professor na escola
+
+  Cenário: Validar retorno vazio de turmas atribuídas pelo professor na escola com dados inválidos
+    Dado que possuo acesso à API de professores
+    Quando realizo consulta de turmas atribuídas pelo professor na escola com dados inválidos
+    Então retorna o status 404
+
+  Cenário: Validar turmas de professores por escola e ano letivo válidos
+    Dado que possuo acesso à API de professores
+    Quando realizo consulta de turmas de professores por escola e ano letivo válidos
+    Então retorna o status 200
+    E o retorno deve conter lista de turmas por escola e ano letivo
+
+  Cenário: Validar retorno vazio de turmas de professores por escola e ano letivo inválidos
+    Dado que possuo acesso à API de professores
+    Quando realizo consulta de turmas de professores por escola e ano letivo inválidos
+    Então retorna o status 404
+
+  Cenário: Validar verificação de atribuição do professor em data válida
+    Dado que possuo acesso à API de professores
+    Quando realizo consulta de atribuição do professor em data válida
+    Então retorna o status 200
+    E o retorno deve ser falso
+
+  Cenário: Validar verificação de atribuição do professor em data inválida
+    Dado que possuo acesso à API de professores
+    Quando realizo consulta de atribuição do professor em data inválida
+    Então retorna o status 400
+
+  Cenário: Validar status da atribuição do professor em turma
+    Dado que possuo acesso à API de professores
+    Quando realizo consulta de status da atribuição do professor em turma
+    Então retorna o status 200
+    E o retorno deve conter status da atribuição do professor
+
+  Cenário: Validar verificação de atribuição do professor em turma e disciplina com data válida
+    Dado que possuo acesso à API de professores
+    Quando realizo consulta de atribuição do professor em turma e disciplina com data válida
+    Então retorna o status 200
+    E o retorno deve ser falso
+
+  Cenário: Validar atribuições de professor em turma e disciplina no formato ISO
+    Dado que possuo acesso à API de professores
+    Quando realizo consulta de atribuições de professor em turma e disciplina no formato ISO
+    Então retorna o status 200
+    E o retorno deve conter lista de atribuições de turma e disciplina em data ISO
