@@ -60,7 +60,7 @@ def resposta_quantidade_matriculados(
 
     renderer = request.accepted_renderer
     if (
-        type(renderer) is JSONRenderer
+        renderer.__class__ == JSONRenderer
         and renderer.get_indent(request.accepted_media_type, {}) is None
     ):
         return HttpResponse(corpo, content_type=renderer.media_type)

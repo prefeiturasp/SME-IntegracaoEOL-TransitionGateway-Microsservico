@@ -3,6 +3,7 @@
 import gzip
 import zlib
 from copy import deepcopy
+from secrets import token_urlsafe
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -10,10 +11,12 @@ import httpx
 from django.core.cache import cache
 from django.test import SimpleTestCase, override_settings
 from rest_framework import serializers
+from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APIClient
 
 from apps.alunos import services
 from apps.alunos.serializers import QuantidadeMatriculadosSerializer
+from apps.alunos.views import QuantidadeMatriculadosView
 from apps.core import cache as cache_leitura
 
 _URL = "/api/alunos/ano-letivo/2026/matriculados/quantidade"
@@ -75,7 +78,6 @@ class QuantidadeSerializerPerformanceTest(SimpleTestCase):
 
 
 @override_settings(
-    API_KEY="chave-ficticia-contagem",
     CACHES={
         "default": {
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
@@ -90,8 +92,10 @@ class QuantidadeRespostaPerformanceTest(SimpleTestCase):
         """Isola o armazenamento e a comunicação externa."""
         cache.clear()
         self.addCleanup(cache.clear)
+        chave_teste = token_urlsafe(32)
+        self.enterContext(override_settings(API_KEY=chave_teste))
         self.client = APIClient()
-        self.client.credentials(HTTP_X_API_KEY="chave-ficticia-contagem")
+        self.client.credentials(HTTP_X_API_KEY=chave_teste)
         self.origem = self.enterContext(patch.object(services._client, "get"))
         self.origem.return_value = httpx.Response(
             200,
@@ -143,6 +147,27 @@ class QuantidadeRespostaPerformanceTest(SimpleTestCase):
         )
         self.assertEqual(self.client.get(_URL).content, normal.content)
         self.origem.assert_called_once()
+
+    def test_preserva_formatacao_de_renderer_json_personalizado(self) -> None:
+        """Mantém a representação definida por um renderer personalizado."""
+
+        class JsonAsciiRenderer(JSONRenderer):
+            """Representa caracteres Unicode com sequências ASCII."""
+
+            ensure_ascii = True
+
+        self.origem.return_value = httpx.Response(
+            200,
+            json=[{**_LINHA, "turma": "3ºA"}],
+            request=httpx.Request("GET", "https://alunos.test/quantidade"),
+        )
+        with patch.object(
+            QuantidadeMatriculadosView, "renderer_classes", [JsonAsciiRenderer]
+        ):
+            resposta = self.client.get(_URL)
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(resposta.json(), [{**_ESPERADO, "turma": "3ºA"}])
+        self.assertIn(b"\\u00ba", resposta.content)
 
     def test_filtros_distintos_nao_compartilham_respostas(self) -> None:
         """Não mistura listas de turmas que possuem dígitos em comum."""
