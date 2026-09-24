@@ -1,5 +1,8 @@
 """Serializers de saida para o contrato legado de alunos."""
 
+from collections.abc import Callable
+from functools import cached_property
+from operator import itemgetter
 from typing import Any, cast
 
 from django.utils import timezone
@@ -560,6 +563,59 @@ class AlunoPorCodigoSerializer(AlunoLegadoBaseSerializer):
     )  # NOSONAR
 
 
+class AlunoDaUeSerializer(AlunoPorCodigoSerializer):
+    """Serializa dados de alunos vinculados a uma unidade educacional."""
+
+    @cached_property
+    def _origens(self) -> frozenset[str]:
+        """Retorna as colunas esperadas em uma linha completa."""
+        return frozenset(
+            campo.source_attrs[0]
+            for campo in self.fields.values()
+            if len(campo.source_attrs) == 1
+        )
+
+    @cached_property
+    def _conversores(
+        self,
+    ) -> tuple[tuple[str, Callable[[Any], Any], Callable[[Any], Any]], ...]:
+        """Retorna leitores e conversores preservando campos especiais."""
+        return tuple(
+            (
+                nome,
+                itemgetter(campo.source_attrs[0])
+                if (
+                    len(campo.source_attrs) == 1
+                    and type(campo).get_attribute
+                    is serializers.Field.get_attribute
+                )
+                else campo.get_attribute,
+                campo.to_representation,
+            )
+            for nome, campo in self.fields.items()
+        )
+
+    def to_representation(self, instance: Any) -> dict[str, Any]:
+        """Representa os alunos mantendo coerções e valores padrão.
+
+        Args:
+            instance: Dados do aluno a representar.
+
+        Returns:
+            Dados do aluno no formato legado.
+        """
+        if type(instance) is not dict or not self._origens.issubset(instance):
+            return cast(dict[str, Any], super().to_representation(instance))
+        return {
+            nome: (
+                converter(valor)
+                if (valor := obter(instance)) is not None
+                else None
+            )
+            for nome, obter, converter in self._conversores
+        }
+
+
 class AlunoAtivoTurmaSerializer(serializers.Serializer):
     """Serializa dados de aluno ativo em turma."""
 
@@ -938,6 +994,31 @@ class QuantidadeMatriculadosSerializer(serializers.Serializer):
     ueCodigo = serializers.CharField(
         source="ue_codigo", allow_null=True
     )  # NOSONAR
+
+    @cached_property
+    def _conversores(
+        self,
+    ) -> tuple[tuple[str, str, Callable[[Any], Any]], ...]:
+        """Retorna os campos de origem e seus conversores."""
+        return tuple(
+            (nome, campo.source, campo.to_representation)
+            for nome, campo in self.fields.items()
+        )
+
+    def to_representation(self, instance: Any) -> dict[str, Any]:
+        """Representa contagens preservando coerções e campos opcionais."""
+        if not isinstance(instance, dict) or any(
+            origem not in instance for _, origem, _ in self._conversores
+        ):
+            return cast(dict[str, Any], super().to_representation(instance))
+        return {
+            nome: (
+                converter(instance[origem])
+                if instance[origem] is not None
+                else None
+            )
+            for nome, origem, converter in self._conversores
+        }
 
 
 class QuantidadeMatriculadosCCSerializer(serializers.Serializer):

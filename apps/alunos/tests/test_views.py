@@ -5,7 +5,8 @@ from unittest.mock import MagicMock, patch
 
 import httpx
 from django.contrib.auth.models import User
-from django.test import SimpleTestCase
+from django.core.cache import cache
+from django.test import SimpleTestCase, override_settings
 from django.urls import Resolver404, resolve
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -778,8 +779,21 @@ class DadosAcompanhamentoEscolarViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
+@override_settings(
+    CACHES={
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "quantidade-views-tests",
+        }
+    }
+)
 class QuantidadeMatriculadosViewTest(SimpleTestCase):
     """Valida a view de quantidade de matriculados."""
+
+    def setUp(self) -> None:
+        """Isola o armazenamento entre cenários de resposta."""
+        cache.clear()
+        self.addCleanup(cache.clear)
 
     @patch("apps.alunos.views.services.get_quantidade_matriculados")
     def test_200_retorna_contrato_legado(
@@ -2893,6 +2907,25 @@ class AlunosDaUeViewTest(SimpleTestCase):
     """Valida a view de alunos matriculados em uma UE."""
 
     _URL = "/api/alunos/ues/000001/anosLetivos/2026"
+
+    @patch("apps.alunos.views.services.get_alunos_da_ue")
+    def test_cada_consulta_retorna_dados_atuais(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Não reutiliza uma representação antiga em outra requisição."""
+        primeiro = _aluno_ue_payload()
+        segundo = {**primeiro, "nome_aluno": "ALUNO FICTICIO ATUALIZADO"}
+        mock_service.side_effect = [[primeiro], [segundo]]
+        client = _cliente_autenticado()
+        self.assertEqual(
+            client.get(self._URL).json()[0]["nomeAluno"],
+            primeiro["nome_aluno"],
+        )
+        self.assertEqual(
+            client.get(self._URL).json()[0]["nomeAluno"],
+            "ALUNO FICTICIO ATUALIZADO",
+        )
+        self.assertEqual(mock_service.call_count, 2)
 
     @patch("apps.alunos.views.services.get_alunos_da_ue")
     def test_200_retorna_contrato_legado(
