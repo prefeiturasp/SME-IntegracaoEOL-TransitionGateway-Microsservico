@@ -34,7 +34,7 @@ urlpatterns = [
         name="obter-alunos-pap-por-ano-letivo",
     ),
     path(
-        "alunos/<str:codigo_aluno>/turmas-programa/<int:ano_letivo>"
+        "alunos/<str:codigo_aluno>/turmas-programa/<int:ano_letivo>"  # NOSONAR
         "/componentes-curriculares",
         ObterComponentesCurricularesTurmasProgramaAlunoView.as_view(),
         name="obter-componentes-turmas-programa-aluno",

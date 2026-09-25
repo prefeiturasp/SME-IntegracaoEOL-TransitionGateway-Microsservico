@@ -104,12 +104,12 @@ urlpatterns = [
         FuncionarioTurmaDisciplinasView.as_view(),
     ),
     path(
-        "funcionarios/<str:login>/perfis/<str:id_perfil>/turmas/"
+        "funcionarios/<str:login>/perfis/<str:id_perfil>/turmas/"  # NOSONAR
         "<str:codigo_turma>/disciplinas/planejamento",
         FuncionarioPerfilTurmaDisciplinasPlanejamentoView.as_view(),
     ),
     path(
-        "funcionarios/<str:login>/perfis/<str:id_perfil>/turmas/"
+        "funcionarios/<str:login>/perfis/<str:id_perfil>/turmas/"  # NOSONAR
         "<str:codigo_turma>/disciplinas",
         FuncionarioPerfilTurmaDisciplinasView.as_view(),
     ),
@@ -174,7 +174,7 @@ urlpatterns = [
         ProfessoresTitularesPorUeView.as_view(),
     ),
     path(
-        "professores/titular/turmas/<str:codigo_turma>/"
+        "professores/titular/turmas/<str:codigo_turma>/"  # NOSONAR
         "componentes-curriculares/<str:codigo_componente_curricular>",
         ProfessorTitularPorTurmaDisciplinaView.as_view(),
     ),
@@ -187,12 +187,12 @@ urlpatterns = [
         ProfessorTurmasView.as_view(),
     ),
     path(
-        "professores/<str:codigo_turma>/titulares/"
+        "professores/<str:codigo_turma>/titulares/"  # NOSONAR
         "realizaAgrupamentoComponente/<bool:realiza_agrupamento>",
         ProfessoresTitularesPorTurmaView.as_view(),
     ),
     path(
-        "professores/<str:codigo_turma>/titularesPorRf/"
+        "professores/<str:codigo_turma>/titularesPorRf/"  # NOSONAR
         "realizaAgrupamentoComponente/<bool:agrupa>",
         ProfessoresTitularesPorTurmaPorRfView.as_view(),
     ),
@@ -213,8 +213,8 @@ urlpatterns = [
         ProfessorVerificarAtribuicaoDataView.as_view(),
     ),
     path(
-        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/componentes/"
-        "<str:componente_curricular_id>/atribuicao/periodo/inicio/"
+        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/componentes/"  # noqa: E501  # NOSONAR
+        "<str:componente_curricular_id>/atribuicao/periodo/inicio/"  # NOSONAR
         "<str:data_inicio_periodo>/fim/<str:data_fim_periodo>",
         ProfessorVerificarAtribuicaoPeriodoView.as_view(),
     ),
@@ -227,12 +227,12 @@ urlpatterns = [
         ProfessorVerificarAtribuicaoDataTickView.as_view(),
     ),
     path(
-        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/disciplinas/"
+        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/disciplinas/"  # noqa: E501  # NOSONAR
         "<str:disciplina_id>/atribuicao/recorrencia/verificar/datas",
         ProfessorVerificarRecorrenciaDatasView.as_view(),
     ),
     path(
-        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/disciplinas/"
+        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/disciplinas/"  # noqa: E501  # NOSONAR
         "<str:disciplina_id>/atribuicao/recorrencia/verificar/datas-iso",
         ProfessorVerificarRecorrenciaDatasIsoView.as_view(),
     ),
@@ -281,7 +281,7 @@ urlpatterns = [
         FuncionariosConectaFormacaoView.as_view(),
     ),
     path(
-        "funcionarios/atribuicao/<str:registro_funcional>/"
+        "funcionarios/atribuicao/<str:registro_funcional>/"  # NOSONAR
         "cargo/<str:codigo_cargo>",
         FuncionariosAtribuicaoCargoView.as_view(),
     ),
@@ -306,7 +306,7 @@ urlpatterns = [
         FuncionariosSupervisoresView.as_view(),
     ),
     path(
-        "escolas/<str:codigo_ue>/funcionarios/funcoes-atividades/"
+        "escolas/<str:codigo_ue>/funcionarios/funcoes-atividades/"  # NOSONAR
         "<str:codigo_funcao_atividade>",
         EscolaFuncionariosFuncaoAtividadeView.as_view(),
     ),
@@ -315,7 +315,7 @@ urlpatterns = [
         EscolaFuncionariosFuncoesAtividadesView.as_view(),
     ),
     path(
-        "escolas/<str:codigo_ue>/funcionarios/funcoes-externas/"
+        "escolas/<str:codigo_ue>/funcionarios/funcoes-externas/"  # NOSONAR
         "<str:codigo_funcao_externa>",
         EscolaFuncionariosFuncaoExternaView.as_view(),
     ),

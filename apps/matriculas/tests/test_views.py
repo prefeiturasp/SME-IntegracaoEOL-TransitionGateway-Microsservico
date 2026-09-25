@@ -132,9 +132,7 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get(
-            "/api/matriculas?anoLetivo=abc&ueCodigo=100001"
-        )
+        resp = client.get("/api/matriculas?anoLetivo=abc&ueCodigo=100001")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -150,9 +148,7 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
         mock_service.side_effect = _request_error()
         client = _cliente_autenticado()
 
-        resp = client.get(
-            "/api/matriculas?anoLetivo=2026&ueCodigo=100001"
-        )
+        resp = client.get("/api/matriculas?anoLetivo=2026&ueCodigo=100001")
 
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertEqual(
@@ -173,9 +169,7 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
         )
         client = _cliente_autenticado()
 
-        resp = client.get(
-            "/api/matriculas?anoLetivo=2026&ueCodigo=100001"
-        )
+        resp = client.get("/api/matriculas?anoLetivo=2026&ueCodigo=100001")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(resp.json(), {"detail": "Ano invalido"})
@@ -201,8 +195,7 @@ class MatriculasAnosAnterioresViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/matriculas/anos-anteriores"
-            "?anoLetivo=2025&ueCodigo=100001"
+            "/api/matriculas/anos-anteriores" "?anoLetivo=2025&ueCodigo=100001"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -231,8 +224,7 @@ class MatriculasAnosAnterioresViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/matriculas/anos-anteriores"
-            "?anoLetivo=abc&ueCodigo=100001"
+            "/api/matriculas/anos-anteriores" "?anoLetivo=abc&ueCodigo=100001"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -268,12 +260,46 @@ class MatriculasAnosAnterioresViewTest(SimpleTestCase):
             "/api/matriculas/anos-anteriores?anoLetivo=2025&ueCodigo=100001"
         )
 
-        self.assertEqual(resp.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        self.assertEqual(
+            resp.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
         self.assertEqual(resp.json(), {"detail": "Erro interno"})
 
 
 class MatriculasParametrosLegadosTest(SimpleTestCase):
     """Valida a normalização pública antes da chamada HTTP ao domínio."""
+
+    @staticmethod
+    def _api_path(sufixo: str) -> str:
+        path = "/api/matriculas"
+        return f"{path}/{sufixo}" if sufixo else path
+
+    @staticmethod
+    def _ms_path(sufixo: str) -> str:
+        path = "/api/v1/alunos/matriculas"
+        return f"{path}/{sufixo}" if sufixo else path
+
+    def _assert_com_consulta(
+        self, chamada: MagicMock, resp: Any, sufixo: str
+    ) -> None:
+        self.assertEqual(
+            resp.json(),
+            [{"turmaCodigo": "123", "quantidade": 2}],
+        )
+        chamada.assert_called_once_with(
+            self._ms_path(sufixo),
+            params={
+                "ano_letivo": 2026,
+                "ue_codigo": "000001",
+            },
+        )
+
+    def _assert_sem_consulta(
+        self, chamada: MagicMock, resp: Any, status_esperado: int
+    ) -> None:
+        chamada.assert_not_called()
+        if status_esperado == 200:
+            self.assertEqual(resp.json(), [])
 
     def test_somente_camel_case_controla_os_filtros(self) -> None:
         """Usa apenas os parâmetros com os nomes do legado."""
@@ -308,30 +334,15 @@ class MatriculasParametrosLegadosTest(SimpleTestCase):
                         json=[{"turma_codigo": "123", "quantidade": 2}],
                         request=httpx.Request("GET", "https://ms.test/"),
                     )
-                    path = "/api/matriculas"
-                    if sufixo:
-                        path += f"/{sufixo}"
+                    path = self._api_path(sufixo)
                     resp = _cliente_autenticado().get(f"{path}?{query}")
                     self.assertEqual(resp.status_code, status_esperado)
                     if consulta:
-                        self.assertEqual(
-                            resp.json(),
-                            [{"turmaCodigo": "123", "quantidade": 2}],
-                        )
-                        caminho = "/api/v1/alunos/matriculas"
-                        if sufixo:
-                            caminho += f"/{sufixo}"
-                        chamada.assert_called_once_with(
-                            caminho,
-                            params={
-                                "ano_letivo": 2026,
-                                "ue_codigo": "000001",
-                            },
-                        )
+                        self._assert_com_consulta(chamada, resp, sufixo)
                     else:
-                        chamada.assert_not_called()
-                        if status_esperado == 200:
-                            self.assertEqual(resp.json(), [])
+                        self._assert_sem_consulta(
+                            chamada, resp, status_esperado
+                        )
 
 
 class TotalMatriculasPorTurnoUeViewTest(SimpleTestCase):
@@ -445,7 +456,9 @@ class TotalMatriculasPorTurnoUeViewTest(SimpleTestCase):
 
         resp = client.get(self._URL)
 
-        self.assertEqual(resp.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        self.assertEqual(
+            resp.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
         self.assertEqual(resp.json(), {"detail": "Erro interno"})
 
 
@@ -597,7 +610,9 @@ class QuantidadeAlunosPorTurmaEscolaViewTest(SimpleTestCase):
         )
         mock_service.assert_called_once_with("100001")
 
-    @patch("apps.matriculas.views.services.get_quantidade_alunos_por_turma_escola")
+    @patch(
+        "apps.matriculas.views.services.get_quantidade_alunos_por_turma_escola"
+    )
     def test_503_quando_sidecar_indisponivel(
         self, mock_service: MagicMock
     ) -> None:
@@ -608,7 +623,9 @@ class QuantidadeAlunosPorTurmaEscolaViewTest(SimpleTestCase):
 
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
 
-    @patch("apps.matriculas.views.services.get_quantidade_alunos_por_turma_escola")
+    @patch(
+        "apps.matriculas.views.services.get_quantidade_alunos_por_turma_escola"
+    )
     def test_400_quando_sidecar_retorna_erro_http(
         self, mock_service: MagicMock
     ) -> None:
@@ -795,7 +812,9 @@ class FuncoesAuxiliaresTest(SimpleTestCase):
         self.assertEqual(_extrair_codigo_ue({"codigo_ue": "100001"}), "100001")
         self.assertEqual(_extrair_codigo_ue({"codigoUE": "100002"}), "100002")
         self.assertEqual(_extrair_codigo_ue({"ueCodigo": "100003"}), "100003")
-        self.assertEqual(_extrair_codigo_ue({"codigo_eol": "100004"}), "100004")
+        self.assertEqual(
+            _extrair_codigo_ue({"codigo_eol": "100004"}), "100004"
+        )
         self.assertEqual(_extrair_codigo_ue({"codigoEol": "100005"}), "100005")
         self.assertEqual(
             _extrair_codigo_ue({"codigoEolEscola": "100006"}), "100006"
@@ -890,7 +909,11 @@ class FuncoesAuxiliaresTest(SimpleTestCase):
             "invalido",
             None,
             123,
-            {"codigo_situacao_matricula": 1, "tipo_turno": 1, "codigo_matricula": "1"},
+            {
+                "codigo_situacao_matricula": 1,
+                "tipo_turno": 1,
+                "codigo_matricula": "1",
+            },
         ]
         result = _agregar_turnos_por_ue(alunos)
         assert result is not None

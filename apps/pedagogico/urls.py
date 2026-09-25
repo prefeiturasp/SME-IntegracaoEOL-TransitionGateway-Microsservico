@@ -72,7 +72,7 @@ turma_urlpatterns = [
         ListarTurmasViewSet.as_view(),
     ),
     path(
-        "ues/<str:codigo_ue>/modalidades/<int:modalidade>/anos/"
+        "ues/<str:codigo_ue>/modalidades/<int:modalidade>/anos/"  # NOSONAR
         "<int:ano_letivo>/componentes",
         ListagemTurmasComponentesViewSet.as_view(),
         name="listagem-turmas-componentes",
@@ -114,7 +114,7 @@ escola_urlpatterns = [
         name="modalidades-ensino",
     ),
     path(
-        "escolas/<str:codigo_ue>/salas/<str:tipo_sala>/anos_letivos/"
+        "escolas/<str:codigo_ue>/salas/<str:tipo_sala>/anos_letivos/"  # noqa: E501  # NOSONAR
         "<str:ano_letivo>",
         TurmasPorTipoSalaViewSet.as_view(),
         name="turmas-por-tipo-sala",
@@ -125,7 +125,7 @@ escola_urlpatterns = [
         name="turmas-por-escola",
     ),
     path(
-        "escolas/<str:codigo_ue>/turmasSondagem/anos_letivos/"
+        "escolas/<str:codigo_ue>/turmasSondagem/anos_letivos/"  # NOSONAR
         "<str:ano_letivo>",
         TurmasSondagemViewSet.as_view(),
         name="turmas-sondagem",
