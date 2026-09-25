@@ -6,7 +6,6 @@ from typing import Any, cast
 import httpx
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework.parsers import JSONParser
 from rest_framework.request import Request
 
 from apps.core.datetime import (
@@ -308,12 +307,6 @@ class ProfessoresAPIView(DomainAPIView):
     """APIView base que padroniza falhas de comunicação com professores."""
 
     api_domain = _DOMINIO_PROFESSORES
-
-
-class JsonPatchParser(JSONParser):
-    """Processa payload JSON Patch como JSON."""
-
-    media_type = "application/json-patch+json"
 
 
 def _is_lista_turmas(data: object) -> bool:
@@ -1801,8 +1794,6 @@ class FuncionarioExternoCPFView(ProfessoresAPIView):
 class FuncionariosBuscarPorListaLoginView(ProfessoresAPIView):
     """Retorna funcionarios pelos logins informados."""
 
-    parser_classes = [JSONParser, JsonPatchParser]
-
     @extend_schema(
         tags=_TAG_FUNCIONARIO,
         description=("Retorna funcionarios pelos logins informados."),
@@ -1842,8 +1833,6 @@ class FuncionariosBuscarPorListaLoginView(ProfessoresAPIView):
 
 class FuncionariosUnidadeView(ProfessoresAPIView):
     """Retorna funcionarios por unidade e perfis."""
-
-    parser_classes = [JSONParser, JsonPatchParser]
 
     @extend_schema(
         tags=_TAG_FUNCIONARIO,
@@ -1896,8 +1885,6 @@ class FuncionariosUnidadeView(ProfessoresAPIView):
 
 class FuncionariosAdminsSmeView(ProfessoresAPIView):
     """Retorna administradores SME pelos perfis informados."""
-
-    parser_classes = [JSONParser, JsonPatchParser]
 
     @extend_schema(
         tags=_TAG_FUNCIONARIO,
@@ -2467,8 +2454,6 @@ class FuncionariosAtribuicaoCargoView(ProfessoresAPIView):
 
 class UsuariosConectaFormacaoView(ProfessoresAPIView):
     """Retorna usuários do Conecta Formação por perfis."""
-
-    parser_classes = [JSONParser, JsonPatchParser]
 
     @extend_schema(
         tags=_TAG_FUNCIONARIO,
