@@ -632,7 +632,7 @@ def post_quantidade_matriculas_turmas_periodo(
     return int(corpo.get("quantidade", 0))
 
 
-def get_quantidade_matriculas_turmas_periodo_em_data_iso(
+def post_quantidade_matriculas_turmas_periodo_em_data_iso(
     codigos_turmas: list[int],
     data_fim: str,
 ) -> int:
@@ -652,9 +652,9 @@ def get_quantidade_matriculas_turmas_periodo_em_data_iso(
     """
     if not codigos_turmas:
         return 0
-    resp = _client.get(
-        f"{_BASE}/matriculas-turmas/quantidade",
-        params={
+    resp = _client.post(
+        f"{_BASE}/matriculas-turmas-periodo/quantidade",
+        payload={
             "codigos_turmas": codigos_turmas,
             "data_fim": data_fim,
         },
