@@ -195,7 +195,7 @@ class MatriculasAnosAnterioresViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/matriculas/anos-anteriores" "?anoLetivo=2025&ueCodigo=100001"
+            "/api/matriculas/anos-anteriores?anoLetivo=2025&ueCodigo=100001"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -224,7 +224,7 @@ class MatriculasAnosAnterioresViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/matriculas/anos-anteriores" "?anoLetivo=abc&ueCodigo=100001"
+            "/api/matriculas/anos-anteriores?anoLetivo=abc&ueCodigo=100001"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)

@@ -1797,7 +1797,7 @@ class EscolaFuncionariosFuncoesExternasViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/escolas/400870/funcionarios/funcoes-externas" "?codigo_dre=1"
+            "/api/escolas/400870/funcionarios/funcoes-externas?codigo_dre=1"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
@@ -1813,7 +1813,7 @@ class EscolaFuncionariosFuncoesExternasViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/escolas/400870/funcionarios/funcoes-externas" "?codigo_dre=1"
+            "/api/escolas/400870/funcionarios/funcoes-externas?codigo_dre=1"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -1850,7 +1850,7 @@ class EscolaFuncionariosFuncoesExternasViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/escolas/400870/funcionarios/funcoes-externas" "?codigo_dre=1"
+            "/api/escolas/400870/funcionarios/funcoes-externas?codigo_dre=1"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
