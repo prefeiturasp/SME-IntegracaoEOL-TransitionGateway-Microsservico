@@ -6,6 +6,7 @@ from apps.professores.views import (
     AdministradorSgpEscolaView,
     BuscaTurmasAtribuidasProfessoresEscolaView,
     CargosFuncionarioView,
+    CargosView,
     EscolaFuncionariosCargosView,
     EscolaFuncionariosCargoView,
     EscolaFuncionariosFuncaoAtividadeView,
@@ -97,6 +98,7 @@ class _BooleanConverter:
 register_converter(_BooleanConverter, "bool")
 
 urlpatterns = [
+    path("cargos", CargosView.as_view(), name="cargos-listar"),
     path(
         "funcionarios/turmas/<str:codigo_turma>/disciplinas",
         FuncionarioTurmaDisciplinasView.as_view(),

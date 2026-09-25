@@ -32,6 +32,7 @@ from apps.professores.serializers import (
     BuscarProfessorTitularPorDisciplinaSerializer,
     BuscarTurmasElegiveisSerializer,
     CargoFuncionarioConectaSerializer,
+    CargoSerializer,
     DisciplinasFuncionarioPathSerializer,
     DisciplinaTurmaAgrupamentoSerializer,
     DisciplinaTurmaAtribuidaSerializer,
@@ -84,6 +85,7 @@ from apps.professores.serializers import (
 _TAG_ACESSOS = ["Acessos"]
 _TAG_DRE = ["DiretoriaRegionalEducacao"]
 _TAG_ESCOLA = ["Escola"]
+_TAG_CARGO = ["Cargo"]
 _TAG_FUNCIONARIO = ["Funcionario"]
 _TAG_PROFESSOR = ["Professor"]
 
@@ -2333,6 +2335,31 @@ class FuncionariosCargoView(ProfessoresAPIView):
         if not isinstance(data, list):
             return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
         return Response(FuncionarioEscolaSerializer(data, many=True).data)
+
+
+class CargosView(ProfessoresAPIView):
+    """Retorna cargos cadastrados no EOL."""
+
+    @extend_schema(
+        tags=_TAG_CARGO,
+        description="Retorna cargos cadastrados no EOL.",
+        responses={200: CargoSerializer(many=True), 404: None, 502: dict},
+    )
+    def get(self, _request: Request) -> Response:
+        """Retorna cargos cadastrados no EOL.
+
+        Args:
+            _request: Requisição HTTP recebida pela API.
+
+        Returns:
+            Cargos cadastrados no EOL ou status de erro legado.
+        """
+        data = services.get_cargos()
+        if data is None or data == []:
+            return Response(status=404)
+        if not _is_lista_dicionarios(data):
+            return detail_response(_MSG_RESPOSTA_INVALIDA_API, 502)
+        return Response(CargoSerializer(data, many=True).data)
 
 
 class CargosFuncionarioView(ProfessoresAPIView):
