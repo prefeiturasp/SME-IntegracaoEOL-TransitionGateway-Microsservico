@@ -257,7 +257,7 @@ class AlunosUrlsTest(SimpleTestCase):
 
     def test_preserva_parametros_alunos_ativos_data_aula(self) -> None:
         match = resolve(
-            "/api/turmas/9100001/alunos-ativos"
+            "/api/turmas/9100001/alunos-ativos"  # NOSONAR
             "/data-aula-ticks/639031104000000000"
         )
 
@@ -303,7 +303,7 @@ class AlunosUrlsTest(SimpleTestCase):
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         path = (
-            "/api/turmas/{codigo_turma}/alunos-ativos"
+            "/api/turmas/{codigo_turma}/alunos-ativos"  # NOSONAR
             "/data-aula-ticks/{data_ticks}"
         )
         operation = resp.data["paths"][path]["get"]
@@ -320,7 +320,7 @@ class AlunosUrlsTest(SimpleTestCase):
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         path = (
-            "/api/turmas/{codigo_turma}"
+            "/api/turmas/{codigo_turma}"  # NOSONAR
             "/data-matricula-ticks/{data_matricula_ticks}"
         )
         operation = resp.data["paths"][path]["get"]
@@ -337,7 +337,7 @@ class AlunosUrlsTest(SimpleTestCase):
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         path = (
-            "/api/turmas/{codigo_turma}/aluno/{codigo_aluno}"
+            "/api/turmas/{codigo_turma}/aluno/{codigo_aluno}"  # NOSONAR
             "/considera-inativos/{considera_inativos}"
         )
         operation = resp.data["paths"][path]["get"]
@@ -717,7 +717,7 @@ class DadosAcompanhamentoEscolarViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/alunos/dados-acompanhamento-escolar" "?codigoAluno=7000005"
+            "/api/alunos/dados-acompanhamento-escolar?codigoAluno=7000005"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -1334,7 +1334,7 @@ class AlunosAtivosDataAulaTicksViewTest(SimpleTestCase):
     """Valida a resposta de alunos ativos na data da aula."""
 
     _PATH = (
-        "/api/turmas/9100001/alunos-ativos"
+        "/api/turmas/9100001/alunos-ativos"  # NOSONAR
         "/data-aula-ticks/639031104000000000"
     )
 
@@ -1422,7 +1422,7 @@ class AlunosAtivosDataAulaTicksViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/turmas/abc/alunos-ativos"
+            "/api/turmas/abc/alunos-ativos"  # NOSONAR
             "/data-aula-ticks/639031104000000000"
         )
 
@@ -1437,7 +1437,8 @@ class AlunosAtivosDataAulaTicksViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/turmas/0/alunos-ativos" "/data-aula-ticks/639031104000000000"
+            "/api/turmas/0/alunos-ativos"  # NOSONAR
+            "/data-aula-ticks/639031104000000000"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
