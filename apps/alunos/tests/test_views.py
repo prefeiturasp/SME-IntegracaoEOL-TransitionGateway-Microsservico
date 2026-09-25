@@ -14,7 +14,7 @@ from rest_framework.test import APIClient
 _PATCH_QTD_PERIODO = (
     "apps.alunos.views.services.post_quantidade_matriculas_turmas_periodo"
 )
-_GET_QTD_PERIODO = "apps.alunos.views.services.get_quantidade_matriculas_turmas_periodo_em_data_iso"
+_PATCH_QTD_PERIODO_EM_DATA_ISO = "apps.alunos.views.services.post_quantidade_matriculas_turmas_periodo_em_data_iso"
 _PATCH_CODIGOS_TURMAS = (
     "apps.alunos.views.pedagogico_services.post_codigos_turmas_contagem"
 )
@@ -2005,7 +2005,7 @@ class TotalAlunosTurmasPeriodoDataISOViewTest(SimpleTestCase):
         "ano-letivo/2026/dre/100000/inicio/2026-01-01/fim/2026-12-31"
     )
 
-    @patch(_GET_QTD_PERIODO)
+    @patch(_PATCH_QTD_PERIODO_EM_DATA_ISO)
     @patch(_PATCH_CODIGOS_TURMAS)
     @patch(_PATCH_UES_DRE)
     def test_200_retorna_quantidade(
@@ -2055,7 +2055,7 @@ class TotalAlunosTurmasPeriodoDataISOViewTest(SimpleTestCase):
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
-    @patch(_GET_QTD_PERIODO)
+    @patch(_PATCH_QTD_PERIODO_EM_DATA_ISO)
     @patch(_PATCH_CODIGOS_TURMAS)
     @patch(_PATCH_UES_DRE)
     def test_204_retorna_vazio_quando_quantidade_zero(
