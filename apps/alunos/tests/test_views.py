@@ -717,8 +717,7 @@ class DadosAcompanhamentoEscolarViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/alunos/dados-acompanhamento-escolar"
-            "?codigo_aluno=7000005"
+            "/api/alunos/dados-acompanhamento-escolar" "?codigoAluno=7000005"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -800,7 +799,7 @@ class QuantidadeMatriculadosViewTest(SimpleTestCase):
 
         resp = client.get(
             "/api/alunos/ano-letivo/2026/matriculados/quantidade"
-            "?ue_codigo=000005&modalidade=5&ano=3&turma=9100006"
+            "?ueCodigo=000005&modalidade=5&ano=3&turma=9100006"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -838,9 +837,7 @@ class QuantidadeMatriculadosViewTest(SimpleTestCase):
         )
         client = _cliente_autenticado()
 
-        resp = client.get(
-            "/api/alunos/ano-letivo/0/matriculados/quantidade"
-        )
+        resp = client.get("/api/alunos/ano-letivo/0/matriculados/quantidade")
 
         self.assertEqual(resp.status_code, 601)
 
@@ -1128,7 +1125,7 @@ class ResponsaveisViewTest(SimpleTestCase):
 
         resp = client.get(
             "/api/alunos/responsaveis"
-            "?codigo_dre=100&codigo_ue=100001&ano_letivo=2026"
+            "?codigoDre=100&codigoUe=100001&anoLetivo=2026"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -1163,7 +1160,7 @@ class ResponsaveisViewTest(SimpleTestCase):
     def test_400_quando_ano_invalido(self, mock_service: MagicMock) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/alunos/responsaveis?ano_letivo=abc")
+        resp = client.get("/api/alunos/responsaveis?anoLetivo=abc")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         mock_service.assert_not_called()
@@ -1440,8 +1437,7 @@ class AlunosAtivosDataAulaTicksViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/turmas/0/alunos-ativos"
-            "/data-aula-ticks/639031104000000000"
+            "/api/turmas/0/alunos-ativos" "/data-aula-ticks/639031104000000000"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -1582,9 +1578,7 @@ class AlunosAtivosTurmaDataAulaISOViewTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get(
-            "/api/turmas/abc/alunos-ativos/data-aula/2026-01-04"
-        )
+        resp = client.get("/api/turmas/abc/alunos-ativos/data-aula/2026-01-04")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
@@ -2901,7 +2895,7 @@ class AlunosDaUeViewTest(SimpleTestCase):
         mock_service.return_value = [_aluno_ue_payload()]
         client = _cliente_autenticado()
 
-        resp = client.get(f"{self._URL}?nome_aluno=Fulano&codigo_eol=123456")
+        resp = client.get(f"{self._URL}?nomeAluno=Fulano&codigoEol=123456")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         aluno = resp.json()[0]
@@ -3085,7 +3079,7 @@ class AlunosAtivosPeriodoTurmaViewTest(SimpleTestCase):
         mock_service.return_value = [_alunos_ativos_turma_payload()]
         client = _cliente_autenticado()
 
-        resp = client.get(self._URL + "?data_referencia_inicio=2026-01-01")
+        resp = client.get(self._URL + "?dataReferenciaInicio=2026-01-01")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         item = resp.json()[0]
@@ -3127,8 +3121,7 @@ class TotalAlunosAtivosPeriodoViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            self._URL
-            + "?ue_id=100001&dre_id=100000&modalidades=5&modalidades=6"
+            self._URL + "?ueId=100001&dreId=100000&modalidades=5&modalidades=6"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -3181,9 +3174,7 @@ class AlunosListViewTest(SimpleTestCase):
         mock_service.return_value = [_turma_payload(1), _turma_payload(2)]
         client = _cliente_autenticado()
 
-        resp = client.get(
-            "/api/alunos/alunos?codigos_aluno=1&codigos_aluno=2"
-        )
+        resp = client.get("/api/alunos/alunos?codigosAluno=1&codigosAluno=2")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         data = resp.json()
@@ -3243,8 +3234,8 @@ class CodigosTurmasRegularesAlunoViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            self._PATH + "?tipos_turma=1&tipos_turma=5&ue_codigo=000006"
-            "&data_referencia=2026-06-01&semestre=1"
+            self._PATH + "?tiposTurma=1&tiposTurma=5&ueCodigo=000006"
+            "&dataReferencia=2026-06-01&semestre=1"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -3318,7 +3309,7 @@ class CodigoTurmaAlunoComponenteCurricularViewTest(SimpleTestCase):
         mock_service.return_value = [12345]
         client = _cliente_autenticado()
 
-        resp = client.get(self._PATH + "?tipos_turma=1&ue_codigo=000006")
+        resp = client.get(self._PATH + "?tiposTurma=1&ueCodigo=000006")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), ["12345"])
@@ -3418,7 +3409,7 @@ class AlunosPorAnoViewTest(SimpleTestCase):
         mock_service.return_value = [_turma_payload(1), _turma_payload(2)]
         client = _cliente_autenticado()
 
-        resp = client.get(self._URL + "?codigos_aluno=1&codigos_aluno=2")
+        resp = client.get(self._URL + "?codigosAluno=1&codigosAluno=2")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         data = resp.json()
@@ -3459,7 +3450,7 @@ class AlunosPorAnoViewTest(SimpleTestCase):
         )
         client = _cliente_autenticado()
 
-        resp = client.get(self._URL + "?codigos_aluno=1")
+        resp = client.get(self._URL + "?codigosAluno=1")
 
         self.assertEqual(resp.status_code, 601)
 
@@ -3470,7 +3461,7 @@ class AlunosPorAnoViewTest(SimpleTestCase):
         mock_service.side_effect = _request_error()
         client = _cliente_autenticado()
 
-        resp = client.get(self._URL + "?codigos_aluno=1")
+        resp = client.get(self._URL + "?codigosAluno=1")
 
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
 
@@ -3497,7 +3488,7 @@ class QuantidadeMatriculadosCCViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            self._URL + "?componentes_curriculares=1310&ue_id=000003"
+            self._URL + "?componentesCurriculares=1310&ueId=000003"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -3543,7 +3534,7 @@ class QuantidadeMatriculadosCCViewTest(SimpleTestCase):
         mock_service.side_effect = _request_error()
         client = _cliente_autenticado()
 
-        resp = client.get(self._URL + "?componentes_curriculares=1310")
+        resp = client.get(self._URL + "?componentesCurriculares=1310")
 
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
 

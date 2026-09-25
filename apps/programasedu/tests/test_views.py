@@ -117,7 +117,7 @@ class VerificarAlunosPapViewTest(SimpleTestCase):
 
         resp = client.get(
             "/api/alunos/alunos-pap/2026",
-            {"codigos_alunos": ["1", "2"]},
+            {"codigosAlunos": ["1", "2"]},
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -295,9 +295,7 @@ class ObterTurmaSrmERegularDoAlunoViewTest(SimpleTestCase):
         ]
         client = _cliente_autenticado()
 
-        resp = client.get(
-            "/api/alunos/paee/turma-srm-e-regular/aluno/7000001"
-        )
+        resp = client.get("/api/alunos/paee/turma-srm-e-regular/aluno/7000001")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         item = resp.json()[0]
