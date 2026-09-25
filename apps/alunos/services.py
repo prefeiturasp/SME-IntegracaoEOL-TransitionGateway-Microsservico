@@ -632,6 +632,38 @@ def post_quantidade_matriculas_turmas_periodo(
     return int(corpo.get("quantidade", 0))
 
 
+def get_quantidade_matriculas_turmas_periodo_em_data_iso(
+    codigos_turmas: list[int],
+    data_fim: str,
+) -> int:
+    """Retorna a quantidade de alocações válidas nas turmas até a data.
+
+    Args:
+        codigos_turmas: Códigos EOL das turmas consideradas.
+        data_fim: Data limite em formato ISO 8601.
+
+    Returns:
+        Quantidade de alocações no período, ou ``0`` quando não houver
+        turmas.
+
+    Raises:
+        httpx.HTTPStatusError: Se o serviço externo retornar status de erro.
+        httpx.RequestError: Se o serviço externo estiver inacessível.
+    """
+    if not codigos_turmas:
+        return 0
+    resp = _client.get(
+        f"{_BASE}/matriculas-turmas/quantidade",
+        params={
+            "codigos_turmas": codigos_turmas,
+            "data_fim": data_fim,
+        },
+    )
+    resp.raise_for_status()
+    corpo = _client.json_or_none(resp) or {}
+    return int(corpo.get("quantidade", 0))
+
+
 def get_acompanhamento_escolar_turma(codigo_turma: str) -> Any:
     """Retorna alunos e responsáveis vigentes de uma turma de acompanhamento.
 

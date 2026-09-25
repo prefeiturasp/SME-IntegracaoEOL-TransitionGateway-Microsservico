@@ -14,6 +14,7 @@ from rest_framework.test import APIClient
 _PATCH_QTD_PERIODO = (
     "apps.alunos.views.services.post_quantidade_matriculas_turmas_periodo"
 )
+_GET_QTD_PERIODO = "apps.alunos.views.services.get_quantidade_matriculas_turmas_periodo_em_data_iso"
 _PATCH_CODIGOS_TURMAS = (
     "apps.alunos.views.pedagogico_services.post_codigos_turmas_contagem"
 )
@@ -718,8 +719,7 @@ class DadosAcompanhamentoEscolarViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/alunos/dados-acompanhamento-escolar"
-            "?codigo_aluno=7000005"
+            "/api/alunos/dados-acompanhamento-escolar?codigo_aluno=7000005"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -852,9 +852,7 @@ class QuantidadeMatriculadosViewTest(SimpleTestCase):
         )
         client = _cliente_autenticado()
 
-        resp = client.get(
-            "/api/alunos/ano-letivo/0/matriculados/quantidade"
-        )
+        resp = client.get("/api/alunos/ano-letivo/0/matriculados/quantidade")
 
         self.assertEqual(resp.status_code, 601)
 
@@ -1996,6 +1994,121 @@ class TotalAlunosTurmasPeriodoViewTest(SimpleTestCase):
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_ues.assert_not_called()
+
+
+class TotalAlunosTurmasPeriodoDataISOViewTest(SimpleTestCase):
+    """Valida a orquestração da contagem de alunos por ano/modalidade/DRE."""
+
+    _PATH = (
+        "/api/turmas/todos-alunos/ano-turma/1/modalidade/1/"
+        "ano-letivo/2026/dre/100000/inicio/2026-01-01/fim/2026-12-31"
+    )
+
+    @patch(_GET_QTD_PERIODO)
+    @patch(_PATCH_CODIGOS_TURMAS)
+    @patch(_PATCH_UES_DRE)
+    def test_200_retorna_quantidade(
+        self, mock_ues: MagicMock, mock_turmas: MagicMock, mock_qtd: MagicMock
+    ) -> None:
+        """Valida a contagem de alunos por ano/modalidade/DRE."""
+        mock_ues.return_value = {"codigos_ue": ["000010", "200000"]}
+        mock_turmas.return_value = [9100010, 9100011]
+        mock_qtd.return_value = 9000
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), 9000)
+        mock_turmas.assert_called_once_with(
+            ["000010", "200000"],
+            ano_turma="1",
+            codigo_modalidade=1,
+            ano_letivo="2026",
+        )
+        mock_qtd.assert_called_once_with([9100010, 9100011], "2026-12-31")
+
+    @patch(_PATCH_UES_DRE)
+    def test_204_retorna_vazio_quando_sem_ues(
+        self, mock_ues: MagicMock
+    ) -> None:
+        """Valida contagem por ano/modalidade/DRE sem UEs."""
+        mock_ues.return_value = {"codigos_ue": []}
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch(_PATCH_CODIGOS_TURMAS)
+    @patch(_PATCH_UES_DRE)
+    def test_204_retorna_vazio_quando_sem_turmas(
+        self, mock_ues: MagicMock, mock_turmas: MagicMock
+    ) -> None:
+        """Valida contagem por ano/modalidade/DRE sem turmas."""
+        mock_ues.return_value = {"codigos_ue": ["000010"]}
+        mock_turmas.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch(_GET_QTD_PERIODO)
+    @patch(_PATCH_CODIGOS_TURMAS)
+    @patch(_PATCH_UES_DRE)
+    def test_204_retorna_vazio_quando_quantidade_zero(
+        self, mock_ues: MagicMock, mock_turmas: MagicMock, mock_qtd: MagicMock
+    ) -> None:
+        """Valida contagem por ano/modalidade/DRE com quantidade zero."""
+        mock_ues.return_value = {"codigos_ue": ["000010"]}
+        mock_turmas.return_value = [9100010]
+        mock_qtd.return_value = 0
+        client = _cliente_autenticado()
+
+        resp = client.get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch(_PATCH_UES_DRE)
+    def test_400_retorna_mensagem_quando_modalidade_zero(
+        self, mock_ues: MagicMock
+    ) -> None:
+        """Valida contagem por ano/modalidade/DRE com modalidade zero."""
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/turmas/todos-alunos/ano-turma/1/modalidade/0/"
+            "ano-letivo/2026/dre/100000/inicio/2026-01-01/fim/2026-12-31"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            "É preciso inserir o ano da turma e a modalidade para "
+            "buscar alunos.",
+        )
+        mock_ues.assert_not_called()
+
+    @patch(_PATCH_UES_DRE)
+    def test_400_retorna_mensagem_quando_fim_invalido(
+        self, mock_ues: MagicMock
+    ) -> None:
+        """Valida contagem por ano/modalidade/DRE com ticks fim inválido."""
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/turmas/todos-alunos/ano-turma/1/modalidade/5/"
+            "ano-letivo/2026/dre/100000/inicio/2026-01-01/fim/400"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.json(),
+            "É preciso inserir o ano da turma e a modalidade para "
+            "buscar alunos.",
+        )
         mock_ues.assert_not_called()
 
 
@@ -3214,9 +3327,7 @@ class AlunosListViewTest(SimpleTestCase):
         mock_service.return_value = [_turma_payload(1), _turma_payload(2)]
         client = _cliente_autenticado()
 
-        resp = client.get(
-            "/api/alunos/alunos?codigos_aluno=1&codigos_aluno=2"
-        )
+        resp = client.get("/api/alunos/alunos?codigos_aluno=1&codigos_aluno=2")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         data = resp.json()
