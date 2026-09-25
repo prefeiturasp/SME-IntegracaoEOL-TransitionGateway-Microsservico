@@ -9,7 +9,6 @@ from apps.pedagogico.views import (
     AlunosAtivosTurmaRedisMultplexViewSet,
     AlunosAtivosTurmaSemRedisViewSet,
     AlunosTurmaConsideraInativosViewSet,
-    ComponentesCurricularesViewSet,
     ComponentesFuncionarioViewSet,
     ComponentesPlanejamentoViewSet,
     ComponentesPorListaTurmasViewSet,
@@ -46,55 +45,55 @@ _TURMA_FUNCIONARIO_PREFIXO = (
 turma_urlpatterns = [
     path(
         "anos-letivos/<int:ano_letivo>/professor/"
-        + "<str:professor_rf>/turmas-historicas-geral/",
+        + "<str:professor_rf>/turmas-historicas-geral",
         TurmasHistoricasGeraisProfessorViewSet.as_view(),
         name="turmas-historicas-gerais-professor",
     ),
     path(
-        "itinerario/ensino-medio/",
+        "itinerario/ensino-medio",
         ItinerariosEnsinoMedioViewSet.as_view(),
         name="itinerarios-ensino-medio",
     ),
     path(
-        "ue/<str:codigo_ue>/" + "sincronizacoes-institucionais/anos-letivos/",
+        "ue/<str:codigo_ue>/" + "sincronizacoes-institucionais/anos-letivos",
         SincronizacoesInstitucionaisAnosLetivosViewSet.as_view(),
         name="sincronizacoes-institucionais-anos-letivos",
     ),
     path(
-        "turmas-regulares/",
+        "turmas-regulares",
         TurmasRegularesViewSet.as_view(),
     ),
     path(
-        "turmas-programa/",
+        "turmas-programa",
         TurmasProgramaViewSet.as_view(),
     ),
     path(
-        "listar-turmas/",
+        "listar-turmas",
         ListarTurmasViewSet.as_view(),
     ),
     path(
         "ues/<str:codigo_ue>/modalidades/<int:modalidade>/anos/"
-        "<int:ano_letivo>/componentes/",
+        "<int:ano_letivo>/componentes",
         ListagemTurmasComponentesViewSet.as_view(),
         name="listagem-turmas-componentes",
     ),
     path(
-        "<str:codigo_turma>/sem-redis/",
+        "<str:codigo_turma>/sem-redis",
         AlunosAtivosTurmaSemRedisViewSet.as_view(),
         name="alunos-ativos-turma-sem-redis",
     ),
     path(
-        "<str:codigo_turma>/redis-Multplex/",
+        "<str:codigo_turma>/redis-Multplex",
         AlunosAtivosTurmaRedisMultplexViewSet.as_view(),
         name="alunos-ativos-turma-redis-multplex",
     ),
     path(
-        "<str:codigo_turma>/considera-inativos/<str:considera_inativos>/",
+        "<str:codigo_turma>/considera-inativos/<str:considera_inativos>",
         AlunosTurmaConsideraInativosViewSet.as_view(),
         name="alunos-turma-considera_inativos",
     ),
     path(
-        "<str:codigo_turma>/dados/",
+        "<str:codigo_turma>/dados",
         DadosTurmaViewSet.as_view(),
     ),
 ]
@@ -102,7 +101,7 @@ turma_urlpatterns = [
 ue_urlpatterns = [
     path(
         "ues/<str:codigo_ue>/turmas/<str:codigo_turma>/"
-        + "sincronizacoes-institucionais/",
+        + "sincronizacoes-institucionais",
         SincronizacaoInstitucionalTurmaViewSet.as_view(),
         name="sincronizacao-institucional-turma",
     ),
@@ -110,24 +109,24 @@ ue_urlpatterns = [
 
 escola_urlpatterns = [
     path(
-        "escolas/modalidades_ensino/",
+        "escolas/modalidades_ensino",
         ModalidadesEnsinoViewSet.as_view(),
         name="modalidades-ensino",
     ),
     path(
         "escolas/<str:codigo_ue>/salas/<str:tipo_sala>/anos_letivos/"
-        "<str:ano_letivo>/",
+        "<str:ano_letivo>",
         TurmasPorTipoSalaViewSet.as_view(),
         name="turmas-por-tipo-sala",
     ),
     path(
-        "escolas/<str:codigo_ue>/turmas/anos_letivos/<str:ano_letivo>/",
+        "escolas/<str:codigo_ue>/turmas/anos_letivos/<str:ano_letivo>",
         TurmasPorEscolaViewSet.as_view(),
         name="turmas-por-escola",
     ),
     path(
         "escolas/<str:codigo_ue>/turmasSondagem/anos_letivos/"
-        "<str:ano_letivo>/",
+        "<str:ano_letivo>",
         TurmasSondagemViewSet.as_view(),
         name="turmas-sondagem",
     ),
@@ -135,78 +134,74 @@ escola_urlpatterns = [
 
 urlpatterns = [
     path(
-        "turmas/regulares/",
+        "turmas/regulares",
         ComponentesTurmasRegularesViewSet.as_view(),
     ),
     path(
-        "turmas/",
+        "turmas",
         ComponentesPorListaTurmasViewSet.as_view(),
     ),
     path(
-        "dados-aula-turma/",
+        "dados-aula-turma",
         DadosAulaTurmaViewSet.as_view(),
     ),
     path(
-        "anos/<int:ano_turma>/regencia/",
+        "anos/<int:ano_turma>/regencia",
         ComponentesRegenciaViewSet.as_view(),
     ),
     path(
         _TURMA_FUNCIONARIO_PREFIXO
         + "perfis/<str:id_perfil>/agrupaComponenteCurricular/"
-        + "<str:agrupa_componente_curricular>/",
+        + "<str:agrupa_componente_curricular>",
         ComponentesTurmaFuncionarioViewSet.as_view(),
     ),
     path(
-        _TURMA_FUNCIONARIO_PREFIXO + "perfis/<str:id_perfil>/planejamento/",
+        _TURMA_FUNCIONARIO_PREFIXO + "perfis/<str:id_perfil>/planejamento",
         ComponentesPlanejamentoViewSet.as_view(),
     ),
     path(
-        "turmas/<str:codigo_turma>/sem-atribuicao/" + "<int:data_base_tick>/",
+        "turmas/<str:codigo_turma>/sem-atribuicao/" + "<int:data_base_tick>",
         ComponentesSemAtribuicaoViewSet.as_view(),
     ),
     path(
-        "turmas/<str:codigo_turma>/sem-atribuicao/data-base/<str:data_base>/",
+        "turmas/<str:codigo_turma>/sem-atribuicao/data-base/<str:data_base>",
         ComponentesSemAtribuicaoBaseDateViewSet.as_view(),
     ),
     path(
-        _TURMA_FUNCIONARIO_PREFIXO + "perfis/<str:id_perfil>/validar/pap/",
+        _TURMA_FUNCIONARIO_PREFIXO + "perfis/<str:id_perfil>/validar/pap",
         ValidarComponentePapViewSet.as_view(),
     ),
     path(
-        "funcionarios/<str:login>/perfis/<str:id_perfil>/",
+        "funcionarios/<str:login>/perfis/<str:id_perfil>",
         ComponentesFuncionarioViewSet.as_view(),
     ),
     path(
-        "ues/<str:ue_id>/modalidades/<int:modalidade>/anos/<int:ano_letivo>/anos-escolares/",
+        "ues/<str:ue_id>/modalidades/<int:modalidade>/anos/<int:ano_letivo>/anos-escolares",
         ComponentesTurmaAnoViewSet.as_view(),
     ),
     path(
-        "ues/<str:ue_id>/modalidades/<int:modalidade>/anos/<int:ano_letivo>/",
+        "ues/<str:ue_id>/modalidades/<int:modalidade>/anos/<int:ano_letivo>",
         ComponentesTurmaProgramaViewSet.as_view(),
     ),
     path(
-        "ues/<str:ue_id>/turmas/",
+        "ues/<str:ue_id>/turmas",
         ComponentesTurmaViewSet.as_view(),
     ),
     path(
-        "ano-turma/ano-letivo/<int:ano_letivo>/",
+        "ano-turma/ano-letivo/<int:ano_letivo>",
         GradeComponentesCurricularesViewSet.as_view(),
     ),
     path(
-        "territorio-saber/agrupamentos-correlacionados/",
+        "territorio-saber/agrupamentos-correlacionados",
         AgrupamentosCorrelacionadosLoteViewSet.as_view(),
     ),
     path(
-        "territorio-saber/agrupamentos/",
+        "territorio-saber/agrupamentos",
         AgrupamentosTerritorioViewSet.as_view(),
     ),
     path(
         "<int:codigo_componente>/territorio-saber/"
-        + "agrupamentos-correlacionados/",
+        + "agrupamentos-correlacionados",
         AgrupamentosCorrelacionadosViewSet.as_view(),
-    ),
-    path(
-        "",
-        ComponentesCurricularesViewSet.as_view(),
     ),
 ]

@@ -59,40 +59,39 @@ turma_urlpatterns = [
         name="matriculas-turmas-aluno",
     ),
     path(
-        "<str:codigo_turma>/alunos-ativos/"
-        "data-aula-ticks/<str:data_ticks>/",
+        "<str:codigo_turma>/alunos-ativos/" "data-aula-ticks/<str:data_ticks>",
         AlunosAtivosDataAulaTicksView.as_view(),
         name="alunos-ativos-data-aula-ticks",
     ),
     path(
-        "<str:codigo_turma>/alunos-ativos/data-aula/<str:data_aula>/",
+        "<str:codigo_turma>/alunos-ativos/data-aula/<str:data_aula>",
         AlunosAtivosDataAulaView.as_view(),
         name="alunos-ativos-data-aula",
     ),
     path(
         "<str:codigo_turma>/data-matricula-ticks/"
-        "<str:data_matricula_ticks>/",
+        "<str:data_matricula_ticks>",
         AlunosDataMatriculaTicksView.as_view(),
         name="alunos-data-matricula-ticks",
     ),
     path(
-        "<str:codigo_turma>/data-matricula/<str:data_matricula>/",
+        "<str:codigo_turma>/data-matricula/<str:data_matricula>",
         AlunosDataMatriculaView.as_view(),
         name="alunos-data-matricula",
     ),
     path(
         "<str:codigo_turma>/aluno/<str:codigo_aluno>/"
-        "considera-inativos/<str:considera_inativos>/",
+        "considera-inativos/<str:considera_inativos>",
         AlunoTurmaConsideraInativosView.as_view(),
         name="aluno-turma-considera-inativos",
     ),
     path(
-        "<str:codigo_turma>/aluno/<str:codigo_aluno>/matriculas/",
+        "<str:codigo_turma>/aluno/<str:codigo_aluno>/matriculas",
         AlunoMatriculasTurmaView.as_view(),
         name="aluno-matriculas-turma",
     ),
     path(
-        "<str:codigo_turma>/calculo-frequencia/",
+        "<str:codigo_turma>/calculo-frequencia",
         AlunosCalculoFrequenciaTurmaView.as_view(),
         name="alunos-calculo-frequencia-turma",
     ),
@@ -112,14 +111,13 @@ turma_urlpatterns = [
         name="alunos-turma-ano-letivo",
     ),
     path(
-        "anos-letivos/<str:ano_letivo>/alunos/<str:codigo_aluno>/"
-        "regulares/",
+        "anos-letivos/<str:ano_letivo>/alunos/<str:codigo_aluno>/" "regulares",
         CodigosTurmasRegularesAlunoView.as_view(),
         name="codigos-turmas-regulares-aluno",
     ),
     path(
         "anos-letivos/<str:ano_letivo>/alunos/<str:codigo_aluno>/"
-        "componentes-curriculares/<str:componente_curricular_codigo>/",
+        "componentes-curriculares/<str:componente_curricular_codigo>",
         CodigoTurmaAlunoComponenteCurricularView.as_view(),
         name="codigo-turma-aluno-componente-curricular",
     ),
@@ -211,11 +209,6 @@ urlpatterns = [
         "<str:codigo_aluno>/turmas",
         AlunoTurmasView.as_view(),
         name="aluno-turmas",
-    ),
-    path(
-        "<str:codigo_aluno>/turmas/",
-        AlunoTurmasView.as_view(),
-        name="aluno-turmas-com-barra",
     ),
     path(
         "<str:codigo_aluno>/turmas/anosLetivos/<str:ano_letivo>/"
