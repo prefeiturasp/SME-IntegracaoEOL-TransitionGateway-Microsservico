@@ -68,7 +68,7 @@ class EstruturaVigentePorDreViewTest(SimpleTestCase):
         mock_svc.return_value = _ESTRUTURA
         client = _cliente_autenticado()
 
-        resp = client.get(f"{_PREFIX}/100000/")
+        resp = client.get(f"{_PREFIX}/100000")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.data["dres"][0]["codigo"], "100000")
@@ -79,7 +79,7 @@ class EstruturaVigentePorDreViewTest(SimpleTestCase):
         mock_svc.return_value = _ESTRUTURA_VAZIA
         client = _cliente_autenticado()
 
-        resp = client.get(f"{_PREFIX}/999999/")
+        resp = client.get(f"{_PREFIX}/999999")
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
         mock_svc.assert_called_once_with("999999")
@@ -90,13 +90,13 @@ class EstruturaVigentePorDreViewTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get(f"{_PREFIX}/%20/")
+        resp = client.get(f"{_PREFIX}/%20")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         mock_svc.assert_not_called()
 
     def test_403_sem_api_key(self) -> None:
-        resp = APIClient().get(f"{_PREFIX}/100000/")
+        resp = APIClient().get(f"{_PREFIX}/100000")
 
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -109,7 +109,7 @@ class EstruturaVigenteViewTest(SimpleTestCase):
         mock_svc.return_value = _ESTRUTURA
         client = _cliente_autenticado()
 
-        resp = client.post(f"{_PREFIX}/", [9000001], format="json")
+        resp = client.post(f"{_PREFIX}", [9000001], format="json")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.data["dres"][0]["codigo"], "100000")
@@ -120,7 +120,7 @@ class EstruturaVigenteViewTest(SimpleTestCase):
         mock_svc.return_value = _ESTRUTURA_VAZIA
         client = _cliente_autenticado()
 
-        resp = client.post(f"{_PREFIX}/", [9000001], format="json")
+        resp = client.post(f"{_PREFIX}", [9000001], format="json")
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
@@ -128,7 +128,7 @@ class EstruturaVigenteViewTest(SimpleTestCase):
     def test_400_quando_lista_vazia(self, mock_svc: MagicMock) -> None:
         client = _cliente_autenticado()
 
-        resp = client.post(f"{_PREFIX}/", [], format="json")
+        resp = client.post(f"{_PREFIX}", [], format="json")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         mock_svc.assert_not_called()
@@ -139,7 +139,7 @@ class EstruturaVigenteViewTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.post(f"{_PREFIX}/", ["abc"], format="json")
+        resp = client.post(f"{_PREFIX}", ["abc"], format="json")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         mock_svc.assert_not_called()
@@ -148,7 +148,7 @@ class EstruturaVigenteViewTest(SimpleTestCase):
     def test_400_quando_corpo_nao_e_lista(self, mock_svc: MagicMock) -> None:
         client = _cliente_autenticado()
 
-        resp = client.post(f"{_PREFIX}/", {"codigo": 9000001}, format="json")
+        resp = client.post(f"{_PREFIX}", {"codigo": 9000001}, format="json")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         mock_svc.assert_not_called()
@@ -161,13 +161,13 @@ class EstruturaVigenteViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            f"{_PREFIX}/", [9000001, "abc", None], format="json"
+            f"{_PREFIX}", [9000001, "abc", None], format="json"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         mock_svc.assert_called_once_with([9000001])
 
     def test_403_sem_api_key(self) -> None:
-        resp = APIClient().post(f"{_PREFIX}/", [9000001], format="json")
+        resp = APIClient().post(f"{_PREFIX}", [9000001], format="json")
 
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)

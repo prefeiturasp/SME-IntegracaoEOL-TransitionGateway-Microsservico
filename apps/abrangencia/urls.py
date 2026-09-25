@@ -9,12 +9,12 @@ from apps.abrangencia.views import (
 
 urlpatterns = [
     path(
-        "abrangencia/estrutura-vigente/",
+        "abrangencia/estrutura-vigente",
         EstruturaVigenteView.as_view(),
         name="abrangencia-estrutura-vigente",
     ),
     path(
-        "abrangencia/estrutura-vigente/<str:codigo_dre>/",
+        "abrangencia/estrutura-vigente/<str:codigo_dre>",
         EstruturaVigentePorDreView.as_view(),
         name="abrangencia-estrutura-vigente-por-dre",
     ),

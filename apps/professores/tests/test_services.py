@@ -4201,6 +4201,18 @@ class GetFuncionariosNovosContratosTest(SimpleTestCase):
         self.assertEqual(result, [{"rf": 7900001}])
 
     @patch("apps.professores.services._client")
+    def test_cargos_chama_path_correto(self, mock_client: MagicMock) -> None:
+        mock_response = MagicMock()
+        mock_client.get.return_value = mock_response
+        mock_client.json_or_none.return_value = [{"codigo_cargo": 3360}]
+
+        result = services.get_cargos()
+
+        mock_client.get.assert_called_once_with("/api/v1/professores/cargos/")
+        mock_client.json_or_none.assert_called_once_with(mock_response)
+        self.assertEqual(result, [{"codigo_cargo": 3360}])
+
+    @patch("apps.professores.services._client")
     def test_funcionarios_conecta_formacao_chama_path_correto(
         self, mock_client: MagicMock
     ) -> None:

@@ -25,3 +25,13 @@ class DomainAPIViewTest(SimpleTestCase):
             response.data,
             {"detail": "Serviço de alunos indisponível."},
         )
+
+    def test_aceita_json_patch_como_json(self) -> None:
+        media_types = {
+            parser.media_type for parser in DomainAPIView.parser_classes
+        }
+
+        self.assertEqual(
+            media_types,
+            {"application/json", "application/json-patch+json"},
+        )

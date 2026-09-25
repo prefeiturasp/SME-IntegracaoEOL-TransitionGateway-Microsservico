@@ -6,6 +6,7 @@ from apps.professores.views import (
     AdministradorSgpEscolaView,
     BuscaTurmasAtribuidasProfessoresEscolaView,
     CargosFuncionarioView,
+    CargosView,
     EscolaFuncionariosCargosView,
     EscolaFuncionariosCargoView,
     EscolaFuncionariosFuncaoAtividadeView,
@@ -97,74 +98,75 @@ class _BooleanConverter:
 register_converter(_BooleanConverter, "bool")
 
 urlpatterns = [
+    path("cargos", CargosView.as_view(), name="cargos-listar"),
     path(
-        "funcionarios/turmas/<str:codigo_turma>/disciplinas/",
+        "funcionarios/turmas/<str:codigo_turma>/disciplinas",
         FuncionarioTurmaDisciplinasView.as_view(),
     ),
     path(
-        "funcionarios/<str:login>/perfis/<str:id_perfil>/turmas/"
-        "<str:codigo_turma>/disciplinas/planejamento/",
+        "funcionarios/<str:login>/perfis/<str:id_perfil>/turmas/"  # NOSONAR
+        "<str:codigo_turma>/disciplinas/planejamento",
         FuncionarioPerfilTurmaDisciplinasPlanejamentoView.as_view(),
     ),
     path(
-        "funcionarios/<str:login>/perfis/<str:id_perfil>/turmas/"
-        "<str:codigo_turma>/disciplinas/",
+        "funcionarios/<str:login>/perfis/<str:id_perfil>/turmas/"  # NOSONAR
+        "<str:codigo_turma>/disciplinas",
         FuncionarioPerfilTurmaDisciplinasView.as_view(),
     ),
     path(
-        "funcionarios/<str:login>/perfis/<str:id_perfil>/turmas/",
+        "funcionarios/<str:login>/perfis/<str:id_perfil>/turmas",
         FuncionarioPerfilTurmasView.as_view(),
     ),
     path(
-        "funcionarios/turmas/",
+        "funcionarios/turmas",
         FuncionariosTurmasView.as_view(),
     ),
     path(
-        "funcionarios/BuscarTurmasElegiveis/",
+        "funcionarios/BuscarTurmasElegiveis",
         FuncionariosBuscarTurmasElegiveisView.as_view(),
     ),
     path(
-        "funcionarios/funcionario-externo/<str:cpf>/",
+        "funcionarios/funcionario-externo/<str:cpf>",
         FuncionarioExternoCPFView.as_view(),
     ),
     path(
-        "funcionarios/BuscarPorListaLogin/",
+        "funcionarios/BuscarPorListaLogin",
         FuncionariosBuscarPorListaLoginView.as_view(),
     ),
     path(
-        "funcionarios/unidade/<str:codigo_dre_ue>/",
+        "funcionarios/unidade/<str:codigo_dre_ue>",
         FuncionariosUnidadeView.as_view(),
     ),
     path(
-        "funcionarios/admins/sme/",
+        "funcionarios/admins/sme",
         FuncionariosAdminsSmeView.as_view(),
     ),
     path(
-        "funcionarios/DadosSigpae/<str:codigo_rf>/",
+        "funcionarios/DadosSigpae/<str:codigo_rf>",
         FuncionarioDadosSigpaeView.as_view(),
     ),
     path(
-        "funcionarios/",
+        "funcionarios",
         FuncionariosView.as_view(),
     ),
     path(
-        "professores/<str:codigo_rf>/BuscarPorRf/<int:ano_letivo>/",
+        "professores/<str:codigo_rf>/BuscarPorRf/<int:ano_letivo>",
         ProfessorBuscarPorRfView.as_view(),
     ),
     path(
-        "professores/<str:codigo_rf>/BuscarPorRfDreUe/<int:ano_letivo>/",
+        "professores/<str:codigo_rf>/BuscarPorRfDreUe/<int:ano_letivo>",
         ProfessorBuscarPorRfDreUeView.as_view(),
     ),
     path(
-        "professores/<int:ano_letivo>/BuscarPorListaRF/",
+        "professores/<int:ano_letivo>/BuscarPorListaRF",
         ProfessoresBuscarPorListaRfAnoView.as_view(),
     ),
     path(
-        "professores/<int:ano_letivo>/AutoComplete/<str:dre_id>/",
+        "professores/<int:ano_letivo>/AutoComplete/<str:dre_id>",
         ProfessorAutoCompleteView.as_view(),
     ),
     path(
-        "professores/titulares/",
+        "professores/titulares",
         ProfessoresTitularesPorTurmasView.as_view(),
     ),
     path(
@@ -172,70 +174,70 @@ urlpatterns = [
         ProfessoresTitularesPorUeView.as_view(),
     ),
     path(
-        "professores/titular/turmas/<str:codigo_turma>/"
+        "professores/titular/turmas/<str:codigo_turma>/"  # NOSONAR
         "componentes-curriculares/<str:codigo_componente_curricular>",
         ProfessorTitularPorTurmaDisciplinaView.as_view(),
     ),
     path(
-        "professores/<str:codigo_rf>/ehEmei/",
+        "professores/<str:codigo_rf>/ehEmei",
         ProfessorEhEmeiView.as_view(),
     ),
     path(
-        "professores/<str:codigo_rf>/turmas/",
+        "professores/<str:codigo_rf>/turmas",
         ProfessorTurmasView.as_view(),
     ),
     path(
-        "professores/<str:codigo_turma>/titulares/"
+        "professores/<str:codigo_turma>/titulares/"  # NOSONAR
         "realizaAgrupamentoComponente/<bool:realiza_agrupamento>",
         ProfessoresTitularesPorTurmaView.as_view(),
     ),
     path(
-        "professores/<str:codigo_turma>/titularesPorRf/"
+        "professores/<str:codigo_turma>/titularesPorRf/"  # NOSONAR
         "realizaAgrupamentoComponente/<bool:agrupa>",
         ProfessoresTitularesPorTurmaPorRfView.as_view(),
     ),
     path(
-        "professores/<str:codigo_rf>/disciplina/<str:disciplina_id>/turmas/",
+        "professores/<str:codigo_rf>/disciplina/<str:disciplina_id>/turmas",
         ProfessorDisciplinaTurmasView.as_view(),
     ),
     path(
-        "professores/<str:codigo_rf>/validade/",
+        "professores/<str:codigo_rf>/validade",
         ValidadeProfessorView.as_view(),
     ),
     path(
-        "professores/<str:rf_professor>/",
+        "professores/<str:rf_professor>",
         ProfessorView.as_view(),
     ),
     path(
-        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/atribuicao/verificar/data/",
+        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/atribuicao/verificar/data",
         ProfessorVerificarAtribuicaoDataView.as_view(),
     ),
     path(
-        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/componentes/"
-        "<str:componente_curricular_id>/atribuicao/periodo/inicio/"
+        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/componentes/"  # noqa: E501  # NOSONAR
+        "<str:componente_curricular_id>/atribuicao/periodo/inicio/"  # NOSONAR
         "<str:data_inicio_periodo>/fim/<str:data_fim_periodo>",
         ProfessorVerificarAtribuicaoPeriodoView.as_view(),
     ),
     path(
-        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/atribuicao/status/",
+        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/atribuicao/status",
         ProfessorStatusAtribuicaoView.as_view(),
     ),
     path(
-        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/disciplinas/<str:disciplina_id>/atribuicao/verificar/datatick/",
+        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/disciplinas/<str:disciplina_id>/atribuicao/verificar/datatick",
         ProfessorVerificarAtribuicaoDataTickView.as_view(),
     ),
     path(
-        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/disciplinas/"
+        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/disciplinas/"  # noqa: E501  # NOSONAR
         "<str:disciplina_id>/atribuicao/recorrencia/verificar/datas",
         ProfessorVerificarRecorrenciaDatasView.as_view(),
     ),
     path(
-        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/disciplinas/"
+        "professores/<str:codigo_rf>/turmas/<str:codigo_turma>/disciplinas/"  # noqa: E501  # NOSONAR
         "<str:disciplina_id>/atribuicao/recorrencia/verificar/datas-iso",
         ProfessorVerificarRecorrenciaDatasIsoView.as_view(),
     ),
     path(
-        "professores/<str:codigo_turma>/disciplinas/<str:disciplina_id>/atribuicao/data/",
+        "professores/<str:codigo_turma>/disciplinas/<str:disciplina_id>/atribuicao/data",
         ProfessorAtribuicaoTurmaDisciplinaView.as_view(),
     ),
     path(
@@ -251,102 +253,102 @@ urlpatterns = [
         ProfessorVerificarAtribuicaoView.as_view(),
     ),
     path(
-        "acessos/funcionario-ativo/<str:registro_funcional>/",
+        "acessos/funcionario-ativo/<str:registro_funcional>",
         FuncionarioAtivoView.as_view(),
     ),
     path(
-        "funcionarios/nome-servidor/<str:registro_funcional>/",
+        "funcionarios/nome-servidor/<str:registro_funcional>",
         NomeServidorView.as_view(),
     ),
     path(
-        "funcionarios/nome-usuario-eol/<str:registro_funcional>/",
+        "funcionarios/nome-usuario-eol/<str:registro_funcional>",
         NomeUsuarioEolView.as_view(),
     ),
     path(
-        "funcionarios/BuscarPorListaRF/",
+        "funcionarios/BuscarPorListaRF",
         FuncionariosBuscarPorListaRfView.as_view(),
     ),
     path(
-        "funcionarios/ue/<str:codigo_ue>/",
+        "funcionarios/ue/<str:codigo_ue>",
         FuncionariosUeView.as_view(),
     ),
     path(
-        "funcionarios/cargo/<str:registro_funcional>/",
+        "funcionarios/cargo/<str:registro_funcional>",
         CargosFuncionarioView.as_view(),
     ),
     path(
-        "funcionarios/registros-funcionais/conecta-formacao/",
+        "funcionarios/registros-funcionais/conecta-formacao",
         FuncionariosConectaFormacaoView.as_view(),
     ),
     path(
-        "funcionarios/atribuicao/<str:registro_funcional>/"
-        "cargo/<str:codigo_cargo>/",
+        "funcionarios/atribuicao/<str:registro_funcional>/"  # NOSONAR
+        "cargo/<str:codigo_cargo>",
         FuncionariosAtribuicaoCargoView.as_view(),
     ),
     path(
-        "funcionarios/usuarios/conecta-formacao/",
+        "funcionarios/usuarios/conecta-formacao",
         UsuariosConectaFormacaoView.as_view(),
     ),
     path(
-        "funcionarios/cargos/<str:codigo_cargo>/",
+        "funcionarios/cargos/<str:codigo_cargo>",
         FuncionariosCargoView.as_view(),
     ),
     path(
-        "funcionarios/perfis/<str:id_perfil>/",
+        "funcionarios/perfis/<str:id_perfil>",
         FuncionariosPerfisView.as_view(),
     ),
     path(
-        "funcionarios/perfis/<str:id_perfil>/dres/<str:codigo_dre>/",
+        "funcionarios/perfis/<str:id_perfil>/dres/<str:codigo_dre>",
         FuncionariosPerfisDreView.as_view(),
     ),
     path(
-        "funcionarios/supervisores/<str:codigo_dre>/",
+        "funcionarios/supervisores/<str:codigo_dre>",
         FuncionariosSupervisoresView.as_view(),
     ),
     path(
-        "escolas/<str:codigo_ue>/funcionarios/funcoes-atividades/"
-        "<str:codigo_funcao_atividade>/",
+        "escolas/<str:codigo_ue>/funcionarios/funcoes-atividades/"  # NOSONAR
+        "<str:codigo_funcao_atividade>",
         EscolaFuncionariosFuncaoAtividadeView.as_view(),
     ),
     path(
-        "escolas/<str:codigo_ue>/funcionarios/funcoes-atividades/",
+        "escolas/<str:codigo_ue>/funcionarios/funcoes-atividades",
         EscolaFuncionariosFuncoesAtividadesView.as_view(),
     ),
     path(
-        "escolas/<str:codigo_ue>/funcionarios/funcoes-externas/"
-        "<str:codigo_funcao_externa>/",
+        "escolas/<str:codigo_ue>/funcionarios/funcoes-externas/"  # NOSONAR
+        "<str:codigo_funcao_externa>",
         EscolaFuncionariosFuncaoExternaView.as_view(),
     ),
     path(
-        "escolas/<str:codigo_ue>/funcionarios/funcoes-externas/",
+        "escolas/<str:codigo_ue>/funcionarios/funcoes-externas",
         EscolaFuncionariosFuncoesExternasView.as_view(),
     ),
     path(
-        "escolas/<str:codigo_ue>/funcionarios/cargos/",
+        "escolas/<str:codigo_ue>/funcionarios/cargos",
         EscolaFuncionariosCargosView.as_view(),
     ),
     path(
-        "escolas/<str:codigo_ue>/funcionarios/cargos/<str:codigo_cargo>/",
+        "escolas/<str:codigo_ue>/funcionarios/cargos/<str:codigo_cargo>",
         EscolaFuncionariosCargoView.as_view(),
     ),
     path(
-        "escolas/<str:codigo_ue>/funcionarios/",
+        "escolas/<str:codigo_ue>/funcionarios",
         EscolaFuncionariosView.as_view(),
     ),
     path(
-        "escolas/<str:codigo_ue>/administrador-sgp/",
+        "escolas/<str:codigo_ue>/administrador-sgp",
         AdministradorSgpEscolaView.as_view(),
     ),
     path(
-        "professores/<str:codigo_rf>/escolas/<str:codigo_eol_escola>/turmas/anos_letivos/<int:ano_letivo>/",
+        "professores/<str:codigo_rf>/escolas/<str:codigo_eol_escola>/turmas/anos_letivos/<int:ano_letivo>",
         ProfessorBuscaTurmasAtribuidasEscolaView.as_view(),
     ),
     path(
-        "professores/escolas/<str:codigo_eol_escola>/turmas/anos_letivos/<int:ano_letivo>/",
+        "professores/escolas/<str:codigo_eol_escola>/turmas/anos_letivos/<int:ano_letivo>",
         BuscaTurmasAtribuidasProfessoresEscolaView.as_view(),
     ),
     path(
-        "professores/<str:codigo_rf>/turmas/anos_letivos/<int:ano_letivo>/",
+        "professores/<str:codigo_rf>/turmas/anos_letivos/<int:ano_letivo>",
         ProfessorBuscarTurmasAtribuidasView.as_view(),
     ),
 ]

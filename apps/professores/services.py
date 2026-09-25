@@ -348,6 +348,16 @@ def get_funcionario_externo(cpf: str) -> Any:
     return _client.json_or_none(resp)
 
 
+def get_cargos() -> Any:
+    """Retorna cargos cadastrados no EOL.
+
+    Returns:
+        Lista de cargos ou ausência de dados.
+    """
+    resp = _client.get(f"{_BASE}/cargos/")
+    return _client.json_or_none(resp)
+
+
 def get_funcionarios_por_lista_login(logins: list[str]) -> Any:
     """Retorna funcionarios pelos logins informados.
 

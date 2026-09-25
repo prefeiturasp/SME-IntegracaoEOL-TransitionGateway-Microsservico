@@ -16,15 +16,13 @@ _BREAKER_NAME = "transition-gateway-keydb-cache"
 # TTL praticado hoje pelo legado
 TTL_LEGADO_PADRAO_MINUTOS = 1440
 
-# TTL padrão definido para os novos não cacheados pelo legado 
+# TTL padrão definido para os novos não cacheados pelo legado
 TTL_RECOMENDADO_MINUTOS = 720
 
 
-def obter_ou_calcular[T](
-    chave: str,
-    calcular: Callable[[], T],
-    minutos_para_expirar: int,
-) -> T:
+def obter_ou_calcular[
+    T
+](chave: str, calcular: Callable[[], T], minutos_para_expirar: int,) -> T:
     """Busca ``chave`` no KeyDB ou executa ``calcular`` e grava o resultado.
 
     Args:
@@ -38,7 +36,7 @@ def obter_ou_calcular[T](
     """
     breaker = get_circuit_breaker(_BREAKER_NAME)
 
-    valor_em_cache = None
+    valor_em_cache: T | None = None
     try:
         valor_em_cache = breaker.call(cache.get, chave)
     except Exception:

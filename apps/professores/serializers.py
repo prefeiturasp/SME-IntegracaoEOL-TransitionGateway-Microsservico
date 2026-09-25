@@ -1010,6 +1010,13 @@ class FuncionarioCargoSerializer(serializers.Serializer):
     cargoId = serializers.IntegerField(source="cargo_id")
 
 
+class CargoSerializer(serializers.Serializer):
+    """Serializa cargo no contrato legado."""
+
+    codigoCargo = serializers.IntegerField(source="codigo_cargo")
+    nomeCargo = serializers.CharField(source="nome_cargo")
+
+
 class CargoFuncionarioConectaSerializer(serializers.Serializer):
     """Serializa cargos por registro funcional."""
 

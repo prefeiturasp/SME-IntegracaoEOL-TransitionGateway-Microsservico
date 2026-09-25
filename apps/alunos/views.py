@@ -204,6 +204,15 @@ def _query_value(request: Request, *names: str) -> str | None:
     return None
 
 
+def _query_values(request: Request, *names: str) -> list[str]:
+    """Lê o primeiro alias repetível preenchido da query string."""
+    for name in names:
+        values = request.query_params.getlist(name)
+        if values:
+            return [str(value) for value in values if value not in (None, "")]
+    return []
+
+
 def _query_int(request: Request, name: str, default: int) -> int:
     """Lê um inteiro opcional da query string.
 
@@ -429,10 +438,10 @@ class DadosAcompanhamentoEscolarView(AlunosAPIView):
             "Retorna dados dos alunos para acompanhamento do estudante."
         ),
         parameters=[
-            OpenApiParameter("codigo_aluno", int, OpenApiParameter.QUERY),
-            OpenApiParameter("codigo_dre", str, OpenApiParameter.QUERY),
-            OpenApiParameter("codigo_ue", str, OpenApiParameter.QUERY),
-            OpenApiParameter("cpf_responsavel", str, OpenApiParameter.QUERY),
+            OpenApiParameter("codigoAluno", int, OpenApiParameter.QUERY),
+            OpenApiParameter("codigoDre", str, OpenApiParameter.QUERY),
+            OpenApiParameter("codigoUe", str, OpenApiParameter.QUERY),
+            OpenApiParameter("cpfResponsavel", str, OpenApiParameter.QUERY),
         ],
         responses={200: OpenApiResponse(description="Success")},
     )
@@ -447,10 +456,14 @@ class DadosAcompanhamentoEscolarView(AlunosAPIView):
         """
         try:
             data = services.get_dados_acompanhamento_escolar(
-                codigo_aluno=_query_value(request, "codigo_aluno"),
-                codigo_dre=_query_value(request, "codigo_dre"),
-                codigo_ue=_query_value(request, "codigo_ue"),
-                cpf_responsavel=_query_value(request, "cpf_responsavel"),
+                codigo_aluno=_query_value(
+                    request, "codigoAluno", "codigo_aluno"
+                ),
+                codigo_dre=_query_value(request, "codigoDre", "codigo_dre"),
+                codigo_ue=_query_value(request, "codigoUe", "codigo_ue"),
+                cpf_responsavel=_query_value(
+                    request, "cpfResponsavel", "cpf_responsavel"
+                ),
             )
         except httpx.HTTPStatusError as exc:
             return api_error_response_status_livre(exc)
@@ -540,7 +553,7 @@ class AlunosPorAnoView(AlunosAPIView):
         parameters=[
             OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
             OpenApiParameter(
-                "codigos_aluno",
+                "codigosAluno",
                 int,
                 OpenApiParameter.QUERY,
                 many=True,
@@ -560,8 +573,8 @@ class AlunosPorAnoView(AlunosAPIView):
             Lista de alunos correspondentes aos códigos informados.
         """
         codigos_aluno = request.query_params.getlist(
-            "codigos_aluno"
-        ) or request.query_params.getlist("codigosAluno")
+            "codigosAluno"
+        ) or request.query_params.getlist("codigos_aluno")
         if not codigos_aluno:
             return _legacy_status_601_response(
                 _MSG_CODIGOS_ALUNOS_OBRIGATORIOS
@@ -586,10 +599,10 @@ class QuantidadeMatriculadosCCView(AlunosAPIView):
         ),
         parameters=[
             OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
-            OpenApiParameter("dre_id", str, OpenApiParameter.QUERY),
-            OpenApiParameter("ue_id", str, OpenApiParameter.QUERY),
+            OpenApiParameter("dreId", str, OpenApiParameter.QUERY),
+            OpenApiParameter("ueId", str, OpenApiParameter.QUERY),
             OpenApiParameter(
-                "componentes_curriculares",
+                "componentesCurriculares",
                 int,
                 OpenApiParameter.QUERY,
                 many=True,
@@ -608,15 +621,15 @@ class QuantidadeMatriculadosCCView(AlunosAPIView):
         Returns:
             Quantidades de matriculados por componente curricular.
         """
-        componentes = request.query_params.getlist(
-            "componentes_curriculares"
-        ) or request.query_params.getlist("componentesCurriculares")
+        componentes = _query_values(
+            request, "componentesCurriculares", "componentes_curriculares"
+        )
         try:
             data = services.get_quantidade_matriculados_cc(
                 ano_letivo=ano_letivo,
                 componentes_curriculares=componentes,
-                dre_id=_query_value(request, "dre_id"),
-                ue_id=_query_value(request, "ue_id"),
+                dre_id=_query_value(request, "dreId", "dre_id"),
+                ue_id=_query_value(request, "ueId", "ue_id"),
             )
         except httpx.HTTPStatusError as exc:
             return api_error_response_status_livre(exc)
@@ -638,8 +651,8 @@ class QuantidadeMatriculadosView(AlunosAPIView):
         ),
         parameters=[
             OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
-            OpenApiParameter("dre_codigo", str, OpenApiParameter.QUERY),
-            OpenApiParameter("ue_codigo", str, OpenApiParameter.QUERY),
+            OpenApiParameter("dreCodigo", str, OpenApiParameter.QUERY),
+            OpenApiParameter("ueCodigo", str, OpenApiParameter.QUERY),
             OpenApiParameter(
                 "modalidade", int, OpenApiParameter.QUERY, many=True
             ),
@@ -661,8 +674,8 @@ class QuantidadeMatriculadosView(AlunosAPIView):
         try:
             data = services.get_quantidade_matriculados(
                 ano_letivo=ano_letivo,
-                dre_codigo=_query_value(request, "dre_codigo"),
-                ue_codigo=_query_value(request, "ue_codigo"),
+                dre_codigo=_query_value(request, "dreCodigo", "dre_codigo"),
+                ue_codigo=_query_value(request, "ueCodigo", "ue_codigo"),
                 modalidade=request.query_params.getlist("modalidade"),
                 ano=request.query_params.getlist("ano"),
                 turma=request.query_params.getlist("turma"),
@@ -772,9 +785,9 @@ class ResponsaveisView(AlunosAPIView):
         tags=_TAG,
         summary="Responsáveis por DRE, UE e turma",
         parameters=[
-            OpenApiParameter("codigo_dre", str, OpenApiParameter.QUERY),
-            OpenApiParameter("codigo_ue", str, OpenApiParameter.QUERY),
-            OpenApiParameter("ano_letivo", int, OpenApiParameter.QUERY),
+            OpenApiParameter("codigoDre", str, OpenApiParameter.QUERY),
+            OpenApiParameter("codigoUe", str, OpenApiParameter.QUERY),
+            OpenApiParameter("anoLetivo", int, OpenApiParameter.QUERY),
         ],
         responses={200: ResponsavelTurmaSerializer(many=True)},
     )
@@ -787,16 +800,16 @@ class ResponsaveisView(AlunosAPIView):
         Returns:
             Responsáveis encontrados no contrato legado.
         """
-        ano_raw = request.query_params.get("ano_letivo")
+        ano_raw = _query_value(request, "anoLetivo", "ano_letivo")
         try:
             ano_letivo = int(ano_raw) if ano_raw is not None else None
         except (TypeError, ValueError):
-            return detail_response("ano_letivo deve ser um inteiro válido.")
+            return detail_response("anoLetivo deve ser um inteiro válido.")
 
         try:
             data = services.get_responsaveis(
-                codigo_dre=request.query_params.get("codigo_dre"),
-                codigo_ue=request.query_params.get("codigo_ue"),
+                codigo_dre=_query_value(request, "codigoDre", "codigo_dre"),
+                codigo_ue=_query_value(request, "codigoUe", "codigo_ue"),
                 ano_letivo=ano_letivo,
             )
         except httpx.HTTPStatusError as exc:
@@ -1795,35 +1808,35 @@ class AlunosCalculoFrequenciaTurmaView(AlunosAPIView):
         return Response(codigos)
 
 
-def _query_int_list(request: Request, nome: str) -> list[int]:
+def _query_int_list(request: Request, *nomes: str) -> list[int]:
     """Extrai inteiros repetíveis da query string, ignorando inválidos.
 
     Args:
         request: Requisição consultada.
-        nome: Nome do parâmetro (snake_case).
+        *nomes: Nomes aceitos para o mesmo parâmetro.
 
     Returns:
         Inteiros informados, sem entradas vazias ou não numéricas.
     """
     valores: list[int] = []
-    for bruto in request.query_params.getlist(nome):
+    for bruto in _query_values(request, *nomes):
         texto = bruto.strip()
         if texto.lstrip("-").isdigit():
             valores.append(int(texto))
     return valores
 
 
-def _query_int_opt(request: Request, nome: str) -> int | None:
+def _query_int_opt(request: Request, *nomes: str) -> int | None:
     """Lê um inteiro opcional da query string.
 
     Args:
         request: Requisição consultada.
-        nome: Nome do parâmetro (snake_case).
+        *nomes: Nomes aceitos para o mesmo parâmetro.
 
     Returns:
         Inteiro informado, ou ``None`` quando ausente/inválido.
     """
-    bruto = request.query_params.get(nome)
+    bruto = _query_value(request, *nomes)
     if bruto is not None and bruto.strip().lstrip("-").isdigit():
         return int(bruto.strip())
     return None
@@ -1843,7 +1856,7 @@ class CodigosTurmasRegularesAlunoView(AlunosAPIView):
             OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
             OpenApiParameter("codigo_aluno", int, OpenApiParameter.PATH),
             OpenApiParameter(
-                "tipos_turma",
+                "tiposTurma",
                 OpenApiTypes.INT,
                 OpenApiParameter.QUERY,
                 many=True,
@@ -1870,8 +1883,8 @@ class CodigosTurmasRegularesAlunoView(AlunosAPIView):
         """Lista os códigos de turma regulares do aluno no ano letivo.
 
         Args:
-            request: Requisição com os filtros ``tipos_turma``, ``ue_codigo``,
-                ``data_referencia`` e ``semestre``.
+            request: Requisição com os filtros ``tiposTurma``, ``ueCodigo``,
+                ``dataReferencia`` e ``semestre``.
             ano_letivo: Ano letivo consultado.
             codigo_aluno: Código EOL do aluno.
 
@@ -1879,9 +1892,11 @@ class CodigosTurmasRegularesAlunoView(AlunosAPIView):
             Lista de códigos de turma (inteiros), ou lista vazia quando não
             houver correspondência.
         """
-        tipos_turma = _query_int_list(request, "tipos_turma")
-        ue_codigo = request.query_params.get("ue_codigo")
-        data_referencia = request.query_params.get("data_referencia")
+        tipos_turma = _query_int_list(request, "tiposTurma", "tipos_turma")
+        ue_codigo = _query_value(request, "ueCodigo", "ue_codigo")
+        data_referencia = _query_value(
+            request, "dataReferencia", "data_referencia"
+        )
         semestre = _query_int_opt(request, "semestre")
         try:
             codigos = services.montar_codigos_turmas_regulares_aluno(
@@ -1905,7 +1920,7 @@ class CodigoTurmaAlunoComponenteCurricularView(AlunosAPIView):
 
     Alias do endpoint ``.../regulares``: o componente curricular é aceito
     na rota mas ignorado no corpo do handler, consultando a mesma função.
-    Aqui só ``tipos_turma`` é considerado, conforme a assinatura deste
+    Aqui só ``tiposTurma`` é considerado, conforme a assinatura deste
     endpoint.
     """
 
@@ -1924,7 +1939,7 @@ class CodigoTurmaAlunoComponenteCurricularView(AlunosAPIView):
                 OpenApiParameter.PATH,
             ),
             OpenApiParameter(
-                "tipos_turma",
+                "tiposTurma",
                 OpenApiTypes.INT,
                 OpenApiParameter.QUERY,
                 many=True,
@@ -1943,7 +1958,7 @@ class CodigoTurmaAlunoComponenteCurricularView(AlunosAPIView):
         """Lista os códigos de turma do aluno, ignorando o componente.
 
         Args:
-            request: Requisição com o filtro ``tipos_turma``.
+            request: Requisição com o filtro ``tiposTurma``.
             ano_letivo: Ano letivo consultado.
             codigo_aluno: Código EOL do aluno.
             componente_curricular_codigo: Aceito na rota mas ignorado.
@@ -1952,7 +1967,7 @@ class CodigoTurmaAlunoComponenteCurricularView(AlunosAPIView):
             Lista de códigos de turma (inteiros), ou lista vazia quando não
             houver correspondência.
         """
-        tipos_turma = _query_int_list(request, "tipos_turma")
+        tipos_turma = _query_int_list(request, "tiposTurma", "tipos_turma")
         try:
             codigos = services.montar_codigos_turmas_regulares_aluno(
                 ano_letivo=ano_letivo,
@@ -2038,8 +2053,8 @@ class AlunosDaUeView(AlunosAPIView):
         parameters=[
             OpenApiParameter("codigo_ue", str, OpenApiParameter.PATH),
             OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
-            OpenApiParameter("nome_aluno", str, OpenApiParameter.QUERY),
-            OpenApiParameter("codigo_eol", str, OpenApiParameter.QUERY),
+            OpenApiParameter("nomeAluno", str, OpenApiParameter.QUERY),
+            OpenApiParameter("codigoEol", str, OpenApiParameter.QUERY),
         ],
         responses={200: OpenApiResponse(description="Success")},
     )
@@ -2065,8 +2080,8 @@ class AlunosDaUeView(AlunosAPIView):
             data = services.get_alunos_da_ue(
                 codigo_ue,
                 ano_letivo,
-                _query_value(request, "nome_aluno"),
-                _query_value(request, "codigo_eol"),
+                _query_value(request, "nomeAluno", "nome_aluno"),
+                _query_value(request, "codigoEol", "codigo_eol"),
             )
         except httpx.HTTPStatusError as exc:
             return _api_error_response(exc)
@@ -2185,7 +2200,7 @@ class AlunosAtivosPeriodoTurmaView(AlunosAPIView):
                 "data_referencia_fim", str, OpenApiParameter.PATH
             ),
             OpenApiParameter(
-                "data_referencia_inicio", str, OpenApiParameter.QUERY
+                "dataReferenciaInicio", str, OpenApiParameter.QUERY
             ),
         ],
         responses={200: OpenApiResponse(description="Success")},
@@ -2216,7 +2231,11 @@ class AlunosAtivosPeriodoTurmaView(AlunosAPIView):
             data = services.get_alunos_ativos_turma_periodo(
                 codigo_turma,
                 data_referencia_fim,
-                _query_value(request, "data_referencia_inicio"),
+                _query_value(
+                    request,
+                    "dataReferenciaInicio",
+                    "data_referencia_inicio",
+                ),
             )
         except httpx.HTTPStatusError as exc:
             return _api_error_response(exc)
@@ -2237,8 +2256,8 @@ class TotalAlunosAtivosPeriodoView(AlunosAPIView):
             OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
             OpenApiParameter("data_inicio", str, OpenApiParameter.PATH),
             OpenApiParameter("data_fim", str, OpenApiParameter.PATH),
-            OpenApiParameter("ue_id", str, OpenApiParameter.QUERY),
-            OpenApiParameter("dre_id", str, OpenApiParameter.QUERY),
+            OpenApiParameter("ueId", str, OpenApiParameter.QUERY),
+            OpenApiParameter("dreId", str, OpenApiParameter.QUERY),
             OpenApiParameter(
                 "modalidades", int, OpenApiParameter.QUERY, many=True
             ),
@@ -2271,8 +2290,8 @@ class TotalAlunosAtivosPeriodoView(AlunosAPIView):
                 ano_letivo=ano_letivo,
                 data_inicio=data_inicio,
                 data_fim=data_fim,
-                ue_id=_query_value(request, "ue_id"),
-                dre_id=_query_value(request, "dre_id"),
+                ue_id=_query_value(request, "ueId", "ue_id"),
+                dre_id=_query_value(request, "dreId", "dre_id"),
                 modalidades=request.query_params.getlist("modalidades"),
             )
         except httpx.HTTPStatusError as exc:
@@ -2291,7 +2310,7 @@ class AlunosListView(AlunosAPIView):
         description="Retorna lista de alunos.",
         parameters=[
             OpenApiParameter(
-                "codigos_aluno",
+                "codigosAluno",
                 int,
                 OpenApiParameter.QUERY,
                 many=True,
@@ -2310,8 +2329,8 @@ class AlunosListView(AlunosAPIView):
             Lista de alunos correspondentes aos códigos informados.
         """
         codigos_aluno = request.query_params.getlist(
-            "codigos_aluno"
-        ) or request.query_params.getlist("codigosAluno")
+            "codigosAluno"
+        ) or request.query_params.getlist("codigos_aluno")
         if not codigos_aluno:
             return _legacy_status_601_response(
                 _MSG_CODIGOS_ALUNOS_OBRIGATORIOS
