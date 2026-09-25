@@ -1,5 +1,6 @@
 """Valida as views do domínio de professores."""
 
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import httpx
@@ -39,32 +40,32 @@ class ProfessoresUrlsTest(SimpleTestCase):
     """Valida os nomes dos parâmetros nas rotas."""
 
     def test_preserva_rf_professor(self) -> None:
-        match = resolve("/api/professores/123456/")
+        match = resolve("/api/professores/123456")
 
         self.assertEqual(match.kwargs, {"rf_professor": "123456"})
 
     def test_preserva_codigo_rf(self) -> None:
-        match = resolve("/api/professores/123456/validade/")
+        match = resolve("/api/professores/123456/validade")
 
         self.assertEqual(match.kwargs, {"codigo_rf": "123456"})
 
     def test_preserva_registro_funcional_funcionario_ativo(self) -> None:
-        match = resolve("/api/acessos/funcionario-ativo/RF001/")
+        match = resolve("/api/acessos/funcionario-ativo/RF001")
 
         self.assertEqual(match.kwargs, {"registro_funcional": "RF001"})
 
     def test_preserva_registro_funcional_nome_servidor(self) -> None:
-        match = resolve("/api/funcionarios/nome-servidor/RF001/")
+        match = resolve("/api/funcionarios/nome-servidor/RF001")
 
         self.assertEqual(match.kwargs, {"registro_funcional": "RF001"})
 
     def test_preserva_registro_funcional_nome_usuario_eol(self) -> None:
-        match = resolve("/api/funcionarios/nome-usuario-eol/RF001/")
+        match = resolve("/api/funcionarios/nome-usuario-eol/RF001")
 
         self.assertEqual(match.kwargs, {"registro_funcional": "RF001"})
 
     def test_preserva_codigo_rf_e_ano_letivo_buscar_por_rf(self) -> None:
-        match = resolve("/api/professores/000001/BuscarPorRf/2026/")
+        match = resolve("/api/professores/000001/BuscarPorRf/2026")
 
         self.assertEqual(
             match.kwargs,
@@ -72,59 +73,59 @@ class ProfessoresUrlsTest(SimpleTestCase):
         )
 
     def test_resolve_funcionarios_buscar_por_lista_rf(self) -> None:
-        match = resolve("/api/funcionarios/BuscarPorListaRF/")
+        match = resolve("/api/funcionarios/BuscarPorListaRF")
 
         self.assertEqual(match.kwargs, {})
 
     def test_preserva_cpf_funcionario_externo(self) -> None:
-        match = resolve("/api/funcionarios/funcionario-externo/11122233355/")
+        match = resolve("/api/funcionarios/funcionario-externo/11122233355")
 
         self.assertEqual(match.kwargs, {"cpf": "11122233355"})
 
     def test_preserva_codigo_dre_ue_funcionarios_unidade(self) -> None:
-        match = resolve("/api/funcionarios/unidade/100004/")
+        match = resolve("/api/funcionarios/unidade/100004")
 
         self.assertEqual(match.kwargs, {"codigo_dre_ue": "100004"})
 
     def test_resolve_funcionarios_admins_sme(self) -> None:
-        match = resolve("/api/funcionarios/admins/sme/")
+        match = resolve("/api/funcionarios/admins/sme")
 
         self.assertEqual(match.kwargs, {})
 
     def test_preserva_codigo_rf_dados_sigpae(self) -> None:
-        match = resolve("/api/funcionarios/DadosSigpae/7900001/")
+        match = resolve("/api/funcionarios/DadosSigpae/7900001")
 
         self.assertEqual(match.kwargs, {"codigo_rf": "7900001"})
 
     def test_resolve_funcionarios_buscar_por_lista_login(self) -> None:
-        match = resolve("/api/funcionarios/BuscarPorListaLogin/")
+        match = resolve("/api/funcionarios/BuscarPorListaLogin")
 
         self.assertEqual(match.kwargs, {})
 
     def test_preserva_codigo_ue_funcionarios_ue(self) -> None:
-        match = resolve("/api/funcionarios/ue/000123/")
+        match = resolve("/api/funcionarios/ue/000123")
 
         self.assertEqual(match.kwargs, {"codigo_ue": "000123"})
 
     def test_preserva_codigo_cargo_funcionarios_cargos(self) -> None:
-        match = resolve("/api/funcionarios/cargos/3360/")
+        match = resolve("/api/funcionarios/cargos/3360")
 
         self.assertEqual(match.kwargs, {"codigo_cargo": "3360"})
 
     def test_preserva_rf_funcionarios_cargo(self) -> None:
-        match = resolve("/api/funcionarios/cargo/7900001/")
+        match = resolve("/api/funcionarios/cargo/7900001")
 
         self.assertEqual(match.kwargs, {"registro_funcional": "7900001"})
 
     def test_resolve_funcionarios_conecta_formacao(self) -> None:
         match = resolve(
-            "/api/funcionarios/registros-funcionais/conecta-formacao/"
+            "/api/funcionarios/registros-funcionais/conecta-formacao"
         )
 
         self.assertEqual(match.kwargs, {})
 
     def test_preserva_rf_e_cargo_funcionarios_atribuicao_cargo(self) -> None:
-        match = resolve("/api/funcionarios/atribuicao/7900001/cargo/3360/")
+        match = resolve("/api/funcionarios/atribuicao/7900001/cargo/3360")
 
         self.assertEqual(
             match.kwargs,
@@ -132,27 +133,27 @@ class ProfessoresUrlsTest(SimpleTestCase):
         )
 
     def test_resolve_usuarios_conecta_formacao(self) -> None:
-        match = resolve("/api/funcionarios/usuarios/conecta-formacao/")
+        match = resolve("/api/funcionarios/usuarios/conecta-formacao")
 
         self.assertEqual(match.kwargs, {})
 
     def test_preserva_codigo_dre_funcionarios_supervisores(self) -> None:
-        match = resolve("/api/funcionarios/supervisores/100001/")
+        match = resolve("/api/funcionarios/supervisores/100001")
 
         self.assertEqual(match.kwargs, {"codigo_dre": "100001"})
 
     def test_preserva_id_perfil_funcionarios_perfis(self) -> None:
-        match = resolve("/api/funcionarios/perfis/perfil-x/")
+        match = resolve("/api/funcionarios/perfis/perfil-x")
 
         self.assertEqual(match.kwargs, {"id_perfil": "perfil-x"})
 
     def test_preserva_codigo_ue_funcionarios_escola(self) -> None:
-        match = resolve("/api/escolas/000123/funcionarios/")
+        match = resolve("/api/escolas/000123/funcionarios")
 
         self.assertEqual(match.kwargs, {"codigo_ue": "000123"})
 
     def test_preserva_codigo_ue_e_cargo_funcionarios_escola(self) -> None:
-        match = resolve("/api/escolas/000123/funcionarios/cargos/14/")
+        match = resolve("/api/escolas/000123/funcionarios/cargos/14")
 
         self.assertEqual(
             match.kwargs,
@@ -160,24 +161,24 @@ class ProfessoresUrlsTest(SimpleTestCase):
         )
 
     def test_preserva_codigo_ue_funcionarios_cargos(self) -> None:
-        match = resolve("/api/escolas/000103/funcionarios/cargos/")
+        match = resolve("/api/escolas/000103/funcionarios/cargos")
 
         self.assertEqual(match.kwargs, {"codigo_ue": "000103"})
 
     def test_preserva_codigo_ue_funcionarios_funcoes_atividades(
         self,
     ) -> None:
-        match = resolve("/api/escolas/000103/funcionarios/funcoes-atividades/")
+        match = resolve("/api/escolas/000103/funcionarios/funcoes-atividades")
 
         self.assertEqual(match.kwargs, {"codigo_ue": "000103"})
 
     def test_preserva_codigo_ue_funcionarios_funcoes_externas(self) -> None:
-        match = resolve("/api/escolas/400870/funcionarios/funcoes-externas/")
+        match = resolve("/api/escolas/400870/funcionarios/funcoes-externas")
 
         self.assertEqual(match.kwargs, {"codigo_ue": "400870"})
 
     def test_preserva_codigo_ue_e_funcao_externa(self) -> None:
-        match = resolve("/api/escolas/400870/funcionarios/funcoes-externas/7/")
+        match = resolve("/api/escolas/400870/funcionarios/funcoes-externas/7")
 
         self.assertEqual(
             match.kwargs,
@@ -186,7 +187,7 @@ class ProfessoresUrlsTest(SimpleTestCase):
 
     def test_preserva_codigo_ue_e_funcao_atividade(self) -> None:
         match = resolve(
-            "/api/escolas/000103/funcionarios/funcoes-atividades/30/"
+            "/api/escolas/000103/funcionarios/funcoes-atividades/30"
         )
 
         self.assertEqual(
@@ -195,7 +196,7 @@ class ProfessoresUrlsTest(SimpleTestCase):
         )
 
     def test_preserva_professor_disciplina_turmas(self) -> None:
-        match = resolve("/api/professores/000001/disciplina/5/turmas/")
+        match = resolve("/api/professores/000001/disciplina/5/turmas")
 
         self.assertEqual(
             match.kwargs,
@@ -203,14 +204,14 @@ class ProfessoresUrlsTest(SimpleTestCase):
         )
 
     def test_preserva_funcionarios_turma_disciplinas(self) -> None:
-        match = resolve("/api/funcionarios/turmas/9100001/disciplinas/")
+        match = resolve("/api/funcionarios/turmas/9100001/disciplinas")
 
         self.assertEqual(match.kwargs, {"codigo_turma": "9100001"})
 
     def test_preserva_funcionario_perfil_turma_disciplinas(self) -> None:
         match = resolve(
-            "/api/funcionarios/000001/perfis/perfil-x/"
-            "turmas/9100001/disciplinas/"
+            "/api/funcionarios/000001/perfis/perfil-x"
+            "/turmas/9100001/disciplinas"
         )
 
         self.assertEqual(
@@ -224,8 +225,8 @@ class ProfessoresUrlsTest(SimpleTestCase):
 
     def test_preserva_funcionario_perfil_turma_planejamento(self) -> None:
         match = resolve(
-            "/api/funcionarios/000001/perfis/perfil-x/"
-            "turmas/9100001/disciplinas/planejamento/"
+            "/api/funcionarios/000001/perfis/perfil-x"
+            "/turmas/9100001/disciplinas/planejamento"
         )
 
         self.assertEqual(
@@ -239,13 +240,13 @@ class ProfessoresUrlsTest(SimpleTestCase):
 
     def test_preserva_codigo_rf_turmas(self) -> None:
         """Valida RF na rota de turmas."""
-        match = resolve("/api/professores/000001/turmas/")
+        match = resolve("/api/professores/000001/turmas")
 
         self.assertEqual(match.kwargs, {"codigo_rf": "000001"})
 
     def test_preserva_codigo_rf_e_ano_buscar_por_rf_dre_ue(self) -> None:
         """Valida RF e ano letivo na rota de busca."""
-        match = resolve("/api/professores/000001/BuscarPorRfDreUe/2026/")
+        match = resolve("/api/professores/000001/BuscarPorRfDreUe/2026")
 
         self.assertEqual(
             match.kwargs,
@@ -254,19 +255,19 @@ class ProfessoresUrlsTest(SimpleTestCase):
 
     def test_preserva_ano_buscar_por_lista_rf(self) -> None:
         """Valida ano letivo na rota de busca por lista de RF."""
-        match = resolve("/api/professores/2026/BuscarPorListaRF/")
+        match = resolve("/api/professores/2026/BuscarPorListaRF")
 
         self.assertEqual(match.kwargs, {"ano_letivo": 2026})
 
     def test_preserva_codigo_rf_eh_emei(self) -> None:
         """Valida RF na rota de verificação de EMEI."""
-        match = resolve("/api/professores/000001/ehEmei/")
+        match = resolve("/api/professores/000001/ehEmei")
 
         self.assertEqual(match.kwargs, {"codigo_rf": "000001"})
 
     def test_preserva_ano_e_dre_autocomplete(self) -> None:
         """Valida ano letivo e DRE na rota de autocomplete."""
-        match = resolve("/api/professores/2026/AutoComplete/1/")
+        match = resolve("/api/professores/2026/AutoComplete/1")
 
         self.assertEqual(
             match.kwargs,
@@ -275,7 +276,7 @@ class ProfessoresUrlsTest(SimpleTestCase):
 
     def test_preserva_rf_escola_e_ano_turmas_atribuidas(self) -> None:
         match = resolve(
-            "/api/professores/000001/escolas/000103/turmas/anos_letivos/2026/"
+            "/api/professores/000001/escolas/000103/turmas/anos_letivos/2026"
         )
 
         self.assertEqual(
@@ -289,7 +290,7 @@ class ProfessoresUrlsTest(SimpleTestCase):
 
     def test_preserva_escola_e_ano_turmas_atribuidas(self) -> None:
         match = resolve(
-            "/api/professores/escolas/000103/turmas/anos_letivos/2026/"
+            "/api/professores/escolas/000103/turmas/anos_letivos/2026"
         )
 
         self.assertEqual(
@@ -298,7 +299,7 @@ class ProfessoresUrlsTest(SimpleTestCase):
         )
 
     def test_preserva_rf_e_ano_turmas_atribuidas(self) -> None:
-        match = resolve("/api/professores/000001/turmas/anos_letivos/2026/")
+        match = resolve("/api/professores/000001/turmas/anos_letivos/2026")
 
         self.assertEqual(
             match.kwargs,
@@ -314,7 +315,7 @@ class ProfessorViewTest(SimpleTestCase):
         mock_service.return_value = "Fulano de Tal"
         client = _cliente_autenticado()
 
-        resp = client.get("/api/professores/123456/")
+        resp = client.get("/api/professores/123456")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), "Fulano de Tal")
@@ -327,14 +328,14 @@ class ProfessorViewTest(SimpleTestCase):
         mock_service.return_value = None
         client = _cliente_autenticado()
 
-        resp = client.get("/api/professores/123456/")
+        resp = client.get("/api/professores/123456")
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_400_quando_rf_e_somente_espacos(self) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/professores/%20/")
+        resp = client.get("/api/professores/%20")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(resp.json(), {"detail": "Codigo RF e obrigatorio."})
@@ -348,7 +349,7 @@ class ValidadeProfessorViewTest(SimpleTestCase):
         mock_service.return_value = True
         client = _cliente_autenticado()
 
-        resp = client.get("/api/professores/123456/validade/")
+        resp = client.get("/api/professores/123456/validade")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertTrue(resp.json())
@@ -357,7 +358,7 @@ class ValidadeProfessorViewTest(SimpleTestCase):
     def test_400_quando_codigo_rf_e_somente_espacos(self) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/professores/%20/validade/")
+        resp = client.get("/api/professores/%20/validade")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -374,7 +375,7 @@ class FuncionarioAtivoViewTest(SimpleTestCase):
         mock_service.return_value = True
         client = _cliente_autenticado()
 
-        resp = client.get("/api/acessos/funcionario-ativo/RF001/")
+        resp = client.get("/api/acessos/funcionario-ativo/RF001")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertTrue(resp.json())
@@ -383,7 +384,7 @@ class FuncionarioAtivoViewTest(SimpleTestCase):
     def test_400_quando_registro_funcional_e_somente_espacos(self) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/acessos/funcionario-ativo/%20/")
+        resp = client.get("/api/acessos/funcionario-ativo/%20")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -403,7 +404,7 @@ class NomeServidorViewTest(SimpleTestCase):
         }
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/nome-servidor/RF001/")
+        resp = client.get("/api/funcionarios/nome-servidor/RF001")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         data = resp.json()
@@ -418,7 +419,7 @@ class NomeServidorViewTest(SimpleTestCase):
         mock_service.return_value = None
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/nome-servidor/RF001/")
+        resp = client.get("/api/funcionarios/nome-servidor/RF001")
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
@@ -433,7 +434,7 @@ class NomeUsuarioEolViewTest(SimpleTestCase):
         mock_service.return_value = "NOME USUARIO EOL"
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/nome-usuario-eol/RF001/")
+        resp = client.get("/api/funcionarios/nome-usuario-eol/RF001")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), "NOME USUARIO EOL")
@@ -444,14 +445,14 @@ class NomeUsuarioEolViewTest(SimpleTestCase):
         mock_service.return_value = None
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/nome-usuario-eol/RF001/")
+        resp = client.get("/api/funcionarios/nome-usuario-eol/RF001")
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_400_quando_registro_funcional_e_somente_espacos(self) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/nome-usuario-eol/%20/")
+        resp = client.get("/api/funcionarios/nome-usuario-eol/%20")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -471,7 +472,7 @@ class ProfessorBuscarPorRfViewTest(SimpleTestCase):
         }
         client = _cliente_autenticado()
 
-        resp = client.get("/api/professores/000001/BuscarPorRf/2026/")
+        resp = client.get("/api/professores/000001/BuscarPorRf/2026")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(
@@ -491,7 +492,7 @@ class ProfessorBuscarPorRfViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/000001/BuscarPorRf/2026/"
+            "/api/professores/000001/BuscarPorRf/2026"
             "?buscar_outros_cargos=true"
         )
 
@@ -509,7 +510,7 @@ class ProfessorBuscarPorRfViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/000001/BuscarPorRf/2026/"
+            "/api/professores/000001/BuscarPorRf/2026"
             "?buscar_outros_cargos=false"
         )
 
@@ -523,14 +524,14 @@ class ProfessorBuscarPorRfViewTest(SimpleTestCase):
         mock_service.return_value = None
         client = _cliente_autenticado()
 
-        resp = client.get("/api/professores/000001/BuscarPorRf/2026/")
+        resp = client.get("/api/professores/000001/BuscarPorRf/2026")
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_400_quando_codigo_rf_e_somente_espacos(self) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/professores/%20/BuscarPorRf/2026/")
+        resp = client.get("/api/professores/%20/BuscarPorRf/2026")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -542,7 +543,7 @@ class ProfessorBuscarPorRfViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/000001/BuscarPorRf/2026/"
+            "/api/professores/000001/BuscarPorRf/2026"
             "?buscar_outros_cargos=sim"
         )
 
@@ -564,7 +565,7 @@ class FuncionariosBuscarPorListaRfViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/BuscarPorListaRF/",
+            "/api/funcionarios/BuscarPorListaRF",
             ["000001"],
             format="json",
         )
@@ -582,7 +583,7 @@ class FuncionariosBuscarPorListaRfViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/BuscarPorListaRF/",
+            "/api/funcionarios/BuscarPorListaRF",
             ["000001"],
             format="json",
         )
@@ -603,7 +604,7 @@ class FuncionariosBuscarPorListaRfViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/BuscarPorListaLogin/",
+            "/api/funcionarios/BuscarPorListaLogin",
             data='["7900010"]',
             content_type="application/json-patch+json",
         )
@@ -616,7 +617,7 @@ class FuncionariosBuscarPorListaRfViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/BuscarPorListaRF/",
+            "/api/funcionarios/BuscarPorListaRF",
             [],
             format="json",
         )
@@ -627,7 +628,7 @@ class FuncionariosBuscarPorListaRfViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/BuscarPorListaRF/",
+            "/api/funcionarios/BuscarPorListaRF",
             ["000001", 123],
             format="json",
         )
@@ -661,7 +662,7 @@ class FuncionarioExternoCPFViewTest(SimpleTestCase):
         ]
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/funcionario-externo/11122233355/")
+        resp = client.get("/api/funcionarios/funcionario-externo/11122233355")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json()[0]["nomePessoa"], "NOME PESSOA")
@@ -673,7 +674,7 @@ class FuncionarioExternoCPFViewTest(SimpleTestCase):
         mock_service.return_value = []
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/funcionario-externo/11122233355/")
+        resp = client.get("/api/funcionarios/funcionario-externo/11122233355")
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
@@ -684,7 +685,7 @@ class FuncionarioExternoCPFViewTest(SimpleTestCase):
         mock_service.return_value = {"cpf": "11122233355"}
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/funcionario-externo/11122233355/")
+        resp = client.get("/api/funcionarios/funcionario-externo/11122233355")
 
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
 
@@ -704,7 +705,7 @@ class FuncionariosBuscarPorListaLoginViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/BuscarPorListaLogin/",
+            "/api/funcionarios/BuscarPorListaLogin",
             ["7900010"],
             format="json",
         )
@@ -728,7 +729,7 @@ class FuncionariosBuscarPorListaLoginViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/BuscarPorListaLogin/",
+            "/api/funcionarios/BuscarPorListaLogin",
             ["7900010"],
             format="json",
         )
@@ -739,7 +740,7 @@ class FuncionariosBuscarPorListaLoginViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/BuscarPorListaLogin/",
+            "/api/funcionarios/BuscarPorListaLogin",
             [],
             format="json",
         )
@@ -757,7 +758,7 @@ class FuncionariosBuscarPorListaLoginViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/BuscarPorListaLogin/",
+            "/api/funcionarios/BuscarPorListaLogin",
             ["7900010"],
             format="json",
         )
@@ -785,7 +786,7 @@ class EscolaFuncionariosViewTest(SimpleTestCase):
         ]
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/000123/funcionarios/")
+        resp = client.get("/api/escolas/000123/funcionarios")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json()[0]["codigoRF"], "000001")
@@ -798,14 +799,14 @@ class EscolaFuncionariosViewTest(SimpleTestCase):
         mock_service.return_value = None
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/000123/funcionarios/")
+        resp = client.get("/api/escolas/000123/funcionarios")
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/%20/funcionarios/")
+        resp = client.get("/api/escolas/%20/funcionarios")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -836,7 +837,7 @@ class FuncionariosUeViewTest(SimpleTestCase):
         payload = {"codigosRfs": ["000001"], "filtro": ""}
 
         resp = client.post(
-            "/api/funcionarios/ue/000123/",
+            "/api/funcionarios/ue/000123",
             data=payload,
             content_type="application/json",
         )
@@ -862,7 +863,7 @@ class FuncionariosUeViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/ue/000123/",
+            "/api/funcionarios/ue/000123",
             data={"codigosRfs": [], "filtro": ""},
             content_type="application/json",
         )
@@ -875,7 +876,7 @@ class FuncionariosUeViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/ue/000123/",
+            "/api/funcionarios/ue/000123",
             data={"codigosRfs": [], "filtro": ""},
             content_type="application/json",
         )
@@ -891,7 +892,7 @@ class FuncionariosUeViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/ue/000123/",
+            "/api/funcionarios/ue/000123",
             data={"codigosRfs": [], "filtro": ""},
             content_type="application/json",
         )
@@ -906,7 +907,7 @@ class FuncionariosUeViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/ue/%20/",
+            "/api/funcionarios/ue/%20",
             data={"codigosRfs": [], "filtro": ""},
             content_type="application/json",
         )
@@ -921,7 +922,7 @@ class FuncionariosUeViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/ue/000123/",
+            "/api/funcionarios/ue/000123",
             data={"codigosRfs": "000001"},
             content_type="application/json",
         )
@@ -950,7 +951,7 @@ class FuncionariosCargoViewTest(SimpleTestCase):
         ]
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/cargos/3360/")
+        resp = client.get("/api/funcionarios/cargos/3360")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json()[0]["codigoRF"], "000001")
@@ -962,7 +963,7 @@ class FuncionariosCargoViewTest(SimpleTestCase):
         mock_service.return_value = None
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/cargos/3360/")
+        resp = client.get("/api/funcionarios/cargos/3360")
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
@@ -973,14 +974,14 @@ class FuncionariosCargoViewTest(SimpleTestCase):
         mock_service.return_value = {"codigo_rf": "000001"}
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/cargos/3360/")
+        resp = client.get("/api/funcionarios/cargos/3360")
 
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
 
     def test_400_quando_codigo_cargo_e_somente_espacos(self) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/cargos/%20/")
+        resp = client.get("/api/funcionarios/cargos/%20")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -1023,7 +1024,7 @@ class CargosFuncionarioViewTest(SimpleTestCase):
         ]
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/cargo/7900001/")
+        resp = client.get("/api/funcionarios/cargo/7900001")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json()[0]["cdCargoBase"], 3360)
@@ -1055,7 +1056,7 @@ class FuncionariosConectaFormacaoViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/funcionarios/registros-funcionais/conecta-formacao/"
+            "/api/funcionarios/registros-funcionais/conecta-formacao"
             "?codigos_cargos=3360&codigos_dres=100001"
         )
 
@@ -1089,7 +1090,7 @@ class FuncionariosAtribuicaoCargoViewTest(SimpleTestCase):
         ]
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/atribuicao/7900001/cargo/3360/")
+        resp = client.get("/api/funcionarios/atribuicao/7900001/cargo/3360")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json()[0]["dreCodigo"], "100001")
@@ -1112,7 +1113,7 @@ class UsuariosConectaFormacaoViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/usuarios/conecta-formacao/",
+            "/api/funcionarios/usuarios/conecta-formacao",
             data=["perfil"],
             content_type="application/json",
         )
@@ -1127,7 +1128,7 @@ class UsuariosConectaFormacaoViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/usuarios/conecta-formacao/",
+            "/api/funcionarios/usuarios/conecta-formacao",
             data=["perfil"],
             content_type="application/json",
         )
@@ -1150,7 +1151,7 @@ class FuncionariosSupervisoresViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/supervisores/100001/",
+            "/api/funcionarios/supervisores/100001",
             data=["000001"],
             content_type="application/json",
         )
@@ -1168,7 +1169,7 @@ class FuncionariosSupervisoresViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/supervisores/100001/",
+            "/api/funcionarios/supervisores/100001",
             data=["000001"],
             content_type="application/json",
         )
@@ -1180,7 +1181,7 @@ class FuncionariosSupervisoresViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/supervisores/100001/",
+            "/api/funcionarios/supervisores/100001",
             data=[],
             content_type="application/json",
         )
@@ -1199,7 +1200,7 @@ class FuncionariosSupervisoresViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/supervisores/100001/",
+            "/api/funcionarios/supervisores/100001",
             data=["000001"],
             content_type="application/json",
         )
@@ -1220,7 +1221,7 @@ class DRESupervisoresViewTest(SimpleTestCase):
         ]
         client = _cliente_autenticado()
 
-        resp = client.get("/api/DREs/100001/supervisores/")
+        resp = client.get("/api/DREs/100001/supervisores")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(
@@ -1234,7 +1235,7 @@ class DRESupervisoresViewTest(SimpleTestCase):
         mock_service.return_value = []
         client = _cliente_autenticado()
 
-        resp = client.get("/api/DREs/100001/supervisores/")
+        resp = client.get("/api/DREs/100001/supervisores")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
@@ -1246,7 +1247,7 @@ class DRESupervisoresViewTest(SimpleTestCase):
         mock_service.return_value = {"codigo_rf": "7900002"}
         client = _cliente_autenticado()
 
-        resp = client.get("/api/DREs/100001/supervisores/")
+        resp = client.get("/api/DREs/100001/supervisores")
 
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
 
@@ -1270,7 +1271,7 @@ class FuncionariosPerfisViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/funcionarios/perfis/perfil-x/?CodigoDre=100001"
+            "/api/funcionarios/perfis/perfil-x?CodigoDre=100001"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -1309,7 +1310,7 @@ class FuncionariosPerfisViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/funcionarios/perfis/perfil-x/?CodigoRf=7900003"
+            "/api/funcionarios/perfis/perfil-x?CodigoRf=7900003"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -1328,7 +1329,7 @@ class FuncionariosPerfisViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/funcionarios/perfis/perfil-x/?CodigoDre=100001"
+            "/api/funcionarios/perfis/perfil-x?CodigoDre=100001"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -1344,7 +1345,7 @@ class FuncionariosPerfisViewTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/perfis/perfil-x/")
+        resp = client.get("/api/funcionarios/perfis/perfil-x")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -1366,7 +1367,7 @@ class FuncionariosPerfisViewTest(SimpleTestCase):
         )
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/perfis/perfil-x/dres/100002/")
+        resp = client.get("/api/funcionarios/perfis/perfil-x/dres/100002")
 
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertEqual(
@@ -1394,7 +1395,7 @@ class FuncionariosPerfisDreViewTest(SimpleTestCase):
             }
         ]
         client = _cliente_autenticado()
-        path = "/api/funcionarios/perfis/perfil-x/dres/100002/"
+        path = "/api/funcionarios/perfis/perfil-x/dres/100002"
         query = "?CodigoUe=000102&CodigoRf=7900004&NomeServidor=CRISTINA"
 
         resp = client.get(f"{path}{query}")
@@ -1433,7 +1434,7 @@ class FuncionariosPerfisDreViewTest(SimpleTestCase):
         mock_service.return_value = None
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/perfis/perfil-x/dres/100002/")
+        resp = client.get("/api/funcionarios/perfis/perfil-x/dres/100002")
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
@@ -1446,7 +1447,7 @@ class FuncionariosPerfisDreViewTest(SimpleTestCase):
         mock_service.return_value = "erro"
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/perfis/perfil-x/dres/100002/")
+        resp = client.get("/api/funcionarios/perfis/perfil-x/dres/100002")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(resp.json(), "erro")
@@ -1472,7 +1473,7 @@ class EscolaFuncionariosCargoViewTest(SimpleTestCase):
         ]
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/000123/funcionarios/cargos/14/")
+        resp = client.get("/api/escolas/000123/funcionarios/cargos/14")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json()[0]["codigoRF"], "000001")
@@ -1481,7 +1482,7 @@ class EscolaFuncionariosCargoViewTest(SimpleTestCase):
     def test_400_quando_codigo_cargo_e_somente_espacos(self) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/000123/funcionarios/cargos/%20/")
+        resp = client.get("/api/escolas/000123/funcionarios/cargos/%20")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -1492,7 +1493,7 @@ class EscolaFuncionariosCargoViewTest(SimpleTestCase):
     def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/%20/funcionarios/cargos/14/")
+        resp = client.get("/api/escolas/%20/funcionarios/cargos/14")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -1505,7 +1506,7 @@ class EscolaFuncionariosCargoViewTest(SimpleTestCase):
         mock_service.return_value = None
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/000123/funcionarios/cargos/14/")
+        resp = client.get("/api/escolas/000123/funcionarios/cargos/14")
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
@@ -1525,7 +1526,7 @@ class EscolaFuncionariosCargosViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/escolas/000103/funcionarios/cargos/"
+            "/api/escolas/000103/funcionarios/cargos"
             "?cargos=3239&cargos=3240&dre_codigo=1"
         )
 
@@ -1550,7 +1551,7 @@ class EscolaFuncionariosCargosViewTest(SimpleTestCase):
         mock_service.return_value = None
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/000103/funcionarios/cargos/")
+        resp = client.get("/api/escolas/000103/funcionarios/cargos")
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
@@ -1562,7 +1563,7 @@ class EscolaFuncionariosCargosViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/escolas/000103/funcionarios/cargos/?dre_codigo=1"
+            "/api/escolas/000103/funcionarios/cargos?dre_codigo=1"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -1579,7 +1580,7 @@ class EscolaFuncionariosCargosViewTest(SimpleTestCase):
         mock_service.return_value = "erro de contrato"
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/000103/funcionarios/cargos/")
+        resp = client.get("/api/escolas/000103/funcionarios/cargos")
 
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(
@@ -1590,7 +1591,7 @@ class EscolaFuncionariosCargosViewTest(SimpleTestCase):
     def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/%20/funcionarios/cargos/")
+        resp = client.get("/api/escolas/%20/funcionarios/cargos")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -1617,7 +1618,7 @@ class EscolaFuncionariosFuncoesAtividadesViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/escolas/000103/funcionarios/funcoes-atividades/"
+            "/api/escolas/000103/funcionarios/funcoes-atividades"
             "?funcoes_atividades=30&funcoes_atividades=31&codigo_dre=1"
         )
 
@@ -1646,7 +1647,7 @@ class EscolaFuncionariosFuncoesAtividadesViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/escolas/000103/funcionarios/funcoes-atividades/"
+            "/api/escolas/000103/funcionarios/funcoes-atividades"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
@@ -1662,7 +1663,7 @@ class EscolaFuncionariosFuncoesAtividadesViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/escolas/000103/funcionarios/funcoes-atividades/"
+            "/api/escolas/000103/funcionarios/funcoes-atividades"
             "?codigo_dre=1"
         )
 
@@ -1684,7 +1685,7 @@ class EscolaFuncionariosFuncoesAtividadesViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/escolas/000103/funcionarios/funcoes-atividades/"
+            "/api/escolas/000103/funcionarios/funcoes-atividades"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
@@ -1696,7 +1697,7 @@ class EscolaFuncionariosFuncoesAtividadesViewTest(SimpleTestCase):
     def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/%20/funcionarios/funcoes-atividades/")
+        resp = client.get("/api/escolas/%20/funcionarios/funcoes-atividades")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -1722,7 +1723,7 @@ class EscolaFuncionariosFuncoesExternasViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/escolas/400870/funcionarios/funcoes-externas/"
+            "/api/escolas/400870/funcionarios/funcoes-externas"
             "?funcoes=5&funcoes=6&codigo_dre=1"
         )
 
@@ -1752,7 +1753,7 @@ class EscolaFuncionariosFuncoesExternasViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/escolas/400870/funcionarios/funcoes-externas/"
+            "/api/escolas/400870/funcionarios/funcoes-externas"
             "?codigo_dre=1"
         )
 
@@ -1769,7 +1770,7 @@ class EscolaFuncionariosFuncoesExternasViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/escolas/400870/funcionarios/funcoes-externas/"
+            "/api/escolas/400870/funcionarios/funcoes-externas"
             "?codigo_dre=1"
         )
 
@@ -1788,7 +1789,7 @@ class EscolaFuncionariosFuncoesExternasViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/escolas/400870/funcionarios/funcoes-externas/"  # NOSONAR
+            "/api/escolas/400870/funcionarios/funcoes-externas"  # NOSONAR
             "?funcoes=5"
         )
 
@@ -1807,7 +1808,7 @@ class EscolaFuncionariosFuncoesExternasViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/escolas/400870/funcionarios/funcoes-externas/"
+            "/api/escolas/400870/funcionarios/funcoes-externas"
             "?codigo_dre=1"
         )
 
@@ -1820,7 +1821,7 @@ class EscolaFuncionariosFuncoesExternasViewTest(SimpleTestCase):
     def test_400_quando_codigo_ue_e_somente_espacos(self) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/%20/funcionarios/funcoes-externas/")
+        resp = client.get("/api/escolas/%20/funcionarios/funcoes-externas")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -1855,7 +1856,7 @@ class EscolaFuncionariosFuncaoExternaViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/escolas/000123/funcionarios/funcoes-externas/7/"
+            "/api/escolas/000123/funcionarios/funcoes-externas/7"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -1876,7 +1877,7 @@ class EscolaFuncionariosFuncaoExternaViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/escolas/000123/funcionarios/funcoes-externas/7/"
+            "/api/escolas/000123/funcionarios/funcoes-externas/7"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
@@ -1891,7 +1892,7 @@ class EscolaFuncionariosFuncaoExternaViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/escolas/000123/funcionarios/funcoes-externas/7/"
+            "/api/escolas/000123/funcionarios/funcoes-externas/7"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
@@ -1908,7 +1909,7 @@ class EscolaFuncionariosFuncaoExternaViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/escolas/000123/funcionarios/funcoes-externas/7/"
+            "/api/escolas/000123/funcionarios/funcoes-externas/7"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
@@ -1921,7 +1922,7 @@ class EscolaFuncionariosFuncaoExternaViewTest(SimpleTestCase):
         """Testa 400 para codigoUE vazio na função externa."""
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/%20/funcionarios/funcoes-externas/7/")
+        resp = client.get("/api/escolas/%20/funcionarios/funcoes-externas/7")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -1952,7 +1953,7 @@ class EscolaFuncionariosFuncaoAtividadeViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/escolas/000123/funcionarios/funcoes-atividades/1/"
+            "/api/escolas/000123/funcionarios/funcoes-atividades/1"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -1982,7 +1983,7 @@ class EscolaFuncionariosFuncaoAtividadeViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/escolas/000123/funcionarios/funcoes-atividades/1/"
+            "/api/escolas/000123/funcionarios/funcoes-atividades/1"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
@@ -1997,7 +1998,7 @@ class EscolaFuncionariosFuncaoAtividadeViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/escolas/000123/funcionarios/funcoes-atividades/1/"
+            "/api/escolas/000123/funcionarios/funcoes-atividades/1"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
@@ -2014,7 +2015,7 @@ class EscolaFuncionariosFuncaoAtividadeViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/escolas/000123/funcionarios/funcoes-atividades/1/"
+            "/api/escolas/000123/funcionarios/funcoes-atividades/1"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
@@ -2028,7 +2029,7 @@ class EscolaFuncionariosFuncaoAtividadeViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/escolas/%20/funcionarios/funcoes-atividades/1/"
+            "/api/escolas/%20/funcionarios/funcoes-atividades/1"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -2053,7 +2054,7 @@ class ProfessorDisciplinaTurmasViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/professores/000001/disciplina/5/turmas/",
+            "/api/professores/000001/disciplina/5/turmas",
             ["9100001"],
             format="json",
         )
@@ -2070,7 +2071,7 @@ class ProfessorDisciplinaTurmasViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/professores/000001/disciplina/5/turmas/",
+            "/api/professores/000001/disciplina/5/turmas",
             ["9100001"],
             format="json",
         )
@@ -2088,7 +2089,7 @@ class ProfessorDisciplinaTurmasViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/professores/000001/disciplina/5/turmas/",
+            "/api/professores/000001/disciplina/5/turmas",
             ["9100001"],
             format="json",
         )
@@ -2099,7 +2100,7 @@ class ProfessorDisciplinaTurmasViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/professores/000001/disciplina/5/turmas/",
+            "/api/professores/000001/disciplina/5/turmas",
             [],
             format="json",
         )
@@ -2110,7 +2111,7 @@ class ProfessorDisciplinaTurmasViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/professores/%20/disciplina/5/turmas/",
+            "/api/professores/%20/disciplina/5/turmas",
             ["9100001"],
             format="json",
         )
@@ -2125,7 +2126,7 @@ class ProfessorDisciplinaTurmasViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/professores/000001/disciplina/%20/turmas/",
+            "/api/professores/000001/disciplina/%20/turmas",
             ["9100001"],
             format="json",
         )
@@ -2177,7 +2178,7 @@ class ProfessorTurmasViewTest(SimpleTestCase):
         ]
         client = _cliente_autenticado()
 
-        resp = client.get("/api/professores/000001/turmas/")
+        resp = client.get("/api/professores/000001/turmas")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json()[0]["codTurma"], 9100001)
@@ -2193,7 +2194,7 @@ class ProfessorTurmasViewTest(SimpleTestCase):
         mock_service.return_value = []
         client = _cliente_autenticado()
 
-        resp = client.get("/api/professores/000001/turmas/")
+        resp = client.get("/api/professores/000001/turmas")
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
@@ -2201,7 +2202,7 @@ class ProfessorTurmasViewTest(SimpleTestCase):
         """Testa 400 quando o código RF do professor é apenas espaços."""
         client = _cliente_autenticado()
 
-        resp = client.get("/api/professores/%20/turmas/")
+        resp = client.get("/api/professores/%20/turmas")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -2226,7 +2227,7 @@ class FuncionarioTurmaDisciplinasViewTest(SimpleTestCase):
         ]
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/turmas/9100001/disciplinas/")
+        resp = client.get("/api/funcionarios/turmas/9100001/disciplinas")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(
@@ -2252,14 +2253,14 @@ class FuncionarioTurmaDisciplinasViewTest(SimpleTestCase):
         mock_service.return_value = []
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/turmas/9100001/disciplinas/")
+        resp = client.get("/api/funcionarios/turmas/9100001/disciplinas")
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_400_quando_codigo_turma_e_somente_espacos(self) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/turmas/%20/disciplinas/")
+        resp = client.get("/api/funcionarios/turmas/%20/disciplinas")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -2287,8 +2288,8 @@ class FuncionarioPerfilTurmaDisciplinasViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/funcionarios/000001/perfis/perfil-x/"
-            "turmas/9100001/disciplinas/?abrangencia=3&cargos=3239"
+            "/api/funcionarios/000001/perfis/perfil-x"
+            "/turmas/9100001/disciplinas?abrangencia=3&cargos=3239"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -2307,8 +2308,8 @@ class FuncionarioPerfilTurmaDisciplinasViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/funcionarios/000001/perfis/perfil-x/"
-            "turmas/9100001/disciplinas/"
+            "/api/funcionarios/000001/perfis/perfil-x"
+            "/turmas/9100001/disciplinas"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
@@ -2318,8 +2319,8 @@ class FuncionarioPerfilTurmaDisciplinasViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/funcionarios/%20/perfis/perfil-x/"
-            "turmas/9100001/disciplinas/"
+            "/api/funcionarios/%20/perfis/perfil-x"
+            "/turmas/9100001/disciplinas"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -2348,8 +2349,8 @@ class FuncionarioPerfilTurmaDisciplinasPlanejamentoViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/funcionarios/000001/perfis/perfil-x/"
-            "turmas/9100001/disciplinas/planejamento/?abrangencia=2"
+            "/api/funcionarios/000001/perfis/perfil-x"
+            "/turmas/9100001/disciplinas/planejamento?abrangencia=2"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -2368,8 +2369,8 @@ class FuncionarioPerfilTurmaDisciplinasPlanejamentoViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/funcionarios/000001/perfis/perfil-x/"
-            "turmas/9100001/disciplinas/planejamento/"
+            "/api/funcionarios/000001/perfis/perfil-x"
+            "/turmas/9100001/disciplinas/planejamento"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
@@ -2389,7 +2390,7 @@ class FuncionarioPerfilTurmasViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/funcionarios/000001/perfis/perfil-x/turmas/"
+            "/api/funcionarios/000001/perfis/perfil-x/turmas"
             "?abrangencia=4&cargos=3239&funcoesId=1&grupo=2"
             "&dreCodigo=100001&ehPerfilManual=true"
         )
@@ -2427,7 +2428,7 @@ class FuncionarioPerfilTurmasViewTest(SimpleTestCase):
         mock_service.return_value = None
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/000001/perfis/perfil-x/turmas/")
+        resp = client.get("/api/funcionarios/000001/perfis/perfil-x/turmas")
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
@@ -2437,7 +2438,7 @@ class FuncionarioPerfilTurmasViewTest(SimpleTestCase):
     def test_400_quando_perfil_vazio(self, mock_service: MagicMock) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/000001/perfis/%20/turmas/")
+        resp = client.get("/api/funcionarios/000001/perfis/%20/turmas")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -2455,7 +2456,7 @@ class FuncionariosTurmasViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/turmas/",
+            "/api/funcionarios/turmas",
             ["000102"],
             format="json",
         )
@@ -2470,7 +2471,7 @@ class FuncionariosTurmasViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/turmas/",
+            "/api/funcionarios/turmas",
             ["000102"],
             format="json",
         )
@@ -2494,7 +2495,7 @@ class FuncionariosBuscarTurmasElegiveisViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/BuscarTurmasElegiveis/",
+            "/api/funcionarios/BuscarTurmasElegiveis",
             payload,
             format="json",
         )
@@ -2511,7 +2512,7 @@ class FuncionariosBuscarTurmasElegiveisViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/BuscarTurmasElegiveis/",
+            "/api/funcionarios/BuscarTurmasElegiveis",
             {
                 "CodigoRf": "000001",
                 "CodigoTurma": 1,
@@ -2532,7 +2533,7 @@ class FuncionariosViewTest(SimpleTestCase):
         mock_service.return_value = [{"codigo_rf": "000001"}]
         client = _cliente_autenticado()
 
-        resp = client.post("/api/funcionarios/", payload, format="json")
+        resp = client.post("/api/funcionarios", payload, format="json")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json()[0]["codigoRf"], "000001")
@@ -2544,7 +2545,7 @@ class FuncionariosViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/",
+            "/api/funcionarios",
             {"CodigoUE": "000102"},
             format="json",
         )
@@ -2564,7 +2565,7 @@ class ProfessorBuscarPorRfDreUeViewTest(SimpleTestCase):
         }
         client = _cliente_autenticado()
 
-        resp = client.get("/api/professores/000001/BuscarPorRfDreUe/2026/")
+        resp = client.get("/api/professores/000001/BuscarPorRfDreUe/2026")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(
@@ -2583,7 +2584,7 @@ class ProfessorBuscarPorRfDreUeViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/000001/BuscarPorRfDreUe/2026/"
+            "/api/professores/000001/BuscarPorRfDreUe/2026"
             "?dre_id=1&ue_id=000103&buscar_outros_cargos=true"
         )
 
@@ -2606,7 +2607,7 @@ class ProfessorBuscarPorRfDreUeViewTest(SimpleTestCase):
         mock_service.return_value = None
         client = _cliente_autenticado()
 
-        resp = client.get("/api/professores/000001/BuscarPorRfDreUe/2026/")
+        resp = client.get("/api/professores/000001/BuscarPorRfDreUe/2026")
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
@@ -2614,7 +2615,7 @@ class ProfessorBuscarPorRfDreUeViewTest(SimpleTestCase):
         """Testa 400 quando o código RF do professor é apenas espaços."""
         client = _cliente_autenticado()
 
-        resp = client.get("/api/professores/%20/BuscarPorRfDreUe/2026/")
+        resp = client.get("/api/professores/%20/BuscarPorRfDreUe/2026")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -2632,7 +2633,7 @@ class AdministradorSgpEscolaViewTest(SimpleTestCase):
         mock_service.return_value = ["7821972", "7980302"]
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/000103/administrador-sgp/")
+        resp = client.get("/api/escolas/000103/administrador-sgp")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), ["7821972", "7980302"])
@@ -2646,7 +2647,7 @@ class AdministradorSgpEscolaViewTest(SimpleTestCase):
         mock_service.return_value = []
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/999999/administrador-sgp/")
+        resp = client.get("/api/escolas/999999/administrador-sgp")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
@@ -2657,7 +2658,7 @@ class AdministradorSgpEscolaViewTest(SimpleTestCase):
         mock_service.return_value = ["6940773", "6940773", "7385005"]
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/100003/administrador-sgp/")
+        resp = client.get("/api/escolas/100003/administrador-sgp")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), ["6940773", "6940773", "7385005"])
@@ -2666,7 +2667,7 @@ class AdministradorSgpEscolaViewTest(SimpleTestCase):
         """Retorna 400 quando código UE é vazio."""
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/%20/administrador-sgp/")
+        resp = client.get("/api/escolas/%20/administrador-sgp")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -2678,7 +2679,7 @@ class AdministradorSgpEscolaViewTest(SimpleTestCase):
         mock_service.return_value = ["1234567"]
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/000103/administrador-sgp/")
+        resp = client.get("/api/escolas/000103/administrador-sgp")
 
         # Deve ser array, não {"items": [...]}
         self.assertIsInstance(resp.json(), list)
@@ -2696,7 +2697,7 @@ class ProfessoresBuscarPorListaRfAnoViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/professores/2026/BuscarPorListaRF/",
+            "/api/professores/2026/BuscarPorListaRF",
             ["000001"],
             format="json",
         )
@@ -2715,7 +2716,7 @@ class ProfessoresBuscarPorListaRfAnoViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/professores/2026/BuscarPorListaRF/",
+            "/api/professores/2026/BuscarPorListaRF",
             ["000001"],
             format="json",
         )
@@ -2727,7 +2728,7 @@ class ProfessoresBuscarPorListaRfAnoViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/professores/2026/BuscarPorListaRF/",
+            "/api/professores/2026/BuscarPorListaRF",
             [],
             format="json",
         )
@@ -2750,7 +2751,7 @@ class FuncionariosUnidadeViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/unidade/100004/",
+            "/api/funcionarios/unidade/100004",
             ["5BE1E074-37D6-E911-ABD6-F81654FE895D"],
             format="json",
         )
@@ -2777,7 +2778,7 @@ class FuncionariosUnidadeViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/unidade/0/",
+            "/api/funcionarios/unidade/0",
             ["perfil"],
             format="json",
         )
@@ -2789,7 +2790,7 @@ class FuncionariosUnidadeViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/unidade/100004/",
+            "/api/funcionarios/unidade/100004",
             [],
             format="json",
         )
@@ -2804,7 +2805,7 @@ class FuncionariosUnidadeViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/unidade/100004/",
+            "/api/funcionarios/unidade/100004",
             ["perfil"],
             format="json",
         )
@@ -2823,7 +2824,7 @@ class FuncionariosAdminsSmeViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/admins/sme/",
+            "/api/funcionarios/admins/sme",
             ["EA741BF4-47EA-486D-8B88-5327521BCFC5"],
             format="json",
         )
@@ -2840,7 +2841,7 @@ class FuncionariosAdminsSmeViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/admins/sme/",
+            "/api/funcionarios/admins/sme",
             ["perfil"],
             format="json",
         )
@@ -2852,7 +2853,7 @@ class FuncionariosAdminsSmeViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/admins/sme/",
+            "/api/funcionarios/admins/sme",
             {"perfil": "x"},
             format="json",
         )
@@ -2867,7 +2868,7 @@ class FuncionariosAdminsSmeViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.post(
-            "/api/funcionarios/admins/sme/",
+            "/api/funcionarios/admins/sme",
             ["perfil"],
             format="json",
         )
@@ -2899,7 +2900,7 @@ class FuncionarioDadosSigpaeViewTest(SimpleTestCase):
         }
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/DadosSigpae/7900001/")
+        resp = client.get("/api/funcionarios/DadosSigpae/7900001")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json()["inexistenteEol"], False)
@@ -2923,7 +2924,7 @@ class FuncionarioDadosSigpaeViewTest(SimpleTestCase):
         )
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/DadosSigpae/0/")
+        resp = client.get("/api/funcionarios/DadosSigpae/0")
 
         self.assertEqual(resp.status_code, 601)
         self.assertEqual(
@@ -2938,7 +2939,7 @@ class FuncionarioDadosSigpaeViewTest(SimpleTestCase):
         mock_service.return_value = []
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/DadosSigpae/7900001/")
+        resp = client.get("/api/funcionarios/DadosSigpae/7900001")
 
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
 
@@ -2952,7 +2953,7 @@ class ProfessorEhEmeiViewTest(SimpleTestCase):
         mock_service.return_value = True
         client = _cliente_autenticado()
 
-        resp = client.get("/api/professores/000001/ehEmei/")
+        resp = client.get("/api/professores/000001/ehEmei")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertTrue(resp.json())
@@ -2962,7 +2963,7 @@ class ProfessorEhEmeiViewTest(SimpleTestCase):
         """Testa 400 quando o código RF do professor é apenas espaços."""
         client = _cliente_autenticado()
 
-        resp = client.get("/api/professores/%20/ehEmei/")
+        resp = client.get("/api/professores/%20/ehEmei")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -2983,7 +2984,7 @@ class ProfessorAutoCompleteViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/2026/AutoComplete/1/?ue_id=000103&nome=ana"
+            "/api/professores/2026/AutoComplete/1?ue_id=000103&nome=ana"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -3006,7 +3007,7 @@ class ProfessorAutoCompleteViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/2026/AutoComplete/1/?ue_id=000103&nome=ana"
+            "/api/professores/2026/AutoComplete/1?ue_id=000103&nome=ana"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -3021,7 +3022,7 @@ class ProfessorAutoCompleteViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/2026/AutoComplete/1/?ue_id=000103&nome=ana"
+            "/api/professores/2026/AutoComplete/1?ue_id=000103&nome=ana"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -3036,7 +3037,7 @@ class ProfessorAutoCompleteViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/2026/AutoComplete/1/?ue_id=000103&nome=ana"
+            "/api/professores/2026/AutoComplete/1?ue_id=000103&nome=ana"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
@@ -3050,7 +3051,7 @@ class ProfessorAutoCompleteViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/2026/AutoComplete/%20/?ue_id=000103&nome=ana"
+            "/api/professores/2026/AutoComplete/%20?ue_id=000103&nome=ana"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -3064,7 +3065,7 @@ class ProfessorAutoCompleteViewTest(SimpleTestCase):
         """Testa 400 quando o ueId não é informado."""
         client = _cliente_autenticado()
 
-        resp = client.get("/api/professores/2026/AutoComplete/1/?nome=ana")
+        resp = client.get("/api/professores/2026/AutoComplete/1?nome=ana")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -3078,7 +3079,7 @@ class ProfessorAutoCompleteViewTest(SimpleTestCase):
         """Testa 400 quando o nome não é informado."""
         client = _cliente_autenticado()
 
-        resp = client.get("/api/professores/2026/AutoComplete/1/?ue_id=000103")
+        resp = client.get("/api/professores/2026/AutoComplete/1?ue_id=000103")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -3095,7 +3096,7 @@ class ProfessorAutoCompleteViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/2026/AutoComplete/1/?ue_id=000103&nome=a"
+            "/api/professores/2026/AutoComplete/1?ue_id=000103&nome=a"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
@@ -3114,7 +3115,7 @@ class ProfessorBuscaTurmasAtribuidasEscolaViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/000001/escolas/000103/turmas/anos_letivos/2026/"
+            "/api/professores/000001/escolas/000103/turmas/anos_letivos/2026"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -3130,7 +3131,7 @@ class ProfessorBuscaTurmasAtribuidasEscolaViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/000001/escolas/000103/turmas/anos_letivos/2026/"
+            "/api/professores/000001/escolas/000103/turmas/anos_letivos/2026"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
@@ -3146,7 +3147,7 @@ class ProfessorBuscaTurmasAtribuidasEscolaViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/000001/escolas/%20/turmas/anos_letivos/2026/"
+            "/api/professores/000001/escolas/%20/turmas/anos_letivos/2026"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -3169,7 +3170,7 @@ class BuscaTurmasAtribuidasProfessoresEscolaViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/escolas/000103/turmas/anos_letivos/2026/"
+            "/api/professores/escolas/000103/turmas/anos_letivos/2026"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -3185,7 +3186,7 @@ class BuscaTurmasAtribuidasProfessoresEscolaViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/escolas/000103/turmas/anos_letivos/2026/"
+            "/api/professores/escolas/000103/turmas/anos_letivos/2026"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
@@ -3201,7 +3202,7 @@ class BuscaTurmasAtribuidasProfessoresEscolaViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/escolas/%20/turmas/anos_letivos/2026/"
+            "/api/professores/escolas/%20/turmas/anos_letivos/2026"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -3220,7 +3221,7 @@ class ProfessorBuscarTurmasAtribuidasViewTest(SimpleTestCase):
         mock_service.return_value = [_turma_atribuida_simplificada()]
         client = _cliente_autenticado()
 
-        resp = client.get("/api/professores/000001/turmas/anos_letivos/2026/")
+        resp = client.get("/api/professores/000001/turmas/anos_letivos/2026")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [_turma_atribuida_simplificada()])
@@ -3231,7 +3232,7 @@ class ProfessorBuscarTurmasAtribuidasViewTest(SimpleTestCase):
         mock_service.return_value = []
         client = _cliente_autenticado()
 
-        resp = client.get("/api/professores/000001/turmas/anos_letivos/2026/")
+        resp = client.get("/api/professores/000001/turmas/anos_letivos/2026")
 
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(resp.json(), _MSG_TURMAS_NAO_ENCONTRADAS)
@@ -3242,7 +3243,7 @@ class ProfessorBuscarTurmasAtribuidasViewTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/professores/%20/turmas/anos_letivos/2026/")
+        resp = client.get("/api/professores/%20/turmas/anos_letivos/2026")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -3256,8 +3257,8 @@ class ProfessorVerificarAtribuicaoDisciplinaViewTest(SimpleTestCase):
     """Valida os parâmetros da verificação de atribuição por disciplina."""
 
     _URL = (
-        "/api/professores/000001/turmas/123/disciplinas/456/"
-        "atribuicao/verificar/data"
+        "/api/professores/000001/turmas/123/disciplinas/456"
+        "/atribuicao/verificar/data"
     )
 
     @patch(
@@ -3309,8 +3310,8 @@ class ProfessorVerificarAtribuicaoViewTest(SimpleTestCase):
     """Valida a verificação de atribuição unificada (data ISO + território)."""
 
     _URL = (
-        "/api/professores/000001/turmas/123/disciplinas/456/"
-        "atribuicao/verificar/datas"
+        "/api/professores/000001/turmas/123/disciplinas/456"
+        "/atribuicao/verificar/datas"
     )
 
     @patch(
@@ -3433,8 +3434,8 @@ class ProfessorVerificarAtribuicaoViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/%20/turmas/123/disciplinas/456/"
-            "atribuicao/verificar/datas",
+            "/api/professores/%20/turmas/123/disciplinas/456"
+            "/atribuicao/verificar/datas",
             {"data": "2026-07-28"},
         )
 
@@ -3453,8 +3454,8 @@ class ProfessorVerificarAtribuicaoViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/000001/turmas/abc/disciplinas/456/"
-            "atribuicao/verificar/datas",
+            "/api/professores/000001/turmas/abc/disciplinas/456"
+            "/atribuicao/verificar/datas",
             {"data": "2026-07-28"},
         )
 
@@ -3474,8 +3475,8 @@ class ProfessorVerificarAtribuicaoViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/professores/000001/turmas/123/disciplinas/abc/"
-            "atribuicao/verificar/datas",
+            "/api/professores/000001/turmas/123/disciplinas/abc"
+            "/atribuicao/verificar/datas",
             {"data": "2026-07-28"},
         )
 
@@ -3487,8 +3488,8 @@ class ProfessorVerificarAtribuicaoViewTest(SimpleTestCase):
 class ProfessorVerificarAtribuicaoDataViewTest(SimpleTestCase):
     """Valida a verificação da atribuição por data."""
 
-    _URL_BASE = "/api/professores/000001/turmas/9100002/"
-    _URL = _URL_BASE + "atribuicao/verificar/data/"
+    _URL_BASE = "/api/professores/000001/turmas/9100002"
+    _URL = _URL_BASE + "/atribuicao/verificar/data"
 
     @patch(
         "apps.professores.views.services."
@@ -3531,8 +3532,8 @@ class ProfessorVerificarAtribuicaoPeriodoViewTest(SimpleTestCase):
     """Valida o endpoint de atribuição por período."""
 
     _URL = (
-        "/api/professores/000001/turmas/9100002/componentes/89/"
-        "atribuicao/periodo/inicio/2026-07-01/fim/2026-07-31"
+        "/api/professores/000001/turmas/9100002/componentes/89"
+        "/atribuicao/periodo/inicio/2026-07-01/fim/2026-07-31"
     )
 
     @patch(
@@ -3644,8 +3645,9 @@ class _CodigoTurmaInvalidoMixin:
 
         resp = _cliente_autenticado().get(url)
 
-        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(
+        test_case: Any = self
+        test_case.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        test_case.assertEqual(
             resp.json(),
             "Houve um comportamento inesperado do sistema. "
             "Por favor, contate a SME.",
@@ -3659,8 +3661,8 @@ class ProfessoresTitularesPorTurmaViewTest(
     """Valida a busca de professores titulares por turma."""
 
     _URL = (
-        "/api/professores/9100002/titulares/"
-        "realizaAgrupamentoComponente/true"
+        "/api/professores/9100002/titulares"
+        "/realizaAgrupamentoComponente/true"
     )
 
     @patch(
@@ -3785,8 +3787,8 @@ class ProfessoresTitularesPorTurmaPorRfViewTest(
     """Valida a busca de titulares por turma com filtro de RF."""
 
     _URL = (
-        "/api/professores/9100002/titularesPorRf/"
-        "realizaAgrupamentoComponente/true"
+        "/api/professores/9100002/titularesPorRf"
+        "/realizaAgrupamentoComponente/true"
     )
 
     @patch(
@@ -3881,8 +3883,8 @@ class ProfessorTitularPorTurmaDisciplinaViewTest(SimpleTestCase):
     """Valida a busca singular de professor titular."""
 
     _URL = (
-        "/api/professores/titular/turmas/9100002/"
-        "componentes-curriculares/89"
+        "/api/professores/titular/turmas/9100002"
+        "/componentes-curriculares/89"
     )
 
     @patch(
@@ -4047,7 +4049,7 @@ class ProfessoresTitularesPorUeViewTest(SimpleTestCase):
 class ProfessoresTitularesPorTurmasViewTest(SimpleTestCase):
     """Valida a busca de professores titulares por várias turmas."""
 
-    _URL = "/api/professores/titulares/"
+    _URL = "/api/professores/titulares"
 
     @patch(
         "apps.professores.views.services."
@@ -4140,7 +4142,7 @@ class ProfessorStatusAtribuicaoViewTest(SimpleTestCase):
         }
 
         resp = _cliente_autenticado().get(
-            "/api/professores/000001/turmas/9100002/atribuicao/status/"
+            "/api/professores/000001/turmas/9100002/atribuicao/status"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -4151,8 +4153,8 @@ class ProfessorStatusAtribuicaoViewTest(SimpleTestCase):
 class ProfessorVerificarAtribuicaoDataTickViewTest(SimpleTestCase):
     """Valida a verificação da atribuição por data tick."""
 
-    _URL_BASE = "/api/professores/000001/turmas/9100002/disciplinas/89/"
-    _URL = _URL_BASE + "atribuicao/verificar/datatick/"
+    _URL_BASE = "/api/professores/000001/turmas/9100002/disciplinas/89"
+    _URL = _URL_BASE + "/atribuicao/verificar/datatick"
 
     @patch(
         "apps.professores.views.services."
@@ -4198,7 +4200,7 @@ class ProfessorVerificarAtribuicaoDataTickViewTest(SimpleTestCase):
 class ProfessorAtribuicaoTurmaDisciplinaViewTest(SimpleTestCase):
     """Valida a consulta das atribuições por disciplina."""
 
-    _URL = "/api/professores/9100002/disciplinas/89/atribuicao/data/"
+    _URL = "/api/professores/9100002/disciplinas/89/atribuicao/data"
 
     @patch("apps.professores.views.services.get_atribuicoes_turma_disciplina")
     def test_200_repassa_tick_e_retorna_lista(
@@ -4336,7 +4338,7 @@ class ProfessorAtribuicaoTurmaDisciplinaDataIsoViewTest(SimpleTestCase):
         mock_service: MagicMock,
     ) -> None:
         """Reproduz o 200 com lista vazia do .NET para IDs não numéricos."""
-        url = self._URL.replace("/89/", "/abc/")
+        url = self._URL.replace("/89", "/abc")
 
         resp = _cliente_autenticado().get(url, {"data": "2026-09-03"})
 
@@ -4349,8 +4351,8 @@ class ProfessorVerificarRecorrenciaDatasViewTest(SimpleTestCase):
     """Valida a verificação das datas recorrentes da atribuição."""
 
     _URL = (
-        "/api/professores/000001/turmas/9100002/disciplinas/89/"
-        "atribuicao/recorrencia/verificar/datas"
+        "/api/professores/000001/turmas/9100002/disciplinas/89"
+        "/atribuicao/recorrencia/verificar/datas"
     )
 
     @patch(
@@ -4428,8 +4430,8 @@ class ProfessorVerificarRecorrenciaDatasIsoViewTest(SimpleTestCase):
     """Valida a verificação das datas recorrentes, em ISO 8601."""
 
     _URL = (
-        "/api/professores/000001/turmas/9100002/disciplinas/89/"
-        "atribuicao/recorrencia/verificar/datas-iso"
+        "/api/professores/000001/turmas/9100002/disciplinas/89"
+        "/atribuicao/recorrencia/verificar/datas-iso"
     )
 
     @patch(
@@ -4531,8 +4533,8 @@ class ProfessorVerificarRecorrenciaDatasInvalidasViewTest(SimpleTestCase):
     """Valida ticks inválidos na verificação de recorrência."""
 
     _URL = (
-        "/api/professores/000001/turmas/9100002/disciplinas/89/"
-        "atribuicao/recorrencia/verificar/datas"
+        "/api/professores/000001/turmas/9100002/disciplinas/89"
+        "/atribuicao/recorrencia/verificar/datas"
     )
 
     @patch("apps.professores.views.services.verificar_recorrencia_datas")

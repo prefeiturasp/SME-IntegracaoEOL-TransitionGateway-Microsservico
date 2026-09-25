@@ -1,5 +1,6 @@
 """Valida as views do domínio de matrículas."""
 
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import httpx
@@ -25,7 +26,7 @@ class MatriculasUrlsTest(SimpleTestCase):
     """Valida os nomes dos parâmetros nas rotas."""
 
     def test_rota_matriculas(self) -> None:
-        match = resolve("/api/matriculas/")
+        match = resolve("/api/matriculas")
 
         self.assertEqual(match.kwargs, {})
 
@@ -45,12 +46,12 @@ class MatriculasUrlsTest(SimpleTestCase):
         self.assertEqual(match.kwargs, {"dre_codigo": "100000"})
 
     def test_rota_escolas_quantidade_alunos(self) -> None:
-        match = resolve("/api/escolas/100001/alunos/quantidade/")
+        match = resolve("/api/escolas/100001/alunos/quantidade")
 
         self.assertEqual(match.kwargs, {"codigo_escola": "100001"})
 
     def test_rota_escolas_matriculas_aluno_plural(self) -> None:
-        match = resolve("/api/escolas/100001/alunos/1234567/matriculas/")
+        match = resolve("/api/escolas/100001/alunos/1234567/matriculas")
 
         self.assertEqual(
             match.kwargs,
@@ -60,11 +61,11 @@ class MatriculasUrlsTest(SimpleTestCase):
     def test_schema_documenta_parametros_legados(self) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/v1/schema/")
+        resp = client.get("/api/v1/schema")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         for path in (
-            "/api/matriculas/",
+            "/api/matriculas",
             "/api/matriculas/anos-anteriores",
         ):
             parametros = resp.data["paths"][path]["get"]["parameters"]
@@ -90,7 +91,7 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
         ]
         client = _cliente_autenticado()
 
-        resp = client.get("/api/matriculas/?anoLetivo=2026&ueCodigo=100001")
+        resp = client.get("/api/matriculas?anoLetivo=2026&ueCodigo=100001")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(
@@ -107,7 +108,7 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/matriculas/?ueCodigo=100001")
+        resp = client.get("/api/matriculas?ueCodigo=100001")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
@@ -119,7 +120,7 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/matriculas/?anoLetivo=2026")
+        resp = client.get("/api/matriculas?anoLetivo=2026")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
@@ -132,7 +133,7 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/matriculas/?anoLetivo=abc&ueCodigo=100001"
+            "/api/matriculas?anoLetivo=abc&ueCodigo=100001"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -150,7 +151,7 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/matriculas/?anoLetivo=2026&ueCodigo=100001"
+            "/api/matriculas?anoLetivo=2026&ueCodigo=100001"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
@@ -173,7 +174,7 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/matriculas/?anoLetivo=2026&ueCodigo=100001"
+            "/api/matriculas?anoLetivo=2026&ueCodigo=100001"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -182,7 +183,7 @@ class MatriculasAnoAtualViewTest(SimpleTestCase):
     def test_403_sem_autenticacao(self) -> None:
         client = APIClient()
 
-        resp = client.get("/api/matriculas/?anoLetivo=2026&ueCodigo=100001")
+        resp = client.get("/api/matriculas?anoLetivo=2026&ueCodigo=100001")
 
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -307,9 +308,10 @@ class MatriculasParametrosLegadosTest(SimpleTestCase):
                         json=[{"turma_codigo": "123", "quantidade": 2}],
                         request=httpx.Request("GET", "https://ms.test/"),
                     )
-                    resp = _cliente_autenticado().get(
-                        f"/api/matriculas/{sufixo}?{query}"
-                    )
+                    path = "/api/matriculas"
+                    if sufixo:
+                        path += f"/{sufixo}"
+                    resp = _cliente_autenticado().get(f"{path}?{query}")
                     self.assertEqual(resp.status_code, status_esperado)
                     if consulta:
                         self.assertEqual(
@@ -574,7 +576,7 @@ class TotalMatriculasPorTurnoDreViewTest(SimpleTestCase):
 class QuantidadeAlunosPorTurmaEscolaViewTest(SimpleTestCase):
     """Valida o endpoint legado E05."""
 
-    _URL = "/api/escolas/100001/alunos/quantidade/"
+    _URL = "/api/escolas/100001/alunos/quantidade"
 
     @patch(
         "apps.matriculas.views.services.get_quantidade_alunos_por_turma_escola"
@@ -627,7 +629,7 @@ class QuantidadeAlunosPorTurmaEscolaViewTest(SimpleTestCase):
     def test_400_quando_codigo_escola_vazio(self) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/  /alunos/quantidade/")
+        resp = client.get("/api/escolas/  /alunos/quantidade")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -638,7 +640,7 @@ class QuantidadeAlunosPorTurmaEscolaViewTest(SimpleTestCase):
 class MatriculasAlunoEscolaViewTest(SimpleTestCase):
     """Valida o endpoint legado E24."""
 
-    _URL = "/api/escolas/100001/alunos/1234567/matriculas/"
+    _URL = "/api/escolas/100001/alunos/1234567/matriculas"
 
     @patch("apps.matriculas.views.services.get_matriculas_aluno_escola")
     def test_200_retorna_contrato_legado(
@@ -673,7 +675,7 @@ class MatriculasAlunoEscolaViewTest(SimpleTestCase):
         mock_service.return_value = []
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/100001/alunos/1234567/matriculas/")
+        resp = client.get("/api/escolas/100001/alunos/1234567/matriculas")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
@@ -686,7 +688,7 @@ class MatriculasAlunoEscolaViewTest(SimpleTestCase):
         mock_service.return_value = []
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/000001/alunos/7000001/matriculas/")
+        resp = client.get("/api/escolas/000001/alunos/7000001/matriculas")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
@@ -698,7 +700,7 @@ class MatriculasAlunoEscolaViewTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/100001/alunos/abc/matriculas/")
+        resp = client.get("/api/escolas/100001/alunos/abc/matriculas")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -710,7 +712,7 @@ class MatriculasAlunoEscolaViewTest(SimpleTestCase):
     def test_400_quando_codigo_escola_vazio(self) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/  /alunos/1234567/matriculas/")
+        resp = client.get("/api/escolas/  /alunos/1234567/matriculas")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -721,7 +723,7 @@ class MatriculasAlunoEscolaViewTest(SimpleTestCase):
     def test_400_quando_codigo_aluno_vazio(self) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/escolas/100001/alunos/  /matriculas/")
+        resp = client.get("/api/escolas/100001/alunos/  /matriculas")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -866,7 +868,7 @@ class FuncoesAuxiliaresTest(SimpleTestCase):
     def test_agregar_turnos_por_ue_sem_ativos(self) -> None:
         from apps.matriculas.views import _agregar_turnos_por_ue
 
-        alunos = [
+        alunos: list[dict[str, Any]] = [
             {"codigo_situacao_matricula": 2, "tipo_turno": 1},
             {"codigo_situacao_matricula": 3, "tipo_turno": 1},
         ]
@@ -875,7 +877,7 @@ class FuncoesAuxiliaresTest(SimpleTestCase):
     def test_agregar_turnos_por_ue_sem_tipo_turno(self) -> None:
         from apps.matriculas.views import _agregar_turnos_por_ue
 
-        alunos = [
+        alunos: list[dict[str, Any]] = [
             {"codigo_situacao_matricula": 1},
             {"codigo_situacao_matricula": 1, "tipo_turno": None},
         ]
@@ -884,7 +886,7 @@ class FuncoesAuxiliaresTest(SimpleTestCase):
     def test_agregar_turnos_por_ue_item_nao_dict(self) -> None:
         from apps.matriculas.views import _agregar_turnos_por_ue
 
-        alunos = [
+        alunos: list[Any] = [
             "invalido",
             None,
             123,

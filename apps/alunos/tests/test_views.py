@@ -172,7 +172,7 @@ class AlunosUrlsTest(SimpleTestCase):
         self.assertEqual(match.kwargs, {"codigo_aluno": "123456"})
 
     def test_preserva_codigo_aluno_turmas_com_barra(self) -> None:
-        match = resolve("/api/alunos/123456/turmas/")
+        match = resolve("/api/alunos/123456/turmas")
 
         self.assertEqual(match.kwargs, {"codigo_aluno": "123456"})
 
@@ -241,8 +241,8 @@ class AlunosUrlsTest(SimpleTestCase):
 
     def test_preserva_parametros_total_ativos_por_periodo(self) -> None:
         match = resolve(
-            "/api/alunos/ativos/anos/5/anos-letivos/2026/"
-            "inicio/2026-01-01/fim/2026-12-31"
+            "/api/alunos/ativos/anos/5/anos-letivos/2026"
+            "/inicio/2026-01-01/fim/2026-12-31"
         )
 
         self.assertEqual(
@@ -257,8 +257,8 @@ class AlunosUrlsTest(SimpleTestCase):
 
     def test_preserva_parametros_alunos_ativos_data_aula(self) -> None:
         match = resolve(
-            "/api/turmas/9100001/alunos-ativos/"
-            "data-aula-ticks/639031104000000000/"
+            "/api/turmas/9100001/alunos-ativos"
+            "/data-aula-ticks/639031104000000000"
         )
 
         self.assertEqual(
@@ -271,7 +271,7 @@ class AlunosUrlsTest(SimpleTestCase):
 
     def test_preserva_parametros_data_matricula_ticks(self) -> None:
         match = resolve(
-            "/api/turmas/9100002/data-matricula-ticks/639059616000000000/"
+            "/api/turmas/9100002/data-matricula-ticks/639059616000000000"
         )
 
         self.assertEqual(
@@ -284,7 +284,7 @@ class AlunosUrlsTest(SimpleTestCase):
 
     def test_preserva_parametros_aluno_considera_inativos(self) -> None:
         match = resolve(
-            "/api/turmas/9100003/aluno/7000001/considera-inativos/true/"
+            "/api/turmas/9100003/aluno/7000001/considera-inativos/true"
         )
 
         self.assertEqual(
@@ -299,12 +299,12 @@ class AlunosUrlsTest(SimpleTestCase):
     def test_alunos_ativos_data_aula(self) -> None:
         client = APIClient()
 
-        resp = client.get("/api/v1/schema/")
+        resp = client.get("/api/v1/schema")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         path = (
-            "/api/turmas/{codigo_turma}/alunos-ativos/"
-            "data-aula-ticks/{data_ticks}/"
+            "/api/turmas/{codigo_turma}/alunos-ativos"
+            "/data-aula-ticks/{data_ticks}"
         )
         operation = resp.data["paths"][path]["get"]
         self.assertEqual(operation["tags"], ["Turma"])
@@ -316,12 +316,12 @@ class AlunosUrlsTest(SimpleTestCase):
     def test_data_matricula_ticks_schema(self) -> None:
         client = APIClient()
 
-        resp = client.get("/api/v1/schema/")
+        resp = client.get("/api/v1/schema")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         path = (
-            "/api/turmas/{codigo_turma}/"
-            "data-matricula-ticks/{data_matricula_ticks}/"
+            "/api/turmas/{codigo_turma}"
+            "/data-matricula-ticks/{data_matricula_ticks}"
         )
         operation = resp.data["paths"][path]["get"]
         self.assertEqual(operation["tags"], ["Turma"])
@@ -333,12 +333,12 @@ class AlunosUrlsTest(SimpleTestCase):
     def test_aluno_considera_inativos_schema(self) -> None:
         client = APIClient()
 
-        resp = client.get("/api/v1/schema/")
+        resp = client.get("/api/v1/schema")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         path = (
-            "/api/turmas/{codigo_turma}/aluno/{codigo_aluno}/"
-            "considera-inativos/{considera_inativos}/"
+            "/api/turmas/{codigo_turma}/aluno/{codigo_aluno}"
+            "/considera-inativos/{considera_inativos}"
         )
         operation = resp.data["paths"][path]["get"]
         self.assertEqual(operation["tags"], ["Turma"])
@@ -353,7 +353,7 @@ class AlunoAutocompleteAtivosViewTest(SimpleTestCase):
 
     def test_schema_data_referencia_opcional(self) -> None:
         """Documenta a data de referência como filtro opcional."""
-        resp = APIClient().get("/api/v1/schema/")
+        resp = APIClient().get("/api/v1/schema")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         path = next(
@@ -518,7 +518,7 @@ class AlunoAutocompleteUeViewTest(SimpleTestCase):
 
     def test_schema_preserva_rota_e_documenta_query_camel_case(self) -> None:
         """Mantém os nomes da rota e publica filtros no padrão legado."""
-        resp = APIClient().get("/api/v1/schema/")
+        resp = APIClient().get("/api/v1/schema")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         path = next(
             path
@@ -1337,8 +1337,8 @@ class AlunosAtivosDataAulaTicksViewTest(SimpleTestCase):
     """Valida a resposta de alunos ativos na data da aula."""
 
     _PATH = (
-        "/api/turmas/9100001/alunos-ativos/"
-        "data-aula-ticks/639031104000000000/"
+        "/api/turmas/9100001/alunos-ativos"
+        "/data-aula-ticks/639031104000000000"
     )
 
     @patch("apps.alunos.views.services.get_alunos_ativos_data_aula_ticks")
@@ -1425,8 +1425,8 @@ class AlunosAtivosDataAulaTicksViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/turmas/abc/alunos-ativos/"
-            "data-aula-ticks/639031104000000000/"
+            "/api/turmas/abc/alunos-ativos"
+            "/data-aula-ticks/639031104000000000"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -1440,8 +1440,8 @@ class AlunosAtivosDataAulaTicksViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/turmas/0/alunos-ativos/"
-            "data-aula-ticks/639031104000000000/"
+            "/api/turmas/0/alunos-ativos"
+            "/data-aula-ticks/639031104000000000"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -1455,7 +1455,7 @@ class AlunosAtivosDataAulaTicksViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/turmas/9100001/alunos-ativos/data-aula-ticks/abc/"
+            "/api/turmas/9100001/alunos-ativos/data-aula-ticks/abc"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -1518,7 +1518,7 @@ class AlunosAtivosDataAulaTicksViewTest(SimpleTestCase):
 class AlunosAtivosTurmaDataAulaISOViewTest(SimpleTestCase):
     """Valida a resposta de alunos ativos na data da aula em formato ISO."""
 
-    _PATH = "/api/turmas/8400532/alunos-ativos/data-aula/2026-01-04/"
+    _PATH = "/api/turmas/8400532/alunos-ativos/data-aula/2026-01-04"
 
     _MOCK_RETURN = [
         {
@@ -1583,7 +1583,7 @@ class AlunosAtivosTurmaDataAulaISOViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/turmas/abc/alunos-ativos/data-aula/2026-01-04/"
+            "/api/turmas/abc/alunos-ativos/data-aula/2026-01-04"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -1596,7 +1596,7 @@ class AlunosAtivosTurmaDataAulaISOViewTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/turmas/0/alunos-ativos/data-aula/2026-01-04/")
+        resp = client.get("/api/turmas/0/alunos-ativos/data-aula/2026-01-04")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
@@ -1606,7 +1606,7 @@ class AlunosAtivosTurmaDataAulaISOViewTest(SimpleTestCase):
     def test_quando_data_invalida(self, mock_service: MagicMock) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/turmas/9100001/alunos-ativos/data-aula/abc/")
+        resp = client.get("/api/turmas/9100001/alunos-ativos/data-aula/abc")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         mock_service.assert_not_called()
@@ -1631,7 +1631,7 @@ class AlunosAtivosTurmaDataAulaISOViewTest(SimpleTestCase):
 class AlunosDataMatriculaTicksViewTest(SimpleTestCase):
     """Valida a resposta de alunos por data de matricula."""
 
-    _PATH = "/api/turmas/9100002/data-matricula-ticks/639059616000000000/"
+    _PATH = "/api/turmas/9100002/data-matricula-ticks/639059616000000000"
 
     @patch("apps.alunos.views.services.get_alunos_data_matricula_ticks")
     def test_200_retorna_contrato_legado(
@@ -1689,7 +1689,7 @@ class AlunosDataMatriculaTicksViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/turmas/abc/data-matricula-ticks/639059616000000000/"
+            "/api/turmas/abc/data-matricula-ticks/639059616000000000"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -1703,7 +1703,7 @@ class AlunosDataMatriculaTicksViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/turmas/0/data-matricula-ticks/639059616000000000/"
+            "/api/turmas/0/data-matricula-ticks/639059616000000000"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -1716,7 +1716,7 @@ class AlunosDataMatriculaTicksViewTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/turmas/9100002/data-matricula-ticks/0/")
+        resp = client.get("/api/turmas/9100002/data-matricula-ticks/0")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         mock_service.assert_not_called()
@@ -1778,7 +1778,7 @@ class AlunosDataMatriculaTicksViewTest(SimpleTestCase):
 class AlunosTurmaDataMatriculaISOViewTest(SimpleTestCase):
     """Valida a resposta de alunos por data de matricula em formato ISO."""
 
-    _PATH = "/api/turmas/8686863/data-matricula/2026-02-06/"
+    _PATH = "/api/turmas/8686863/data-matricula/2026-02-06"
 
     _MOCK_RETURN = [
         {
@@ -1835,7 +1835,7 @@ class AlunosTurmaDataMatriculaISOViewTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/turmas/abc/data-matricula/2026-02-06/")
+        resp = client.get("/api/turmas/abc/data-matricula/2026-02-06")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
@@ -1847,7 +1847,7 @@ class AlunosTurmaDataMatriculaISOViewTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/turmas/0/data-matricula/2026-02-06/")
+        resp = client.get("/api/turmas/0/data-matricula/2026-02-06")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
@@ -1859,7 +1859,7 @@ class AlunosTurmaDataMatriculaISOViewTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/turmas/8686863/data-matricula/0/")
+        resp = client.get("/api/turmas/8686863/data-matricula/0")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         mock_service.assert_not_called()
@@ -1885,8 +1885,8 @@ class TotalAlunosTurmasPeriodoViewTest(SimpleTestCase):
     """Valida a orquestração da contagem de alunos por ano/modalidade/DRE."""
 
     _PATH = (
-        "/api/turmas/todos-alunos/anoTurma/1/modalidade/5/"
-        "anoLetivo/2026/dre/100000/inicio/100/fim/200"
+        "/api/turmas/todos-alunos/anoTurma/1/modalidade/5"
+        "/anoLetivo/2026/dre/100000/inicio/100/fim/200"
     )
 
     @patch(_PATCH_QTD_PERIODO)
@@ -1959,8 +1959,8 @@ class TotalAlunosTurmasPeriodoViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/turmas/todos-alunos/anoTurma/1/modalidade/0/"
-            "anoLetivo/2026/dre/100000/inicio/100/fim/200"
+            "/api/turmas/todos-alunos/anoTurma/1/modalidade/0"
+            "/anoLetivo/2026/dre/100000/inicio/100/fim/200"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -1977,8 +1977,8 @@ class TotalAlunosTurmasPeriodoViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/turmas/todos-alunos/anoTurma/1/modalidade/5/"
-            "anoLetivo/2026/dre/100000/inicio/100/fim/0"
+            "/api/turmas/todos-alunos/anoTurma/1/modalidade/5"
+            "/anoLetivo/2026/dre/100000/inicio/100/fim/0"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -2407,7 +2407,7 @@ class AlunosTurmaAnoLetivoViewTest(SimpleTestCase):
 class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
     """Valida a consulta de aluno da turma considerando inativos."""
 
-    _PATH = "/api/turmas/9100003/aluno/7000001/considera-inativos/true/"
+    _PATH = "/api/turmas/9100003/aluno/7000001/considera-inativos/true"
 
     @patch("apps.alunos.views.services.get_alunos_por_turma")
     def test_200_retorna_objeto_legado(self, mock_service: MagicMock) -> None:
@@ -2460,7 +2460,7 @@ class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/turmas/0/aluno/7000001/considera-inativos/true/"
+            "/api/turmas/0/aluno/7000001/considera-inativos/true"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
@@ -2471,7 +2471,7 @@ class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/turmas/-1/aluno/7000001/considera-inativos/true/"
+            "/api/turmas/-1/aluno/7000001/considera-inativos/true"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
@@ -2484,7 +2484,7 @@ class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/turmas/abc/aluno/7000001/considera-inativos/true/"
+            "/api/turmas/abc/aluno/7000001/considera-inativos/true"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -2502,7 +2502,7 @@ class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/turmas/9100003/aluno/abc/considera-inativos/true/"
+            "/api/turmas/9100003/aluno/abc/considera-inativos/true"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -2518,7 +2518,7 @@ class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/turmas/9100003/aluno/7000001/considera-inativos/talvez/"
+            "/api/turmas/9100003/aluno/7000001/considera-inativos/talvez"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -2573,7 +2573,7 @@ class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
 class AlunoMatriculasTurmaViewTest(SimpleTestCase):
     """Valida a listagem de matrículas de um aluno em uma turma."""
 
-    _PATH = "/api/turmas/9100003/aluno/7000001/matriculas/"
+    _PATH = "/api/turmas/9100003/aluno/7000001/matriculas"
 
     @patch("apps.alunos.views.services.get_alunos_por_turma")
     def test_200_retorna_lista_legado(self, mock_service: MagicMock) -> None:
@@ -2637,7 +2637,7 @@ class AlunoMatriculasTurmaViewTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/turmas/abc/aluno/7000001/matriculas/")
+        resp = client.get("/api/turmas/abc/aluno/7000001/matriculas")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         mock_service.assert_not_called()
@@ -2648,7 +2648,7 @@ class AlunoMatriculasTurmaViewTest(SimpleTestCase):
     ) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/turmas/9100003/aluno/abc/matriculas/")
+        resp = client.get("/api/turmas/9100003/aluno/abc/matriculas")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         mock_service.assert_not_called()
@@ -2689,7 +2689,7 @@ class AlunoMatriculasTurmaViewTest(SimpleTestCase):
 class AlunosCalculoFrequenciaTurmaViewTest(SimpleTestCase):
     """Valida a listagem de códigos de aluno para cálculo de frequência."""
 
-    _PATH = "/api/turmas/9100003/calculo-frequencia/"
+    _PATH = "/api/turmas/9100003/calculo-frequencia"
 
     @patch("apps.alunos.views.services.get_alunos_por_turma")
     def test_200_retorna_codigos_de_aluno(
@@ -2880,7 +2880,7 @@ class AlunoTurmasViewTest(SimpleTestCase):
     def test_400_quando_codigo_aluno_e_somente_espacos(self) -> None:
         client = _cliente_autenticado()
 
-        resp = client.get("/api/alunos/%20/turmas/")
+        resp = client.get("/api/alunos/%20/turmas")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -3117,8 +3117,8 @@ class TotalAlunosAtivosPeriodoViewTest(SimpleTestCase):
     """Valida a view do total de alunos ativos por período."""
 
     _URL = (
-        "/api/alunos/ativos/anos/5/anos-letivos/2026/"
-        "inicio/2026-01-01/fim/2026-12-31"
+        "/api/alunos/ativos/anos/5/anos-letivos/2026"
+        "/inicio/2026-01-01/fim/2026-12-31"
     )
 
     @patch("apps.alunos.views.services.get_total_alunos_ativos_periodo")
@@ -3213,7 +3213,7 @@ class AlunosListViewTest(SimpleTestCase):
 class CodigosTurmasRegularesAlunoViewTest(SimpleTestCase):
     """Valida o endpoint .../regulares (endpoint 3)."""
 
-    _PATH = "/api/turmas/anos-letivos/2026/alunos/7000001/regulares/"
+    _PATH = "/api/turmas/anos-letivos/2026/alunos/7000001/regulares"
     _SVC = "apps.alunos.views.services.montar_codigos_turmas_regulares_aluno"
 
     @patch(_SVC)
@@ -3305,8 +3305,8 @@ class CodigoTurmaAlunoComponenteCurricularViewTest(SimpleTestCase):
     """Valida o endpoint componentes-curriculares (endpoint 4)."""
 
     _PATH = (
-        "/api/turmas/anos-letivos/2026/alunos/7000001/"
-        "componentes-curriculares/512/"
+        "/api/turmas/anos-letivos/2026/alunos/7000001"
+        "/componentes-curriculares/512"
     )
     _SVC = "apps.alunos.views.services.montar_codigos_turmas_regulares_aluno"
 
