@@ -1434,6 +1434,10 @@ class TotalAlunosTurmasPeriodoView(AlunosAPIView):
     @extend_schema(
         tags=["Turma"],
         description=(
+            "DEPRECIADO — Use ``todos-alunos/ano-turma/<str:ano_turma>/"
+            "modalidade/<str:modalidade_turma>/ano-letivo/<str:ano_letivo>/dre/"
+            "<str:codigo_dre>/inicio/<str:data_inicio>/fim/<str:data_fim>`` "
+            "para utilizar o parâmetro de data no formato ISO. "
             "Conta as matrículas em turmas de um ano/modalidade/DRE cuja "
             "matrícula começou até a data de fim. Orquestra os domínios "
             "Institucional, Pedagógico e Alunos."
