@@ -1605,7 +1605,7 @@ class TotalAlunosTurmasPeriodoDataISOView(AlunosAPIView):
             if not codigos_turmas:
                 return Response(status=204)
             quantidade = (
-                services.get_quantidade_matriculas_turmas_periodo_em_data_iso(
+                services.post_quantidade_matriculas_turmas_periodo_em_data_iso(
                     codigos_turmas, data_fim
                 )
             )
