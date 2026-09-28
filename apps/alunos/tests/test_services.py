@@ -1113,17 +1113,6 @@ class GetQuantidadeMatriculadosCCTest(SimpleTestCase):
 class GetQuantidadeMatriculadosTest(SimpleTestCase):
     """Valida a consulta da quantidade de matriculados."""
 
-    def setUp(self) -> None:
-        """Remove o cache do caminho, mantendo os testes determinísticos."""
-        self.enterContext(
-            patch(
-                "apps.alunos.services.cache.obter_ou_calcular",
-                side_effect=lambda chave, calcular, minutos_para_expirar: (
-                    calcular()
-                ),
-            )
-        )
-
     @patch.object(services._client, "get")
     def test_chama_sidecar_com_filtros(self, mock_get: MagicMock) -> None:
         payload = [{"quantidade": 28}]
@@ -1161,55 +1150,6 @@ class GetQuantidadeMatriculadosTest(SimpleTestCase):
             params=None,
         )
         self.assertEqual(result, [])
-
-    @patch("apps.alunos.services.cache.obter_ou_calcular")
-    def test_usa_chave_e_ttl_do_legado(
-        self, mock_obter_ou_calcular: MagicMock
-    ) -> None:
-        """Chave e TTL espelham o cache do legado (24h/1440 min)."""
-        mock_obter_ou_calcular.return_value = []
-
-        services.get_quantidade_matriculados(
-            ano_letivo="2026",
-            dre_codigo=" 100000 ",
-            ue_codigo=" 000005 ",
-            modalidade=["5"],
-            ano=["3"],
-            turma=["9100006"],
-        )
-
-        chave, _calcular, minutos_para_expirar = (
-            mock_obter_ou_calcular.call_args.args
-        )
-        self.assertEqual(
-            chave, "quantidade-alunos:2026:100000:000005:9100006:5:3"
-        )
-        self.assertEqual(minutos_para_expirar, cache.TTL_LEGADO_PADRAO_MINUTOS)
-
-    @patch("apps.alunos.services.cache.obter_ou_calcular")
-    def test_chave_usa_separador_entre_itens_da_lista(
-        self, mock_obter_ou_calcular: MagicMock
-    ) -> None:
-        """Listas com múltiplos itens não podem colidir na chave.
-
-        Ex.: turma=["12", "3"] e turma=["1", "23"] devem gerar chaves
-        diferentes (o legado concatena sem separador e sofre colisão).
-        """
-        mock_obter_ou_calcular.return_value = []
-
-        services.get_quantidade_matriculados(
-            ano_letivo="2026", turma=["12", "3"]
-        )
-        chave_a = mock_obter_ou_calcular.call_args.args[0]
-
-        services.get_quantidade_matriculados(
-            ano_letivo="2026", turma=["1", "23"]
-        )
-        chave_b = mock_obter_ou_calcular.call_args.args[0]
-
-        self.assertNotEqual(chave_a, chave_b)
-        self.assertEqual(chave_a, "quantidade-alunos:2026:::12,3::")
-        self.assertEqual(chave_b, "quantidade-alunos:2026:::1,23::")
 
 
 class Lote5ResponsaveisENomesServiceTest(SimpleTestCase):

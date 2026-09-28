@@ -39,6 +39,7 @@ from apps.alunos.views import (
     ResponsavelResumidoView,
     TodosAlunosTurmaView,
     TotalAlunosAtivosPeriodoView,
+    TotalAlunosTurmasPeriodoDataISOView,
     TotalAlunosTurmasPeriodoView,
 )
 
@@ -52,6 +53,14 @@ turma_urlpatterns = [
         "inicio/<str:data_inicio_ticks>/fim/<str:data_fim_ticks>",
         TotalAlunosTurmasPeriodoView.as_view(),
         name="total-alunos-turmas-periodo",
+    ),
+    path(
+        "todos-alunos/ano-turma/<str:ano_turma>/"
+        "modalidade/<str:modalidade_turma>/"
+        "ano-letivo/<str:ano_letivo>/dre/<str:codigo_dre>/"
+        "inicio/<str:data_inicio>/fim/<str:data_fim>",
+        TotalAlunosTurmasPeriodoDataISOView.as_view(),
+        name="total-alunos-turmas-periodo-data-iso",
     ),
     path(
         "alunos/<str:codigo_aluno>",
