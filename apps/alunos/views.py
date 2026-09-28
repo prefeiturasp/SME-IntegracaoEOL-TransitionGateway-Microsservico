@@ -677,8 +677,12 @@ class QuantidadeMatriculadosView(AlunosAPIView):
                 request,
                 ano_letivo,
                 {
-                    "dre_codigo": _query_value(request, "dre_codigo"),
-                    "ue_codigo": _query_value(request, "ue_codigo"),
+                    "dre_codigo": _query_value(
+                        request, "dreCodigo", "dre_codigo"
+                    ),
+                    "ue_codigo": _query_value(
+                        request, "ueCodigo", "ue_codigo"
+                    ),
                     "modalidade": request.query_params.getlist("modalidade"),
                     "ano": request.query_params.getlist("ano"),
                     "turma": request.query_params.getlist("turma"),
