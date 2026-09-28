@@ -21,30 +21,30 @@ class ProgramasEduUrlsTest(SimpleTestCase):
 
     def test_preserva_kwargs_turmas_pap(self) -> None:
         """Verifica os kwargs extraidos da rota de turmas PAP."""
-        match = resolve("/api/alunos/turmas-pap/2026/ues/123/")
+        match = resolve("/api/alunos/turmas-pap/2026/ues/123")
         self.assertEqual(
             match.kwargs, {"ano_letivo": 2026, "codigo_escola": "123"}
         )
 
     def test_preserva_kwargs_alunos_pap(self) -> None:
         """Verifica os kwargs extraidos da rota de alunos PAP."""
-        match = resolve("/api/alunos/alunos-pap/2026/")
+        match = resolve("/api/alunos/alunos-pap/2026")
         self.assertEqual(match.kwargs, {"ano_letivo": 2026})
 
     def test_preserva_kwargs_pap_ano_corrente(self) -> None:
         """Verifica que a rota de PAP do ano corrente nao expoe kwargs."""
-        match = resolve("/api/alunos/pap/ano-corrente/")
+        match = resolve("/api/alunos/pap/ano-corrente")
         self.assertEqual(match.kwargs, {})
 
     def test_preserva_kwargs_pap_ano_letivo(self) -> None:
         """Verifica os kwargs extraidos da rota de PAP por ano letivo."""
-        match = resolve("/api/alunos/pap/ano-letivo/2026/")
+        match = resolve("/api/alunos/pap/ano-letivo/2026")
         self.assertEqual(match.kwargs, {"ano_letivo": 2026})
 
     def test_preserva_kwargs_componentes_turmas_programa(self) -> None:
         """Verifica os kwargs extraidos da rota de componentes do aluno."""
         match = resolve(
-            "/api/alunos/123/turmas-programa/2026/componentes-curriculares/"
+            "/api/alunos/123/turmas-programa/2026/componentes-curriculares"
         )
         self.assertEqual(
             match.kwargs, {"codigo_aluno": "123", "ano_letivo": 2026}
@@ -52,12 +52,12 @@ class ProgramasEduUrlsTest(SimpleTestCase):
 
     def test_preserva_kwargs_srm_paee_aluno(self) -> None:
         """Verifica os kwargs extraidos da rota de SRM/PAEE do aluno."""
-        match = resolve("/api/alunos/srm-paee/aluno/123/")
+        match = resolve("/api/alunos/srm-paee/aluno/123")
         self.assertEqual(match.kwargs, {"codigo_aluno": "123"})
 
     def test_preserva_kwargs_turma_srm_e_regular(self) -> None:
         """Verifica os kwargs extraidos da rota de turma SRM e regular."""
-        match = resolve("/api/alunos/paee/turma-srm-e-regular/aluno/123/")
+        match = resolve("/api/alunos/paee/turma-srm-e-regular/aluno/123")
         self.assertEqual(match.kwargs, {"codigo_aluno": 123})
 
 
@@ -70,7 +70,7 @@ class ObterTurmasPapViewTest(SimpleTestCase):
         mock_service.return_value = [{"codigo_turma": "X", "turma_nome": "1A"}]
         client = _cliente_autenticado()
 
-        resp = client.get("/api/alunos/turmas-pap/2026/ues/123/")
+        resp = client.get("/api/alunos/turmas-pap/2026/ues/123")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(
@@ -87,7 +87,7 @@ class ObterTurmasPapViewTest(SimpleTestCase):
         """Verifica a rejeicao quando o codigo da escola vem em branco."""
         client = _cliente_autenticado()
 
-        resp = client.get("/api/alunos/turmas-pap/2026/ues/%20%20/")
+        resp = client.get("/api/alunos/turmas-pap/2026/ues/%20%20")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -116,8 +116,8 @@ class VerificarAlunosPapViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/alunos/alunos-pap/2026/",
-            {"codigos_alunos": ["1", "2"]},
+            "/api/alunos/alunos-pap/2026",
+            {"codigosAlunos": ["1", "2"]},
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -129,7 +129,7 @@ class VerificarAlunosPapViewTest(SimpleTestCase):
         """Rejeita a chamada sem os códigos dos alunos."""
         client = _cliente_autenticado()
 
-        resp = client.get("/api/alunos/alunos-pap/2026/")
+        resp = client.get("/api/alunos/alunos-pap/2026")
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -147,7 +147,7 @@ class ObterAlunosPapAnoCorrenteViewTest(SimpleTestCase):
         mock_service.return_value = []
         client = _cliente_autenticado()
 
-        resp = client.get("/api/alunos/pap/ano-corrente/")
+        resp = client.get("/api/alunos/pap/ano-corrente")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         mock_service.assert_called_once_with()
@@ -171,7 +171,7 @@ class ObterAlunosPapPorAnoLetivoViewTest(SimpleTestCase):
         ]
         client = _cliente_autenticado()
 
-        resp = client.get("/api/alunos/pap/ano-letivo/2026/")
+        resp = client.get("/api/alunos/pap/ano-letivo/2026")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         mock_service.assert_called_once_with(ano_letivo=2026)
@@ -197,7 +197,7 @@ class ObterComponentesCurricularesTurmasProgramaAlunoViewTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            "/api/alunos/123/turmas-programa/2026/componentes-curriculares/"
+            "/api/alunos/123/turmas-programa/2026/componentes-curriculares"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
@@ -237,7 +237,7 @@ class ObterDadosSrmPaeeAlunoViewTest(SimpleTestCase):
         ]
         client = _cliente_autenticado()
 
-        resp = client.get("/api/alunos/srm-paee/aluno/123/")
+        resp = client.get("/api/alunos/srm-paee/aluno/123")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(
@@ -295,9 +295,7 @@ class ObterTurmaSrmERegularDoAlunoViewTest(SimpleTestCase):
         ]
         client = _cliente_autenticado()
 
-        resp = client.get(
-            "/api/alunos/paee/turma-srm-e-regular/aluno/7000001/"
-        )
+        resp = client.get("/api/alunos/paee/turma-srm-e-regular/aluno/7000001")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         item = resp.json()[0]

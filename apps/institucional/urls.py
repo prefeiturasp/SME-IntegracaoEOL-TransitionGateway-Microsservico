@@ -30,119 +30,119 @@ from apps.professores.views import DRESupervisoresView
 urlpatterns = [
     # DREs — /api/DREs/
     path(
-        "DREs/",
+        "DREs",
         DREListView.as_view(),
         name="dre-list",
     ),
     # Sub-rotas específicas antes da rota genérica de detalhe
     path(
-        "DREs/<str:dre_codigo>/subprefeituras/",
+        "DREs/<str:dre_codigo>/subprefeituras",
         SubprefeiturasPorDREView.as_view(),
         name="dre-subprefeituras",
     ),
     path(
-        "DREs/<str:dre_codigo>/ues/",
+        "DREs/<str:dre_codigo>/ues",
         UesPorDREView.as_view(),
         name="dre-ues",
     ),
     path(
-        "DREs/<str:dre_codigo>/unidades/codigo-integracao/",
+        "DREs/<str:dre_codigo>/unidades/codigo-integracao",
         UnidadeCodigoIntegracaoPorDREView.as_view(),
         name="dre-unidades-codigo-integracao",
     ),
     path(
-        "DREs/<str:dre_codigo>/unidades/",
+        "DREs/<str:dre_codigo>/unidades",
         UnidadesPorDREView.as_view(),
         name="dre-unidades",
     ),
     path(
-        "DREs/<str:codigo_eol_dre>/escola/Sigpae/",
+        "DREs/<str:codigo_eol_dre>/escola/Sigpae",
         EscolasSigpaePorDREView.as_view(),
         name="dre-escolas-sigpae",
     ),
     path(
-        "DREs/<str:codigo_eol_dre>/escola/",
+        "DREs/<str:codigo_eol_dre>/escola",
         EscolasPorDREView.as_view(),
         name="escolas-por-dre",
     ),
     path(
-        "DREs/<str:codigo_eol_dre>/escolas/<str:tipo_escola>/",
+        "DREs/<str:codigo_eol_dre>/escolas/<str:tipo_escola>",
         EscolasPorDREeTipoView.as_view(),
         name="escolas-por-dre-tipo",
     ),
     path(
-        "DREs/<str:codigo_eol_dre>/supervisores/",
+        "DREs/<str:codigo_eol_dre>/supervisores",
         DRESupervisoresView.as_view(),
         name="dre-supervisores",
     ),
     path(
-        "DREs/<str:codigo_eol_dre>/",
+        "DREs/<str:codigo_eol_dre>",
         DREDetalheView.as_view(),
         name="dre-detalhe",
     ),
     # Escolas — rotas literais antes das com parâmetro para evitar colisão
     path(
-        "escolas/",
+        "escolas",
         EscolasListPostView.as_view(),
         name="escola-list-post",
     ),
     path(
-        "escolas/tiposEscolas/",
+        "escolas/tiposEscolas",
         TiposEscolasView.as_view(),
         name="escola-tipos-escolas",
     ),
     path(
-        "escolas/equipamentos/",
+        "escolas/equipamentos",
         EquipamentosView.as_view(),
         name="escola-equipamentos",
     ),
     path(
-        "escolas/todas-unidades/",
+        "escolas/todas-unidades",
         TodasUnidadesView.as_view(),
         name="escola-todas-unidades",
     ),
     path(
-        "escolas/tipos_unidade_educacao/",
+        "escolas/tipos_unidade_educacao",
         TiposUnidadeEducacaoView.as_view(),
         name="escola-tipos-unidade-educacao",
     ),
     path(
-        "escolas/unidade-eol/<str:codigo_eol>/",
+        "escolas/unidade-eol/<str:codigo_eol>",
         UnidadeEolView.as_view(),
         name="escola-unidade-eol",
     ),
     path(
-        "escolas/<str:ue_codigo>/sincronizacoes-institucionais/",
+        "escolas/<str:ue_codigo>/sincronizacoes-institucionais",
         SincronizacoesInstitucionaisView.as_view(),
         name="escola-sincronizacoes-institucionais",
     ),
     path(
-        "escolas/<str:codigo_eol_escola>/professores/<int:ano_letivo>/",
+        "escolas/<str:codigo_eol_escola>/professores/<int:ano_letivo>",
         EscolaProfessoresView.as_view(),
         name="escola-professores-ano",
     ),
     path(
-        "escolas/<str:codigo_eol_escola>/professores/",
+        "escolas/<str:codigo_eol_escola>/professores",
         EscolaProfessoresView.as_view(),
         name="escola-professores",
     ),
     path(
-        "escolas/unidades-parceiras/",
+        "escolas/unidades-parceiras",
         UnidadesParceirasView.as_view(),
         name="escola-unidades-parceiras",
     ),
     path(
-        "escolas/dados/<str:codigo_escola_eol>/",
+        "escolas/dados/<str:codigo_escola_eol>",
         DadosEscolaView.as_view(),
         name="escola-dados",
     ),
     path(
-        "escolas/<str:codigo_escola_eol>/subprefeituras/",
+        "escolas/<str:codigo_escola_eol>/subprefeituras",
         SubprefeiturasPorEscolaView.as_view(),
         name="escola-subprefeituras",
     ),
     path(
-        "escolas/<str:codigo_escola_eol>/",
+        "escolas/<str:codigo_escola_eol>",
         EscolaDetalheView.as_view(),
         name="escola-detalhe",
     ),

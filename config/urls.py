@@ -8,11 +8,13 @@ from apps.alunos.urls import turma_urlpatterns as alunos_turma_urlpatterns
 from apps.matriculas.urls import (
     escola_urlpatterns as matriculas_escola_urlpatterns,
 )
+from apps.matriculas.views import MatriculasAnoAtualView
 from apps.pedagogico.urls import (
     escola_urlpatterns,
     turma_urlpatterns,
     ue_urlpatterns,
 )
+from apps.pedagogico.views import ComponentesCurricularesViewSet
 from config import settings
 
 API_PREFIX = "api/v1/"
@@ -29,7 +31,7 @@ DOMAINS = {
 
 urlpatterns = [
     path(
-        f"{API_PREFIX}schema/",
+        f"{API_PREFIX}schema",
         SpectacularAPIView.as_view(
             authentication_classes=[],
             permission_classes=[AllowAny],
@@ -37,13 +39,17 @@ urlpatterns = [
         name="schema",
     ),
     path(
-        f"{API_PREFIX}docs/",
+        f"{API_PREFIX}docs",
         SpectacularSwaggerView.as_view(
             url_name="schema",
             authentication_classes=[],
             permission_classes=[AllowAny],
         ),
         name="swagger-ui",
+    ),
+    path(
+        f"{API_PREFIX}componentes-curriculares",
+        ComponentesCurricularesViewSet.as_view(),
     ),
     path(
         f"{API_PREFIX}componentes-curriculares/",
@@ -67,6 +73,7 @@ urlpatterns = [
     path("api/", include("apps.institucional.urls")),
     path("api/", include("apps.programasedu.urls")),
     path("api/", include("apps.abrangencia.urls")),
+    path("api/matriculas", MatriculasAnoAtualView.as_view(), name="matriculas-list"),
     path("api/matriculas/", include("apps.matriculas.urls")),
     path("api/alunos/", include("apps.alunos.urls")),
 ]

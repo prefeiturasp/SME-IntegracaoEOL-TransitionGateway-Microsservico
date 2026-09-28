@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
+from typing import TypeVar
 
 from django.core.cache import cache
 from sme_sidecar_sdk.resilience import get_circuit_breaker
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar("T")
 
 # Nome do breaker dedicado ao KeyDB, isolado dos breakers de HTTP por domínio.
 _BREAKER_NAME = "transition-gateway-keydb-cache"
@@ -16,11 +19,11 @@ _BREAKER_NAME = "transition-gateway-keydb-cache"
 # TTL praticado hoje pelo legado
 TTL_LEGADO_PADRAO_MINUTOS = 1440
 
-# TTL padrão definido para os novos não cacheados pelo legado 
+# TTL padrão definido para os novos não cacheados pelo legado
 TTL_RECOMENDADO_MINUTOS = 720
 
 
-def obter_ou_calcular[T](
+def obter_ou_calcular(  # noqa: UP047
     chave: str,
     calcular: Callable[[], T],
     minutos_para_expirar: int,
@@ -38,7 +41,7 @@ def obter_ou_calcular[T](
     """
     breaker = get_circuit_breaker(_BREAKER_NAME)
 
-    valor_em_cache = None
+    valor_em_cache: T | None = None
     try:
         valor_em_cache = breaker.call(cache.get, chave)
     except Exception:

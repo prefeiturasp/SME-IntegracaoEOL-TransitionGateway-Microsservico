@@ -585,7 +585,13 @@ class FuncionarioSerializerTest(SimpleTestCase):
     """Valida serialização dos contratos de funcionário."""
 
     def test_serializa_campos(self) -> None:
-        casos = [
+        casos: list[
+            tuple[
+                type[serializers.Serializer[Any]],
+                dict[str, Any],
+                dict[str, Any],
+            ]
+        ] = [
             (
                 FuncionarioCargoSerializer,
                 {"codigo_rf": "7900005", "nome": None, "cargo_id": 3239},

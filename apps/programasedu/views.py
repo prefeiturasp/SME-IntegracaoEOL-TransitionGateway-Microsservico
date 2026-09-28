@@ -98,7 +98,7 @@ class VerificarSeAlunosSaoTurmaProgramaPapView(ProgramasEduAPIView):
                 description="Ano letivo de referência.",
             ),
             OpenApiParameter(
-                "codigos_alunos",
+                "codigosAlunos",
                 OpenApiTypes.STR,
                 OpenApiParameter.QUERY,
                 required=True,
@@ -112,7 +112,7 @@ class VerificarSeAlunosSaoTurmaProgramaPapView(ProgramasEduAPIView):
         """Filtra os alunos vinculados a turmas PAP no ano letivo.
 
         Args:
-            request: Requisição com ``codigos_alunos`` nos query params.
+            request: Requisição com ``codigosAlunos`` nos query params.
             ano_letivo: Ano letivo de referência.
 
         Returns:
@@ -122,7 +122,9 @@ class VerificarSeAlunosSaoTurmaProgramaPapView(ProgramasEduAPIView):
             httpx.HTTPError: Em caso de falha de transporte ou timeout
                 na chamada ao serviço externo.
         """
-        codigos_alunos = request.query_params.getlist("codigos_alunos")
+        codigos_alunos = request.query_params.getlist(
+            "codigosAlunos"
+        ) or request.query_params.getlist("codigos_alunos")
         if not codigos_alunos:
             return detail_response(
                 "É necessário informar ao menos um codigos_alunos."
