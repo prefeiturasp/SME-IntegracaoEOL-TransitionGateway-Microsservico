@@ -639,8 +639,8 @@ class QuantidadeMatriculadosView(AlunosAPIView):
         ),
         parameters=[
             OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
-            OpenApiParameter("dre_codigo", str, OpenApiParameter.QUERY),
-            OpenApiParameter("ue_codigo", str, OpenApiParameter.QUERY),
+            OpenApiParameter("dreCodigo", str, OpenApiParameter.QUERY),
+            OpenApiParameter("ueCodigo", str, OpenApiParameter.QUERY),
             OpenApiParameter(
                 "modalidade", int, OpenApiParameter.QUERY, many=True
             ),
@@ -664,8 +664,8 @@ class QuantidadeMatriculadosView(AlunosAPIView):
                 request,
                 ano_letivo,
                 {
-                    "dre_codigo": _query_value(request, "dre_codigo"),
-                    "ue_codigo": _query_value(request, "ue_codigo"),
+                    "dre_codigo": _query_value(request, "dreCodigo"),
+                    "ue_codigo": _query_value(request, "ueCodigo"),
                     "modalidade": request.query_params.getlist("modalidade"),
                     "ano": request.query_params.getlist("ano"),
                     "turma": request.query_params.getlist("turma"),

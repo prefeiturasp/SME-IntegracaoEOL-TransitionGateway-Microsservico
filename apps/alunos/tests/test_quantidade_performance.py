@@ -173,14 +173,42 @@ class QuantidadeRespostaPerformanceTest(SimpleTestCase):
         """Não mistura listas de turmas que possuem dígitos em comum."""
         self.client.get(_URL + "?turma=12&turma=3")
         self.client.get(_URL + "?turma=1&turma=23")
-        self.client.get(_URL + "?ue_codigo=000002")
+        self.client.get(_URL + "?ueCodigo=000002")
         self.assertEqual(self.origem.call_count, 3)
+
+    def test_camel_case_preserva_filtros_e_reutiliza_resposta(self) -> None:
+        """Aplica filtros camelCase sem reconhecer aliases snake_case."""
+        consultas = (
+            "dreCodigo=001&ueCodigo=000002",
+            "dreCodigo=001&ueCodigo=000002&dre_codigo=999&ue_codigo=999999",
+        )
+        for consulta in consultas:
+            with self.subTest(consulta=consulta):
+                resposta = self.client.get(f"{_URL}?{consulta}")
+                self.assertEqual(resposta.status_code, 200)
+                self.assertEqual(resposta.json(), [_ESPERADO] * 20)
+                self.assertEqual(self.origem.call_count, 1)
+        parametros = self.origem.call_args.kwargs["params"]
+        self.assertEqual(parametros["dre_codigo"], "001")
+        self.assertEqual(parametros["ue_codigo"], "000002")
+
+    def test_snake_case_nao_aplica_filtros(self) -> None:
+        """Ignora parâmetros antigos mesmo com camelCase vazio."""
+        consultas = (
+            "dre_codigo=001&ue_codigo=000002",
+            "dreCodigo=&ueCodigo=&dre_codigo=001&ue_codigo=000002",
+        )
+        for consulta in consultas:
+            with self.subTest(consulta=consulta):
+                resposta = self.client.get(f"{_URL}?{consulta}")
+                self.assertEqual(resposta.status_code, 200)
+                self.assertIsNone(self.origem.call_args.kwargs["params"])
 
     def test_chave_versionada_e_ttl_nao_renovado_no_hit(self) -> None:
         """Mantém os filtros e as 24 horas sem prolongar a validade."""
         parametros = {
-            "dre_codigo": " 100000 ",
-            "ue_codigo": " 000005 ",
+            "dreCodigo": " 100000 ",
+            "ueCodigo": " 000005 ",
             "turma": ["9100006"],
             "modalidade": ["5"],
             "ano": ["3"],
@@ -247,8 +275,8 @@ class QuantidadeRespostaPerformanceTest(SimpleTestCase):
         cache.set("quantidade-alunos:2026:::::", [{"quantidade": -1}])
         for filtro in (
             {},
-            {"dre_codigo": "001"},
-            {"ue_codigo": "000002"},
+            {"dreCodigo": "001"},
+            {"ueCodigo": "000002"},
             {"ano": ["3"]},
             {"modalidade": ["5"]},
         ):
