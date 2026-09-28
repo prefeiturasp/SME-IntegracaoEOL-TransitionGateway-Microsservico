@@ -1,5 +1,7 @@
 """Valida o helper de cache do KeyDB (apps.core.cache)."""
 
+from collections.abc import Callable
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from django.test import SimpleTestCase
@@ -10,15 +12,20 @@ from apps.core import cache
 class _BreakerStub:
     """Circuit breaker de teste: executa a função ou levanta um erro fixo."""
 
-    def __init__(self, erro: Exception | None = None) -> None:
+    def __init__(
+        self,
+        erro: Exception | None = None,
+        side_effect: Callable[..., Any] | None = None,
+    ) -> None:
         """Inicializa o stub.
 
         Args:
             erro: Exceção que `call` deve levantar; `None` executa `func`.
         """
         self.erro = erro
+        self.side_effect = side_effect
 
-    def call(self, func, *args, **kwargs):
+    def call(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
         """Executa `func` ou levanta o erro configurado no teste.
 
         Args:
@@ -34,6 +41,8 @@ class _BreakerStub:
         """
         if self.erro is not None:
             raise self.erro
+        if self.side_effect is not None:
+            return self.side_effect(func, *args, **kwargs)
         return func(*args, **kwargs)
 
 
@@ -98,14 +107,12 @@ class ObterOuCalcularTest(SimpleTestCase):
         """Falha ao gravar não deve propagar o erro nem alterar o retorno."""
         mock_django_cache.get.return_value = None
 
-        def _call(func, *args, **kwargs):
+        def _call(func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
             if func is mock_django_cache.set:
                 raise RuntimeError("keydb indisponível")
             return func(*args, **kwargs)
 
-        breaker = _BreakerStub()
-        breaker.call = _call
-        mock_get_breaker.return_value = breaker
+        mock_get_breaker.return_value = _BreakerStub(side_effect=_call)
         calcular = MagicMock(return_value="valor")
 
         resultado = cache.obter_ou_calcular("minha-chave", calcular, 10)
