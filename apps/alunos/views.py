@@ -72,6 +72,7 @@ _MSG_DATA_TICKS_OBRIGATORIA = (
     "O código da turma e data da aula são obrigatórios"
 )
 _MSG_DATA_OBRIGATORIA = "O código da turma e data da aula são obrigatórios"
+_MSG_DATA_INVALIDA = "A data informada está em um formato inválido."
 _DOMINIO_ALUNOS = "alunos"
 _MSG_LEGADO_ERRO_INESPERADO = (
     "Houve um comportamento inesperado do sistema. Por favor, contate a SME."
@@ -1182,10 +1183,12 @@ class AlunosAtivosDataAulaView(AlunosAPIView):
             httpx.HTTPStatusError: Se a API retornar status de erro.
             httpx.RequestError: Se a API estiver inacessível.
         """
+        if not codigo_turma.strip() or not data_aula.strip():
+            return detail_response(_MSG_DATA_OBRIGATORIA)
         if not _inteiro_positivo(codigo_turma):
             return Response([])
         if not validar_data_str(data_aula):
-            return detail_response(_MSG_DATA_OBRIGATORIA)
+            return detail_response(_MSG_DATA_INVALIDA)
 
         try:
             data = services.get_alunos_ativos_data_aula(
@@ -1604,13 +1607,14 @@ class TotalAlunosTurmasPeriodoDataISOView(AlunosAPIView):
             not ano_turma
             or modalidade is None
             or modalidade <= 0
-            or not validar_data_str(data_inicio)
-            or not validar_data_str(data_fim)
+            or not data_inicio.strip()
+            or not data_fim.strip()
         ):
             return _legacy_string_response(
                 _MSG_ANO_MODALIDADE_OBRIGATORIOS, 400
             )
-
+        if not validar_data_str(data_inicio) or not validar_data_str(data_fim):
+            return detail_response(_MSG_DATA_INVALIDA)
         try:
             ues = _codigos_ue_da_dre(
                 institucional_services.get_ues_por_dre(codigo_dre)
