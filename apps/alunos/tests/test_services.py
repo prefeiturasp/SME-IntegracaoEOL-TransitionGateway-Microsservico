@@ -480,6 +480,68 @@ class GetAlunosPorTurmaTest(SimpleTestCase):
         )
 
 
+class GetAlunosTurmaConsideraInativosTest(SimpleTestCase):
+    """Valida a consulta dedicada de considera-inativos (endpoint próprio)."""
+
+    @patch.object(services._client, "get")
+    def test_envia_apenas_considerar_inativos_quando_minimo(
+        self, mock_get: MagicMock
+    ) -> None:
+        """Sem codigo_aluno, envia apenas ``considerar_inativos``."""
+        mock_resp = MagicMock()
+        mock_resp.content = b"[]"
+        mock_resp.json.return_value = []
+        mock_get.return_value = mock_resp
+
+        services.get_alunos_turma_considera_inativos(
+            "9100001", considerar_inativos=True
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/turmas/9100001/considera-inativos/",
+            params={"considerar_inativos": True},
+        )
+
+    @patch.object(services._client, "get")
+    def test_envia_codigo_aluno_quando_informado(
+        self, mock_get: MagicMock
+    ) -> None:
+        mock_resp = MagicMock()
+        mock_resp.content = b"[]"
+        mock_resp.json.return_value = []
+        mock_get.return_value = mock_resp
+
+        services.get_alunos_turma_considera_inativos(
+            "9100003",
+            considerar_inativos=True,
+            codigo_aluno="7000001",
+        )
+
+        mock_get.assert_called_once_with(
+            f"{_BASE}/turmas/9100003/considera-inativos/",
+            params={
+                "considerar_inativos": True,
+                "codigo_aluno": "7000001",
+            },
+        )
+
+    @patch.object(services._client, "get")
+    def test_retorna_lista_vazia_quando_sem_corpo(
+        self, mock_get: MagicMock
+    ) -> None:
+        mock_resp = MagicMock()
+        mock_resp.status_code = 204
+        mock_resp.content = b""
+        mock_get.return_value = mock_resp
+
+        result = services.get_alunos_turma_considera_inativos(
+            "9100001", considerar_inativos=True
+        )
+
+        mock_resp.raise_for_status.assert_called_once_with()
+        self.assertEqual(result, [])
+
+
 class GetAlunosAtivosDataAulaTicksTest(SimpleTestCase):
     """Valida a integração da consulta de alunos ativos."""
 

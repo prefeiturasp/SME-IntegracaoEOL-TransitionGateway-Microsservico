@@ -519,14 +519,19 @@ class GetAlunosAtivosTurmaRedisMultplexTest(SimpleTestCase):
 
 
 class GetAlunosTurmaConsideraInativosTest(SimpleTestCase):
-    """Valida a consulta de alunos considerando ativos ou inativos."""
+    """Valida a consulta de alunos considerando ativos ou inativos.
 
-    @patch.object(alunos_services, "get_alunos_por_turma")
-    def test_encaminha_filtro_e_primeira_sequencia(
+    Wrapper sobre o endpoint dedicado
+    (``alunos_services.get_alunos_turma_considera_inativos``) — não o
+    canônico ``get_alunos_por_turma``.
+    """
+
+    @patch.object(alunos_services, "get_alunos_turma_considera_inativos")
+    def test_encaminha_filtro(
         self,
         mock_get_alunos: MagicMock,
     ) -> None:
-        """Repassa ``considerar_inativos`` e fixa a sequência em 1."""
+        """Repassa ``considerar_inativos`` ao endpoint dedicado."""
         payload = [{"codigo_aluno": 7000001}]
         mock_get_alunos.return_value = payload
 
@@ -538,11 +543,10 @@ class GetAlunosTurmaConsideraInativosTest(SimpleTestCase):
         mock_get_alunos.assert_called_once_with(
             "9100015",
             considerar_inativos=True,
-            sequencia=1,
         )
         self.assertEqual(result, payload)
 
-    @patch.object(alunos_services, "get_alunos_por_turma")
+    @patch.object(alunos_services, "get_alunos_turma_considera_inativos")
     def test_normaliza_considera_inativos_nulo_para_falso(
         self,
         mock_get_alunos: MagicMock,
@@ -558,7 +562,6 @@ class GetAlunosTurmaConsideraInativosTest(SimpleTestCase):
         mock_get_alunos.assert_called_once_with(
             "9100015",
             considerar_inativos=False,
-            sequencia=1,
         )
 
 
