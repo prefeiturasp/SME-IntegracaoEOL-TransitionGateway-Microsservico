@@ -1374,7 +1374,7 @@ class AlunoTurmaConsideraInativosView(AlunosAPIView):
             )
 
         try:
-            data = services.get_alunos_por_turma(
+            data = services.get_alunos_turma_considera_inativos(
                 codigo_turma,
                 considerar_inativos=considera_inativos_bool,
                 codigo_aluno=codigo_aluno,
