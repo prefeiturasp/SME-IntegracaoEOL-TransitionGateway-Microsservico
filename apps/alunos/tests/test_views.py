@@ -2107,8 +2107,7 @@ class TotalAlunosTurmasPeriodoDataISOViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             resp.json(),
-            "É preciso inserir o ano da turma e a modalidade para "
-            "buscar alunos.",
+            {"detail": "A data informada está em um formato inválido."},
         )
         mock_ues.assert_not_called()
 
