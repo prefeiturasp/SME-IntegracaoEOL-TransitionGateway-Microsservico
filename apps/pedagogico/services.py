@@ -426,10 +426,9 @@ def get_alunos_turma_considera_inativos(
         httpx.HTTPStatusError: Se a API retornar status de erro.
         httpx.RequestError: Se a API estiver inacessível.
     """
-    return alunos_services.get_alunos_por_turma(
+    return alunos_services.get_alunos_turma_considera_inativos(
         codigo_turma,
         considerar_inativos=bool(considera_inativos),
-        sequencia=1,
     )
 
 

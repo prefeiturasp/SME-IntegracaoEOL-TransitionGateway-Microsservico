@@ -542,6 +542,37 @@ def get_alunos_por_turma(
     return _client.json_or_none(resp) or []
 
 
+def get_alunos_turma_considera_inativos(
+    codigo_turma: str,
+    *,
+    considerar_inativos: bool,
+    codigo_aluno: str | None = None,
+) -> Any:
+    """Retorna os alunos de uma turma para o filtro considera-inativos.
+
+    Args:
+        codigo_turma: Código EOL da turma.
+        considerar_inativos: Inclui alunos inativos quando ``True``.
+        codigo_aluno: Quando informado, restringe ao aluno correspondente.
+
+    Returns:
+        Lista de alunos, ou lista vazia quando não houver registros.
+
+    Raises:
+        httpx.HTTPStatusError: Se o serviço externo retornar status de erro.
+        httpx.RequestError: Se o serviço externo estiver inacessível.
+    """
+    params: dict[str, Any] = {"considerar_inativos": considerar_inativos}
+    if codigo_aluno is not None:
+        params["codigo_aluno"] = codigo_aluno
+
+    resp = _client.get(
+        f"{_BASE}/turmas/{codigo_turma}/considera-inativos/", params=params
+    )
+    resp.raise_for_status()
+    return _client.json_or_none(resp) or []
+
+
 def get_alunos_por_turma_e_data_aula(
     codigo_turma: str,
     data_aula: str,

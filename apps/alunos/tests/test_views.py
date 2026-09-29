@@ -2537,7 +2537,7 @@ class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
 
     _PATH = "/api/turmas/9100003/aluno/7000001/considera-inativos/true"
 
-    @patch("apps.alunos.views.services.get_alunos_por_turma")
+    @patch("apps.alunos.views.services.get_alunos_turma_considera_inativos")
     def test_200_retorna_objeto_legado(self, mock_service: MagicMock) -> None:
         mock_service.return_value = [
             {
@@ -2583,7 +2583,7 @@ class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
             codigo_aluno="7000001",
         )
 
-    @patch("apps.alunos.views.services.get_alunos_por_turma")
+    @patch("apps.alunos.views.services.get_alunos_turma_considera_inativos")
     def test_204_quando_turma_zero(self, mock_service: MagicMock) -> None:
         client = _cliente_autenticado()
 
@@ -2594,7 +2594,7 @@ class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
         mock_service.assert_not_called()
 
-    @patch("apps.alunos.views.services.get_alunos_por_turma")
+    @patch("apps.alunos.views.services.get_alunos_turma_considera_inativos")
     def test_204_quando_turma_negativa(self, mock_service: MagicMock) -> None:
         client = _cliente_autenticado()
 
@@ -2605,7 +2605,7 @@ class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
         mock_service.assert_not_called()
 
-    @patch("apps.alunos.views.services.get_alunos_por_turma")
+    @patch("apps.alunos.views.services.get_alunos_turma_considera_inativos")
     def test_400_quando_turma_nao_numerica(
         self, mock_service: MagicMock
     ) -> None:
@@ -2623,7 +2623,7 @@ class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
         )
         mock_service.assert_not_called()
 
-    @patch("apps.alunos.views.services.get_alunos_por_turma")
+    @patch("apps.alunos.views.services.get_alunos_turma_considera_inativos")
     def test_400_quando_aluno_nao_numerico(
         self, mock_service: MagicMock
     ) -> None:
@@ -2641,7 +2641,7 @@ class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
         )
         mock_service.assert_not_called()
 
-    @patch("apps.alunos.views.services.get_alunos_por_turma")
+    @patch("apps.alunos.views.services.get_alunos_turma_considera_inativos")
     def test_400_quando_flag_invalida(self, mock_service: MagicMock) -> None:
         client = _cliente_autenticado()
 
@@ -2652,7 +2652,7 @@ class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         mock_service.assert_not_called()
 
-    @patch("apps.alunos.views.services.get_alunos_por_turma")
+    @patch("apps.alunos.views.services.get_alunos_turma_considera_inativos")
     def test_204_quando_sem_resultado(self, mock_service: MagicMock) -> None:
         mock_service.return_value = []
         client = _cliente_autenticado()
@@ -2661,7 +2661,7 @@ class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
-    @patch("apps.alunos.views.services.get_alunos_por_turma")
+    @patch("apps.alunos.views.services.get_alunos_turma_considera_inativos")
     def test_503_quando_sidecar_indisponivel(
         self, mock_service: MagicMock
     ) -> None:
@@ -2675,7 +2675,7 @@ class AlunoTurmaConsideraInativosViewTest(SimpleTestCase):
             resp.json(), {"detail": "Serviço de alunos indisponível."}
         )
 
-    @patch("apps.alunos.views.services.get_alunos_por_turma")
+    @patch("apps.alunos.views.services.get_alunos_turma_considera_inativos")
     def test_preserva_erro_http_do_sidecar(
         self, mock_service: MagicMock
     ) -> None:
