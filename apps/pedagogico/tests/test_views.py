@@ -1740,6 +1740,108 @@ class TurmasSondagemViewSetTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
 
+class TurmasPorSalaV2ViewSetTest(SimpleTestCase):
+    """Valida a listagem nova de turmas por UE/tipo de sala/ano letivo."""
+
+    _TURMA = {
+        "codigo_turma": 9100018,
+        "nome_turma": "3A EF",
+        "tipo_turma": 1,
+        "situacao": "A",
+        "data_inicio_turma": None,
+        "data_fim_turma": None,
+    }
+
+    @patch("apps.pedagogico.views.services.get_turmas_por_tipo_sala")
+    def test_200_converte_tipo_turma_para_string(
+        self, mock_svc: MagicMock
+    ) -> None:
+        mock_svc.return_value = [self._TURMA]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_ESCOLAS}/000532/turmas-por-sala/1/anos_letivos/2024"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data[0]["codigoTurma"], 9100018)
+        self.assertEqual(resp.data[0]["tipoTurma"], "1")
+        mock_svc.assert_called_once_with(
+            codigo_ue="000532", tipo_sala="1", ano_letivo="2024"
+        )
+
+    @patch("apps.pedagogico.views.services.get_turmas_por_tipo_sala")
+    def test_200_lista_vazia_sem_traducao_para_404(
+        self, mock_svc: MagicMock
+    ) -> None:
+        mock_svc.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_ESCOLAS}/000532/turmas-por-sala/1/anos_letivos/2024"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data, [])
+
+    def test_403_sem_autenticacao(self) -> None:
+        client = APIClient()
+
+        resp = client.get(
+            f"{_PREFIX_ESCOLAS}/000532/turmas-por-sala/1/anos_letivos/2024"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class TurmasSondagemV2ViewSetTest(SimpleTestCase):
+    """Valida a listagem nova de turmas de Sondagem por UE/ano letivo."""
+
+    _TURMA = {
+        "codigo_turma": 9100018,
+        "nome_turma": "5A EF",
+        "tipo_turma": 1,
+        "situacao": "A",
+        "data_inicio_turma": None,
+        "data_fim_turma": None,
+    }
+
+    @patch("apps.pedagogico.views.services.get_turmas_sondagem")
+    def test_200_repassa_turmas(self, mock_svc: MagicMock) -> None:
+        mock_svc.return_value = [self._TURMA]
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_ESCOLAS}/000532/turmas-sondagem/anos_letivos/2024"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_svc.assert_called_once_with(codigo_ue="000532", ano_letivo="2024")
+
+    @patch("apps.pedagogico.views.services.get_turmas_sondagem")
+    def test_200_lista_vazia_sem_traducao_para_404(
+        self, mock_svc: MagicMock
+    ) -> None:
+        mock_svc.return_value = []
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            f"{_PREFIX_ESCOLAS}/000532/turmas-sondagem/anos_letivos/2024"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data, [])
+
+    def test_403_sem_autenticacao(self) -> None:
+        client = APIClient()
+
+        resp = client.get(
+            f"{_PREFIX_ESCOLAS}/000532/turmas-sondagem/anos_letivos/2024"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
 class TurmasSchemaTest(SimpleTestCase):
     """Valida a documentacao de turmas no schema OpenAPI."""
 

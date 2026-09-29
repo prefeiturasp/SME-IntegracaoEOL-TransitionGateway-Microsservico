@@ -850,7 +850,14 @@ class TurmasPorTipoSalaViewSet(PedagogicoAPIView):
 
     @extend_schema(
         tags=_TAG_ESCOLA,
-        description="Retorna as turmas da UE/ano letivo filtradas por tipo de sala.",
+        deprecated=True,
+        description=(
+            "DEPRECIADO — use "
+            "`.../turmas-por-sala/{tipo_sala}/anos_letivos/{ano_letivo}` "
+            "(sempre 200, mesmo sem dados). "
+            "Retorna as turmas da UE/ano letivo filtradas por tipo de "
+            "sala."
+        ),
         responses={200: TurmaPorSalaSerializer(many=True), 404: str},
     )
     def get(
@@ -861,6 +868,8 @@ class TurmasPorTipoSalaViewSet(PedagogicoAPIView):
         ano_letivo: str,
     ) -> Response:
         """Retorna as turmas da UE/ano letivo filtradas por tipo de sala.
+
+        Depreciada: use ``turmas-por-sala`` (200 + [] mesmo sem dados).
 
         Args:
             _request: Requisição HTTP recebida.
@@ -972,7 +981,13 @@ class TurmasSondagemViewSet(PedagogicoAPIView):
 
     @extend_schema(
         tags=_TAG_ESCOLA,
-        description="Retorna as turmas de Sondagem da UE/ano letivo.",
+        deprecated=True,
+        description=(
+            "DEPRECIADO — use "
+            "`.../turmas-sondagem/anos_letivos/{ano_letivo}` "
+            "(sempre 200, mesmo sem dados). "
+            "Retorna as turmas de Sondagem da UE/ano letivo."
+        ),
         responses={200: TurmaPorSalaSerializer(many=True), 404: str},
     )
     def get(
@@ -982,6 +997,8 @@ class TurmasSondagemViewSet(PedagogicoAPIView):
         ano_letivo: str,
     ) -> Response:
         """Retorna as turmas de Sondagem da UE/ano letivo.
+
+        Depreciada: use ``turmas-sondagem`` (200 + [] mesmo sem dados).
 
         Args:
             _request: Requisição HTTP recebida.
@@ -1016,6 +1033,125 @@ class TurmasSondagemViewSet(PedagogicoAPIView):
 
         if not data:
             return Response(_MSG_TURMAS_SONDAGEM_VAZIA, status=404)
+
+        serializer = TurmaPorSalaSerializer(data=data, many=True)
+        if not serializer.is_valid():
+            return detail_response(
+                _RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA,
+                502,
+            )
+        return Response(serializer.data)
+
+
+class TurmasPorSalaV2ViewSet(PedagogicoAPIView):
+    """Lista turmas de uma UE/ano letivo por tipo de sala (sempre 200)."""
+
+    @extend_schema(
+        tags=_TAG_ESCOLA,
+        description=(
+            "Retorna as turmas da UE/ano letivo filtradas por tipo de "
+            "sala. Sempre 200, mesmo sem dados."
+        ),
+        responses={200: TurmaPorSalaSerializer(many=True)},
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_ue: str,
+        tipo_sala: str,
+        ano_letivo: str,
+    ) -> Response:
+        """Retorna as turmas da UE/ano letivo filtradas por tipo de sala.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            codigo_ue: Código da unidade educacional.
+            tipo_sala: Tipo de sala informado na rota.
+            ano_letivo: Ano letivo consultado.
+
+        Returns:
+            Resposta HTTP 200 com as turmas encontradas (vazia ou não).
+        """
+        try:
+            data = services.get_turmas_por_tipo_sala(
+                codigo_ue=codigo_ue,
+                tipo_sala=tipo_sala,
+                ano_letivo=ano_letivo,
+            )
+        except httpx.HTTPStatusError as exc:
+            try:
+                body = exc.response.json()
+            except ValueError:
+                detail = (
+                    exc.response.text.strip() or exc.response.reason_phrase
+                )
+                body = {"detail": detail}
+            return Response(body, status=exc.response.status_code)
+        except httpx.RequestError:
+            return _api_unavailable_response()
+        except ValueError:
+            return detail_response(
+                _RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA,
+                502,
+            )
+
+        serializer = TurmaPorSalaSerializer(data=data, many=True)
+        if not serializer.is_valid():
+            return detail_response(
+                _RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA,
+                502,
+            )
+        return Response(serializer.data)
+
+
+class TurmasSondagemV2ViewSet(PedagogicoAPIView):
+    """Lista turmas regulares de 5º ano do Fundamental para Sondagem."""
+
+    @extend_schema(
+        tags=_TAG_ESCOLA,
+        description=(
+            "Retorna as turmas de Sondagem da UE/ano letivo. Sempre 200, "
+            "mesmo sem dados."
+        ),
+        responses={200: TurmaPorSalaSerializer(many=True)},
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_ue: str,
+        ano_letivo: str,
+    ) -> Response:
+        """Retorna as turmas de Sondagem da UE/ano letivo.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            codigo_ue: Código da unidade educacional.
+            ano_letivo: Ano letivo consultado.
+
+        Returns:
+            Resposta HTTP 200 com as turmas encontradas (vazia ou não).
+        """
+        try:
+            data = services.get_turmas_sondagem(
+                codigo_ue=codigo_ue,
+                ano_letivo=ano_letivo,
+            )
+        except httpx.HTTPStatusError as exc:
+            try:
+                body = exc.response.json()
+            except ValueError:
+                detail = (
+                    exc.response.text.strip() or exc.response.reason_phrase
+                )
+                body = {"detail": detail}
+            return Response(body, status=exc.response.status_code)
+        except httpx.RequestError:
+            return _api_unavailable_response()
+        except ValueError:
+            return detail_response(
+                _RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA,
+                502,
+            )
 
         serializer = TurmaPorSalaSerializer(data=data, many=True)
         if not serializer.is_valid():

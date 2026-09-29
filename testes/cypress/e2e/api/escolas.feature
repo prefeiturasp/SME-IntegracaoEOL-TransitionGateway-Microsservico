@@ -260,6 +260,30 @@ Funcionalidade: API - Escolas
     Então retorna o status 404
     E a mensagem de retorno deve ser "Não foram encontradas turmas de sondagem."
 
+  Cenário: Validar turmas por sala (rota nova) pelo código UE, tipo de sala e ano letivo válidos
+    Dado que possuo acesso à API de escolas
+    Quando realizo consulta de turmas por sala pelo código UE, tipo de sala e ano letivo válidos
+    Então retorna o status 200
+    E o retorno deve conter dados de salas
+
+  Cenário: Validar retorno vazio de turmas por sala (rota nova) com código UE, tipo de sala e ano letivo inválidos
+    Dado que possuo acesso à API de escolas
+    Quando realizo consulta de turmas por sala pelo código UE, tipo de sala e ano letivo inválidos
+    Então retorna o status 200
+    E o retorno deve ser uma lista vazia de turmas por sala
+
+  Cenário: Validar turmas de sondagem (rota nova) pelo código UE e ano letivo válidos
+    Dado que possuo acesso à API de escolas
+    Quando realizo consulta de turmas de sondagem (rota nova) pelo código UE e ano letivo válidos
+    Então retorna o status 200
+    E o retorno deve conter lista de turmas de sondagem
+
+  Cenário: Validar retorno vazio de turmas de sondagem (rota nova) com código UE e ano letivo inválidos
+    Dado que possuo acesso à API de escolas
+    Quando realizo consulta de turmas de sondagem (rota nova) pelo código UE e ano letivo inválidos
+    Então retorna o status 200
+    E o retorno deve ser uma lista vazia de turmas de sondagem
+
   Cenário: Validar professores por código UE e ano letivo válidos
     Dado que possuo acesso à API de escolas
     Quando realizo consulta de professores pelo código UE e ano letivo válidos
