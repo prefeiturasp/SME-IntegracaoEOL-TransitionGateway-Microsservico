@@ -362,6 +362,34 @@ Cypress.Commands.add("getEscolaTurmasSondagem", (codigoUe, anoLetivo) => {
   });
 });
 
+Cypress.Commands.add("getEscolaTurmasPorSala", (codigoUe, tipoSala, anoLetivo) => {
+  return cy.request({
+    method: "GET",
+    url: `${Cypress.env(
+      "API_URL",
+    )}/api/escolas/${codigoUe}/turmas-por-sala/${tipoSala}/anos_letivos/${anoLetivo}`,
+    headers: {
+      accept: "application/json",
+      [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+    },
+    failOnStatusCode: false,
+  });
+});
+
+Cypress.Commands.add("getEscolaTurmasSondagemV2", (codigoUe, anoLetivo) => {
+  return cy.request({
+    method: "GET",
+    url: `${Cypress.env(
+      "API_URL",
+    )}/api/escolas/${codigoUe}/turmas-sondagem/anos_letivos/${anoLetivo}`,
+    headers: {
+      accept: "application/json",
+      [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+    },
+    failOnStatusCode: false,
+  });
+});
+
 Cypress.Commands.add("getEscolaProfessores", (codigoUe, anoLetivo) => {
   return cy.request({
     method: "GET",
