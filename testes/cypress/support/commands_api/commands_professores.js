@@ -126,3 +126,171 @@ Cypress.Commands.add(
     });
   },
 );
+
+Cypress.Commands.add("getProfessorEhEmei", (valido) => {
+  const rf =
+    valido === true
+      ? `${Cypress.env("REGISTRO_FUNCIONAL_EMEI")}`
+      : `${Cypress.env("REGISTRO_FUNCIONAL_INEXISTENTE")}`;
+
+  return cy.request({
+    method: "GET",
+    url: `${Cypress.env("API_URL")}/api/professores/${rf}/ehEmei/`,
+    headers: {
+      accept: "application/json",
+      [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+    },
+    failOnStatusCode: false,
+  });
+});
+
+Cypress.Commands.add("getProfessorTurmas", (valido) => {
+  const rf =
+    valido === true
+      ? `${Cypress.env("REGISTRO_FUNCIONAL")}`
+      : `${Cypress.env("REGISTRO_FUNCIONAL_INEXISTENTE")}`;
+
+  return cy.request({
+    method: "GET",
+    url: `${Cypress.env("API_URL")}/api/professores/${rf}/turmas/`,
+    headers: {
+      accept: "application/json",
+      [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+    },
+    failOnStatusCode: false,
+  });
+});
+
+Cypress.Commands.add("getProfessorTurmasPorAnoLetivo", (anoLetivo, valido) => {
+  const rf =
+    valido === true
+      ? `${Cypress.env("REGISTRO_FUNCIONAL")}`
+      : `${Cypress.env("REGISTRO_FUNCIONAL_INEXISTENTE")}`;
+
+  return cy.request({
+    method: "GET",
+    url: `${Cypress.env(
+      "API_URL",
+    )}/api/professores/${rf}/turmas/anos_letivos/${anoLetivo}/`,
+    headers: {
+      accept: "application/json",
+      [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+    },
+    failOnStatusCode: false,
+  });
+});
+
+Cypress.Commands.add("getProfessorTurmasNaEscola", (anoLetivo, valido) => {
+  const rf =
+    valido === true
+      ? `${Cypress.env("REGISTRO_FUNCIONAL")}`
+      : `${Cypress.env("REGISTRO_FUNCIONAL_INEXISTENTE")}`;
+  const escola =
+    valido === true
+      ? `${Cypress.env("UE_CODIGO")}`
+      : `${Cypress.env("UE_CODIGO_INEXISTENTE")}`;
+
+  return cy.request({
+    method: "GET",
+    url: `${Cypress.env(
+      "API_URL",
+    )}/api/professores/${rf}/escolas/${escola}/turmas/anos_letivos/${anoLetivo}/`,
+    headers: {
+      accept: "application/json",
+      [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+    },
+    failOnStatusCode: false,
+  });
+});
+
+Cypress.Commands.add("getTurmasProfessoresNaEscola", (anoLetivo, valido) => {
+  const escola =
+    valido === true
+      ? `${Cypress.env("UE_CODIGO")}`
+      : `${Cypress.env("UE_CODIGO_INEXISTENTE")}`;
+
+  return cy.request({
+    method: "GET",
+    url: `${Cypress.env(
+      "API_URL",
+    )}/api/professores/escolas/${escola}/turmas/anos_letivos/${anoLetivo}/`,
+    headers: {
+      accept: "application/json",
+      [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+    },
+    failOnStatusCode: false,
+  });
+});
+
+Cypress.Commands.add(
+  "getProfessorAtribuicaoPorData",
+  (registroFuncional, codigoTurma, data, dataValida) => {
+    const valorData = dataValida === true ? data : "2026-99-99";
+
+    return cy.request({
+      method: "GET",
+      url: `${Cypress.env(
+        "API_URL",
+      )}/api/professores/${registroFuncional}/turmas/${codigoTurma}/atribuicao/verificar/data/`,
+      qs: { dataConsulta: valorData },
+      headers: {
+        accept: "application/json",
+        [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+      },
+      failOnStatusCode: false,
+    });
+  },
+);
+
+Cypress.Commands.add(
+  "getProfessorStatusAtribuicao",
+  (registroFuncional, codigoTurma) => {
+    return cy.request({
+      method: "GET",
+      url: `${Cypress.env(
+        "API_URL",
+      )}/api/professores/${registroFuncional}/turmas/${codigoTurma}/atribuicao/status/`,
+      headers: {
+        accept: "application/json",
+        [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+      },
+      failOnStatusCode: false,
+    });
+  },
+);
+
+Cypress.Commands.add(
+  "getProfessorVerificarAtribuicaoDisciplina",
+  (registroFuncional, codigoTurma, disciplinaId, data) => {
+    return cy.request({
+      method: "GET",
+      url: `${Cypress.env(
+        "API_URL",
+      )}/api/professores/${registroFuncional}/turmas/${codigoTurma}/disciplinas/${disciplinaId}/atribuicao/verificar/datas`,
+      qs: { data },
+      headers: {
+        accept: "application/json",
+        [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+      },
+      failOnStatusCode: false,
+    });
+  },
+);
+
+Cypress.Commands.add(
+  "getAtribuicoesTurmaDisciplinaDataIso",
+  (codigoTurma, disciplinaId, data) => {
+    return cy.request({
+      method: "GET",
+      url: `${Cypress.env(
+        "API_URL",
+      )}/api/professores/${codigoTurma}/disciplinas/${disciplinaId}/atribuicao/data-iso`,
+      qs: { data },
+      headers: {
+        accept: "application/json",
+        [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+      },
+      failOnStatusCode: false,
+    });
+  },
+);

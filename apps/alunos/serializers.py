@@ -367,8 +367,8 @@ class AlunoMatriculaTurmaSerializer(serializers.Serializer):
 class TodosAlunosTurmaSerializer(AlunoMatriculaTurmaSerializer):
     """Serializa o histórico de vínculos do aluno com a turma.
 
-    O retorno é apenas a identificação da turma e da matrícula: 
-    os campos de localização da unidade (``ano``, ``codigoDre`` e 
+    O retorno é apenas a identificação da turma e da matrícula:
+    os campos de localização da unidade (``ano``, ``codigoDre`` e
     ``codigoEscola``) não são publicados. ``codigoTurma``
     continua preenchido, ao contrário do modo de campos parciais.
     """
@@ -580,20 +580,23 @@ class AlunoDaUeSerializer(AlunoPorCodigoSerializer):
         self,
     ) -> tuple[tuple[str, Callable[[Any], Any], Callable[[Any], Any]], ...]:
         """Retorna leitores e conversores preservando campos especiais."""
-        return tuple(
-            (
-                nome,
-                itemgetter(campo.source_attrs[0])
-                if (
-                    len(campo.source_attrs) == 1
-                    and type(campo).get_attribute
-                    is serializers.Field.get_attribute
+        conversores: list[
+            tuple[str, Callable[[Any], Any], Callable[[Any], Any]]
+        ] = []
+        for nome, campo in self.fields.items():
+            leitor: Callable[[Any], Any]
+            if (
+                len(campo.source_attrs) == 1
+                and type(campo).get_attribute
+                is serializers.Field.get_attribute
+            ):
+                leitor = cast(
+                    Callable[[Any], Any], itemgetter(campo.source_attrs[0])
                 )
-                else campo.get_attribute,
-                campo.to_representation,
-            )
-            for nome, campo in self.fields.items()
-        )
+            else:
+                leitor = campo.get_attribute
+            conversores.append((nome, leitor, campo.to_representation))
+        return tuple(conversores)
 
     def to_representation(self, instance: Any) -> dict[str, Any]:
         """Representa os alunos mantendo coerções e valores padrão.
@@ -604,7 +607,9 @@ class AlunoDaUeSerializer(AlunoPorCodigoSerializer):
         Returns:
             Dados do aluno no formato legado.
         """
-        if type(instance) is not dict or not self._origens.issubset(instance):
+        if instance.__class__ is not dict or not self._origens.issubset(
+            instance
+        ):
             return cast(dict[str, Any], super().to_representation(instance))
         return {
             nome: (
@@ -704,9 +709,7 @@ class DadosResponsavelSerializer(serializers.Serializer):
     dataNascimentoAluno = DatetimeLegadoNaoNuloField(  # NOSONAR
         source="data_nascimento_aluno"
     )
-    dataNascimento = DatetimeLegadoField(  # NOSONAR
-        source="data_nascimento"
-    )
+    dataNascimento = DatetimeLegadoField(source="data_nascimento")  # NOSONAR
     dataAtualizacao = DatetimeLegadoNaoNuloField(  # NOSONAR
         source="data_atualizacao"
     )
@@ -909,16 +912,12 @@ class ResponsavelTurmaSerializer(serializers.Serializer):
     dre = serializers.CharField(allow_null=True)
     codigoUe = serializers.CharField(source="codigo_ue")  # NOSONAR
     ue = serializers.CharField(allow_null=True)
-    codigoTurma = serializers.IntegerField(  # NOSONAR
-        source="codigo_turma"
-    )
+    codigoTurma = serializers.IntegerField(source="codigo_turma")  # NOSONAR
     turma = serializers.CharField(allow_null=True)
     cpfResponsavel = serializers.IntegerField(  # NOSONAR
         source="cpf_responsavel"
     )
-    codigoAluno = serializers.IntegerField(  # NOSONAR
-        source="codigo_aluno"
-    )
+    codigoAluno = serializers.IntegerField(source="codigo_aluno")  # NOSONAR
     codigoTipoEscola = serializers.IntegerField(  # NOSONAR
         source="codigo_tipo_escola"
     )
@@ -941,9 +940,7 @@ class DadosAcompanhamentoEscolarSerializer(serializers.Serializer):
     """Serializa dados de acompanhamento escolar no contrato legado."""
 
     codigoEol = serializers.IntegerField(source="codigo_eol")  # NOSONAR
-    nomeResponsavel = StringOrNoneField(
-        source="nome_responsavel"
-    )  # NOSONAR
+    nomeResponsavel = StringOrNoneField(source="nome_responsavel")  # NOSONAR
     cpfResponsavel = StringOrNoneField(source="cpf_responsavel")  # NOSONAR
     nome = serializers.CharField(allow_null=True)
     nomeSocial = StringOrNoneField(source="nome_social")  # NOSONAR
@@ -1001,7 +998,7 @@ class QuantidadeMatriculadosSerializer(serializers.Serializer):
     ) -> tuple[tuple[str, str, Callable[[Any], Any]], ...]:
         """Retorna os campos de origem e seus conversores."""
         return tuple(
-            (nome, campo.source, campo.to_representation)
+            (nome, campo.source or nome, campo.to_representation)
             for nome, campo in self.fields.items()
         )
 

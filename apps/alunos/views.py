@@ -72,6 +72,7 @@ _MSG_DATA_TICKS_OBRIGATORIA = (
     "O código da turma e data da aula são obrigatórios"
 )
 _MSG_DATA_OBRIGATORIA = "O código da turma e data da aula são obrigatórios"
+_MSG_DATA_INVALIDA = "A data informada está em um formato inválido."
 _DOMINIO_ALUNOS = "alunos"
 _MSG_LEGADO_ERRO_INESPERADO = (
     "Houve um comportamento inesperado do sistema. Por favor, contate a SME."
@@ -677,8 +678,12 @@ class QuantidadeMatriculadosView(AlunosAPIView):
                 request,
                 ano_letivo,
                 {
-                    "dre_codigo": _query_value(request, "dreCodigo"),
-                    "ue_codigo": _query_value(request, "ueCodigo"),
+                    "dre_codigo": _query_value(
+                        request, "dreCodigo", "dre_codigo"
+                    ),
+                    "ue_codigo": _query_value(
+                        request, "ueCodigo", "ue_codigo"
+                    ),
                     "modalidade": request.query_params.getlist("modalidade"),
                     "ano": request.query_params.getlist("ano"),
                     "turma": request.query_params.getlist("turma"),
@@ -1178,10 +1183,12 @@ class AlunosAtivosDataAulaView(AlunosAPIView):
             httpx.HTTPStatusError: Se a API retornar status de erro.
             httpx.RequestError: Se a API estiver inacessível.
         """
+        if not codigo_turma.strip() or not data_aula.strip():
+            return detail_response(_MSG_DATA_OBRIGATORIA)
         if not _inteiro_positivo(codigo_turma):
             return Response([])
         if not validar_data_str(data_aula):
-            return detail_response(_MSG_DATA_OBRIGATORIA)
+            return detail_response(_MSG_DATA_INVALIDA)
 
         try:
             data = services.get_alunos_ativos_data_aula(
@@ -1447,6 +1454,10 @@ class TotalAlunosTurmasPeriodoView(AlunosAPIView):
     @extend_schema(
         tags=["Turma"],
         description=(
+            "DEPRECIADO — Use ``todos-alunos/ano-turma/<str:ano_turma>/"
+            "modalidade/<str:modalidade_turma>/ano-letivo/<str:ano_letivo>/dre/"
+            "<str:codigo_dre>/inicio/<str:data_inicio>/fim/<str:data_fim>`` "
+            "para utilizar o parâmetro de data no formato ISO. "
             "Conta as matrículas em turmas de um ano/modalidade/DRE cuja "
             "matrícula começou até a data de fim. Orquestra os domínios "
             "Institucional, Pedagógico e Alunos."
@@ -1460,6 +1471,7 @@ class TotalAlunosTurmasPeriodoView(AlunosAPIView):
             OpenApiParameter("data_fim_ticks", int, OpenApiParameter.PATH),
         ],
         responses={200: int, 204: None},
+        deprecated=True,
     )
     def get(
         self,
@@ -1519,6 +1531,108 @@ class TotalAlunosTurmasPeriodoView(AlunosAPIView):
                 return Response(status=204)
             quantidade = services.post_quantidade_matriculas_turmas_periodo(
                 codigos_turmas, data_fim_ticks
+            )
+        except httpx.HTTPStatusError as exc:
+            return _api_error_response(exc)
+        except httpx.RequestError as exc:
+            return _api_unavailable_response(exc)
+
+        if not quantidade:
+            return Response(status=204)
+        return Response(quantidade)
+
+
+class TotalAlunosTurmasPeriodoDataISOView(AlunosAPIView):
+    """Conta alunos por ano da turma, modalidade, DRE e período."""
+
+    @extend_schema(
+        tags=["Turma"],
+        description=(
+            "Conta as matrículas em turmas de um ano/modalidade/DRE cuja "
+            "matrícula começou até a data de fim. Orquestra os domínios "
+            "Institucional, Pedagógico e Alunos."
+        ),
+        parameters=[
+            OpenApiParameter("ano_turma", str, OpenApiParameter.PATH),
+            OpenApiParameter("modalidade_turma", int, OpenApiParameter.PATH),
+            OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
+            OpenApiParameter("codigo_dre", str, OpenApiParameter.PATH),
+            OpenApiParameter(
+                "data_inicio",
+                OpenApiTypes.DATE,
+                OpenApiParameter.PATH,
+                description="Formato: YYYY-MM-DD",
+            ),
+            OpenApiParameter(
+                "data_fim",
+                OpenApiTypes.DATE,
+                OpenApiParameter.PATH,
+                description="Formato: YYYY-MM-DD",
+            ),
+        ],
+        responses={200: int, 204: None},
+    )
+    def get(
+        self,
+        _request: Request,
+        ano_turma: str,
+        modalidade_turma: str,
+        ano_letivo: str,
+        codigo_dre: str,
+        data_inicio: str,
+        data_fim: str,
+    ) -> Response:
+        """Conta os alunos das turmas do recorte informado.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            ano_turma: Ano da turma (primeiro caractere da nomenclatura).
+            modalidade_turma: Código de modalidade da turma.
+            ano_letivo: Ano letivo consultado.
+            codigo_dre: Código da Diretoria Regional de Educação.
+            data_inicio: Data de início em formato ISO 8601; validada, mas
+                não filtra a contagem.
+            data_fim: Data de fim em formato ISO 8601; limita a data de
+                início da matrícula.
+
+        Returns:
+            O total de alunos, ou resposta vazia quando não há registros.
+
+        Raises:
+            httpx.HTTPError: Se a comunicação com algum serviço falhar de
+                forma não tratada.
+        """
+        modalidade = _para_inteiro(modalidade_turma)
+        if (
+            not ano_turma
+            or modalidade is None
+            or modalidade <= 0
+            or not data_inicio.strip()
+            or not data_fim.strip()
+        ):
+            return _legacy_string_response(
+                _MSG_ANO_MODALIDADE_OBRIGATORIOS, 400
+            )
+        if not validar_data_str(data_inicio) or not validar_data_str(data_fim):
+            return detail_response(_MSG_DATA_INVALIDA)
+        try:
+            ues = _codigos_ue_da_dre(
+                institucional_services.get_ues_por_dre(codigo_dre)
+            )
+            if not ues:
+                return Response(status=204)
+            codigos_turmas = pedagogico_services.post_codigos_turmas_contagem(
+                ues,
+                ano_turma=ano_turma,
+                codigo_modalidade=modalidade,
+                ano_letivo=ano_letivo,
+            )
+            if not codigos_turmas:
+                return Response(status=204)
+            quantidade = (
+                services.post_quantidade_matriculas_turmas_periodo_em_data_iso(
+                    codigos_turmas, data_fim
+                )
             )
         except httpx.HTTPStatusError as exc:
             return _api_error_response(exc)
