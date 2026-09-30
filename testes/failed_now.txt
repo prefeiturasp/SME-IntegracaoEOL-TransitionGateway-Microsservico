@@ -1,0 +1,137 @@
+﻿Validar agrupamentos correlacionados de território do saber com códigos inválidos
+Validar agrupamentos correlacionados de território do saber com códigos válidos
+Validar agrupamentos correlacionados de território do saber por componente curricular
+Validar agrupamentos de território do saber com códigos inválidos
+Validar agrupamentos de território do saber com códigos válidos
+Validar aluno inexistente em componentes curriculares da turma
+Validar aluno inexistente em considera inativos na turma
+Validar aluno inexistente em matriculas do aluno na turma
+Validar aluno inexistente em turmas regulares do aluno por ano letivo
+Validar alunos ativos por data de aula
+Validar alunos PAP por ano letivo
+Validar autocomplete de professores com DRE, UE e nome válidos
+Validar busca de professor por RF e ano letivo válidos
+Validar busca de professor por RF, DRE e UE com dados válidos
+Validar busca de professores por lista de RF com ano letivo e registro funcional válidos
+Validar calculo de frequencia da turma
+Validar catalogo de componentes curriculares
+Validar componente PAP da turma
+Validar componentes curriculares do aluno da turma
+Validar componentes da turma sem planejamento
+Validar componentes da UE por anos escolares
+Validar componentes das turmas da UE
+Validar componentes de planejamento da turma não encontrado
+Validar componentes de regencia do ano de turma
+Validar componentes de turmas de programa do aluno
+Validar componentes de turmas programa da UE
+Validar componentes de turmas regulares
+Validar componentes do funcionario na turma não encontrado
+Validar componentes do funcionario no perfil informado
+Validar componentes sem atribuicao da turma
+Validar componentes sem atribuicao da turma com retorno vazio
+Validar considera inativos da turma
+Validar considerar inativos do aluno na turma
+Validar dados completos de uma escola
+Validar dados de aula por turma
+Validar dados de escola por código UE válido
+Validar dados de uma turma
+Validar dados SRM/PAEE do aluno
+Validar dados SRM/PAEE do aluno não encontrado
+Validar data de matricula por ticks da turma
+Validar detalhe de uma DRE
+Validar detalhe de uma escola
+Validar DREs por lista de códigos
+Validar DREs por lista de códigos não encontradas
+Validar equipamentos das escolas
+Validar erro 400 para aluno inválido em considera inativos na turma
+Validar erro 400 para data de aula inválida
+Validar erro 400 para data de matrícula inválida
+Validar erro 400 para turma inválida em matriculas do aluno
+Validar escolas de uma DRE
+Validar escolas de uma DRE por tipo de unidade
+Validar escolas Sigpae por código EOL da DRE válido
+Validar estrutura vigente por filtro de turmas válido
+Validar funcionário ativo
+Validar funcionário não ativo
+Validar funcionários da escola
+Validar funcionários da escola sem resultados
+Validar funcionários pelos RFs informados
+Validar funcionários por cargo com código UE e código cargo válidos
+Validar funcionários por cargos com código UE e código DRE válidos
+Validar funcionários por função atividade com código UE e código função atividade válidos
+Validar funcionários por função externa com código UE e código função externa válidos
+Validar funcionários por funções atividades com código UE e código DRE válidos
+Validar funcionários por funções externas com código UE, código função externa e código DRE válidos
+Validar funcionários por RFs informados não encontrados
+Validar grade curricular do ano letivo
+Validar listagem de todas as DREs
+Validar listagem de turmas por códigos
+Validar matriculas do aluno na turma
+Validar matrículas do aluno por código UE e código aluno válidos
+Validar nome do funcionário no EOL
+Validar nome do funcionário no EOL não encontrado
+Validar nome do professor
+Validar nome do professor não encontrado
+Validar nome do servidor
+Validar nome do servidor não encontrado
+Validar professor EMEI com registro funcional inválido
+Validar professor EMEI com registro funcional válido
+Validar professor inexistente em turmas históricas gerais
+Validar professor não válido
+Validar professor válido
+Validar quantidade de alunos por código UE válido
+Validar redis multplex da turma
+Validar retorno de agrupamentos correlacionados para código de componente curricular inválido
+Validar retorno de estrutura vigente com filtro de turmas inexistente
+Validar retorno vazio de autocomplete de professores com DRE, UE e nome inválidos
+Validar retorno vazio de busca de professores por lista de RF com ano letivo e registro funcional inválidos
+Validar retorno vazio de escola para código UE inexistente
+Validar retorno vazio de escolas Sigpae para código EOL da DRE inexistente
+Validar retorno vazio de funcionários por cargo com código UE e código cargo inválidos
+Validar retorno vazio de funcionários por cargos com código UE e código DRE inválidos
+Validar retorno vazio de funcionários por função atividade com código UE e código função atividade inválidos
+Validar retorno vazio de funcionários por função externa com código UE e código função externa inválidos
+Validar retorno vazio de funcionários por funções atividades com código UE e código DRE inválidos
+Validar retorno vazio de funcionários por funções externas com código UE, código função externa e código DRE inválidos
+Validar retorno vazio de matrículas do aluno com código UE e código aluno inválidos
+Validar retorno vazio de professor por RF e ano letivo inválidos
+Validar retorno vazio de professor por RF, DRE e UE com dados inválidos
+Validar retorno vazio de quantidade de alunos com código UE inválido
+Validar retorno vazio de turmas de professor por disciplina com registro funcional, disciplina e turma inválidos
+Validar retorno vazio de turmas de sondagem (rota nova) com código UE e ano letivo inválidos
+Validar retorno vazio de turmas do professor com registro funcional inválido
+Validar retorno vazio de turmas do professor por ano letivo com registro funcional inválido
+Validar retorno vazio de unidades por código de integração para código EOL da DRE inexistente
+Validar sincronizações institucionais da escola
+Validar status da atribuição do professor em turma
+Validar subprefeituras de uma DRE
+Validar subprefeituras de uma DRE não encontrada
+Validar subprefeituras por código UE válido
+Validar tipos de escola
+Validar tipos de unidade de educação
+Validar todas as unidades
+Validar turma inexistente em alunos ativos por data de aula
+Validar turma inexistente em calculo de frequencia da turma
+Validar turma inexistente em data de matricula por ticks
+Validar turma inexistente em redis multplex
+Validar turmas atribuídas pelo professor na escola com dados válidos
+Validar turmas de professor por disciplina com registro funcional, disciplina e turma válidos
+Validar turmas de professores por escola e ano letivo válidos
+Validar turmas de sondagem (rota nova) pelo código UE e ano letivo válidos
+Validar turmas do professor com registro funcional válido
+Validar turmas do professor por ano letivo com registro funcional válido
+Validar turmas historicas gerais do professor
+Validar turmas PAP por ano letivo e escola
+Validar turmas programa por lista de códigos
+Validar turmas regulares do aluno por ano letivo
+Validar turmas regulares por lista de códigos
+Validar UEs de uma DRE
+Validar UEs de uma DRE não encontrada
+Validar unidade por código EOL
+Validar unidades de uma DRE
+Validar unidades de uma DRE não encontrada
+Validar unidades parceiras
+Validar unidades por código de integração da DRE com código EOL válido
+Validar verificação de alunos em turmas PAP
+Validar verificação de atribuição do professor em data inválida
+Validar verificação de atribuição do professor em data válida
