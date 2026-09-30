@@ -10,7 +10,6 @@ Given("que possuo acesso à API de acessos", () => {
   expect(Cypress.env("REGISTRO_FUNCIONAL")).to.exist;
 });
 
-// THEN
 Then("retorna o status {int}", (statusCode) => {
   cy.get("@response").then((response) => {
     expect(response.status).to.eq(statusCode);
@@ -29,7 +28,6 @@ When("realizo consulta de funcionário não ativo", () => {
   cy.getFuncionarioAtivo(false).as("response");
 });
 
-// AND
 
 And("o retorno deve ser verdadeiro", () => {
   cy.get("@response").then((response) => {

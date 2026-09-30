@@ -7,7 +7,6 @@ Given("que possuo acesso à API de escolas", () => {
   expect(Cypress.env("UE_CODIGO")).to.exist;
 });
 
-// THEN
 Then("retorna o status {int}", (statusCode) => {
   cy.get("@response").then((response) => {
     expect(response.status).to.eq(statusCode);
@@ -88,7 +87,6 @@ When("realizo consulta de tipos de unidade de educação", () => {
   cy.getTiposUnidadeEducacao().as("response");
 });
 
-// AND
 And("o retorno deve conter dados da escola", () => {
   cy.get("@response").then((response) => {
     if (response.status === 200) {

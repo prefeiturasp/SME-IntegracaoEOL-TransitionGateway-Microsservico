@@ -5,14 +5,12 @@ Given("que possuo acesso à API de alunos", () => {
   expect(Cypress.env("API_URL")).to.exist;
 });
 
-// THEN
 Then("retorna o status {int}", (statusCode) => {
   cy.get("@response").then((response) => {
     expect(response.status).to.eq(statusCode);
   });
 });
 
-// WHEN
 When("realizo consulta de informações do aluno", () => {
   cy.getAlunoInformacoes(true).as("response");
 });
@@ -257,7 +255,6 @@ When(
   },
 );
 
-// AND
 And("o retorno deve conter dados de SRM PAEE", () => {
   cy.get("@response").then((response) => {
     if (response.status === 200) {

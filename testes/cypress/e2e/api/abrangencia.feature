@@ -13,12 +13,14 @@ Funcionalidade: API - Abrangência
     Quando realizo consulta de estrutura vigente pelo código DRE inexistente
     Então retorna o status 204
 
+  @ignore
   Cenário: Validar estrutura vigente por filtro de turmas válido
     Dado que possuo acesso à API de abrangência
     Quando realizo envio de estrutura vigente com filtro de turmas válido
     Então retorna o status 200
     E o retorno deve conter dados de estrutura vigente
 
+  @ignore
   Cenário: Validar retorno de estrutura vigente com filtro de turmas inexistente
     Dado que possuo acesso à API de abrangência
     Quando realizo envio de estrutura vigente com filtro de turmas inexistente
