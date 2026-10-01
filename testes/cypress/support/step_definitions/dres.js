@@ -7,7 +7,6 @@ Given("que possuo acesso à API de DREs", () => {
   expect(Cypress.env("DRE_CODIGO")).to.exist;
 });
 
-// THEN
 Then("retorna o status {int}", (statusCode) => {
   cy.get("@response").then((response) => {
     expect(response.status).to.eq(statusCode);
@@ -104,7 +103,6 @@ When(
   },
 );
 
-// AND - Validações de Retorno
 And("o retorno deve conter lista de DREs", () => {
   cy.get("@response").then((response) => {
     if (response.status === 200) {

@@ -20,9 +20,11 @@ TTL_LEGADO_PADRAO_MINUTOS = 1440
 TTL_RECOMENDADO_MINUTOS = 720
 
 
-def obter_ou_calcular[
-    T
-](chave: str, calcular: Callable[[], T], minutos_para_expirar: int,) -> T:
+def obter_ou_calcular[T](  # noqa: UP047
+    chave: str,
+    calcular: Callable[[], T],
+    minutos_para_expirar: int,
+) -> T:
     """Busca ``chave`` no KeyDB ou executa ``calcular`` e grava o resultado.
 
     Args:

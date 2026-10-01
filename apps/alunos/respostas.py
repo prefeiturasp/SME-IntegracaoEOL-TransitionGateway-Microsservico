@@ -3,7 +3,7 @@
 import json
 import logging
 import zlib
-from typing import Any
+from typing import Any, cast
 
 from django.http import HttpResponse
 from rest_framework.renderers import JSONRenderer
@@ -59,9 +59,10 @@ def resposta_quantidade_matriculados(
         corpo = zlib.decompress(representar())
 
     renderer = request.accepted_renderer
+    json_renderer = cast(JSONRenderer, renderer)
     if (
-        renderer.__class__ == JSONRenderer
-        and renderer.get_indent(request.accepted_media_type, {}) is None
+        renderer.__class__ is JSONRenderer
+        and json_renderer.get_indent(request.accepted_media_type, {}) is None
     ):
         return HttpResponse(corpo, content_type=renderer.media_type)
     return Response(json.loads(corpo))

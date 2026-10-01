@@ -38,8 +38,6 @@ When("realizo consulta de funcionários por RFs com RFs inválidos", () => {
   cy.postBuscarPorListaRf(false).as("response");
 });
 
-// THEN
-
 Then("retorna o status 200", function () {
   cy.get("@response").then((response) => {
     expect(response.status).to.eq(200);
@@ -63,8 +61,6 @@ Then("retorna o status 404", function () {
     expect(response.status).to.eq(404);
   });
 });
-
-// AND
 
 And("o retorno deve ser verdadeiro", () => {
   cy.get("@response").then((response) => {

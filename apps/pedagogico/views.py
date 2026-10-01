@@ -1,6 +1,7 @@
 """Views do domínio pedagógico."""
 
 import json
+from collections.abc import Callable
 from typing import Any, cast
 
 import httpx
@@ -850,7 +851,14 @@ class TurmasPorTipoSalaViewSet(PedagogicoAPIView):
 
     @extend_schema(
         tags=_TAG_ESCOLA,
-        description="Retorna as turmas da UE/ano letivo filtradas por tipo de sala.",
+        deprecated=True,
+        description=(
+            "DEPRECIADO — use "
+            "`.../turmas-por-sala/{tipo_sala}/anos_letivos/{ano_letivo}` "
+            "(sempre 200, mesmo sem dados). "
+            "Retorna as turmas da UE/ano letivo filtradas por tipo de "
+            "sala."
+        ),
         responses={200: TurmaPorSalaSerializer(many=True), 404: str},
     )
     def get(
@@ -861,6 +869,8 @@ class TurmasPorTipoSalaViewSet(PedagogicoAPIView):
         ano_letivo: str,
     ) -> Response:
         """Retorna as turmas da UE/ano letivo filtradas por tipo de sala.
+
+        Depreciada: use ``turmas-por-sala`` (200 + [] mesmo sem dados).
 
         Args:
             _request: Requisição HTTP recebida.
@@ -972,7 +982,13 @@ class TurmasSondagemViewSet(PedagogicoAPIView):
 
     @extend_schema(
         tags=_TAG_ESCOLA,
-        description="Retorna as turmas de Sondagem da UE/ano letivo.",
+        deprecated=True,
+        description=(
+            "DEPRECIADO — use "
+            "`.../turmas-sondagem/anos_letivos/{ano_letivo}` "
+            "(sempre 200, mesmo sem dados). "
+            "Retorna as turmas de Sondagem da UE/ano letivo."
+        ),
         responses={200: TurmaPorSalaSerializer(many=True), 404: str},
     )
     def get(
@@ -982,6 +998,8 @@ class TurmasSondagemViewSet(PedagogicoAPIView):
         ano_letivo: str,
     ) -> Response:
         """Retorna as turmas de Sondagem da UE/ano letivo.
+
+        Depreciada: use ``turmas-sondagem`` (200 + [] mesmo sem dados).
 
         Args:
             _request: Requisição HTTP recebida.
@@ -1024,6 +1042,115 @@ class TurmasSondagemViewSet(PedagogicoAPIView):
                 502,
             )
         return Response(serializer.data)
+
+
+def _resposta_turmas_sala_sempre_200(
+    chamar_sidecar: Callable[[], list[dict[str, Any]]],
+) -> Response:
+    """Chama o sidecar e serializa como turmas-por-sala, sem tradução p/ 404.
+
+    Compartilhada pelas rotas v2 de `turmas-por-sala` e `turmas-sondagem`,
+    que tratam o sidecar da mesma forma e diferem só na chamada de serviço.
+
+    Args:
+        chamar_sidecar: Função sem argumentos que executa a chamada ao
+            sidecar e devolve os dados já no formato esperado.
+
+    Returns:
+        Resposta HTTP 200 com as turmas encontradas (vazia ou não), ou o
+        erro traduzido do sidecar.
+    """
+    try:
+        data = chamar_sidecar()
+    except httpx.HTTPStatusError as exc:
+        try:
+            body = exc.response.json()
+        except ValueError:
+            detail = exc.response.text.strip() or exc.response.reason_phrase
+            body = {"detail": detail}
+        return Response(body, status=exc.response.status_code)
+    except httpx.RequestError:
+        return _api_unavailable_response()
+    except ValueError:
+        return detail_response(_RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA, 502)
+
+    serializer = TurmaPorSalaSerializer(data=data, many=True)
+    if not serializer.is_valid():
+        return detail_response(_RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA, 502)
+    return Response(serializer.data)
+
+
+class TurmasPorSalaV2ViewSet(PedagogicoAPIView):
+    """Lista turmas de uma UE/ano letivo por tipo de sala (sempre 200)."""
+
+    @extend_schema(
+        tags=_TAG_ESCOLA,
+        description=(
+            "Retorna as turmas da UE/ano letivo filtradas por tipo de "
+            "sala. Sempre 200, mesmo sem dados."
+        ),
+        responses={200: TurmaPorSalaSerializer(many=True)},
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_ue: str,
+        tipo_sala: str,
+        ano_letivo: str,
+    ) -> Response:
+        """Retorna as turmas da UE/ano letivo filtradas por tipo de sala.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            codigo_ue: Código da unidade educacional.
+            tipo_sala: Tipo de sala informado na rota.
+            ano_letivo: Ano letivo consultado.
+
+        Returns:
+            Resposta HTTP 200 com as turmas encontradas (vazia ou não).
+        """
+        return _resposta_turmas_sala_sempre_200(
+            lambda: services.get_turmas_por_tipo_sala(
+                codigo_ue=codigo_ue,
+                tipo_sala=tipo_sala,
+                ano_letivo=ano_letivo,
+            )
+        )
+
+
+class TurmasSondagemV2ViewSet(PedagogicoAPIView):
+    """Lista turmas regulares de 5º ano do Fundamental para Sondagem."""
+
+    @extend_schema(
+        tags=_TAG_ESCOLA,
+        description=(
+            "Retorna as turmas de Sondagem da UE/ano letivo. Sempre 200, "
+            "mesmo sem dados."
+        ),
+        responses={200: TurmaPorSalaSerializer(many=True)},
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_ue: str,
+        ano_letivo: str,
+    ) -> Response:
+        """Retorna as turmas de Sondagem da UE/ano letivo.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            codigo_ue: Código da unidade educacional.
+            ano_letivo: Ano letivo consultado.
+
+        Returns:
+            Resposta HTTP 200 com as turmas encontradas (vazia ou não).
+        """
+        return _resposta_turmas_sala_sempre_200(
+            lambda: services.get_turmas_sondagem(
+                codigo_ue=codigo_ue,
+                ano_letivo=ano_letivo,
+            )
+        )
 
 
 class ComponentesCurricularesViewSet(PedagogicoAPIView):

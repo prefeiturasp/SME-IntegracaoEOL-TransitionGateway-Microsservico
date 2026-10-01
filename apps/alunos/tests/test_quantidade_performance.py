@@ -192,7 +192,7 @@ class QuantidadeRespostaPerformanceTest(SimpleTestCase):
         self.assertEqual(parametros["dre_codigo"], "001")
         self.assertEqual(parametros["ue_codigo"], "000002")
 
-    def test_snake_case_nao_aplica_filtros(self) -> None:
+    def test_snake_case_aplica_filtros(self) -> None:
         """Ignora parâmetros antigos mesmo com camelCase vazio."""
         consultas = (
             "dre_codigo=001&ue_codigo=000002",
@@ -202,7 +202,10 @@ class QuantidadeRespostaPerformanceTest(SimpleTestCase):
             with self.subTest(consulta=consulta):
                 resposta = self.client.get(f"{_URL}?{consulta}")
                 self.assertEqual(resposta.status_code, 200)
-                self.assertIsNone(self.origem.call_args.kwargs["params"])
+                self.assertDictEqual(
+                    self.origem.call_args.kwargs["params"],
+                    {"dre_codigo": "001", "ue_codigo": "000002"},
+                )
 
     def test_chave_versionada_e_ttl_nao_renovado_no_hit(self) -> None:
         """Mantém os filtros e as 24 horas sem prolongar a validade."""

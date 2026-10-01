@@ -15,7 +15,6 @@ Then("retorna o status {int}", (statusCode) => {
   });
 });
 
-// WHEN
 // Endpoint GET - /api/abrangencia/estrutura-vigente/{codigoDre}
 When("realizo consulta de estrutura vigente pelo código DRE válido", () => {
   cy.getAbrangenciaEstruturaVigente(Cypress.env("DRE_CODIGO")).as("response");

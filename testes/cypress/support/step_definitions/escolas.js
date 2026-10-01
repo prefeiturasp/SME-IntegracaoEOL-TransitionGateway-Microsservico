@@ -7,7 +7,6 @@ Given("que possuo acesso à API de escolas", () => {
   expect(Cypress.env("UE_CODIGO")).to.exist;
 });
 
-// THEN
 Then("retorna o status {int}", (statusCode) => {
   cy.get("@response").then((response) => {
     expect(response.status).to.eq(statusCode);
@@ -88,7 +87,6 @@ When("realizo consulta de tipos de unidade de educação", () => {
   cy.getTiposUnidadeEducacao().as("response");
 });
 
-// AND
 And("o retorno deve conter dados da escola", () => {
   cy.get("@response").then((response) => {
     if (response.status === 200) {
@@ -674,6 +672,71 @@ And("o retorno deve conter lista de turmas de sondagem", () => {
 And("a mensagem deve ser {string}", (mensagem) => {
   cy.get("@response").then((response) => {
     expect(JSON.stringify(response.body)).contain(mensagem);
+  });
+});
+
+// Endpoint - /api/escolas/{codigoUE}/turmas-por-sala/{tipoSala}/anos_letivos/{anoLetivo}
+When(
+  "realizo consulta de turmas por sala pelo código UE, tipo de sala e ano letivo válidos",
+  () => {
+    cy.getEscolaTurmasPorSala(
+      Cypress.env("UE_CODIGO"),
+      Cypress.env("TIPO_SALA"),
+      Cypress.env("ANO_LETIVO"),
+    ).as("response");
+  },
+);
+
+When(
+  "realizo consulta de turmas por sala pelo código UE, tipo de sala e ano letivo inválidos",
+  () => {
+    cy.getEscolaTurmasPorSala(
+      Cypress.env("UE_CODIGO_INEXISTENTE"),
+      Cypress.env("TIPO_SALA_INEXISTENTE"),
+      Cypress.env("ANO_LETIVO_INEXISTENTE"),
+    ).as("response");
+  },
+);
+
+And("o retorno deve ser uma lista vazia de turmas por sala", () => {
+  cy.get("@response").then((response) => {
+    expect(response.body).to.be.an("array").that.is.empty;
+  });
+});
+
+// Endpoint - /api/escolas/{codigoUE}/turmas-sondagem/anos_letivos/{anoLetivo}
+When(
+  "realizo consulta de turmas de sondagem (rota nova) pelo código UE e ano letivo válidos",
+  () => {
+    cy.getEscolaTurmasSondagemV2(
+      Cypress.env("UE_CODIGO"),
+      Cypress.env("ANO_LETIVO"),
+    ).as("response");
+  },
+);
+
+When(
+  "realizo consulta de turmas de sondagem (rota nova) pelo código UE e ano letivo inválidos",
+  () => {
+    cy.getEscolaTurmasSondagemV2(
+      Cypress.env("UE_CODIGO_INEXISTENTE"),
+      Cypress.env("ANO_LETIVO_INEXISTENTE"),
+    ).as("response");
+  },
+);
+
+And("o retorno deve conter lista de turmas de sondagem", () => {
+  cy.get("@response").then((response) => {
+    expect(response.body).to.be.an("array");
+    if (response.body.length > 0) {
+      expect(response.body).not.be.empty;
+    }
+  });
+});
+
+And("o retorno deve ser uma lista vazia de turmas de sondagem", () => {
+  cy.get("@response").then((response) => {
+    expect(response.body).to.be.an("array").that.is.empty;
   });
 });
 
