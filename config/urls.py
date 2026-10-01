@@ -53,6 +53,14 @@ urlpatterns = [
         name="schema",
     ),
     path(
+        f"{API_PREFIX}schema/",
+        SpectacularAPIView.as_view(
+            authentication_classes=[],
+            permission_classes=[AllowAny],
+        ),
+        name="schema-slash",
+    ),
+    path(
         f"{API_PREFIX}docs",
         SpectacularSwaggerView.as_view(
             url_name="schema",
@@ -60,6 +68,15 @@ urlpatterns = [
             permission_classes=[AllowAny],
         ),
         name="swagger-ui",
+    ),
+    path(
+        f"{API_PREFIX}docs/",
+        SpectacularSwaggerView.as_view(
+            url_name="schema",
+            authentication_classes=[],
+            permission_classes=[AllowAny],
+        ),
+        name="swagger-ui-slash",
     ),
     path(
         f"{API_PREFIX}componentes-curriculares",
