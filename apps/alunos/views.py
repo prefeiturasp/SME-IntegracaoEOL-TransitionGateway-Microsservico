@@ -791,6 +791,7 @@ class ResponsaveisView(AlunosAPIView):
 
     @extend_schema(
         tags=_TAG,
+        operation_id="alunos_responsaveis_list",
         summary="Responsáveis por DRE, UE e turma",
         parameters=[
             OpenApiParameter("codigoDre", str, OpenApiParameter.QUERY),
@@ -832,6 +833,7 @@ class DadosResponsavelView(AlunosAPIView):
 
     @extend_schema(
         tags=_TAG,
+        operation_id="alunos_responsaveis_detail",
         summary="Dados do responsável por CPF",
         parameters=[
             OpenApiParameter(
@@ -2277,6 +2279,7 @@ class AlunosAtivosTurmaView(AlunosAPIView):
 
     @extend_schema(
         tags=_TAG,
+        operation_id="alunos_turmas_ativos_list",
         summary="Alunos ativos da turma",
         description="Retorna os alunos ativos de uma turma.",
         parameters=[
@@ -2309,6 +2312,7 @@ class AlunosAtivosPeriodoTurmaView(AlunosAPIView):
 
     @extend_schema(
         tags=_TAG,
+        operation_id="alunos_turmas_ativos_periodo",
         summary="Alunos ativos da turma por período",
         description="Retorna os alunos ativos da turma no período informado.",
         parameters=[

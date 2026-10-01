@@ -2,7 +2,11 @@
 
 from typing import Any, cast
 
-from drf_spectacular.utils import extend_schema_serializer
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    extend_schema_field,
+    extend_schema_serializer,
+)
 from rest_framework import serializers
 
 
@@ -407,6 +411,7 @@ class DisciplinaTurmaAtribuidaSerializer(serializers.Serializer):
         """
         return obj.get("tipo_escola")
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_professor(self, _obj: dict[str, Any]) -> None:
         """Retorna professor da disciplina.
 
@@ -444,6 +449,7 @@ class DisciplinaTurmaAgrupamentoSerializer(DisciplinaTurmaAtribuidaSerializer):
         """
         return obj.get("codigo_componente_territorio_saber") or 0
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_tipoEscola(self, _obj: dict[str, Any]) -> None:  # noqa: N802
         """Retorna tipo de escola.
 
@@ -1332,6 +1338,7 @@ class FuncionarioFuncaoAtividadeUeSerializer(serializers.Serializer):
     funcaoExterno = serializers.IntegerField(source="funcao_externo")
     tipoFuncaoExterno = serializers.IntegerField(source="tipo_funcao_externo")
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_login(self, _obj: Any) -> None:
         """Retorna login.
 

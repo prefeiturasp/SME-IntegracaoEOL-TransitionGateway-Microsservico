@@ -5,7 +5,11 @@ from typing import Any, cast
 
 import httpx
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter, extend_schema
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
+)
 from rest_framework.request import Request
 
 from apps.core.datetime import (
@@ -524,6 +528,7 @@ class ProfessorVerificarAtribuicaoPeriodoView(ProfessoresAPIView):
             "Verifica se o professor possui atribuição na turma e "
             "componente curricular durante o período informado."
         ),
+        request=None,
         responses={200: OpenApiTypes.BOOL, 400: OpenApiTypes.OBJECT},
     )
     def post(
@@ -1964,6 +1969,7 @@ class EscolaFuncionariosCargoView(ProfessoresAPIView):
 
     @extend_schema(
         tags=_TAG_ESCOLA,
+        operation_id="escolas_funcionarios_cargos_detail",
         description=("Retorna funcionários da escola filtrados por cargo."),
         responses={200: FuncionarioEscolaSerializer(many=True), 204: None},
     )
@@ -2000,6 +2006,7 @@ class EscolaFuncionariosCargosView(ProfessoresAPIView):
 
     @extend_schema(
         tags=_TAG_ESCOLA,
+        operation_id="escolas_funcionarios_cargos_list",
         description=("Retorna funcionários da escola filtrados por cargos."),
         parameters=[
             OpenApiParameter(
@@ -2048,6 +2055,7 @@ class EscolaFuncionariosFuncoesAtividadesView(ProfessoresAPIView):
 
     @extend_schema(
         tags=_TAG_ESCOLA,
+        operation_id="escolas_funcionarios_funcoes_atividades_list",
         description=("Retorna funcionários da escola por funções atividades."),
         parameters=[
             OpenApiParameter(
@@ -2104,6 +2112,7 @@ class EscolaFuncionariosFuncoesExternasView(ProfessoresAPIView):
 
     @extend_schema(
         tags=_TAG_ESCOLA,
+        operation_id="escolas_funcionarios_funcoes_externas_list",
         description=("Retorna funcionários da escola por funções externas."),
         parameters=[
             OpenApiParameter(
@@ -2161,6 +2170,7 @@ class EscolaFuncionariosFuncaoExternaView(ProfessoresAPIView):
 
     @extend_schema(
         tags=_TAG_ESCOLA,
+        operation_id="escolas_funcionarios_funcoes_externas_detail",
         description=("Retorna funcionários da escola por uma função externa."),
         responses={200: FuncionarioEscolaSerializer(many=True), 204: None},
     )
@@ -2199,6 +2209,7 @@ class EscolaFuncionariosFuncaoAtividadeView(ProfessoresAPIView):
 
     @extend_schema(
         tags=_TAG_ESCOLA,
+        operation_id="escolas_funcionarios_funcoes_atividades_detail",
         description=(
             "Retorna funcionários da escola por uma função atividade."
         ),
@@ -3110,12 +3121,16 @@ class ProfessorBuscaTurmasAtribuidasEscolaView(ProfessoresAPIView):
 
     @extend_schema(
         tags=_TAG_PROFESSOR,
+        operation_id="professor_escola_turmas_atribuidas",
         description=(
             "Retorna turmas atribuídas ao professor na escola no ano letivo."
         ),
         responses={
             200: ProfessorTurmaAtribuidaSimplificadaSerializer(many=True),
-            404: _MSG_TURMAS_NAO_ENCONTRADAS,
+            404: OpenApiResponse(
+                response=OpenApiTypes.STR,
+                description=_MSG_TURMAS_NAO_ENCONTRADAS,
+            ),
         },
     )
     def get(
@@ -3158,12 +3173,16 @@ class BuscaTurmasAtribuidasProfessoresEscolaView(ProfessoresAPIView):
 
     @extend_schema(
         tags=_TAG_PROFESSOR,
+        operation_id="professores_escola_turmas_atribuidas",
         description=(
             "Retorna turmas atribuídas a professores na escola no ano letivo."
         ),
         responses={
             200: ProfessorTurmaAtribuidaSimplificadaSerializer(many=True),
-            404: _MSG_TURMAS_NAO_ENCONTRADAS,
+            404: OpenApiResponse(
+                response=OpenApiTypes.STR,
+                description=_MSG_TURMAS_NAO_ENCONTRADAS,
+            ),
         },
     )
     def get(
@@ -3198,10 +3217,14 @@ class ProfessorBuscarTurmasAtribuidasView(ProfessoresAPIView):
 
     @extend_schema(
         tags=_TAG_PROFESSOR,
+        operation_id="professor_turmas_atribuidas",
         description=("Retorna turmas atribuídas ao professor no ano letivo."),
         responses={
             200: ProfessorTurmaAtribuidaSimplificadaSerializer(many=True),
-            404: _MSG_TURMAS_NAO_ENCONTRADAS,
+            404: OpenApiResponse(
+                response=OpenApiTypes.STR,
+                description=_MSG_TURMAS_NAO_ENCONTRADAS,
+            ),
         },
     )
     def get(
