@@ -16,7 +16,7 @@ def _response(status_code: int) -> httpx.Response:
     Returns:
         Resposta HTTP simulada.
     """
-    request = httpx.Request("GET", "http://servico/api/v1/health/")
+    request = httpx.Request("GET", "https://servico/api/v1/health/")
     return httpx.Response(status_code, json={"status": "ok"}, request=request)
 
 
