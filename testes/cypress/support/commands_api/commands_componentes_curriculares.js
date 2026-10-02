@@ -96,7 +96,7 @@ Cypress.Commands.add("getComponentesFuncionarioPorPerfil", () => {
     method: "GET",
     url: `${Cypress.env(
       "API_URL",
-    )}/api/v1/componentes-curriculares/funcionarios/${Cypress.env("REGISTRO_FUNCIONAL")}/perfis/1`,
+    )}/api/v1/componentes-curriculares/funcionarios/${Cypress.env("REGISTRO_FUNCIONAL")}/perfis/${Cypress.env("ID_PERFIL")}`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -141,7 +141,7 @@ Cypress.Commands.add("getDadosAulaTurma", () => {
 Cypress.Commands.add("getComponentesTurmaFuncionario", () => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/v1/componentes-curriculares/turmas/${Cypress.env("TURMA_CODIGO")}/funcionarios/${Cypress.env("REGISTRO_FUNCIONAL")}/perfis/1/agrupaComponenteCurricular/true`,
+    url: `${Cypress.env("API_URL")}/api/v1/componentes-curriculares/turmas/${Cypress.env("TURMA_CODIGO")}/funcionarios/${Cypress.env("REGISTRO_FUNCIONAL")}/perfis/${Cypress.env("ID_PERFIL")}/agrupaComponenteCurricular/true`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -153,7 +153,7 @@ Cypress.Commands.add("getComponentesTurmaFuncionario", () => {
 Cypress.Commands.add("getComponentesPlanejamento", () => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/v1/componentes-curriculares/turmas/${Cypress.env("TURMA_CODIGO")}/funcionarios/${Cypress.env("REGISTRO_FUNCIONAL")}/perfis/1/planejamento`,
+    url: `${Cypress.env("API_URL")}/api/v1/componentes-curriculares/turmas/${Cypress.env("TURMA_CODIGO")}/funcionarios/${Cypress.env("REGISTRO_FUNCIONAL")}/perfis/${Cypress.env("ID_PERFIL")}/planejamento`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -165,7 +165,7 @@ Cypress.Commands.add("getComponentesPlanejamento", () => {
 Cypress.Commands.add("getValidacaoComponentePap", () => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/v1/componentes-curriculares/turmas/${Cypress.env("TURMA_CODIGO")}/funcionarios/${Cypress.env("REGISTRO_FUNCIONAL")}/perfis/1/validar/pap`,
+    url: `${Cypress.env("API_URL")}/api/v1/componentes-curriculares/turmas/${Cypress.env("TURMA_CODIGO")}/funcionarios/${Cypress.env("REGISTRO_FUNCIONAL")}/perfis/${Cypress.env("ID_PERFIL")}/validar/pap`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
