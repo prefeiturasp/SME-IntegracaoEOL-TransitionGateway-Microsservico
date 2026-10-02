@@ -3,7 +3,7 @@ Cypress.Commands.add("getProfessorValidade", (valor) => {
     valor === true ? `${Cypress.env("REGISTRO_FUNCIONAL")}` : "0000000";
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/professores/${validade}/validade/`,
+    url: `${Cypress.env("API_URL")}/api/professores/${validade}/validade`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -18,7 +18,7 @@ Cypress.Commands.add("getProfessorPorRF", (valor) => {
 
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/professores/${rf_prof}/`,
+    url: `${Cypress.env("API_URL")}/api/professores/${rf_prof}`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -32,7 +32,7 @@ Cypress.Commands.add(
   (anoLetivo, dreCodigo, ueCodigo, nome) => {
     return cy.request({
       method: "GET",
-      url: `${Cypress.env("API_URL")}/api/professores/${anoLetivo}/AutoComplete/${dreCodigo}/`,
+      url: `${Cypress.env("API_URL")}/api/professores/${anoLetivo}/AutoComplete/${dreCodigo}`,
       qs: {
         ue_id: ueCodigo,
         nome: nome,
@@ -53,7 +53,7 @@ Cypress.Commands.add("postProfessoresBuscarPorListaRF", (anoLetivo, valido) => {
       : `["${Cypress.env("REGISTRO_FUNCIONAL_INEXISTENTE")}"]`;
   return cy.request({
     method: "POST",
-    url: `${Cypress.env("API_URL")}/api/professores/${anoLetivo}/BuscarPorListaRF/`,
+    url: `${Cypress.env("API_URL")}/api/professores/${anoLetivo}/BuscarPorListaRF`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -72,7 +72,7 @@ Cypress.Commands.add(
       method: "GET",
       url: `${Cypress.env(
         "API_URL",
-      )}/api/professores/${registroFuncional}/BuscarPorRf/${anoLetivo}/`,
+      )}/api/professores/${registroFuncional}/BuscarPorRf/${anoLetivo}`,
       headers: {
         accept: "application/json",
         [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -89,7 +89,7 @@ Cypress.Commands.add(
       method: "GET",
       url: `${Cypress.env(
         "API_URL",
-      )}/api/professores/${registroFuncional}/BuscarPorRfDreUe/${anoLetivo}/`,
+      )}/api/professores/${registroFuncional}/BuscarPorRfDreUe/${anoLetivo}`,
       qs: {
         dre_id: dreCodigo,
         ue_id: ueCodigo,
@@ -114,7 +114,7 @@ Cypress.Commands.add(
       method: "POST",
       url: `${Cypress.env(
         "API_URL",
-      )}/api/professores/${registroFuncional}/disciplina/${disciplinaId}/turmas/`,
+      )}/api/professores/${registroFuncional}/disciplina/${disciplinaId}/turmas`,
       headers: {
         accept: "application/json",
         [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -135,7 +135,7 @@ Cypress.Commands.add("getProfessorEhEmei", (valido) => {
 
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/professores/${rf}/ehEmei/`,
+    url: `${Cypress.env("API_URL")}/api/professores/${rf}/ehEmei`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -152,7 +152,7 @@ Cypress.Commands.add("getProfessorTurmas", (valido) => {
 
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/professores/${rf}/turmas/`,
+    url: `${Cypress.env("API_URL")}/api/professores/${rf}/turmas`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -171,7 +171,7 @@ Cypress.Commands.add("getProfessorTurmasPorAnoLetivo", (anoLetivo, valido) => {
     method: "GET",
     url: `${Cypress.env(
       "API_URL",
-    )}/api/professores/${rf}/turmas/anos_letivos/${anoLetivo}/`,
+    )}/api/professores/${rf}/turmas/anos_letivos/${anoLetivo}`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -194,7 +194,7 @@ Cypress.Commands.add("getProfessorTurmasNaEscola", (anoLetivo, valido) => {
     method: "GET",
     url: `${Cypress.env(
       "API_URL",
-    )}/api/professores/${rf}/escolas/${escola}/turmas/anos_letivos/${anoLetivo}/`,
+    )}/api/professores/${rf}/escolas/${escola}/turmas/anos_letivos/${anoLetivo}`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -213,7 +213,7 @@ Cypress.Commands.add("getTurmasProfessoresNaEscola", (anoLetivo, valido) => {
     method: "GET",
     url: `${Cypress.env(
       "API_URL",
-    )}/api/professores/escolas/${escola}/turmas/anos_letivos/${anoLetivo}/`,
+    )}/api/professores/escolas/${escola}/turmas/anos_letivos/${anoLetivo}`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -231,7 +231,7 @@ Cypress.Commands.add(
       method: "GET",
       url: `${Cypress.env(
         "API_URL",
-      )}/api/professores/${registroFuncional}/turmas/${codigoTurma}/atribuicao/verificar/data/`,
+      )}/api/professores/${registroFuncional}/turmas/${codigoTurma}/atribuicao/verificar/data`,
       qs: { dataConsulta: valorData },
       headers: {
         accept: "application/json",
@@ -249,7 +249,7 @@ Cypress.Commands.add(
       method: "GET",
       url: `${Cypress.env(
         "API_URL",
-      )}/api/professores/${registroFuncional}/turmas/${codigoTurma}/atribuicao/status/`,
+      )}/api/professores/${registroFuncional}/turmas/${codigoTurma}/atribuicao/status`,
       headers: {
         accept: "application/json",
         [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),

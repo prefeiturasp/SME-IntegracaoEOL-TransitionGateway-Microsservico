@@ -2,7 +2,7 @@ Cypress.Commands.add("getEscolaDetalhe", (valor) => {
   let codigo = valor === true ? `${Cypress.env("UE_CODIGO")}` : "0000000";
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/escolas/${codigo}/`,
+    url: `${Cypress.env("API_URL")}/api/escolas/${codigo}`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -15,7 +15,7 @@ Cypress.Commands.add("getEscolaDadosCompletos", (valor) => {
   let codigo = valor === true ? `${Cypress.env("UE_CODIGO")}` : "0000000";
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/escolas/dados/${codigo}/`,
+    url: `${Cypress.env("API_URL")}/api/escolas/dados/${codigo}`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -27,7 +27,7 @@ Cypress.Commands.add("getEscolaDadosCompletos", (valor) => {
 Cypress.Commands.add("getEscolaTipos", () => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/escolas/tiposEscolas/`,
+    url: `${Cypress.env("API_URL")}/api/escolas/tiposEscolas`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -40,7 +40,7 @@ Cypress.Commands.add("getEscolaFuncionarios", (valor) => {
   let codigo = valor === true ? `${Cypress.env("UE_CODIGO")}` : "0000000";
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/escolas/${codigo}/funcionarios/`,
+    url: `${Cypress.env("API_URL")}/api/escolas/${codigo}/funcionarios`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -52,7 +52,7 @@ Cypress.Commands.add("getEscolaFuncionarios", (valor) => {
 Cypress.Commands.add("getEscolaEquipamentos", () => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/escolas/equipamentos/`,
+    url: `${Cypress.env("API_URL")}/api/escolas/equipamentos`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -66,7 +66,7 @@ Cypress.Commands.add("getEscolaUnidadeEol", (valor) => {
   let codigo = valor === true ? `${Cypress.env("UE_CODIGO")}` : "000000";
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/escolas/unidade-eol/${codigo}/`,
+    url: `${Cypress.env("API_URL")}/api/escolas/unidade-eol/${codigo}`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -80,7 +80,7 @@ Cypress.Commands.add("getEscolaSincronizacoesInstitucionais", (valor) => {
   let codigo = valor === true ? `${Cypress.env("UE_CODIGO")}` : "000000";
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/escolas/${codigo}/sincronizacoes-institucionais/`,
+    url: `${Cypress.env("API_URL")}/api/escolas/${codigo}/sincronizacoes-institucionais`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -94,7 +94,7 @@ Cypress.Commands.add("postEscolasUnidadesParceiras", (valor) => {
   let lista = valor === true ? '["092797"]' : '["000000"]';
   return cy.request({
     method: "POST",
-    url: `${Cypress.env("API_URL")}/api/escolas/unidades-parceiras/`,
+    url: `${Cypress.env("API_URL")}/api/escolas/unidades-parceiras`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -111,7 +111,7 @@ Cypress.Commands.add("postEscolasUnidadesParceiras", (valor) => {
 Cypress.Commands.add("getEscolaTodasUnidades", () => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/escolas/todas-unidades/`,
+    url: `${Cypress.env("API_URL")}/api/escolas/todas-unidades`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -124,7 +124,7 @@ Cypress.Commands.add("getEscolaTodasUnidades", () => {
 Cypress.Commands.add("getTiposUnidadeEducacao", () => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/escolas/tipos_unidade_educacao/`,
+    url: `${Cypress.env("API_URL")}/api/escolas/tipos_unidade_educacao`,
     headers: {
       accept: "*/*",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -140,7 +140,7 @@ Cypress.Commands.add("postEscolas", (valido) => {
       : `["${Cypress.env("UE_CODIGO_INEXISTENTE")}"]`;
   return cy.request({
     method: "POST",
-    url: `${Cypress.env("API_URL")}/api/escolas/`,
+    url: `${Cypress.env("API_URL")}/api/escolas`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -155,7 +155,7 @@ Cypress.Commands.add("postEscolas", (valido) => {
 Cypress.Commands.add("getEscolaSubprefeituras", (codigoUe) => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/escolas/${codigoUe}/subprefeituras/`,
+    url: `${Cypress.env("API_URL")}/api/escolas/${codigoUe}/subprefeituras`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -167,7 +167,7 @@ Cypress.Commands.add("getEscolaSubprefeituras", (codigoUe) => {
 Cypress.Commands.add("getFuncionariosPorCargo", (codigoUe, codigoCargo) => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/escolas/${codigoUe}/funcionarios/cargos/${codigoCargo}/`,
+    url: `${Cypress.env("API_URL")}/api/escolas/${codigoUe}/funcionarios/cargos/${codigoCargo}`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -217,7 +217,7 @@ Cypress.Commands.add(
       method: "GET",
       url: `${Cypress.env(
         "API_URL",
-      )}/api/escolas/${codigoUe}/funcionarios/funcoes-atividades/${codigoFuncaoAtividade}/`,
+      )}/api/escolas/${codigoUe}/funcionarios/funcoes-atividades/${codigoFuncaoAtividade}`,
       headers: {
         accept: "application/json",
         [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -251,7 +251,7 @@ Cypress.Commands.add(
       method: "GET",
       url: `${Cypress.env(
         "API_URL",
-      )}/api/escolas/${codigoUe}/funcionarios/funcoes-externas/${codigoFuncaoExterna}/`,
+      )}/api/escolas/${codigoUe}/funcionarios/funcoes-externas/${codigoFuncaoExterna}`,
       headers: {
         accept: "application/json",
         [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -289,7 +289,7 @@ Cypress.Commands.add("getMatriculasEscolaDreQuantidades", (dreCodigo) => {
 Cypress.Commands.add("getEscolaAlunosQuantidade", (codigoUe) => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/escolas/${codigoUe}/alunos/quantidade/`,
+    url: `${Cypress.env("API_URL")}/api/escolas/${codigoUe}/alunos/quantidade`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -301,7 +301,7 @@ Cypress.Commands.add("getEscolaAlunosQuantidade", (codigoUe) => {
 Cypress.Commands.add("getEscolaAlunoMatriculas", (codigoUe, codigoAluno) => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/escolas/${codigoUe}/alunos/${codigoAluno}/matriculas/`,
+    url: `${Cypress.env("API_URL")}/api/escolas/${codigoUe}/alunos/${codigoAluno}/matriculas`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -362,19 +362,22 @@ Cypress.Commands.add("getEscolaTurmasSondagem", (codigoUe, anoLetivo) => {
   });
 });
 
-Cypress.Commands.add("getEscolaTurmasPorSala", (codigoUe, tipoSala, anoLetivo) => {
-  return cy.request({
-    method: "GET",
-    url: `${Cypress.env(
-      "API_URL",
-    )}/api/escolas/${codigoUe}/turmas-por-sala/${tipoSala}/anos_letivos/${anoLetivo}`,
-    headers: {
-      accept: "application/json",
-      [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
-    },
-    failOnStatusCode: false,
-  });
-});
+Cypress.Commands.add(
+  "getEscolaTurmasPorSala",
+  (codigoUe, tipoSala, anoLetivo) => {
+    return cy.request({
+      method: "GET",
+      url: `${Cypress.env(
+        "API_URL",
+      )}/api/escolas/${codigoUe}/turmas-por-sala/${tipoSala}/anos_letivos/${anoLetivo}`,
+      headers: {
+        accept: "application/json",
+        [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+      },
+      failOnStatusCode: false,
+    });
+  },
+);
 
 Cypress.Commands.add("getEscolaTurmasSondagemV2", (codigoUe, anoLetivo) => {
   return cy.request({
