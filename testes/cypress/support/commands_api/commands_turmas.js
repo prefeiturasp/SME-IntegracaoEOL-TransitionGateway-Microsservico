@@ -1,7 +1,7 @@
 Cypress.Commands.add("getTurmaDados", () => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/turmas/${Cypress.env("TURMA_CODIGO")}/dados/`,
+    url: `${Cypress.env("API_URL")}/api/turmas/${Cypress.env("TURMA_CODIGO")}/dados`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -13,7 +13,7 @@ Cypress.Commands.add("getTurmaDados", () => {
 Cypress.Commands.add("postListarTurmas", () => {
   return cy.request({
     method: "POST",
-    url: `${Cypress.env("API_URL")}/api/turmas/listar-turmas/`,
+    url: `${Cypress.env("API_URL")}/api/turmas/listar-turmas`,
     headers: {
       accept: "application/json",
       "Content-Type": "application/json",
@@ -27,7 +27,7 @@ Cypress.Commands.add("postListarTurmas", () => {
 Cypress.Commands.add("postTurmasPrograma", () => {
   return cy.request({
     method: "POST",
-    url: `${Cypress.env("API_URL")}/api/turmas/turmas-programa/`,
+    url: `${Cypress.env("API_URL")}/api/turmas/turmas-programa`,
     headers: {
       accept: "application/json",
       "Content-Type": "application/json",
@@ -41,7 +41,7 @@ Cypress.Commands.add("postTurmasPrograma", () => {
 Cypress.Commands.add("postTurmasRegulares", () => {
   return cy.request({
     method: "POST",
-    url: `${Cypress.env("API_URL")}/api/turmas/turmas-regulares/`,
+    url: `${Cypress.env("API_URL")}/api/turmas/turmas-regulares`,
     headers: {
       accept: "application/json",
       "Content-Type": "application/json",
@@ -62,7 +62,7 @@ Cypress.Commands.add(
   ) => {
     return cy.request({
       method: "GET",
-      url: `${Cypress.env("API_URL")}/api/turmas/${codigoTurma}/aluno/${codigoAluno}/considera-inativos/${consideraInativos}/`,
+      url: `${Cypress.env("API_URL")}/api/turmas/${codigoTurma}/aluno/${codigoAluno}/considera-inativos/${consideraInativos}`,
       headers: {
         accept: "application/json",
         [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -80,7 +80,7 @@ Cypress.Commands.add(
   ) => {
     return cy.request({
       method: "GET",
-      url: `${Cypress.env("API_URL")}/api/turmas/${codigoTurma}/aluno/${codigoAluno}/matriculas/`,
+      url: `${Cypress.env("API_URL")}/api/turmas/${codigoTurma}/aluno/${codigoAluno}/matriculas`,
       headers: {
         accept: "application/json",
         [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -98,7 +98,7 @@ Cypress.Commands.add(
   ) => {
     return cy.request({
       method: "GET",
-      url: `${Cypress.env("API_URL")}/api/turmas/${codigoTurma}/alunos-ativos/data-aula-ticks/${dataTicks}/`,
+      url: `${Cypress.env("API_URL")}/api/turmas/${codigoTurma}/alunos-ativos/data-aula-ticks/${dataTicks}`,
       headers: {
         accept: "application/json",
         [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -113,7 +113,7 @@ Cypress.Commands.add(
   (codigoTurma = Cypress.env("TURMA_CODIGO")) => {
     return cy.request({
       method: "GET",
-      url: `${Cypress.env("API_URL")}/api/turmas/${codigoTurma}/calculo-frequencia/`,
+      url: `${Cypress.env("API_URL")}/api/turmas/${codigoTurma}/calculo-frequencia`,
       headers: {
         accept: "application/json",
         [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -128,7 +128,7 @@ Cypress.Commands.add(
   (codigoTurma = Cypress.env("TURMA_CODIGO"), consideraInativos = "true") => {
     return cy.request({
       method: "GET",
-      url: `${Cypress.env("API_URL")}/api/turmas/${codigoTurma}/considera-inativos/${consideraInativos}/`,
+      url: `${Cypress.env("API_URL")}/api/turmas/${codigoTurma}/considera-inativos/${consideraInativos}`,
       headers: {
         accept: "application/json",
         [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -146,7 +146,7 @@ Cypress.Commands.add(
   ) => {
     return cy.request({
       method: "GET",
-      url: `${Cypress.env("API_URL")}/api/turmas/${codigoTurma}/data-matricula-ticks/${dataMatriculaTicks}/`,
+      url: `${Cypress.env("API_URL")}/api/turmas/${codigoTurma}/data-matricula-ticks/${dataMatriculaTicks}`,
       headers: {
         accept: "application/json",
         [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -161,7 +161,7 @@ Cypress.Commands.add(
   (codigoTurma = Cypress.env("TURMA_CODIGO")) => {
     return cy.request({
       method: "GET",
-      url: `${Cypress.env("API_URL")}/api/turmas/${codigoTurma}/redis-Multplex/`,
+      url: `${Cypress.env("API_URL")}/api/turmas/${codigoTurma}/redis-Multplex`,
       headers: {
         accept: "application/json",
         [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -180,7 +180,7 @@ Cypress.Commands.add(
   ) => {
     return cy.request({
       method: "GET",
-      url: `${Cypress.env("API_URL")}/api/turmas/anos-letivos/${anoLetivo}/alunos/${codigoAluno}/componentes-curriculares/${componenteCurricularCodigo}/`,
+      url: `${Cypress.env("API_URL")}/api/turmas/anos-letivos/${anoLetivo}/alunos/${codigoAluno}/componentes-curriculares/${componenteCurricularCodigo}`,
       headers: {
         accept: "application/json",
         [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -198,7 +198,7 @@ Cypress.Commands.add(
   ) => {
     return cy.request({
       method: "GET",
-      url: `${Cypress.env("API_URL")}/api/turmas/anos-letivos/${anoLetivo}/alunos/${codigoAluno}/regulares/`,
+      url: `${Cypress.env("API_URL")}/api/turmas/anos-letivos/${anoLetivo}/alunos/${codigoAluno}/regulares`,
       headers: {
         accept: "application/json",
         [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -216,7 +216,7 @@ Cypress.Commands.add(
   ) => {
     return cy.request({
       method: "GET",
-      url: `${Cypress.env("API_URL")}/api/turmas/anos-letivos/${anoLetivo}/professor/${professorRf}/turmas-historicas-geral/`,
+      url: `${Cypress.env("API_URL")}/api/turmas/anos-letivos/${anoLetivo}/professor/${professorRf}/turmas-historicas-geral`,
       headers: {
         accept: "application/json",
         [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),

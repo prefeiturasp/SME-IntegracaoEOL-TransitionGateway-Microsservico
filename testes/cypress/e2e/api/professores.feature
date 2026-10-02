@@ -2,34 +2,29 @@
 
 Funcionalidade: API - Professores
 
-  @ignore
   Cenário: Validar nome do servidor
     Dado que possuo acesso à API de professores
     Quando realizo consulta de nome do servidor
     Então retorna o status 200
     E o retorno deve conter nome e cpf
 
-  @ignore
   Cenário: Validar nome do servidor não encontrado
     Dado que possuo acesso à API de professores
     Quando realizo consulta de nome do servidor não encontrado
     Então retorna o status 204
 
-  @ignore
   Cenário: Validar professor válido
     Dado que possuo acesso à API de professores
     Quando realizo consulta de validade do professor
     Então retorna o status 200
     E o retorno deve ser verdadeiro
 
-  @ignore
   Cenário: Validar professor não válido
     Dado que possuo acesso à API de professores
     Quando realizo consulta de validade do professor não válido
     Então retorna o status 200
     E o retorno deve ser falso
 
-  @ignore
   Cenário: Validar nome do professor
     Dado que possuo acesso à API de professores
     Quando realizo consulta de professor por RF
@@ -37,122 +32,104 @@ Funcionalidade: API - Professores
     E o retorno deve conter o nome do professor
 
   @ignore
-  @ignore
   Cenário: Validar nome do professor não encontrado
     Dado que possuo acesso à API de professores
     Quando realizo consulta de professor por RF com RF inválido 
     Então retorna o status 204
 
-  @ignore
   Cenário: Validar autocomplete de professores com DRE, UE e nome válidos
     Dado que possuo acesso à API de professores
     Quando realizo consulta de autocomplete de professores com DRE, UE e nome válidos
     Então retorna o status 200
     E o retorno deve conter lista de professores no autocomplete
 
-  @ignore
   Cenário: Validar retorno vazio de autocomplete de professores com DRE, UE e nome inválidos
     Dado que possuo acesso à API de professores
     Quando realizo consulta de autocomplete de professores com DRE, UE e nome inválidos
     Então retorna o status 200
     E o retorno deve ser uma lista vazia
 
-  @ignore
   Cenário: Validar busca de professores por lista de RF com ano letivo e registro funcional válidos
     Dado que possuo acesso à API de professores
     Quando realizo envio de busca de professores por lista de RF com ano letivo e registro funcional válidos
     Então retorna o status 200
     E o retorno deve conter lista de professores por RF
 
-  @ignore
   Cenário: Validar retorno vazio de busca de professores por lista de RF com ano letivo e registro funcional inválidos
     Dado que possuo acesso à API de professores
     Quando realizo envio de busca de professores por lista de RF com ano letivo e registro funcional inválidos
     Então retorna o status 200
     E o retorno deve ser uma lista vazia
 
-  @ignore
   Cenário: Validar busca de professor por RF e ano letivo válidos
     Dado que possuo acesso à API de professores
     Quando realizo consulta de professor por RF e ano letivo válidos
     Então retorna o status 200
     E o retorno deve conter dados do professor por RF
 
-  @ignore
   Cenário: Validar retorno vazio de professor por RF e ano letivo inválidos
     Dado que possuo acesso à API de professores
     Quando realizo consulta de professor por RF e ano letivo inválidos
     Então retorna o status 204
 
-  @ignore
   Cenário: Validar busca de professor por RF, DRE e UE com dados válidos
     Dado que possuo acesso à API de professores
     Quando realizo consulta de professor por RF, ano letivo, DRE e UE válidos
     Então retorna o status 200
     E o retorno deve conter dados do professor por RF, DRE e UE
 
-  @ignore
   Cenário: Validar retorno vazio de professor por RF, DRE e UE com dados inválidos
     Dado que possuo acesso à API de professores
     Quando realizo consulta de professor por RF, ano letivo, DRE e UE inválidos
     Então retorna o status 204
 
-  @ignore
   Cenário: Validar turmas de professor por disciplina com registro funcional, disciplina e turma válidos
     Dado que possuo acesso à API de professores
     Quando realizo envio de turmas de professor por disciplina com registro funcional, disciplina e turma válidos
     Então retorna o status 200
     E o retorno deve conter lista de turmas do professor por disciplina
 
-  @ignore
   Cenário: Validar retorno vazio de turmas de professor por disciplina com registro funcional, disciplina e turma inválidos
     Dado que possuo acesso à API de professores
     Quando realizo envio de turmas de professor por disciplina com registro funcional, disciplina e turma inválidos
     Então retorna o status 200
     E o retorno deve ser uma lista vazia
 
-  @ignore
   Cenário: Validar professor EMEI com registro funcional válido
     Dado que possuo acesso à API de professores
     Quando realizo consulta de EMEI do professor com registro funcional válido
     Então retorna o status 200
     E o retorno deve ser um RF EMEI verdadeiro
 
-  @ignore
   Cenário: Validar professor EMEI com registro funcional inválido
     Dado que possuo acesso à API de professores
     Quando realizo consulta de EMEI do professor com registro funcional inválido
     Então retorna o status 200
     E o retorno deve ser falso
 
-  @ignore
   Cenário: Validar turmas do professor com registro funcional válido
     Dado que possuo acesso à API de professores
     Quando realizo consulta de turmas do professor com registro funcional válido
     Então retorna o status 200
     E o retorno deve conter lista de turmas do professor
 
-  @ignore
   Cenário: Validar retorno vazio de turmas do professor com registro funcional inválido
     Dado que possuo acesso à API de professores
     Quando realizo consulta de turmas do professor com registro funcional inválido
     Então retorna o status 204
 
-  @ignore
   Cenário: Validar turmas do professor por ano letivo com registro funcional válido
     Dado que possuo acesso à API de professores
     Quando realizo consulta de turmas do professor por ano letivo com registro funcional válido
     Então retorna o status 200
     E o retorno deve conter lista de turmas do professor
 
-  @ignore
   Cenário: Validar retorno vazio de turmas do professor por ano letivo com registro funcional inválido
     Dado que possuo acesso à API de professores
     Quando realizo consulta de turmas do professor por ano letivo com registro funcional inválido
     Então retorna o status 404
     E a mensagem de erro deve ser Não foram encontradas turmas atribuídas.
 
-  @ignore
   Cenário: Validar turmas atribuídas pelo professor na escola com dados válidos
     Dado que possuo acesso à API de professores
     Quando realizo consulta de turmas atribuídas pelo professor na escola com dados válidos
@@ -164,7 +141,6 @@ Funcionalidade: API - Professores
     Quando realizo consulta de turmas atribuídas pelo professor na escola com dados inválidos
     Então retorna o status 404
 
-  @ignore
   Cenário: Validar turmas de professores por escola e ano letivo válidos
     Dado que possuo acesso à API de professores
     Quando realizo consulta de turmas de professores por escola e ano letivo válidos
@@ -176,20 +152,17 @@ Funcionalidade: API - Professores
     Quando realizo consulta de turmas de professores por escola e ano letivo inválidos
     Então retorna o status 404
 
-  @ignore
   Cenário: Validar verificação de atribuição do professor em data válida
     Dado que possuo acesso à API de professores
     Quando realizo consulta de atribuição do professor em data válida
     Então retorna o status 200
     E o retorno deve ser falso
 
-  @ignore
   Cenário: Validar verificação de atribuição do professor em data inválida
     Dado que possuo acesso à API de professores
     Quando realizo consulta de atribuição do professor em data inválida
     Então retorna o status 400
 
-  @ignore
   Cenário: Validar status da atribuição do professor em turma
     Dado que possuo acesso à API de professores
     Quando realizo consulta de status da atribuição do professor em turma

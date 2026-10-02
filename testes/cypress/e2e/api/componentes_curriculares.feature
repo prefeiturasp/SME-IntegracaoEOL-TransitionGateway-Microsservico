@@ -1,43 +1,37 @@
 # language: pt
 Funcionalidade: API - Componentes Curriculares
   
-  @ignore
-  Cenário: Validar agrupamentos correlacionados de território do saber por componente curricular
+Cenário: Validar agrupamentos correlacionados de território do saber por componente curricular
     Dado que possuo acesso à API de componentes curriculares
     Quando realizo consulta de agrupamentos correlacionados de território do saber para um componente curricular válido
     Então retorna o status 200
     E o retorno deve conter lista de agrupamentos correlacionados de território do saber
 
-  @ignore
-  Cenário: Validar retorno de agrupamentos correlacionados para código de componente curricular inválido
+Cenário: Validar retorno de agrupamentos correlacionados para código de componente curricular inválido
     Dado que possuo acesso à API de componentes curriculares
     Quando realizo consulta de agrupamentos correlacionados de território do saber para um componente curricular inválido
     Então retorna o status 200
     E o retorno deve conter lista de agrupamentos correlacionados de território do saber
 
-  @ignore
-  Cenário: Validar agrupamentos correlacionados de território do saber com códigos válidos
+Cenário: Validar agrupamentos correlacionados de território do saber com códigos válidos
     Dado que possuo acesso à API de componentes curriculares
     Quando realizo envio de agrupamentos correlacionados de território do saber com códigos válidos
     Então retorna o status 200
     E o retorno deve conter lista de agrupamentos correlacionados de território do saber
 
-  @ignore
-  Cenário: Validar agrupamentos correlacionados de território do saber com códigos inválidos
+Cenário: Validar agrupamentos correlacionados de território do saber com códigos inválidos
     Dado que possuo acesso à API de componentes curriculares
     Quando realizo envio de agrupamentos correlacionados de território do saber com códigos inválidos
     Então retorna o status 200
     E o retorno deve conter lista de agrupamentos correlacionados de território do saber
 
-  @ignore
-  Cenário: Validar agrupamentos de território do saber com códigos válidos
+Cenário: Validar agrupamentos de território do saber com códigos válidos
     Dado que possuo acesso à API de componentes curriculares
     Quando realizo envio de agrupamentos de território do saber com códigos válidos
     Então retorna o status 200
     E o retorno deve conter lista de agrupamentos de território do saber
 
-  @ignore
-  Cenário: Validar agrupamentos de território do saber com códigos inválidos
+Cenário: Validar agrupamentos de território do saber com códigos inválidos
     Dado que possuo acesso à API de componentes curriculares
     Quando realizo envio de agrupamentos de território do saber com códigos inválidos
     Então retorna o status 200
@@ -83,89 +77,79 @@ Funcionalidade: API - Componentes Curriculares
     E o retorno deve conter uma lista de componentes curriculares
     E os componentes detalhados devem conter codigo e regencia
 
-  @ignore
-  Cenário: Validar dados de aula por turma
+Cenário: Validar dados de aula por turma
     Dado que possuo acesso à API de componentes curriculares
     Quando realizo consulta aos dados de aula da turma
     Então retorna o status 200
     E o retorno deve conter dados de aula da turma
 
-  @ignore
-  Cenário: Validar componentes do funcionario na turma
+@ignore
+Cenário: Validar componentes do funcionario na turma
     Dado que possuo acesso à API de componentes curriculares
     Quando realizo consulta aos componentes do funcionario na turma
     Então retorna o status 200
     E o retorno deve conter uma lista de componentes curriculares
     E os componentes detalhados devem conter codigo e regencia
 
-  @ignore
-  Cenário: Validar componentes do funcionario na turma não encontrado
+Cenário: Validar componentes do funcionario na turma não encontrado
     Dado que possuo acesso à API de componentes curriculares
     Quando realizo consulta aos componentes do funcionario na turma
     Então retorna o status 204
 
-  @ignore
-  Cenário: Validar componentes de planejamento da turma
+@ignore
+Cenário: Validar componentes de planejamento da turma
     Dado que possuo acesso à API de componentes curriculares
     Quando realizo consulta aos componentes de planejamento da turma
     Então retorna o status 200
     E o retorno deve conter uma lista de componentes curriculares
     E os componentes detalhados devem conter codigo e regencia
 
-  @ignore
-  Cenário: Validar componentes de planejamento da turma não encontrado
+Cenário: Validar componentes de planejamento da turma não encontrado
     Dado que possuo acesso à API de componentes curriculares
     Quando realizo consulta aos componentes de planejamento da turma
     Então retorna o status 204
 
-  @ignore
-  Cenário: Validar componente PAP da turma
+Cenário: Validar componente PAP da turma
     Dado que possuo acesso à API de componentes curriculares
     Quando realizo validacao de componente PAP da turma
     Então retorna o status 200
     E o retorno da validacao PAP deve ser booleano
 
-  @ignore
-  Cenário: Validar componentes sem atribuicao da turma
+Cenário: Validar componentes sem atribuicao da turma
     Dado que possuo acesso à API de componentes curriculares
     Quando realizo consulta aos componentes sem atribuicao da turma
     Então retorna o status 200
     E o retorno deve conter os componentes sem atribuicao
 
   @ignore
-  @ignore
-  Cenário: Validar componentes sem atribuicao da turma com retorno vazio
+Cenário: Validar componentes sem atribuicao da turma com retorno vazio
     Dado que possuo acesso à API de componentes curriculares
     Quando realizo consulta aos componentes sem atribuicao da turma com retorno vazio
     Então retorna o status 200
     E o retorno deve conter uma lista de componentes curriculares vazia
 
-  @ignore
-  Cenário: Validar componentes de turmas regulares
+Cenário: Validar componentes de turmas regulares
     Dado que possuo acesso à API de componentes curriculares
     Quando realizo consulta aos componentes de turmas regulares
     Então retorna o status 200
     E o retorno deve conter uma lista de componentes curriculares
     E os componentes detalhados devem conter codigo e regencia
 
-  @ignore
-  Cenário: Validar componentes de turmas programa da UE
+Cenário: Validar componentes de turmas programa da UE
     Dado que possuo acesso à API de componentes curriculares
     Quando realizo consulta aos componentes de turmas programa da UE
     Então retorna o status 200
     E o retorno deve conter uma lista de componentes curriculares
     E os componentes detalhados devem conter codigo e regencia
 
-  @ignore
-  Cenário: Validar componentes da UE por anos escolares
+Cenário: Validar componentes da UE por anos escolares
     Dado que possuo acesso à API de componentes curriculares
     Quando realizo consulta aos componentes da UE por anos escolares
     Então retorna o status 200
     E o retorno deve conter uma lista de componentes curriculares
     E os componentes detalhados devem conter codigo e regencia
 
-  @ignore
-  Cenário: Validar componentes das turmas da UE
+Cenário: Validar componentes das turmas da UE
     Dado que possuo acesso à API de componentes curriculares
     Quando realizo consulta aos componentes das turmas da UE
     Então retorna o status 200

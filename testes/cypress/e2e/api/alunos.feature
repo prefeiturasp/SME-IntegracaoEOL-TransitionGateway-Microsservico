@@ -32,28 +32,25 @@ Funcionalidade: API - Alunos
     Então retorna o status 200
     E o retorno deve conter informações dos alunos por códigos
 
-  @ignore
-  Cenário: Validar alunos PAP do ano corrente
+@ignore
+Cenário: Validar alunos PAP do ano corrente
     Dado que possuo acesso à API de alunos
     Quando realizo consulta de alunos PAP do ano corrente
     Então retorna o status 200
 
-  @ignore
-  Cenário: Validar alunos PAP por ano letivo
+Cenário: Validar alunos PAP por ano letivo
     Dado que possuo acesso à API de alunos
     Quando realizo consulta de alunos PAP por ano letivo
     Então retorna o status 200
     E o retorno deve conter informações dos alunos PAP por ano letivo
 
-  @ignore
-  Cenário: Validar dados SRM/PAEE do aluno
+Cenário: Validar dados SRM/PAEE do aluno
     Dado que possuo acesso à API de alunos
     Quando realizo consulta de dados SRM PAEE do aluno
     Então retorna o status 200
     E o retorno deve conter dados de SRM PAEE
 
-  @ignore
-  Cenário: Validar dados SRM/PAEE do aluno não encontrado
+Cenário: Validar dados SRM/PAEE do aluno não encontrado
     Dado que possuo acesso à API de alunos
     Quando realizo consulta de dados SRM PAEE do aluno não encontrado
     Então retorna o status 200
@@ -65,35 +62,30 @@ Funcionalidade: API - Alunos
     Então retorna o status 200
     E o retorno deve conter informações das turmas do aluno
 
-  @ignore
-  Cenário: Validar turmas PAP por ano letivo e escola
+Cenário: Validar turmas PAP por ano letivo e escola
     Dado que possuo acesso à API de alunos
     Quando realizo consulta de turmas PAP por ano letivo e escola
     Então retorna o status 200
     E o retorno deve conter lista de turmas PAP
 
-  @ignore
-  Cenário: Validar componentes de turmas de programa do aluno
+Cenário: Validar componentes de turmas de programa do aluno
     Dado que possuo acesso à API de alunos
     Quando realizo consulta de componentes das turmas de programa do aluno
     Então retorna o status 200
     E o retorno deve conter componentes das turmas de programa
 
-  @ignore
-  Cenário: Validar verificação de alunos em turmas PAP
+Cenário: Validar verificação de alunos em turmas PAP
     Dado que possuo acesso à API de alunos
     Quando realizo consulta de verificação de alunos em turmas PAP
     Então retorna o status 200
 
-  @ignore
-  Cenário: Validar turmas PAP por ano letivo e escola
+Cenário: Validar turmas PAP por ano letivo e escola
     Dado que possuo acesso à API de alunos
     Quando realizo consulta de turmas PAP por ano letivo e escola
     Então retorna o status 200
     E o retorno deve conter lista de turmas PAP
 
-  @ignore
-  Cenário: Validar componentes de turmas de programa do aluno
+Cenário: Validar componentes de turmas de programa do aluno
     Dado que possuo acesso à API de alunos
     Quando realizo consulta de componentes das turmas de programa do aluno
     Então retorna o status 200

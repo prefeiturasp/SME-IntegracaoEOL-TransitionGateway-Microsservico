@@ -39,7 +39,7 @@ Cypress.Commands.add("getAlunosPorCodigos", () => {
 Cypress.Commands.add("getAlunosPapAnoCorrente", () => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/alunos/pap/ano-corrente/`,
+    url: `${Cypress.env("API_URL")}/api/alunos/pap/ano-corrente`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -51,7 +51,7 @@ Cypress.Commands.add("getAlunosPapAnoCorrente", () => {
 Cypress.Commands.add("getAlunosPapPorAnoLetivo", () => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/alunos/pap/ano-letivo/${Cypress.env("ANO_LETIVO")}/`,
+    url: `${Cypress.env("API_URL")}/api/alunos/pap/ano-letivo/${Cypress.env("ANO_LETIVO")}`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -64,7 +64,7 @@ Cypress.Commands.add("getAlunoSrmPaee", (valor) => {
   let codigo = valor === true ? `${Cypress.env("CODIGO_ALUNO")}` : "0";
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/alunos/srm-paee/aluno/${codigo}/`,
+    url: `${Cypress.env("API_URL")}/api/alunos/srm-paee/aluno/${codigo}`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -88,7 +88,7 @@ Cypress.Commands.add("getAlunoTurmas", () => {
 Cypress.Commands.add("getTurmasPapPorAnoLetivoEEscola", () => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/alunos/turmas-pap/${Cypress.env("ANO_LETIVO")}/ues/${Cypress.env("CODIGO_ESCOLA")}/`,
+    url: `${Cypress.env("API_URL")}/api/alunos/turmas-pap/${Cypress.env("ANO_LETIVO")}/ues/${Cypress.env("CODIGO_ESCOLA")}`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -100,7 +100,7 @@ Cypress.Commands.add("getTurmasPapPorAnoLetivoEEscola", () => {
 Cypress.Commands.add("getComponentesTurmasProgramaAluno", () => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/alunos/${Cypress.env("CODIGO_ALUNO")}/turmas-programa/${Cypress.env("ANO_LETIVO")}/componentes-curriculares/`,
+    url: `${Cypress.env("API_URL")}/api/alunos/${Cypress.env("CODIGO_ALUNO")}/turmas-programa/${Cypress.env("ANO_LETIVO")}/componentes-curriculares`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -112,7 +112,7 @@ Cypress.Commands.add("getComponentesTurmasProgramaAluno", () => {
 Cypress.Commands.add("getVerificacaoAlunosTurmasPap", () => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/alunos/alunos-pap/${Cypress.env("ANO_LETIVO")}/`,
+    url: `${Cypress.env("API_URL")}/api/alunos/alunos-pap/${Cypress.env("ANO_LETIVO")}`,
     qs: { codigos_alunos: [Cypress.env("CODIGO_ALUNO")] },
     headers: {
       accept: "application/json",

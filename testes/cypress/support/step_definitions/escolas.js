@@ -256,7 +256,7 @@ When(
   "realizo consulta de funcionários por cargo com código UE e código cargo válidos",
   () => {
     cy.getFuncionariosPorCargo(
-      Cypress.env("UE_CODIGO_FUNCIONARIOS"),
+      Cypress.env("UE_CODIGO"),
       Cypress.env("CARGO_CODIGO"),
     ).as("response");
   },
@@ -288,9 +288,9 @@ When(
   "realizo consulta de funcionários por cargos com código UE e código DRE válidos",
   () => {
     cy.getFuncionariosPorCargos(
-      Cypress.env("UE_CODIGO_FUNCIONARIOS"),
+      Cypress.env("UE_CODIGO"),
       Cypress.env("CARGO_CODIGO"),
-      Cypress.env("DRE_CODIGO_FUNCIONARIOS"),
+      Cypress.env("DRE_CODIGO"),
     ).as("response");
   },
 );
@@ -322,9 +322,9 @@ When(
   "realizo consulta de funcionários por funções atividades com código UE e código DRE válidos",
   () => {
     cy.getFuncionariosPorFuncoesAtividades(
-      Cypress.env("UE_CODIGO_FUNCIONARIOS"),
+      Cypress.env("UE_CODIGO"),
       Cypress.env("FUNCAO_ATIVIDADE_CODIGO"),
-      Cypress.env("DRE_CODIGO_FUNCIONARIOS"),
+      Cypress.env("DRE_CODIGO"),
     ).as("response");
   },
 );
@@ -391,7 +391,7 @@ When(
   "realizo consulta de funcionários por funções externas com código UE, código função externa e código DRE válidos",
   () => {
     cy.getFuncionariosPorFuncoesExternas(
-      Cypress.env("UE_CODIGO_FUNCIONARIOS"),
+      Cypress.env("UE_CODIGO"),
       Cypress.env("FUNCAO_EXTERNA_CODIGO"),
       Cypress.env("DRE_CODIGO_FUNCOES_EXTERNAS"),
     ).as("response");

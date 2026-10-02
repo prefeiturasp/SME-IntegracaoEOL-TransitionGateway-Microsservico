@@ -2,7 +2,7 @@
 Cypress.Commands.add("getDREsLista", () => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/DREs/`,
+    url: `${Cypress.env("API_URL")}/api/DREs`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -17,7 +17,7 @@ Cypress.Commands.add("postDREsLista", (valor) => {
     valor === true ? `${Cypress.env("DRE_LISTA_CODIGOS")}` : "[0]";
   return cy.request({
     method: "POST",
-    url: `${Cypress.env("API_URL")}/api/DREs/`,
+    url: `${Cypress.env("API_URL")}/api/DREs`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -35,7 +35,7 @@ Cypress.Commands.add("getDREDetalhe", (valor) => {
   let codigo = valor === true ? `${Cypress.env("DRE_CODIGO")}` : "000000";
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/DREs/${codigo}/`,
+    url: `${Cypress.env("API_URL")}/api/DREs/${codigo}`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -49,7 +49,7 @@ Cypress.Commands.add("getDREsEscolas", (valor) => {
   let codigo = valor === true ? `${Cypress.env("DRE_CODIGO")}` : "000000";
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/DREs/${codigo}/escola/`,
+    url: `${Cypress.env("API_URL")}/api/DREs/${codigo}/escola`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -64,7 +64,7 @@ Cypress.Commands.add("getDREsEscolasPorTipo", (valor) => {
   let tipoUe = 1;
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/DREs/${codigo}/escolas/${tipoUe}/`,
+    url: `${Cypress.env("API_URL")}/api/DREs/${codigo}/escolas/${tipoUe}`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -78,7 +78,7 @@ Cypress.Commands.add("getDREsSubprefeituras", (valor) => {
   let codigo = valor === true ? `${Cypress.env("DRE_CODIGO")}` : "000000";
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/DREs/${codigo}/subprefeituras/`,
+    url: `${Cypress.env("API_URL")}/api/DREs/${codigo}/subprefeituras`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -92,7 +92,7 @@ Cypress.Commands.add("getDREsUEs", (valor) => {
   let codigo = valor === true ? `${Cypress.env("DRE_CODIGO")}` : "000000";
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/DREs/${codigo}/ues/`,
+    url: `${Cypress.env("API_URL")}/api/DREs/${codigo}/ues`,
     headers: {
       accept: "*/*",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -106,7 +106,7 @@ Cypress.Commands.add("getDREsUnidades", (valor) => {
   let codigo = valor === true ? `${Cypress.env("DRE_CODIGO")}` : "000000";
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/DREs/${codigo}/unidades/`,
+    url: `${Cypress.env("API_URL")}/api/DREs/${codigo}/unidades`,
     headers: {
       accept: "*/*",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -118,7 +118,7 @@ Cypress.Commands.add("getDREsUnidades", (valor) => {
 Cypress.Commands.add("getEscolasSigpaePorDre", (codigoEolDre) => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/DREs/${codigoEolDre}/escola/Sigpae/`,
+    url: `${Cypress.env("API_URL")}/api/DREs/${codigoEolDre}/escola/Sigpae`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -130,7 +130,7 @@ Cypress.Commands.add("getEscolasSigpaePorDre", (codigoEolDre) => {
 Cypress.Commands.add("getUnidadesCodigoIntegracaoPorDre", (codigoEolDre) => {
   return cy.request({
     method: "GET",
-    url: `${Cypress.env("API_URL")}/api/DREs/${codigoEolDre}/unidades/codigo-integracao/`,
+    url: `${Cypress.env("API_URL")}/api/DREs/${codigoEolDre}/unidades/codigo-integracao`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
