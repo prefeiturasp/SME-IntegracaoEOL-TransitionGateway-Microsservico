@@ -2,11 +2,13 @@
 
 from typing import Any
 
+from drf_spectacular.utils import OpenApiTypes, extend_schema_field
 from rest_framework import serializers
 
 from apps.core.datetime import datetime_legado
 
 
+@extend_schema_field(OpenApiTypes.DATETIME)
 class DataHoraLegadoComZField(serializers.Field):
     """Serializa data/hora com o sufixo publicado."""
 
@@ -32,6 +34,7 @@ class DataHoraLegadoComZField(serializers.Field):
         return None if texto is None else f"{texto}Z"
 
 
+@extend_schema_field(OpenApiTypes.INT)
 class InteiroBooleanoField(serializers.Field):
     """Serializa valor booleano como zero ou um."""
 
@@ -47,6 +50,7 @@ class InteiroBooleanoField(serializers.Field):
         return int(bool(value))
 
 
+@extend_schema_field(OpenApiTypes.BOOL)
 class ConstanteLegadoField(serializers.Field):
     """Serializa um valor constante do contrato legado."""
 

@@ -3,6 +3,7 @@
 from typing import Any, cast
 
 import httpx
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.request import Request
@@ -186,6 +187,7 @@ class DREListView(InstitucionalAPIView):
 
     @extend_schema(
         tags=_TAG_DRE,
+        operation_id="DREs_list",
         summary="Lista todas as DREs",
         description=(
             "Retorna a lista completa de Diretorias Regionais de Educação "
@@ -221,6 +223,7 @@ class DREDetalheView(InstitucionalAPIView):
 
     @extend_schema(
         tags=_TAG_DRE,
+        operation_id="DREs_detail",
         summary="Detalhe de uma DRE",
         description=(
             "Retorna dados completos da Diretoria Regional de Educação "
@@ -414,6 +417,7 @@ class EscolaProfessoresView(ProfessoresEscolaAPIView):
 
     @extend_schema(
         tags=_TAG_ESCOLA,
+        operation_id="escolas_professores_list",
         summary="Professores de uma escola",
         description=(
             "Retorna professores atribuídos à escola informada, conforme "
@@ -463,6 +467,47 @@ class EscolaProfessoresView(ProfessoresEscolaAPIView):
             ano_letivo,
         )
         return Response(ProfessorEscolaLegadoSerializer(data, many=True).data)
+
+
+class EscolaProfessoresAnoView(EscolaProfessoresView):
+    """Lista professores atribuídos a uma escola em um ano letivo."""
+
+    @extend_schema(
+        tags=_TAG_ESCOLA,
+        operation_id="escolas_professores_ano_list",
+        summary="Professores de uma escola por ano letivo",
+        description=(
+            "Retorna professores atribuídos à escola informada no ano letivo, "
+            "conforme contrato legado."
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="codigo_eol_escola",
+                location=OpenApiParameter.PATH,
+                description="Código EOL da escola",
+                required=True,
+                type=str,
+            ),
+            OpenApiParameter(
+                name="ano_letivo",
+                location=OpenApiParameter.PATH,
+                description="Ano letivo",
+                required=True,
+                type=int,
+            ),
+        ],
+        responses={200: ProfessorEscolaLegadoSerializer(many=True), 400: str},
+    )
+    def get(
+        self,
+        request: Request,
+        codigo_eol_escola: str,
+        ano_letivo: int = 0,
+    ) -> Response:
+        """Retorna professores atribuídos a uma escola no ano letivo."""
+        return cast(
+            Response, super().get(request, codigo_eol_escola, ano_letivo)
+        )
 
 
 class UesPorDREView(InstitucionalAPIView):
@@ -978,6 +1023,7 @@ class TiposUnidadeEducacaoView(InstitucionalAPIView):
             "Retorna lista de tipos de unidade educacional cadastrados "
             "no sistema."
         ),
+        responses={200: OpenApiTypes.OBJECT},
     )
     def get(self, _request: Request) -> Response:
         try:

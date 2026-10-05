@@ -8,6 +8,7 @@ from apps.institucional.views import (
     DREListView,
     EquipamentosView,
     EscolaDetalheView,
+    EscolaProfessoresAnoView,
     EscolaProfessoresView,
     EscolasListPostView,
     EscolasPorDREeTipoView,
@@ -118,7 +119,7 @@ urlpatterns = [
     ),
     path(
         "escolas/<str:codigo_eol_escola>/professores/<int:ano_letivo>",
-        EscolaProfessoresView.as_view(),
+        EscolaProfessoresAnoView.as_view(),
         name="escola-professores-ano",
     ),
     path(

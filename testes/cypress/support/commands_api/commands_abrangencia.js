@@ -17,7 +17,7 @@ Cypress.Commands.add("postAbrangenciaEstruturaVigente", (valido) => {
       : Cypress.env("ABRANGENCIA_FILTRO_TURMAS_INEXISTENTE");
   return cy.request({
     method: "POST",
-    url: `${Cypress.env("API_URL")}/api/abrangencia/estrutura-vigente/`,
+    url: `${Cypress.env("API_URL")}/api/abrangencia/estrutura-vigente`,
     headers: {
       accept: "application/json",
       [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),

@@ -55,6 +55,7 @@ class DatetimeLegadoNaoNuloField(DatetimeLegadoField):
         return datetime_legado(value) or _DATA_PADRAO_LEGADO
 
 
+@extend_schema_field(OpenApiTypes.STR)
 class StringOrNoneField(serializers.Field):
     """Serializa valor como string, preservando ausência como ``None``."""
 
