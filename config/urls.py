@@ -1,0 +1,97 @@
+"""Roteamento principal: schema, docs e domínios."""
+
+from django.urls import include, path
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from rest_framework.permissions import AllowAny
+
+from apps.alunos.urls import turma_urlpatterns as alunos_turma_urlpatterns
+from apps.core.health import (
+    DomainHealthView,
+    GatewayHealthView,
+)
+from apps.matriculas.urls import (
+    escola_urlpatterns as matriculas_escola_urlpatterns,
+)
+from apps.matriculas.views import MatriculasAnoAtualView
+from apps.pedagogico.urls import (
+    escola_urlpatterns,
+    turma_urlpatterns,
+    ue_urlpatterns,
+)
+from apps.pedagogico.views import ComponentesCurricularesViewSet
+from config import settings
+
+API_PREFIX = "api/v1/"
+
+DOMAINS = {
+    "pedagogico": settings.PEDAGOGICO_API_URL,
+    "professores": settings.PROFESSORES_API_URL,
+    "institucional": settings.INSTITUCIONAL_API_URL,
+    "programasedu": settings.PROGRAMASEDU_API_URL,
+    "alunos": settings.ALUNOS_API_URL,
+    "matriculas": settings.ALUNOS_API_URL,
+}
+
+
+urlpatterns = [
+    path(
+        f"{API_PREFIX}health/",
+        GatewayHealthView.as_view(),
+        name="gateway-health",
+    ),
+    path(
+        f"{API_PREFIX}health/<str:dominio>/",
+        DomainHealthView.as_view(),
+        name="gateway-domain-health",
+    ),
+    path(
+        f"{API_PREFIX}schema",
+        SpectacularAPIView.as_view(
+            authentication_classes=[],
+            permission_classes=[AllowAny],
+        ),
+        name="schema",
+    ),
+    path(
+        f"{API_PREFIX}docs",
+        SpectacularSwaggerView.as_view(
+            url_name="schema",
+            authentication_classes=[],
+            permission_classes=[AllowAny],
+        ),
+        name="swagger-ui",
+    ),
+    path(
+        f"{API_PREFIX}componentes-curriculares",
+        ComponentesCurricularesViewSet.as_view(),
+    ),
+    path(
+        f"{API_PREFIX}componentes-curriculares/",
+        include("apps.pedagogico.urls"),
+    ),
+    path(
+        "api/turmas/",
+        include((alunos_turma_urlpatterns, "alunos-turmas")),
+    ),
+    path(
+        "api/escolas/",
+        include((matriculas_escola_urlpatterns, "matriculas-escolas")),
+    ),
+    path("api/turmas/", include((turma_urlpatterns, "turmas"))),
+    path("api/", include((ue_urlpatterns, "ues"))),
+    path(
+        "api/",
+        include((escola_urlpatterns, "pedagogico-escolas")),
+    ),
+    path("api/", include("apps.professores.urls")),
+    path("api/", include("apps.institucional.urls")),
+    path("api/", include("apps.programasedu.urls")),
+    path("api/", include("apps.abrangencia.urls")),
+    path(
+        "api/matriculas",
+        MatriculasAnoAtualView.as_view(),
+        name="matriculas-list",
+    ),
+    path("api/matriculas/", include("apps.matriculas.urls")),
+    path("api/alunos/", include("apps.alunos.urls")),
+]

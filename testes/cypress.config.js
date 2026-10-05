@@ -1,0 +1,199 @@
+import { defineConfig } from "cypress";
+import allureWriter from "@shelex/cypress-allure-plugin/writer.js";
+import { cloudPlugin } from "cypress-cloud/plugin";
+import dotenv from "dotenv";
+import cucumber from "cypress-cucumber-preprocessor";
+import preprocessor from "@cypress/webpack-preprocessor";
+import postgreSQL from "cypress-postgresql";
+import pg from "pg";
+import fs from "fs";
+import FormData from "form-data";
+import axios from "axios";
+
+dotenv.config();
+
+const dbConfig = {
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  host: process.env.DB_HOST,
+  database: process.env.DB_DATABASE,
+};
+
+const envKeys = [
+  "USUARIO_HOMOL_ADMIN",
+  "USUARIO_HOMOL_EXTERNO",
+  "SENHA_HOMOL",
+  "API_KEY",
+  "API_URL",
+  "FUNCIONARIO_CODIGO",
+  "CODIGO_ALUNO",
+  "TURMA_CODIGO",
+  "TURMA_PAP_CODIGO",
+  "LOGIN_FUNCIONARIO",
+  "TURMA_SEM_ATRIBUICAO",
+  "DATA_BASE",
+  "ANO_LETIVO",
+  "COMPONENTE_CURRICULAR",
+  "CPF_RESPONSAVEL",
+  "UE_CODIGO",
+  "MODALIDADE",
+  "ANO_LETIVO_GRADE",
+  "ANO_ESCOLAR",
+  "UE_TURMAS_CODIGO",
+  "API_KEY_HEADER",
+  "REGISTRO_FUNCIONAL",
+  "DRE_CODIGO",
+  "DRE_LISTA_CODIGOS",
+  "COD_AGRUPAMENTO",
+  "LISTA_COD_AGRUPAMENTO",
+  "NOME_ALUNO",
+  "NOME_ALUNO_INEXISTENTE",
+  "CODIGO_ALUNO_INEXISTENTE",
+  "UE_CODIGO_INEXISTENTE",
+  "ANO_LETIVO_INEXISTENTE",
+  "DATA_REFERENCIA_FIM",
+  "DATA_REFERENCIA_FIM_INVALIDA",
+  "TURMA_CODIGO_INEXISTENTE",
+  "DRE_CODIGO_INEXISTENTE",
+  "CARGO_CODIGO",
+  "CARGO_CODIGO_INEXISTENTE",
+  "FUNCAO_ATIVIDADE_CODIGO",
+  "FUNCAO_ATIVIDADE_CODIGO_INEXISTENTE",
+  "FUNCAO_EXTERNA_CODIGO",
+  "FUNCAO_EXTERNA_CODIGO_INEXISTENTE",
+  "UE_CODIGO_MATRICULA",
+  "CODIGO_ALUNO_MATRICULA",
+  "TIPO_SALA",
+  "TIPO_SALA_INEXISTENTE",
+  "ABRANGENCIA_FILTRO_TURMAS",
+  "ABRANGENCIA_FILTRO_TURMAS_INEXISTENTE",
+  "REGISTRO_FUNCIONAL_INEXISTENTE",
+  "DISCIPLINA_ID",
+  "DISCIPLINA_ID_INEXISTENTE",
+  "REGISTRO_FUNCIONAL_EMEI",
+];
+
+export default defineConfig({
+  e2e: {
+    watchForFileChanges: true,
+
+    supportFile: "cypress/support/e2e.js",
+
+    viewportWidth: 1920,
+    viewportHeight: 1080,
+    video: false,
+
+    retries: {
+      runMode: 2,
+      openMode: 0,
+    },
+
+    screenshotOnRunFailure: false,
+    chromeWebSecurity: false,
+    experimentalRunAllSpecs: true,
+    failOnStatusCode: false,
+
+    specPattern: ["cypress/e2e/**/*.feature"],
+
+    defaultCommandTimeout: 60000,
+    requestTimeout: 60000,
+    execTimeout: 60000,
+    pageLoadTimeout: 60000,
+
+    env: {
+      allure: true,
+      // IGNORA TAGS @ignore
+      TAGS: "not @ignore",
+    },
+
+    async setupNodeEvents(on, config) {
+      allureWriter(on, config);
+
+      config.env.allure = true;
+
+      const webpackConfig = {
+        module: {
+          rules: [
+            {
+              test: /\.js$/,
+              exclude: [/node_modules/],
+              use: {
+                loader: "babel-loader",
+                options: {
+                  plugins: ["@babel/plugin-transform-modules-commonjs"],
+                },
+              },
+            },
+          ],
+        },
+      };
+
+      on(
+        "file:preprocessor",
+        preprocessor({
+          webpackOptions: webpackConfig,
+        }),
+      );
+
+      on("file:preprocessor", cucumber.default());
+
+      // =========================
+      // BANCO
+      // =========================
+
+      const pool = new pg.Pool(dbConfig);
+      const dbTasks = postgreSQL.loadDBPlugin(pool);
+
+      on("task", {
+        ...dbTasks,
+
+        async uploadFile({ method = "POST", url, headers = {}, filePath }) {
+          const form = new FormData();
+
+          if (filePath && filePath.trim() !== "") {
+            form.append("file", fs.createReadStream(filePath));
+          }
+
+          const response = await axios({
+            method,
+            url,
+            headers: {
+              ...headers,
+              ...form.getHeaders(),
+            },
+            data: form,
+            maxBodyLength: Infinity,
+            validateStatus: () => true,
+          });
+
+          return {
+            status: response.status,
+            body: response.data,
+          };
+        },
+      });
+
+      // =========================
+      // ENV
+      // =========================
+
+      const customVariable = Object.fromEntries(
+        envKeys.map((key) => [key, process.env[key] ?? ""]),
+      );
+
+      config.env = {
+        ...config.env,
+        ...customVariable,
+        db: dbConfig,
+      };
+
+      // =========================
+      // BASE URL
+      // =========================
+
+      config.baseUrl = process.env.API_URL;
+
+      return await cloudPlugin(on, config);
+    },
+  },
+});
