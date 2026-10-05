@@ -138,7 +138,7 @@
                 <span class="n">description</span><span class="o">=</span><span class="s2">"Ano letivo de referência."</span><span class="p">,</span>
             <span class="p">),</span>
             <span class="n">OpenApiParameter</span><span class="p">(</span>
-                <span class="s2">"codigos_alunos"</span><span class="p">,</span>
+                <span class="s2">"codigosAlunos"</span><span class="p">,</span>
                 <span class="n">OpenApiTypes</span><span class="o">.</span><span class="n">STR</span><span class="p">,</span>
                 <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">,</span>
                 <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -152,7 +152,7 @@
 <span class="w">        </span><span class="sd">"""Filtra os alunos vinculados a turmas PAP no ano letivo.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            request: Requisição com ``codigos_alunos`` nos query params.</span>
+<span class="sd">            request: Requisição com ``codigosAlunos`` nos query params.</span>
 <span class="sd">            ano_letivo: Ano letivo de referência.</span>
 
 <span class="sd">        Returns:</span>
@@ -162,7 +162,9 @@
 <span class="sd">            httpx.HTTPError: Em caso de falha de transporte ou timeout</span>
 <span class="sd">                na chamada ao serviço externo.</span>
 <span class="sd">        """</span>
-        <span class="n">codigos_alunos</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s2">"codigos_alunos"</span><span class="p">)</span>
+        <span class="n">codigos_alunos</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span>
+            <span class="s2">"codigosAlunos"</span>
+        <span class="p">)</span> <span class="ow">or</span> <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s2">"codigos_alunos"</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">codigos_alunos</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">detail_response</span><span class="p">(</span>
                 <span class="s2">"É necessário informar ao menos um codigos_alunos."</span>

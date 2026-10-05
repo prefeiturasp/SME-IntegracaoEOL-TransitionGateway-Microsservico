@@ -505,10 +505,9 @@
 <span class="sd">        httpx.HTTPStatusError: Se a API retornar status de erro.</span>
 <span class="sd">        httpx.RequestError: Se a API estiver inacessível.</span>
 <span class="sd">    """</span>
-    <span class="k">return</span> <span class="n">alunos_services</span><span class="o">.</span><span class="n">get_alunos_por_turma</span><span class="p">(</span>
+    <span class="k">return</span> <span class="n">alunos_services</span><span class="o">.</span><span class="n">get_alunos_turma_considera_inativos</span><span class="p">(</span>
         <span class="n">codigo_turma</span><span class="p">,</span>
         <span class="n">considerar_inativos</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">considera_inativos</span><span class="p">),</span>
-        <span class="n">sequencia</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
     <span class="p">)</span></div>
 
 
@@ -1148,15 +1147,15 @@
 
 
 
-<div class="viewcode-block" id="get_dados_aula_turma">
-<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_dados_aula_turma">[documentos]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">get_dados_aula_turma</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_buscar_dados_aula_turma</span><span class="p">(</span>
     <span class="n">ue_codigo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">componentes_curriculares</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-    <span class="n">semestre</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">semestre</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">"""Retorna dados de aula por turma e componente.</span>
+<span class="w">    </span><span class="sd">"""Busca dados de aula por turma direto na origem.</span>
+
+<span class="sd">    Usado por `get_dados_aula_turma` quando o cache não tem o valor.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        ue_codigo: Código da unidade educacional.</span>
@@ -1193,7 +1192,45 @@
             <span class="p">),</span>
         <span class="p">}</span>
         <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">payload</span>
-    <span class="p">]</span></div>
+    <span class="p">]</span>
+
+
+<div class="viewcode-block" id="get_dados_aula_turma">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_dados_aula_turma">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_dados_aula_turma</span><span class="p">(</span>
+    <span class="n">ue_codigo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">componentes_curriculares</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">semestre</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""Retorna dados de aula por turma e componente.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ue_codigo: Código da unidade educacional.</span>
+<span class="sd">        ano_letivo: Ano letivo usado no filtro.</span>
+<span class="sd">        componentes_curriculares: Códigos dos componentes curriculares.</span>
+<span class="sd">        semestre: Semestre usado no filtro, quando informado.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dados de vigência dos componentes no formato legado.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="n">componentes_ordenados</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">componentes_curriculares</span><span class="p">)</span>
+    <span class="n">chave</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"dados-aula-turma:</span><span class="si">{</span><span class="n">ue_codigo</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">ano_letivo</span><span class="si">}</span><span class="s2">:"</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">','</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">componentes_ordenados</span><span class="p">)</span><span class="si">}</span><span class="s2">:"</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">semestre</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">semestre</span><span class="w"> </span><span class="ow">is</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="kc">None</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">''</span><span class="si">}</span><span class="s2">"</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">cache</span><span class="o">.</span><span class="n">obter_ou_calcular</span><span class="p">(</span>
+        <span class="n">chave</span><span class="p">,</span>
+        <span class="k">lambda</span><span class="p">:</span> <span class="n">_buscar_dados_aula_turma</span><span class="p">(</span>
+            <span class="n">ue_codigo</span><span class="p">,</span> <span class="n">ano_letivo</span><span class="p">,</span> <span class="n">componentes_curriculares</span><span class="p">,</span> <span class="n">semestre</span>
+        <span class="p">),</span>
+        <span class="n">cache</span><span class="o">.</span><span class="n">TTL_RECOMENDADO_MINUTOS</span><span class="p">,</span>
+    <span class="p">)</span></div>
 
 
 

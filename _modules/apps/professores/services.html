@@ -410,6 +410,19 @@
 
 
 
+<div class="viewcode-block" id="get_cargos">
+<a class="viewcode-back" href="../../../api.html#apps.professores.services.get_cargos">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_cargos</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna cargos cadastrados no EOL.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Lista de cargos ou ausência de dados.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/cargos/"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span></div>
+
+
+
 <div class="viewcode-block" id="get_funcionarios_por_lista_login">
 <a class="viewcode-back" href="../../../api.html#apps.professores.services.get_funcionarios_por_lista_login">[documentos]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_funcionarios_por_lista_login</span><span class="p">(</span><span class="n">logins</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>

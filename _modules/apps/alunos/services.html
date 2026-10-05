@@ -325,32 +325,6 @@
 
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_buscar_quantidade_matriculados</span><span class="p">(</span>
-    <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Busca a quantidade de matriculados direto na origem.</span>
-
-<span class="sd">    Usado por `get_quantidade_matriculados` quando o cache não tem o valor.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        ano_letivo: Ano letivo consultado.</span>
-<span class="sd">        params: Filtros já normalizados para a query string.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        Lista de quantidades agregadas ou lista vazia.</span>
-
-<span class="sd">    Raises:</span>
-<span class="sd">        httpx.HTTPStatusError: Se a API retornar status de erro.</span>
-<span class="sd">        httpx.RequestError: Se a API estiver inacessível.</span>
-<span class="sd">    """</span>
-    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/ano-letivo/</span><span class="si">{</span><span class="n">ano_letivo</span><span class="si">}</span><span class="s2">/matriculados/quantidade/contrato"</span><span class="p">,</span>
-        <span class="n">params</span><span class="o">=</span><span class="n">params</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
-    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
-
-
 <div class="viewcode-block" id="get_quantidade_matriculados">
 <a class="viewcode-back" href="../../../api.html#apps.alunos.services.get_quantidade_matriculados">[documentos]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_quantidade_matriculados</span><span class="p">(</span>
@@ -390,19 +364,12 @@
     <span class="k">if</span> <span class="n">turma</span><span class="p">:</span>
         <span class="n">params</span><span class="p">[</span><span class="s2">"turma"</span><span class="p">]</span> <span class="o">=</span> <span class="n">turma</span>
 
-    <span class="n">chave</span> <span class="o">=</span> <span class="s2">"quantidade-alunos:</span><span class="si">{}</span><span class="s2">:</span><span class="si">{}</span><span class="s2">:</span><span class="si">{}</span><span class="s2">:</span><span class="si">{}</span><span class="s2">:</span><span class="si">{}</span><span class="s2">:</span><span class="si">{}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-        <span class="n">ano_letivo</span><span class="p">,</span>
-        <span class="p">(</span><span class="n">dre_codigo</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
-        <span class="p">(</span><span class="n">ue_codigo</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
-        <span class="s2">","</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">turma</span> <span class="ow">or</span> <span class="p">[]),</span>
-        <span class="s2">","</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">modalidade</span> <span class="ow">or</span> <span class="p">[]),</span>
-        <span class="s2">","</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ano</span> <span class="ow">or</span> <span class="p">[]),</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/ano-letivo/</span><span class="si">{</span><span class="n">ano_letivo</span><span class="si">}</span><span class="s2">/matriculados/quantidade/contrato"</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="n">params</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="k">return</span> <span class="n">cache</span><span class="o">.</span><span class="n">obter_ou_calcular</span><span class="p">(</span>
-        <span class="n">chave</span><span class="p">,</span>
-        <span class="k">lambda</span><span class="p">:</span> <span class="n">_buscar_quantidade_matriculados</span><span class="p">(</span><span class="n">ano_letivo</span><span class="p">,</span> <span class="n">params</span><span class="p">),</span>
-        <span class="n">cache</span><span class="o">.</span><span class="n">TTL_LEGADO_PADRAO_MINUTOS</span><span class="p">,</span>
-    <span class="p">)</span></div>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span></div>
 
 
 
@@ -664,6 +631,40 @@
 
 
 
+<div class="viewcode-block" id="get_alunos_turma_considera_inativos">
+<a class="viewcode-back" href="../../../api.html#apps.alunos.services.get_alunos_turma_considera_inativos">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_alunos_turma_considera_inativos</span><span class="p">(</span>
+    <span class="n">codigo_turma</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">considerar_inativos</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">codigo_aluno</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna os alunos de uma turma para o filtro considera-inativos.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigo_turma: Código EOL da turma.</span>
+<span class="sd">        considerar_inativos: Inclui alunos inativos quando ``True``.</span>
+<span class="sd">        codigo_aluno: Quando informado, restringe ao aluno correspondente.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Lista de alunos, ou lista vazia quando não houver registros.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Se o serviço externo retornar status de erro.</span>
+<span class="sd">        httpx.RequestError: Se o serviço externo estiver inacessível.</span>
+<span class="sd">    """</span>
+    <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"considerar_inativos"</span><span class="p">:</span> <span class="n">considerar_inativos</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">codigo_aluno</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">"codigo_aluno"</span><span class="p">]</span> <span class="o">=</span> <span class="n">codigo_aluno</span>
+
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/turmas/</span><span class="si">{</span><span class="n">codigo_turma</span><span class="si">}</span><span class="s2">/considera-inativos/"</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span>
+    <span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span></div>
+
+
+
 <div class="viewcode-block" id="get_alunos_por_turma_e_data_aula">
 <a class="viewcode-back" href="../../../api.html#apps.alunos.services.get_alunos_por_turma_e_data_aula">[documentos]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_alunos_por_turma_e_data_aula</span><span class="p">(</span>
@@ -755,6 +756,41 @@
         <span class="n">payload</span><span class="o">=</span><span class="p">{</span>
             <span class="s2">"codigos_turmas"</span><span class="p">:</span> <span class="n">codigos_turmas</span><span class="p">,</span>
             <span class="s2">"data_fim"</span><span class="p">:</span> <span class="n">data_fim_ticks</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">)</span>
+    <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="n">corpo</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">corpo</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"quantidade"</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="post_quantidade_matriculas_turmas_periodo_em_data_iso">
+<a class="viewcode-back" href="../../../api.html#apps.alunos.services.post_quantidade_matriculas_turmas_periodo_em_data_iso">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">post_quantidade_matriculas_turmas_periodo_em_data_iso</span><span class="p">(</span>
+    <span class="n">codigos_turmas</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">data_fim</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna a quantidade de alocações válidas nas turmas até a data.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigos_turmas: Códigos EOL das turmas consideradas.</span>
+<span class="sd">        data_fim: Data limite em formato ISO 8601.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Quantidade de alocações no período, ou ``0`` quando não houver</span>
+<span class="sd">        turmas.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPStatusError: Se o serviço externo retornar status de erro.</span>
+<span class="sd">        httpx.RequestError: Se o serviço externo estiver inacessível.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">codigos_turmas</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">0</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/matriculas-turmas-periodo/quantidade"</span><span class="p">,</span>
+        <span class="n">payload</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">"codigos_turmas"</span><span class="p">:</span> <span class="n">codigos_turmas</span><span class="p">,</span>
+            <span class="s2">"data_fim"</span><span class="p">:</span> <span class="n">data_fim</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">)</span>
     <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>

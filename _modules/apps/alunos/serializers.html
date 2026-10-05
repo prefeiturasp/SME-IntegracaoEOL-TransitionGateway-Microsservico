@@ -35,6 +35,9 @@
   <h1>Código-fonte para apps.alunos.serializers</h1><div class="highlight"><pre>
 <span></span><span class="sd">"""Serializers de saida para o contrato legado de alunos."""</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">cached_property</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">operator</span><span class="w"> </span><span class="kn">import</span> <span class="n">itemgetter</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">cast</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">django.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">timezone</span>
@@ -110,6 +113,7 @@
 
 <div class="viewcode-block" id="StringOrNoneField">
 <a class="viewcode-back" href="../../../api.html#apps.alunos.serializers.StringOrNoneField">[documentos]</a>
+<span class="nd">@extend_schema_field</span><span class="p">(</span><span class="n">OpenApiTypes</span><span class="o">.</span><span class="n">STR</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">StringOrNoneField</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">Field</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Serializa valor como string, preservando ausência como ``None``."""</span>
 
@@ -455,8 +459,8 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">TodosAlunosTurmaSerializer</span><span class="p">(</span><span class="n">AlunoMatriculaTurmaSerializer</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Serializa o histórico de vínculos do aluno com a turma.</span>
 
-<span class="sd">    O retorno é apenas a identificação da turma e da matrícula: </span>
-<span class="sd">    os campos de localização da unidade (``ano``, ``codigoDre`` e </span>
+<span class="sd">    O retorno é apenas a identificação da turma e da matrícula:</span>
+<span class="sd">    os campos de localização da unidade (``ano``, ``codigoDre`` e</span>
 <span class="sd">    ``codigoEscola``) não são publicados. ``codigoTurma``</span>
 <span class="sd">    continua preenchido, ao contrário do modo de campos parciais.</span>
 <span class="sd">    """</span>
@@ -679,6 +683,70 @@
 
 
 
+<div class="viewcode-block" id="AlunoDaUeSerializer">
+<a class="viewcode-back" href="../../../api.html#apps.alunos.serializers.AlunoDaUeSerializer">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AlunoDaUeSerializer</span><span class="p">(</span><span class="n">AlunoPorCodigoSerializer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Serializa dados de alunos vinculados a uma unidade educacional."""</span>
+
+    <span class="nd">@cached_property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_origens</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Retorna as colunas esperadas em uma linha completa."""</span>
+        <span class="k">return</span> <span class="nb">frozenset</span><span class="p">(</span>
+            <span class="n">campo</span><span class="o">.</span><span class="n">source_attrs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">campo</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">campo</span><span class="o">.</span><span class="n">source_attrs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="p">)</span>
+
+    <span class="nd">@cached_property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_conversores</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">],</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">]],</span> <span class="o">...</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Retorna leitores e conversores preservando campos especiais."""</span>
+        <span class="n">conversores</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span>
+            <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">],</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">]]</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">nome</span><span class="p">,</span> <span class="n">campo</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">leitor</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="nb">len</span><span class="p">(</span><span class="n">campo</span><span class="o">.</span><span class="n">source_attrs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+                <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="n">campo</span><span class="p">)</span><span class="o">.</span><span class="n">get_attribute</span>
+                <span class="ow">is</span> <span class="n">serializers</span><span class="o">.</span><span class="n">Field</span><span class="o">.</span><span class="n">get_attribute</span>
+            <span class="p">):</span>
+                <span class="n">leitor</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span>
+                    <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">],</span> <span class="n">itemgetter</span><span class="p">(</span><span class="n">campo</span><span class="o">.</span><span class="n">source_attrs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">leitor</span> <span class="o">=</span> <span class="n">campo</span><span class="o">.</span><span class="n">get_attribute</span>
+            <span class="n">conversores</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">nome</span><span class="p">,</span> <span class="n">leitor</span><span class="p">,</span> <span class="n">campo</span><span class="o">.</span><span class="n">to_representation</span><span class="p">))</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">conversores</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AlunoDaUeSerializer.to_representation">
+<a class="viewcode-back" href="../../../api.html#apps.alunos.serializers.AlunoDaUeSerializer.to_representation">[documentos]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_representation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Representa os alunos mantendo coerções e valores padrão.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            instance: Dados do aluno a representar.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dados do aluno no formato legado.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">instance</span><span class="o">.</span><span class="vm">__class__</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">dict</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_origens</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span>
+            <span class="n">instance</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">to_representation</span><span class="p">(</span><span class="n">instance</span><span class="p">))</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="n">nome</span><span class="p">:</span> <span class="p">(</span>
+                <span class="n">converter</span><span class="p">(</span><span class="n">valor</span><span class="p">)</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">valor</span> <span class="o">:=</span> <span class="n">obter</span><span class="p">(</span><span class="n">instance</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">nome</span><span class="p">,</span> <span class="n">obter</span><span class="p">,</span> <span class="n">converter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conversores</span>
+        <span class="p">}</span></div>
+</div>
+
+
+
 <div class="viewcode-block" id="AlunoAtivoTurmaSerializer">
 <a class="viewcode-back" href="../../../api.html#apps.alunos.serializers.AlunoAtivoTurmaSerializer">[documentos]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">AlunoAtivoTurmaSerializer</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">Serializer</span><span class="p">):</span>
@@ -775,9 +843,7 @@
     <span class="n">dataNascimentoAluno</span> <span class="o">=</span> <span class="n">DatetimeLegadoNaoNuloField</span><span class="p">(</span>  <span class="c1"># NOSONAR</span>
         <span class="n">source</span><span class="o">=</span><span class="s2">"data_nascimento_aluno"</span>
     <span class="p">)</span>
-    <span class="n">dataNascimento</span> <span class="o">=</span> <span class="n">DatetimeLegadoField</span><span class="p">(</span>  <span class="c1"># NOSONAR</span>
-        <span class="n">source</span><span class="o">=</span><span class="s2">"data_nascimento"</span>
-    <span class="p">)</span>
+    <span class="n">dataNascimento</span> <span class="o">=</span> <span class="n">DatetimeLegadoField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"data_nascimento"</span><span class="p">)</span>  <span class="c1"># NOSONAR</span>
     <span class="n">dataAtualizacao</span> <span class="o">=</span> <span class="n">DatetimeLegadoNaoNuloField</span><span class="p">(</span>  <span class="c1"># NOSONAR</span>
         <span class="n">source</span><span class="o">=</span><span class="s2">"data_atualizacao"</span>
     <span class="p">)</span>
@@ -995,16 +1061,12 @@
     <span class="n">dre</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">codigoUe</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"codigo_ue"</span><span class="p">)</span>  <span class="c1"># NOSONAR</span>
     <span class="n">ue</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">codigoTurma</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span>  <span class="c1"># NOSONAR</span>
-        <span class="n">source</span><span class="o">=</span><span class="s2">"codigo_turma"</span>
-    <span class="p">)</span>
+    <span class="n">codigoTurma</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"codigo_turma"</span><span class="p">)</span>  <span class="c1"># NOSONAR</span>
     <span class="n">turma</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">cpfResponsavel</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span>  <span class="c1"># NOSONAR</span>
         <span class="n">source</span><span class="o">=</span><span class="s2">"cpf_responsavel"</span>
     <span class="p">)</span>
-    <span class="n">codigoAluno</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span>  <span class="c1"># NOSONAR</span>
-        <span class="n">source</span><span class="o">=</span><span class="s2">"codigo_aluno"</span>
-    <span class="p">)</span>
+    <span class="n">codigoAluno</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"codigo_aluno"</span><span class="p">)</span>  <span class="c1"># NOSONAR</span>
     <span class="n">codigoTipoEscola</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span>  <span class="c1"># NOSONAR</span>
         <span class="n">source</span><span class="o">=</span><span class="s2">"codigo_tipo_escola"</span>
     <span class="p">)</span>
@@ -1030,9 +1092,7 @@
 <span class="w">    </span><span class="sd">"""Serializa dados de acompanhamento escolar no contrato legado."""</span>
 
     <span class="n">codigoEol</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"codigo_eol"</span><span class="p">)</span>  <span class="c1"># NOSONAR</span>
-    <span class="n">nomeResponsavel</span> <span class="o">=</span> <span class="n">StringOrNoneField</span><span class="p">(</span>
-        <span class="n">source</span><span class="o">=</span><span class="s2">"nome_responsavel"</span>
-    <span class="p">)</span>  <span class="c1"># NOSONAR</span>
+    <span class="n">nomeResponsavel</span> <span class="o">=</span> <span class="n">StringOrNoneField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"nome_responsavel"</span><span class="p">)</span>  <span class="c1"># NOSONAR</span>
     <span class="n">cpfResponsavel</span> <span class="o">=</span> <span class="n">StringOrNoneField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"cpf_responsavel"</span><span class="p">)</span>  <span class="c1"># NOSONAR</span>
     <span class="n">nome</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">nomeSocial</span> <span class="o">=</span> <span class="n">StringOrNoneField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"nome_social"</span><span class="p">)</span>  <span class="c1"># NOSONAR</span>
@@ -1085,7 +1145,35 @@
     <span class="p">)</span>  <span class="c1"># NOSONAR</span>
     <span class="n">ueCodigo</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span>
         <span class="n">source</span><span class="o">=</span><span class="s2">"ue_codigo"</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span>
-    <span class="p">)</span>  <span class="c1"># NOSONAR</span></div>
+    <span class="p">)</span>  <span class="c1"># NOSONAR</span>
+
+    <span class="nd">@cached_property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_conversores</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">]],</span> <span class="o">...</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Retorna os campos de origem e seus conversores."""</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">nome</span><span class="p">,</span> <span class="n">campo</span><span class="o">.</span><span class="n">source</span> <span class="ow">or</span> <span class="n">nome</span><span class="p">,</span> <span class="n">campo</span><span class="o">.</span><span class="n">to_representation</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">nome</span><span class="p">,</span> <span class="n">campo</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="QuantidadeMatriculadosSerializer.to_representation">
+<a class="viewcode-back" href="../../../api.html#apps.alunos.serializers.QuantidadeMatriculadosSerializer.to_representation">[documentos]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_representation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Representa contagens preservando coerções e campos opcionais."""</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span>
+            <span class="n">origem</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">instance</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">origem</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conversores</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">to_representation</span><span class="p">(</span><span class="n">instance</span><span class="p">))</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="n">nome</span><span class="p">:</span> <span class="p">(</span>
+                <span class="n">converter</span><span class="p">(</span><span class="n">instance</span><span class="p">[</span><span class="n">origem</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">instance</span><span class="p">[</span><span class="n">origem</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">nome</span><span class="p">,</span> <span class="n">origem</span><span class="p">,</span> <span class="n">converter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conversores</span>
+        <span class="p">}</span></div>
+</div>
 
 
 

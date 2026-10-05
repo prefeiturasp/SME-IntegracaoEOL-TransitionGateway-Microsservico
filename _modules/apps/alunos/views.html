@@ -51,11 +51,13 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">rest_framework.request</span><span class="w"> </span><span class="kn">import</span> <span class="n">Request</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">apps.alunos</span><span class="w"> </span><span class="kn">import</span> <span class="n">services</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">apps.alunos.respostas</span><span class="w"> </span><span class="kn">import</span> <span class="n">resposta_quantidade_matriculados</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">apps.alunos.serializers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">AlunoAcompanhamentoEscolarSerializer</span><span class="p">,</span>
     <span class="n">AlunoAtivoTurmaSerializer</span><span class="p">,</span>
     <span class="n">AlunoAutocompleteSerializer</span><span class="p">,</span>
     <span class="n">AlunoAutocompleteUeSerializer</span><span class="p">,</span>
+    <span class="n">AlunoDaUeSerializer</span><span class="p">,</span>
     <span class="n">AlunoInformacoesSerializer</span><span class="p">,</span>
     <span class="n">AlunoMatriculaTurmaSerializer</span><span class="p">,</span>
     <span class="n">AlunoPorCodigoSerializer</span><span class="p">,</span>
@@ -69,7 +71,6 @@
     <span class="n">NomeAlunoSerializer</span><span class="p">,</span>
     <span class="n">ObterNomesAlunosRequestSerializer</span><span class="p">,</span>
     <span class="n">QuantidadeMatriculadosCCSerializer</span><span class="p">,</span>
-    <span class="n">QuantidadeMatriculadosSerializer</span><span class="p">,</span>
     <span class="n">ResponsavelResumidoSerializer</span><span class="p">,</span>
     <span class="n">ResponsavelTurmaSerializer</span><span class="p">,</span>
     <span class="n">TodosAlunosTurmaSerializer</span><span class="p">,</span>
@@ -106,6 +107,7 @@
     <span class="s2">"O código da turma e data da aula são obrigatórios"</span>
 <span class="p">)</span>
 <span class="n">_MSG_DATA_OBRIGATORIA</span> <span class="o">=</span> <span class="s2">"O código da turma e data da aula são obrigatórios"</span>
+<span class="n">_MSG_DATA_INVALIDA</span> <span class="o">=</span> <span class="s2">"A data informada está em um formato inválido."</span>
 <span class="n">_DOMINIO_ALUNOS</span> <span class="o">=</span> <span class="s2">"alunos"</span>
 <span class="n">_MSG_LEGADO_ERRO_INESPERADO</span> <span class="o">=</span> <span class="p">(</span>
     <span class="s2">"Houve um comportamento inesperado do sistema. Por favor, contate a SME."</span>
@@ -237,6 +239,15 @@
         <span class="k">if</span> <span class="n">raw</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">""</span><span class="p">):</span>
             <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
     <span class="k">return</span> <span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_query_values</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="o">*</span><span class="n">names</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Lê o primeiro alias repetível preenchido da query string."""</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">values</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">values</span> <span class="k">if</span> <span class="n">value</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">""</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="p">[]</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_query_int</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
@@ -467,10 +478,10 @@
             <span class="s2">"Retorna dados dos alunos para acompanhamento do estudante."</span>
         <span class="p">),</span>
         <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
-            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"codigo_aluno"</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
-            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"codigo_dre"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
-            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"codigo_ue"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
-            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"cpf_responsavel"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"codigoAluno"</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"codigoDre"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"codigoUe"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"cpfResponsavel"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
         <span class="p">],</span>
         <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">OpenApiResponse</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Success"</span><span class="p">)},</span>
     <span class="p">)</span>
@@ -485,10 +496,14 @@
 <span class="sd">        """</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_dados_acompanhamento_escolar</span><span class="p">(</span>
-                <span class="n">codigo_aluno</span><span class="o">=</span><span class="n">_query_value</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"codigo_aluno"</span><span class="p">),</span>
-                <span class="n">codigo_dre</span><span class="o">=</span><span class="n">_query_value</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"codigo_dre"</span><span class="p">),</span>
-                <span class="n">codigo_ue</span><span class="o">=</span><span class="n">_query_value</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"codigo_ue"</span><span class="p">),</span>
-                <span class="n">cpf_responsavel</span><span class="o">=</span><span class="n">_query_value</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"cpf_responsavel"</span><span class="p">),</span>
+                <span class="n">codigo_aluno</span><span class="o">=</span><span class="n">_query_value</span><span class="p">(</span>
+                    <span class="n">request</span><span class="p">,</span> <span class="s2">"codigoAluno"</span><span class="p">,</span> <span class="s2">"codigo_aluno"</span>
+                <span class="p">),</span>
+                <span class="n">codigo_dre</span><span class="o">=</span><span class="n">_query_value</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"codigoDre"</span><span class="p">,</span> <span class="s2">"codigo_dre"</span><span class="p">),</span>
+                <span class="n">codigo_ue</span><span class="o">=</span><span class="n">_query_value</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"codigoUe"</span><span class="p">,</span> <span class="s2">"codigo_ue"</span><span class="p">),</span>
+                <span class="n">cpf_responsavel</span><span class="o">=</span><span class="n">_query_value</span><span class="p">(</span>
+                    <span class="n">request</span><span class="p">,</span> <span class="s2">"cpfResponsavel"</span><span class="p">,</span> <span class="s2">"cpf_responsavel"</span>
+                <span class="p">),</span>
             <span class="p">)</span>
         <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">api_error_response_status_livre</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
@@ -578,7 +593,7 @@
         <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
             <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"ano_letivo"</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">),</span>
             <span class="n">OpenApiParameter</span><span class="p">(</span>
-                <span class="s2">"codigos_aluno"</span><span class="p">,</span>
+                <span class="s2">"codigosAluno"</span><span class="p">,</span>
                 <span class="nb">int</span><span class="p">,</span>
                 <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">,</span>
                 <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -598,8 +613,8 @@
 <span class="sd">            Lista de alunos correspondentes aos códigos informados.</span>
 <span class="sd">        """</span>
         <span class="n">codigos_aluno</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span>
-            <span class="s2">"codigos_aluno"</span>
-        <span class="p">)</span> <span class="ow">or</span> <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s2">"codigosAluno"</span><span class="p">)</span>
+            <span class="s2">"codigosAluno"</span>
+        <span class="p">)</span> <span class="ow">or</span> <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s2">"codigos_aluno"</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">codigos_aluno</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">_legacy_status_601_response</span><span class="p">(</span>
                 <span class="n">_MSG_CODIGOS_ALUNOS_OBRIGATORIOS</span>
@@ -624,10 +639,10 @@
         <span class="p">),</span>
         <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
             <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"ano_letivo"</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">),</span>
-            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"dre_id"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
-            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"ue_id"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"dreId"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"ueId"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
             <span class="n">OpenApiParameter</span><span class="p">(</span>
-                <span class="s2">"componentes_curriculares"</span><span class="p">,</span>
+                <span class="s2">"componentesCurriculares"</span><span class="p">,</span>
                 <span class="nb">int</span><span class="p">,</span>
                 <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">,</span>
                 <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -646,15 +661,15 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            Quantidades de matriculados por componente curricular.</span>
 <span class="sd">        """</span>
-        <span class="n">componentes</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span>
-            <span class="s2">"componentes_curriculares"</span>
-        <span class="p">)</span> <span class="ow">or</span> <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s2">"componentesCurriculares"</span><span class="p">)</span>
+        <span class="n">componentes</span> <span class="o">=</span> <span class="n">_query_values</span><span class="p">(</span>
+            <span class="n">request</span><span class="p">,</span> <span class="s2">"componentesCurriculares"</span><span class="p">,</span> <span class="s2">"componentes_curriculares"</span>
+        <span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_quantidade_matriculados_cc</span><span class="p">(</span>
                 <span class="n">ano_letivo</span><span class="o">=</span><span class="n">ano_letivo</span><span class="p">,</span>
                 <span class="n">componentes_curriculares</span><span class="o">=</span><span class="n">componentes</span><span class="p">,</span>
-                <span class="n">dre_id</span><span class="o">=</span><span class="n">_query_value</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"dre_id"</span><span class="p">),</span>
-                <span class="n">ue_id</span><span class="o">=</span><span class="n">_query_value</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"ue_id"</span><span class="p">),</span>
+                <span class="n">dre_id</span><span class="o">=</span><span class="n">_query_value</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"dreId"</span><span class="p">,</span> <span class="s2">"dre_id"</span><span class="p">),</span>
+                <span class="n">ue_id</span><span class="o">=</span><span class="n">_query_value</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"ueId"</span><span class="p">,</span> <span class="s2">"ue_id"</span><span class="p">),</span>
             <span class="p">)</span>
         <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">api_error_response_status_livre</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
@@ -676,8 +691,8 @@
         <span class="p">),</span>
         <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
             <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"ano_letivo"</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">),</span>
-            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"dre_codigo"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
-            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"ue_codigo"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"dreCodigo"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"ueCodigo"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
             <span class="n">OpenApiParameter</span><span class="p">(</span>
                 <span class="s2">"modalidade"</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span>
             <span class="p">),</span>
@@ -686,7 +701,7 @@
         <span class="p">],</span>
         <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">OpenApiResponse</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Success"</span><span class="p">)},</span>
     <span class="p">)</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HttpResponse</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Busca a quantidade de matriculados conforme os filtros.</span>
 
 <span class="sd">        Args:</span>
@@ -697,19 +712,25 @@
 <span class="sd">            Quantidades de matriculados agregadas por turma.</span>
 <span class="sd">        """</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_quantidade_matriculados</span><span class="p">(</span>
-                <span class="n">ano_letivo</span><span class="o">=</span><span class="n">ano_letivo</span><span class="p">,</span>
-                <span class="n">dre_codigo</span><span class="o">=</span><span class="n">_query_value</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"dre_codigo"</span><span class="p">),</span>
-                <span class="n">ue_codigo</span><span class="o">=</span><span class="n">_query_value</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"ue_codigo"</span><span class="p">),</span>
-                <span class="n">modalidade</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s2">"modalidade"</span><span class="p">),</span>
-                <span class="n">ano</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s2">"ano"</span><span class="p">),</span>
-                <span class="n">turma</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s2">"turma"</span><span class="p">),</span>
+            <span class="k">return</span> <span class="n">resposta_quantidade_matriculados</span><span class="p">(</span>
+                <span class="n">request</span><span class="p">,</span>
+                <span class="n">ano_letivo</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">"dre_codigo"</span><span class="p">:</span> <span class="n">_query_value</span><span class="p">(</span>
+                        <span class="n">request</span><span class="p">,</span> <span class="s2">"dreCodigo"</span><span class="p">,</span> <span class="s2">"dre_codigo"</span>
+                    <span class="p">),</span>
+                    <span class="s2">"ue_codigo"</span><span class="p">:</span> <span class="n">_query_value</span><span class="p">(</span>
+                        <span class="n">request</span><span class="p">,</span> <span class="s2">"ueCodigo"</span><span class="p">,</span> <span class="s2">"ue_codigo"</span>
+                    <span class="p">),</span>
+                    <span class="s2">"modalidade"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s2">"modalidade"</span><span class="p">),</span>
+                    <span class="s2">"ano"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s2">"ano"</span><span class="p">),</span>
+                    <span class="s2">"turma"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s2">"turma"</span><span class="p">),</span>
+                <span class="p">},</span>
             <span class="p">)</span>
         <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">api_error_response_status_livre</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
         <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">RequestError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">_api_unavailable_response</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">QuantidadeMatriculadosSerializer</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="AlunoInformacoesView">
@@ -814,11 +835,12 @@
 
     <span class="nd">@extend_schema</span><span class="p">(</span>
         <span class="n">tags</span><span class="o">=</span><span class="n">_TAG</span><span class="p">,</span>
+        <span class="n">operation_id</span><span class="o">=</span><span class="s2">"alunos_responsaveis_list"</span><span class="p">,</span>
         <span class="n">summary</span><span class="o">=</span><span class="s2">"Responsáveis por DRE, UE e turma"</span><span class="p">,</span>
         <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
-            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"codigo_dre"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
-            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"codigo_ue"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
-            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"ano_letivo"</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"codigoDre"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"codigoUe"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"anoLetivo"</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
         <span class="p">],</span>
         <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">ResponsavelTurmaSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)},</span>
     <span class="p">)</span>
@@ -831,16 +853,16 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            Responsáveis encontrados no contrato legado.</span>
 <span class="sd">        """</span>
-        <span class="n">ano_raw</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ano_letivo"</span><span class="p">)</span>
+        <span class="n">ano_raw</span> <span class="o">=</span> <span class="n">_query_value</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"anoLetivo"</span><span class="p">,</span> <span class="s2">"ano_letivo"</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">ano_letivo</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">ano_raw</span><span class="p">)</span> <span class="k">if</span> <span class="n">ano_raw</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">detail_response</span><span class="p">(</span><span class="s2">"ano_letivo deve ser um inteiro válido."</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">detail_response</span><span class="p">(</span><span class="s2">"anoLetivo deve ser um inteiro válido."</span><span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_responsaveis</span><span class="p">(</span>
-                <span class="n">codigo_dre</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"codigo_dre"</span><span class="p">),</span>
-                <span class="n">codigo_ue</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"codigo_ue"</span><span class="p">),</span>
+                <span class="n">codigo_dre</span><span class="o">=</span><span class="n">_query_value</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"codigoDre"</span><span class="p">,</span> <span class="s2">"codigo_dre"</span><span class="p">),</span>
+                <span class="n">codigo_ue</span><span class="o">=</span><span class="n">_query_value</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"codigoUe"</span><span class="p">,</span> <span class="s2">"codigo_ue"</span><span class="p">),</span>
                 <span class="n">ano_letivo</span><span class="o">=</span><span class="n">ano_letivo</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
@@ -855,6 +877,7 @@
 
     <span class="nd">@extend_schema</span><span class="p">(</span>
         <span class="n">tags</span><span class="o">=</span><span class="n">_TAG</span><span class="p">,</span>
+        <span class="n">operation_id</span><span class="o">=</span><span class="s2">"alunos_responsaveis_detail"</span><span class="p">,</span>
         <span class="n">summary</span><span class="o">=</span><span class="s2">"Dados do responsável por CPF"</span><span class="p">,</span>
         <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
             <span class="n">OpenApiParameter</span><span class="p">(</span>
@@ -1217,10 +1240,12 @@
 <span class="sd">            httpx.HTTPStatusError: Se a API retornar status de erro.</span>
 <span class="sd">            httpx.RequestError: Se a API estiver inacessível.</span>
 <span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">codigo_turma</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">data_aula</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">detail_response</span><span class="p">(</span><span class="n">_MSG_DATA_OBRIGATORIA</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">_inteiro_positivo</span><span class="p">(</span><span class="n">codigo_turma</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">Response</span><span class="p">([])</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">validar_data_str</span><span class="p">(</span><span class="n">data_aula</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">detail_response</span><span class="p">(</span><span class="n">_MSG_DATA_OBRIGATORIA</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">detail_response</span><span class="p">(</span><span class="n">_MSG_DATA_INVALIDA</span><span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_alunos_ativos_data_aula</span><span class="p">(</span>
@@ -1417,7 +1442,7 @@
             <span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_alunos_por_turma</span><span class="p">(</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_alunos_turma_considera_inativos</span><span class="p">(</span>
                 <span class="n">codigo_turma</span><span class="p">,</span>
                 <span class="n">considerar_inativos</span><span class="o">=</span><span class="n">considera_inativos_bool</span><span class="p">,</span>
                 <span class="n">codigo_aluno</span><span class="o">=</span><span class="n">codigo_aluno</span><span class="p">,</span>
@@ -1490,6 +1515,10 @@
     <span class="nd">@extend_schema</span><span class="p">(</span>
         <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"Turma"</span><span class="p">],</span>
         <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"DEPRECIADO — Use ``todos-alunos/ano-turma/&lt;str:ano_turma&gt;/"</span>
+            <span class="s2">"modalidade/&lt;str:modalidade_turma&gt;/ano-letivo/&lt;str:ano_letivo&gt;/dre/"</span>
+            <span class="s2">"&lt;str:codigo_dre&gt;/inicio/&lt;str:data_inicio&gt;/fim/&lt;str:data_fim&gt;`` "</span>
+            <span class="s2">"para utilizar o parâmetro de data no formato ISO. "</span>
             <span class="s2">"Conta as matrículas em turmas de um ano/modalidade/DRE cuja "</span>
             <span class="s2">"matrícula começou até a data de fim. Orquestra os domínios "</span>
             <span class="s2">"Institucional, Pedagógico e Alunos."</span>
@@ -1503,6 +1532,7 @@
             <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"data_fim_ticks"</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">),</span>
         <span class="p">],</span>
         <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="mi">204</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+        <span class="n">deprecated</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -1562,6 +1592,108 @@
                 <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="mi">204</span><span class="p">)</span>
             <span class="n">quantidade</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">post_quantidade_matriculas_turmas_periodo</span><span class="p">(</span>
                 <span class="n">codigos_turmas</span><span class="p">,</span> <span class="n">data_fim_ticks</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_api_error_response</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">RequestError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_api_unavailable_response</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">quantidade</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="mi">204</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">quantidade</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">TotalAlunosTurmasPeriodoDataISOView</span><span class="p">(</span><span class="n">AlunosAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Conta alunos por ano da turma, modalidade, DRE e período."""</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"Turma"</span><span class="p">],</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Conta as matrículas em turmas de um ano/modalidade/DRE cuja "</span>
+            <span class="s2">"matrícula começou até a data de fim. Orquestra os domínios "</span>
+            <span class="s2">"Institucional, Pedagógico e Alunos."</span>
+        <span class="p">),</span>
+        <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"ano_turma"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">),</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"modalidade_turma"</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">),</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"ano_letivo"</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">),</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"codigo_dre"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">),</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span>
+                <span class="s2">"data_inicio"</span><span class="p">,</span>
+                <span class="n">OpenApiTypes</span><span class="o">.</span><span class="n">DATE</span><span class="p">,</span>
+                <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">"Formato: YYYY-MM-DD"</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span>
+                <span class="s2">"data_fim"</span><span class="p">,</span>
+                <span class="n">OpenApiTypes</span><span class="o">.</span><span class="n">DATE</span><span class="p">,</span>
+                <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">"Formato: YYYY-MM-DD"</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">],</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="mi">204</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span>
+        <span class="n">ano_turma</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">modalidade_turma</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">codigo_dre</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">data_inicio</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">data_fim</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Conta os alunos das turmas do recorte informado.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            _request: Requisição HTTP recebida.</span>
+<span class="sd">            ano_turma: Ano da turma (primeiro caractere da nomenclatura).</span>
+<span class="sd">            modalidade_turma: Código de modalidade da turma.</span>
+<span class="sd">            ano_letivo: Ano letivo consultado.</span>
+<span class="sd">            codigo_dre: Código da Diretoria Regional de Educação.</span>
+<span class="sd">            data_inicio: Data de início em formato ISO 8601; validada, mas</span>
+<span class="sd">                não filtra a contagem.</span>
+<span class="sd">            data_fim: Data de fim em formato ISO 8601; limita a data de</span>
+<span class="sd">                início da matrícula.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            O total de alunos, ou resposta vazia quando não há registros.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            httpx.HTTPError: Se a comunicação com algum serviço falhar de</span>
+<span class="sd">                forma não tratada.</span>
+<span class="sd">        """</span>
+        <span class="n">modalidade</span> <span class="o">=</span> <span class="n">_para_inteiro</span><span class="p">(</span><span class="n">modalidade_turma</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="ow">not</span> <span class="n">ano_turma</span>
+            <span class="ow">or</span> <span class="n">modalidade</span> <span class="ow">is</span> <span class="kc">None</span>
+            <span class="ow">or</span> <span class="n">modalidade</span> <span class="o">&lt;=</span> <span class="mi">0</span>
+            <span class="ow">or</span> <span class="ow">not</span> <span class="n">data_inicio</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="ow">or</span> <span class="ow">not</span> <span class="n">data_fim</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="n">_legacy_string_response</span><span class="p">(</span>
+                <span class="n">_MSG_ANO_MODALIDADE_OBRIGATORIOS</span><span class="p">,</span> <span class="mi">400</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">validar_data_str</span><span class="p">(</span><span class="n">data_inicio</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">validar_data_str</span><span class="p">(</span><span class="n">data_fim</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">detail_response</span><span class="p">(</span><span class="n">_MSG_DATA_INVALIDA</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ues</span> <span class="o">=</span> <span class="n">_codigos_ue_da_dre</span><span class="p">(</span>
+                <span class="n">institucional_services</span><span class="o">.</span><span class="n">get_ues_por_dre</span><span class="p">(</span><span class="n">codigo_dre</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">ues</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="mi">204</span><span class="p">)</span>
+            <span class="n">codigos_turmas</span> <span class="o">=</span> <span class="n">pedagogico_services</span><span class="o">.</span><span class="n">post_codigos_turmas_contagem</span><span class="p">(</span>
+                <span class="n">ues</span><span class="p">,</span>
+                <span class="n">ano_turma</span><span class="o">=</span><span class="n">ano_turma</span><span class="p">,</span>
+                <span class="n">codigo_modalidade</span><span class="o">=</span><span class="n">modalidade</span><span class="p">,</span>
+                <span class="n">ano_letivo</span><span class="o">=</span><span class="n">ano_letivo</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">codigos_turmas</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="mi">204</span><span class="p">)</span>
+            <span class="n">quantidade</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">services</span><span class="o">.</span><span class="n">post_quantidade_matriculas_turmas_periodo_em_data_iso</span><span class="p">(</span>
+                    <span class="n">codigos_turmas</span><span class="p">,</span> <span class="n">data_fim</span>
+                <span class="p">)</span>
             <span class="p">)</span>
         <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">_api_error_response</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
@@ -1854,35 +1986,35 @@
         <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">codigos</span><span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_query_int_list</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">nome</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_query_int_list</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="o">*</span><span class="n">nomes</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""Extrai inteiros repetíveis da query string, ignorando inválidos.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        request: Requisição consultada.</span>
-<span class="sd">        nome: Nome do parâmetro (snake_case).</span>
+<span class="sd">        *nomes: Nomes aceitos para o mesmo parâmetro.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Inteiros informados, sem entradas vazias ou não numéricas.</span>
 <span class="sd">    """</span>
     <span class="n">valores</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">bruto</span> <span class="ow">in</span> <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="n">nome</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">bruto</span> <span class="ow">in</span> <span class="n">_query_values</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="o">*</span><span class="n">nomes</span><span class="p">):</span>
         <span class="n">texto</span> <span class="o">=</span> <span class="n">bruto</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">texto</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">"-"</span><span class="p">)</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
             <span class="n">valores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">texto</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">valores</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_query_int_opt</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">nome</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_query_int_opt</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="o">*</span><span class="n">nomes</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Lê um inteiro opcional da query string.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        request: Requisição consultada.</span>
-<span class="sd">        nome: Nome do parâmetro (snake_case).</span>
+<span class="sd">        *nomes: Nomes aceitos para o mesmo parâmetro.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Inteiro informado, ou ``None`` quando ausente/inválido.</span>
 <span class="sd">    """</span>
-    <span class="n">bruto</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">nome</span><span class="p">)</span>
+    <span class="n">bruto</span> <span class="o">=</span> <span class="n">_query_value</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="o">*</span><span class="n">nomes</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">bruto</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">bruto</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">"-"</span><span class="p">)</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
         <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">bruto</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
     <span class="k">return</span> <span class="kc">None</span>
@@ -1902,7 +2034,7 @@
             <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"ano_letivo"</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">),</span>
             <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"codigo_aluno"</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">),</span>
             <span class="n">OpenApiParameter</span><span class="p">(</span>
-                <span class="s2">"tipos_turma"</span><span class="p">,</span>
+                <span class="s2">"tiposTurma"</span><span class="p">,</span>
                 <span class="n">OpenApiTypes</span><span class="o">.</span><span class="n">INT</span><span class="p">,</span>
                 <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">,</span>
                 <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -1929,8 +2061,8 @@
 <span class="w">        </span><span class="sd">"""Lista os códigos de turma regulares do aluno no ano letivo.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            request: Requisição com os filtros ``tipos_turma``, ``ue_codigo``,</span>
-<span class="sd">                ``data_referencia`` e ``semestre``.</span>
+<span class="sd">            request: Requisição com os filtros ``tiposTurma``, ``ueCodigo``,</span>
+<span class="sd">                ``dataReferencia`` e ``semestre``.</span>
 <span class="sd">            ano_letivo: Ano letivo consultado.</span>
 <span class="sd">            codigo_aluno: Código EOL do aluno.</span>
 
@@ -1938,9 +2070,11 @@
 <span class="sd">            Lista de códigos de turma (inteiros), ou lista vazia quando não</span>
 <span class="sd">            houver correspondência.</span>
 <span class="sd">        """</span>
-        <span class="n">tipos_turma</span> <span class="o">=</span> <span class="n">_query_int_list</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"tipos_turma"</span><span class="p">)</span>
-        <span class="n">ue_codigo</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ue_codigo"</span><span class="p">)</span>
-        <span class="n">data_referencia</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"data_referencia"</span><span class="p">)</span>
+        <span class="n">tipos_turma</span> <span class="o">=</span> <span class="n">_query_int_list</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"tiposTurma"</span><span class="p">,</span> <span class="s2">"tipos_turma"</span><span class="p">)</span>
+        <span class="n">ue_codigo</span> <span class="o">=</span> <span class="n">_query_value</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"ueCodigo"</span><span class="p">,</span> <span class="s2">"ue_codigo"</span><span class="p">)</span>
+        <span class="n">data_referencia</span> <span class="o">=</span> <span class="n">_query_value</span><span class="p">(</span>
+            <span class="n">request</span><span class="p">,</span> <span class="s2">"dataReferencia"</span><span class="p">,</span> <span class="s2">"data_referencia"</span>
+        <span class="p">)</span>
         <span class="n">semestre</span> <span class="o">=</span> <span class="n">_query_int_opt</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"semestre"</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">codigos</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">montar_codigos_turmas_regulares_aluno</span><span class="p">(</span>
@@ -1964,7 +2098,7 @@
 
 <span class="sd">    Alias do endpoint ``.../regulares``: o componente curricular é aceito</span>
 <span class="sd">    na rota mas ignorado no corpo do handler, consultando a mesma função.</span>
-<span class="sd">    Aqui só ``tipos_turma`` é considerado, conforme a assinatura deste</span>
+<span class="sd">    Aqui só ``tiposTurma`` é considerado, conforme a assinatura deste</span>
 <span class="sd">    endpoint.</span>
 <span class="sd">    """</span>
 
@@ -1983,7 +2117,7 @@
                 <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">,</span>
             <span class="p">),</span>
             <span class="n">OpenApiParameter</span><span class="p">(</span>
-                <span class="s2">"tipos_turma"</span><span class="p">,</span>
+                <span class="s2">"tiposTurma"</span><span class="p">,</span>
                 <span class="n">OpenApiTypes</span><span class="o">.</span><span class="n">INT</span><span class="p">,</span>
                 <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">,</span>
                 <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -2002,7 +2136,7 @@
 <span class="w">        </span><span class="sd">"""Lista os códigos de turma do aluno, ignorando o componente.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            request: Requisição com o filtro ``tipos_turma``.</span>
+<span class="sd">            request: Requisição com o filtro ``tiposTurma``.</span>
 <span class="sd">            ano_letivo: Ano letivo consultado.</span>
 <span class="sd">            codigo_aluno: Código EOL do aluno.</span>
 <span class="sd">            componente_curricular_codigo: Aceito na rota mas ignorado.</span>
@@ -2011,7 +2145,7 @@
 <span class="sd">            Lista de códigos de turma (inteiros), ou lista vazia quando não</span>
 <span class="sd">            houver correspondência.</span>
 <span class="sd">        """</span>
-        <span class="n">tipos_turma</span> <span class="o">=</span> <span class="n">_query_int_list</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"tipos_turma"</span><span class="p">)</span>
+        <span class="n">tipos_turma</span> <span class="o">=</span> <span class="n">_query_int_list</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"tiposTurma"</span><span class="p">,</span> <span class="s2">"tipos_turma"</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">codigos</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">montar_codigos_turmas_regulares_aluno</span><span class="p">(</span>
                 <span class="n">ano_letivo</span><span class="o">=</span><span class="n">ano_letivo</span><span class="p">,</span>
@@ -2105,8 +2239,8 @@
         <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
             <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"codigo_ue"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">),</span>
             <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"ano_letivo"</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">),</span>
-            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"nome_aluno"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
-            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"codigo_eol"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"nomeAluno"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"codigoEol"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
         <span class="p">],</span>
         <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">OpenApiResponse</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Success"</span><span class="p">)},</span>
     <span class="p">)</span>
@@ -2132,14 +2266,14 @@
             <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_alunos_da_ue</span><span class="p">(</span>
                 <span class="n">codigo_ue</span><span class="p">,</span>
                 <span class="n">ano_letivo</span><span class="p">,</span>
-                <span class="n">_query_value</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"nome_aluno"</span><span class="p">),</span>
-                <span class="n">_query_value</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"codigo_eol"</span><span class="p">),</span>
+                <span class="n">_query_value</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"nomeAluno"</span><span class="p">,</span> <span class="s2">"nome_aluno"</span><span class="p">),</span>
+                <span class="n">_query_value</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"codigoEol"</span><span class="p">,</span> <span class="s2">"codigo_eol"</span><span class="p">),</span>
             <span class="p">)</span>
         <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">_api_error_response</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
         <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">RequestError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">_api_unavailable_response</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">AlunoPorCodigoSerializer</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">AlunoDaUeSerializer</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span></div>
 
 
 
@@ -2218,6 +2352,7 @@
 
     <span class="nd">@extend_schema</span><span class="p">(</span>
         <span class="n">tags</span><span class="o">=</span><span class="n">_TAG</span><span class="p">,</span>
+        <span class="n">operation_id</span><span class="o">=</span><span class="s2">"alunos_turmas_ativos_list"</span><span class="p">,</span>
         <span class="n">summary</span><span class="o">=</span><span class="s2">"Alunos ativos da turma"</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">"Retorna os alunos ativos de uma turma."</span><span class="p">,</span>
         <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
@@ -2253,6 +2388,7 @@
 
     <span class="nd">@extend_schema</span><span class="p">(</span>
         <span class="n">tags</span><span class="o">=</span><span class="n">_TAG</span><span class="p">,</span>
+        <span class="n">operation_id</span><span class="o">=</span><span class="s2">"alunos_turmas_ativos_periodo"</span><span class="p">,</span>
         <span class="n">summary</span><span class="o">=</span><span class="s2">"Alunos ativos da turma por período"</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">"Retorna os alunos ativos da turma no período informado."</span><span class="p">,</span>
         <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
@@ -2261,7 +2397,7 @@
                 <span class="s2">"data_referencia_fim"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span>
             <span class="p">),</span>
             <span class="n">OpenApiParameter</span><span class="p">(</span>
-                <span class="s2">"data_referencia_inicio"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span>
+                <span class="s2">"dataReferenciaInicio"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span>
             <span class="p">),</span>
         <span class="p">],</span>
         <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">OpenApiResponse</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Success"</span><span class="p">)},</span>
@@ -2292,7 +2428,11 @@
             <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_alunos_ativos_turma_periodo</span><span class="p">(</span>
                 <span class="n">codigo_turma</span><span class="p">,</span>
                 <span class="n">data_referencia_fim</span><span class="p">,</span>
-                <span class="n">_query_value</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"data_referencia_inicio"</span><span class="p">),</span>
+                <span class="n">_query_value</span><span class="p">(</span>
+                    <span class="n">request</span><span class="p">,</span>
+                    <span class="s2">"dataReferenciaInicio"</span><span class="p">,</span>
+                    <span class="s2">"data_referencia_inicio"</span><span class="p">,</span>
+                <span class="p">),</span>
             <span class="p">)</span>
         <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">_api_error_response</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
@@ -2316,8 +2456,8 @@
             <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"ano_letivo"</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">),</span>
             <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"data_inicio"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">),</span>
             <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"data_fim"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">),</span>
-            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"ue_id"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
-            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"dre_id"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"ueId"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span><span class="s2">"dreId"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">),</span>
             <span class="n">OpenApiParameter</span><span class="p">(</span>
                 <span class="s2">"modalidades"</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span>
             <span class="p">),</span>
@@ -2350,8 +2490,8 @@
                 <span class="n">ano_letivo</span><span class="o">=</span><span class="n">ano_letivo</span><span class="p">,</span>
                 <span class="n">data_inicio</span><span class="o">=</span><span class="n">data_inicio</span><span class="p">,</span>
                 <span class="n">data_fim</span><span class="o">=</span><span class="n">data_fim</span><span class="p">,</span>
-                <span class="n">ue_id</span><span class="o">=</span><span class="n">_query_value</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"ue_id"</span><span class="p">),</span>
-                <span class="n">dre_id</span><span class="o">=</span><span class="n">_query_value</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"dre_id"</span><span class="p">),</span>
+                <span class="n">ue_id</span><span class="o">=</span><span class="n">_query_value</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"ueId"</span><span class="p">,</span> <span class="s2">"ue_id"</span><span class="p">),</span>
+                <span class="n">dre_id</span><span class="o">=</span><span class="n">_query_value</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">"dreId"</span><span class="p">,</span> <span class="s2">"dre_id"</span><span class="p">),</span>
                 <span class="n">modalidades</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s2">"modalidades"</span><span class="p">),</span>
             <span class="p">)</span>
         <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
@@ -2373,7 +2513,7 @@
         <span class="n">description</span><span class="o">=</span><span class="s2">"Retorna lista de alunos."</span><span class="p">,</span>
         <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
             <span class="n">OpenApiParameter</span><span class="p">(</span>
-                <span class="s2">"codigos_aluno"</span><span class="p">,</span>
+                <span class="s2">"codigosAluno"</span><span class="p">,</span>
                 <span class="nb">int</span><span class="p">,</span>
                 <span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">QUERY</span><span class="p">,</span>
                 <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -2392,8 +2532,8 @@
 <span class="sd">            Lista de alunos correspondentes aos códigos informados.</span>
 <span class="sd">        """</span>
         <span class="n">codigos_aluno</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span>
-            <span class="s2">"codigos_aluno"</span>
-        <span class="p">)</span> <span class="ow">or</span> <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s2">"codigosAluno"</span><span class="p">)</span>
+            <span class="s2">"codigosAluno"</span>
+        <span class="p">)</span> <span class="ow">or</span> <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s2">"codigos_aluno"</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">codigos_aluno</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">_legacy_status_601_response</span><span class="p">(</span>
                 <span class="n">_MSG_CODIGOS_ALUNOS_OBRIGATORIOS</span>

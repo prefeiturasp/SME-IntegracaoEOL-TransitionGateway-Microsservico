@@ -38,6 +38,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">cast</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">drf_spectacular.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenApiTypes</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">drf_spectacular.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenApiParameter</span><span class="p">,</span> <span class="n">extend_schema</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">rest_framework</span><span class="w"> </span><span class="kn">import</span> <span class="n">status</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">rest_framework.request</span><span class="w"> </span><span class="kn">import</span> <span class="n">Request</span>
@@ -223,6 +224,7 @@
 
     <span class="nd">@extend_schema</span><span class="p">(</span>
         <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_DRE</span><span class="p">,</span>
+        <span class="n">operation_id</span><span class="o">=</span><span class="s2">"DREs_list"</span><span class="p">,</span>
         <span class="n">summary</span><span class="o">=</span><span class="s2">"Lista todas as DREs"</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="p">(</span>
             <span class="s2">"Retorna a lista completa de Diretorias Regionais de Educação "</span>
@@ -261,6 +263,7 @@
 
     <span class="nd">@extend_schema</span><span class="p">(</span>
         <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_DRE</span><span class="p">,</span>
+        <span class="n">operation_id</span><span class="o">=</span><span class="s2">"DREs_detail"</span><span class="p">,</span>
         <span class="n">summary</span><span class="o">=</span><span class="s2">"Detalhe de uma DRE"</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="p">(</span>
             <span class="s2">"Retorna dados completos da Diretoria Regional de Educação "</span>
@@ -467,6 +470,7 @@
 
     <span class="nd">@extend_schema</span><span class="p">(</span>
         <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_ESCOLA</span><span class="p">,</span>
+        <span class="n">operation_id</span><span class="o">=</span><span class="s2">"escolas_professores_list"</span><span class="p">,</span>
         <span class="n">summary</span><span class="o">=</span><span class="s2">"Professores de uma escola"</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="p">(</span>
             <span class="s2">"Retorna professores atribuídos à escola informada, conforme "</span>
@@ -516,6 +520,47 @@
             <span class="n">ano_letivo</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">ProfessorEscolaLegadoSerializer</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">EscolaProfessoresAnoView</span><span class="p">(</span><span class="n">EscolaProfessoresView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Lista professores atribuídos a uma escola em um ano letivo."""</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_ESCOLA</span><span class="p">,</span>
+        <span class="n">operation_id</span><span class="o">=</span><span class="s2">"escolas_professores_ano_list"</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Professores de uma escola por ano letivo"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Retorna professores atribuídos à escola informada no ano letivo, "</span>
+            <span class="s2">"conforme contrato legado."</span>
+        <span class="p">),</span>
+        <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">"codigo_eol_escola"</span><span class="p">,</span>
+                <span class="n">location</span><span class="o">=</span><span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">"Código EOL da escola"</span><span class="p">,</span>
+                <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">OpenApiParameter</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">"ano_letivo"</span><span class="p">,</span>
+                <span class="n">location</span><span class="o">=</span><span class="n">OpenApiParameter</span><span class="o">.</span><span class="n">PATH</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">"Ano letivo"</span><span class="p">,</span>
+                <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">],</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">ProfessorEscolaLegadoSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="mi">400</span><span class="p">:</span> <span class="nb">str</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span>
+        <span class="n">codigo_eol_escola</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Retorna professores atribuídos a uma escola no ano letivo."""</span>
+        <span class="k">return</span> <span class="n">cast</span><span class="p">(</span>
+            <span class="n">Response</span><span class="p">,</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">codigo_eol_escola</span><span class="p">,</span> <span class="n">ano_letivo</span><span class="p">)</span>
+        <span class="p">)</span>
 
 
 <div class="viewcode-block" id="UesPorDREView">
@@ -1072,6 +1117,7 @@
             <span class="s2">"Retorna lista de tipos de unidade educacional cadastrados "</span>
             <span class="s2">"no sistema."</span>
         <span class="p">),</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">OpenApiTypes</span><span class="o">.</span><span class="n">OBJECT</span><span class="p">},</span>
     <span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>

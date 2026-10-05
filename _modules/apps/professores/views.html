@@ -40,8 +40,11 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">drf_spectacular.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenApiTypes</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">drf_spectacular.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenApiParameter</span><span class="p">,</span> <span class="n">extend_schema</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">rest_framework.parsers</span><span class="w"> </span><span class="kn">import</span> <span class="n">JSONParser</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">drf_spectacular.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">OpenApiParameter</span><span class="p">,</span>
+    <span class="n">OpenApiResponse</span><span class="p">,</span>
+    <span class="n">extend_schema</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">rest_framework.request</span><span class="w"> </span><span class="kn">import</span> <span class="n">Request</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">apps.core.datetime</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -68,6 +71,7 @@
     <span class="n">BuscarProfessorTitularPorDisciplinaSerializer</span><span class="p">,</span>
     <span class="n">BuscarTurmasElegiveisSerializer</span><span class="p">,</span>
     <span class="n">CargoFuncionarioConectaSerializer</span><span class="p">,</span>
+    <span class="n">CargoSerializer</span><span class="p">,</span>
     <span class="n">DisciplinasFuncionarioPathSerializer</span><span class="p">,</span>
     <span class="n">DisciplinaTurmaAgrupamentoSerializer</span><span class="p">,</span>
     <span class="n">DisciplinaTurmaAtribuidaSerializer</span><span class="p">,</span>
@@ -120,6 +124,7 @@
 <span class="n">_TAG_ACESSOS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Acessos"</span><span class="p">]</span>
 <span class="n">_TAG_DRE</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"DiretoriaRegionalEducacao"</span><span class="p">]</span>
 <span class="n">_TAG_ESCOLA</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Escola"</span><span class="p">]</span>
+<span class="n">_TAG_CARGO</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Cargo"</span><span class="p">]</span>
 <span class="n">_TAG_FUNCIONARIO</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Funcionario"</span><span class="p">]</span>
 <span class="n">_TAG_PROFESSOR</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Professor"</span><span class="p">]</span>
 
@@ -345,12 +350,6 @@
     <span class="n">api_domain</span> <span class="o">=</span> <span class="n">_DOMINIO_PROFESSORES</span>
 
 
-<span class="k">class</span><span class="w"> </span><span class="nc">JsonPatchParser</span><span class="p">(</span><span class="n">JSONParser</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Processa payload JSON Patch como JSON."""</span>
-
-    <span class="n">media_type</span> <span class="o">=</span> <span class="s2">"application/json-patch+json"</span>
-
-
 <span class="k">def</span><span class="w"> </span><span class="nf">_is_lista_turmas</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Verifica se os dados representam uma lista de turmas.</span>
 
@@ -570,6 +569,7 @@
             <span class="s2">"Verifica se o professor possui atribuição na turma e "</span>
             <span class="s2">"componente curricular durante o período informado."</span>
         <span class="p">),</span>
+        <span class="n">request</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">OpenApiTypes</span><span class="o">.</span><span class="n">BOOL</span><span class="p">,</span> <span class="mi">400</span><span class="p">:</span> <span class="n">OpenApiTypes</span><span class="o">.</span><span class="n">OBJECT</span><span class="p">},</span>
     <span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span>
@@ -1857,8 +1857,6 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">FuncionariosBuscarPorListaLoginView</span><span class="p">(</span><span class="n">ProfessoresAPIView</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Retorna funcionarios pelos logins informados."""</span>
 
-    <span class="n">parser_classes</span> <span class="o">=</span> <span class="p">[</span><span class="n">JSONParser</span><span class="p">,</span> <span class="n">JsonPatchParser</span><span class="p">]</span>
-
     <span class="nd">@extend_schema</span><span class="p">(</span>
         <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_FUNCIONARIO</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="p">(</span><span class="s2">"Retorna funcionarios pelos logins informados."</span><span class="p">),</span>
@@ -1898,8 +1896,6 @@
 
 <span class="k">class</span><span class="w"> </span><span class="nc">FuncionariosUnidadeView</span><span class="p">(</span><span class="n">ProfessoresAPIView</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Retorna funcionarios por unidade e perfis."""</span>
-
-    <span class="n">parser_classes</span> <span class="o">=</span> <span class="p">[</span><span class="n">JSONParser</span><span class="p">,</span> <span class="n">JsonPatchParser</span><span class="p">]</span>
 
     <span class="nd">@extend_schema</span><span class="p">(</span>
         <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_FUNCIONARIO</span><span class="p">,</span>
@@ -1952,8 +1948,6 @@
 
 <span class="k">class</span><span class="w"> </span><span class="nc">FuncionariosAdminsSmeView</span><span class="p">(</span><span class="n">ProfessoresAPIView</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Retorna administradores SME pelos perfis informados."""</span>
-
-    <span class="n">parser_classes</span> <span class="o">=</span> <span class="p">[</span><span class="n">JSONParser</span><span class="p">,</span> <span class="n">JsonPatchParser</span><span class="p">]</span>
 
     <span class="nd">@extend_schema</span><span class="p">(</span>
         <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_FUNCIONARIO</span><span class="p">,</span>
@@ -2033,6 +2027,7 @@
 
     <span class="nd">@extend_schema</span><span class="p">(</span>
         <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_ESCOLA</span><span class="p">,</span>
+        <span class="n">operation_id</span><span class="o">=</span><span class="s2">"escolas_funcionarios_cargos_detail"</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="p">(</span><span class="s2">"Retorna funcionários da escola filtrados por cargo."</span><span class="p">),</span>
         <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">FuncionarioEscolaSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="mi">204</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
     <span class="p">)</span>
@@ -2072,6 +2067,7 @@
 
     <span class="nd">@extend_schema</span><span class="p">(</span>
         <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_ESCOLA</span><span class="p">,</span>
+        <span class="n">operation_id</span><span class="o">=</span><span class="s2">"escolas_funcionarios_cargos_list"</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="p">(</span><span class="s2">"Retorna funcionários da escola filtrados por cargos."</span><span class="p">),</span>
         <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
             <span class="n">OpenApiParameter</span><span class="p">(</span>
@@ -2123,6 +2119,7 @@
 
     <span class="nd">@extend_schema</span><span class="p">(</span>
         <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_ESCOLA</span><span class="p">,</span>
+        <span class="n">operation_id</span><span class="o">=</span><span class="s2">"escolas_funcionarios_funcoes_atividades_list"</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="p">(</span><span class="s2">"Retorna funcionários da escola por funções atividades."</span><span class="p">),</span>
         <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
             <span class="n">OpenApiParameter</span><span class="p">(</span>
@@ -2182,6 +2179,7 @@
 
     <span class="nd">@extend_schema</span><span class="p">(</span>
         <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_ESCOLA</span><span class="p">,</span>
+        <span class="n">operation_id</span><span class="o">=</span><span class="s2">"escolas_funcionarios_funcoes_externas_list"</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="p">(</span><span class="s2">"Retorna funcionários da escola por funções externas."</span><span class="p">),</span>
         <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
             <span class="n">OpenApiParameter</span><span class="p">(</span>
@@ -2242,6 +2240,7 @@
 
     <span class="nd">@extend_schema</span><span class="p">(</span>
         <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_ESCOLA</span><span class="p">,</span>
+        <span class="n">operation_id</span><span class="o">=</span><span class="s2">"escolas_funcionarios_funcoes_externas_detail"</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="p">(</span><span class="s2">"Retorna funcionários da escola por uma função externa."</span><span class="p">),</span>
         <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">FuncionarioEscolaSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="mi">204</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
     <span class="p">)</span>
@@ -2283,6 +2282,7 @@
 
     <span class="nd">@extend_schema</span><span class="p">(</span>
         <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_ESCOLA</span><span class="p">,</span>
+        <span class="n">operation_id</span><span class="o">=</span><span class="s2">"escolas_funcionarios_funcoes_atividades_detail"</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="p">(</span>
             <span class="s2">"Retorna funcionários da escola por uma função atividade."</span>
         <span class="p">),</span>
@@ -2425,6 +2425,31 @@
         <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">FuncionarioEscolaSerializer</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 
 
+<span class="k">class</span><span class="w"> </span><span class="nc">CargosView</span><span class="p">(</span><span class="n">ProfessoresAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Retorna cargos cadastrados no EOL."""</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_CARGO</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Retorna cargos cadastrados no EOL."</span><span class="p">,</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">CargoSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="mi">404</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">502</span><span class="p">:</span> <span class="nb">dict</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Retorna cargos cadastrados no EOL.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            _request: Requisição HTTP recebida pela API.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Cargos cadastrados no EOL ou status de erro legado.</span>
+<span class="sd">        """</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_cargos</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">data</span> <span class="o">==</span> <span class="p">[]:</span>
+            <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="mi">404</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">_is_lista_dicionarios</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">detail_response</span><span class="p">(</span><span class="n">_MSG_RESPOSTA_INVALIDA_API</span><span class="p">,</span> <span class="mi">502</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">CargoSerializer</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+
 <span class="k">class</span><span class="w"> </span><span class="nc">CargosFuncionarioView</span><span class="p">(</span><span class="n">ProfessoresAPIView</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Retorna cargos por registro funcional."""</span>
 
@@ -2544,8 +2569,6 @@
 
 <span class="k">class</span><span class="w"> </span><span class="nc">UsuariosConectaFormacaoView</span><span class="p">(</span><span class="n">ProfessoresAPIView</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Retorna usuários do Conecta Formação por perfis."""</span>
-
-    <span class="n">parser_classes</span> <span class="o">=</span> <span class="p">[</span><span class="n">JSONParser</span><span class="p">,</span> <span class="n">JsonPatchParser</span><span class="p">]</span>
 
     <span class="nd">@extend_schema</span><span class="p">(</span>
         <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_FUNCIONARIO</span><span class="p">,</span>
@@ -3193,12 +3216,16 @@
 
     <span class="nd">@extend_schema</span><span class="p">(</span>
         <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_PROFESSOR</span><span class="p">,</span>
+        <span class="n">operation_id</span><span class="o">=</span><span class="s2">"professor_escola_turmas_atribuidas"</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="p">(</span>
             <span class="s2">"Retorna turmas atribuídas ao professor na escola no ano letivo."</span>
         <span class="p">),</span>
         <span class="n">responses</span><span class="o">=</span><span class="p">{</span>
             <span class="mi">200</span><span class="p">:</span> <span class="n">ProfessorTurmaAtribuidaSimplificadaSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
-            <span class="mi">404</span><span class="p">:</span> <span class="n">_MSG_TURMAS_NAO_ENCONTRADAS</span><span class="p">,</span>
+            <span class="mi">404</span><span class="p">:</span> <span class="n">OpenApiResponse</span><span class="p">(</span>
+                <span class="n">response</span><span class="o">=</span><span class="n">OpenApiTypes</span><span class="o">.</span><span class="n">STR</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="n">_MSG_TURMAS_NAO_ENCONTRADAS</span><span class="p">,</span>
+            <span class="p">),</span>
         <span class="p">},</span>
     <span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span>
@@ -3241,12 +3268,16 @@
 
     <span class="nd">@extend_schema</span><span class="p">(</span>
         <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_PROFESSOR</span><span class="p">,</span>
+        <span class="n">operation_id</span><span class="o">=</span><span class="s2">"professores_escola_turmas_atribuidas"</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="p">(</span>
             <span class="s2">"Retorna turmas atribuídas a professores na escola no ano letivo."</span>
         <span class="p">),</span>
         <span class="n">responses</span><span class="o">=</span><span class="p">{</span>
             <span class="mi">200</span><span class="p">:</span> <span class="n">ProfessorTurmaAtribuidaSimplificadaSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
-            <span class="mi">404</span><span class="p">:</span> <span class="n">_MSG_TURMAS_NAO_ENCONTRADAS</span><span class="p">,</span>
+            <span class="mi">404</span><span class="p">:</span> <span class="n">OpenApiResponse</span><span class="p">(</span>
+                <span class="n">response</span><span class="o">=</span><span class="n">OpenApiTypes</span><span class="o">.</span><span class="n">STR</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="n">_MSG_TURMAS_NAO_ENCONTRADAS</span><span class="p">,</span>
+            <span class="p">),</span>
         <span class="p">},</span>
     <span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span>
@@ -3281,10 +3312,14 @@
 
     <span class="nd">@extend_schema</span><span class="p">(</span>
         <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_PROFESSOR</span><span class="p">,</span>
+        <span class="n">operation_id</span><span class="o">=</span><span class="s2">"professor_turmas_atribuidas"</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="p">(</span><span class="s2">"Retorna turmas atribuídas ao professor no ano letivo."</span><span class="p">),</span>
         <span class="n">responses</span><span class="o">=</span><span class="p">{</span>
             <span class="mi">200</span><span class="p">:</span> <span class="n">ProfessorTurmaAtribuidaSimplificadaSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
-            <span class="mi">404</span><span class="p">:</span> <span class="n">_MSG_TURMAS_NAO_ENCONTRADAS</span><span class="p">,</span>
+            <span class="mi">404</span><span class="p">:</span> <span class="n">OpenApiResponse</span><span class="p">(</span>
+                <span class="n">response</span><span class="o">=</span><span class="n">OpenApiTypes</span><span class="o">.</span><span class="n">STR</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="n">_MSG_TURMAS_NAO_ENCONTRADAS</span><span class="p">,</span>
+            <span class="p">),</span>
         <span class="p">},</span>
     <span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span>

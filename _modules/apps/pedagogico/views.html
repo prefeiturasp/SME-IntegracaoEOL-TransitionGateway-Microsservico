@@ -36,6 +36,7 @@
 <span></span><span class="sd">"""Views do domínio pedagógico."""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">cast</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
@@ -909,7 +910,14 @@
 
     <span class="nd">@extend_schema</span><span class="p">(</span>
         <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_ESCOLA</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">"Retorna as turmas da UE/ano letivo filtradas por tipo de sala."</span><span class="p">,</span>
+        <span class="n">deprecated</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"DEPRECIADO — use "</span>
+            <span class="s2">"`.../turmas-por-sala/</span><span class="si">{tipo_sala}</span><span class="s2">/anos_letivos/</span><span class="si">{ano_letivo}</span><span class="s2">` "</span>
+            <span class="s2">"(sempre 200, mesmo sem dados). "</span>
+            <span class="s2">"Retorna as turmas da UE/ano letivo filtradas por tipo de "</span>
+            <span class="s2">"sala."</span>
+        <span class="p">),</span>
         <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">TurmaPorSalaSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="mi">404</span><span class="p">:</span> <span class="nb">str</span><span class="p">},</span>
     <span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span>
@@ -920,6 +928,8 @@
         <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Retorna as turmas da UE/ano letivo filtradas por tipo de sala.</span>
+
+<span class="sd">        Depreciada: use ``turmas-por-sala`` (200 + [] mesmo sem dados).</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            _request: Requisição HTTP recebida.</span>
@@ -1031,7 +1041,13 @@
 
     <span class="nd">@extend_schema</span><span class="p">(</span>
         <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_ESCOLA</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">"Retorna as turmas de Sondagem da UE/ano letivo."</span><span class="p">,</span>
+        <span class="n">deprecated</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"DEPRECIADO — use "</span>
+            <span class="s2">"`.../turmas-sondagem/anos_letivos/</span><span class="si">{ano_letivo}</span><span class="s2">` "</span>
+            <span class="s2">"(sempre 200, mesmo sem dados). "</span>
+            <span class="s2">"Retorna as turmas de Sondagem da UE/ano letivo."</span>
+        <span class="p">),</span>
         <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">TurmaPorSalaSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="mi">404</span><span class="p">:</span> <span class="nb">str</span><span class="p">},</span>
     <span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span>
@@ -1041,6 +1057,8 @@
         <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Retorna as turmas de Sondagem da UE/ano letivo.</span>
+
+<span class="sd">        Depreciada: use ``turmas-sondagem`` (200 + [] mesmo sem dados).</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            _request: Requisição HTTP recebida.</span>
@@ -1083,6 +1101,115 @@
                 <span class="mi">502</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">serializer</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_resposta_turmas_sala_sempre_200</span><span class="p">(</span>
+    <span class="n">chamar_sidecar</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Chama o sidecar e serializa como turmas-por-sala, sem tradução p/ 404.</span>
+
+<span class="sd">    Compartilhada pelas rotas v2 de `turmas-por-sala` e `turmas-sondagem`,</span>
+<span class="sd">    que tratam o sidecar da mesma forma e diferem só na chamada de serviço.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        chamar_sidecar: Função sem argumentos que executa a chamada ao</span>
+<span class="sd">            sidecar e devolve os dados já no formato esperado.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Resposta HTTP 200 com as turmas encontradas (vazia ou não), ou o</span>
+<span class="sd">        erro traduzido do sidecar.</span>
+<span class="sd">    """</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">chamar_sidecar</span><span class="p">()</span>
+    <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">body</span> <span class="o">=</span> <span class="n">exc</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="n">detail</span> <span class="o">=</span> <span class="n">exc</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">or</span> <span class="n">exc</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">reason_phrase</span>
+            <span class="n">body</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"detail"</span><span class="p">:</span> <span class="n">detail</span><span class="p">}</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">body</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="n">exc</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">RequestError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_api_unavailable_response</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">detail_response</span><span class="p">(</span><span class="n">_RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA</span><span class="p">,</span> <span class="mi">502</span><span class="p">)</span>
+
+    <span class="n">serializer</span> <span class="o">=</span> <span class="n">TurmaPorSalaSerializer</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">serializer</span><span class="o">.</span><span class="n">is_valid</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">detail_response</span><span class="p">(</span><span class="n">_RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA</span><span class="p">,</span> <span class="mi">502</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">serializer</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">TurmasPorSalaV2ViewSet</span><span class="p">(</span><span class="n">PedagogicoAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Lista turmas de uma UE/ano letivo por tipo de sala (sempre 200)."""</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_ESCOLA</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Retorna as turmas da UE/ano letivo filtradas por tipo de "</span>
+            <span class="s2">"sala. Sempre 200, mesmo sem dados."</span>
+        <span class="p">),</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">TurmaPorSalaSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span>
+        <span class="n">codigo_ue</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">tipo_sala</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Retorna as turmas da UE/ano letivo filtradas por tipo de sala.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            _request: Requisição HTTP recebida.</span>
+<span class="sd">            codigo_ue: Código da unidade educacional.</span>
+<span class="sd">            tipo_sala: Tipo de sala informado na rota.</span>
+<span class="sd">            ano_letivo: Ano letivo consultado.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Resposta HTTP 200 com as turmas encontradas (vazia ou não).</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">_resposta_turmas_sala_sempre_200</span><span class="p">(</span>
+            <span class="k">lambda</span><span class="p">:</span> <span class="n">services</span><span class="o">.</span><span class="n">get_turmas_por_tipo_sala</span><span class="p">(</span>
+                <span class="n">codigo_ue</span><span class="o">=</span><span class="n">codigo_ue</span><span class="p">,</span>
+                <span class="n">tipo_sala</span><span class="o">=</span><span class="n">tipo_sala</span><span class="p">,</span>
+                <span class="n">ano_letivo</span><span class="o">=</span><span class="n">ano_letivo</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">TurmasSondagemV2ViewSet</span><span class="p">(</span><span class="n">PedagogicoAPIView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Lista turmas regulares de 5º ano do Fundamental para Sondagem."""</span>
+
+    <span class="nd">@extend_schema</span><span class="p">(</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">_TAG_ESCOLA</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Retorna as turmas de Sondagem da UE/ano letivo. Sempre 200, "</span>
+            <span class="s2">"mesmo sem dados."</span>
+        <span class="p">),</span>
+        <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">TurmaPorSalaSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span>
+        <span class="n">codigo_ue</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Retorna as turmas de Sondagem da UE/ano letivo.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            _request: Requisição HTTP recebida.</span>
+<span class="sd">            codigo_ue: Código da unidade educacional.</span>
+<span class="sd">            ano_letivo: Ano letivo consultado.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Resposta HTTP 200 com as turmas encontradas (vazia ou não).</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">_resposta_turmas_sala_sempre_200</span><span class="p">(</span>
+            <span class="k">lambda</span><span class="p">:</span> <span class="n">services</span><span class="o">.</span><span class="n">get_turmas_sondagem</span><span class="p">(</span>
+                <span class="n">codigo_ue</span><span class="o">=</span><span class="n">codigo_ue</span><span class="p">,</span>
+                <span class="n">ano_letivo</span><span class="o">=</span><span class="n">ano_letivo</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
 
 
 <div class="viewcode-block" id="ComponentesCurricularesViewSet">

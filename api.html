@@ -3750,6 +3750,13 @@ planejamento serão adicionados.</p></li>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="apps.professores.serializers.CargoSerializer">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.professores.serializers.</span></span><span class="sig-name descname"><span class="pre">CargoSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/professores/serializers.html#CargoSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.professores.serializers.CargoSerializer" title="Link para esta definição">¶</a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">Serializer</span></code></p>
+<p>Serializa cargo no contrato legado.</p>
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="apps.professores.serializers.CargoFuncionarioConectaSerializer">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.professores.serializers.</span></span><span class="sig-name descname"><span class="pre">CargoFuncionarioConectaSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/professores/serializers.html#CargoFuncionarioConectaSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.professores.serializers.CargoFuncionarioConectaSerializer" title="Link para esta definição">¶</a></dt>
 <dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">Serializer</span></code></p>
@@ -4205,6 +4212,20 @@ planejamento serão adicionados.</p></li>
 </dd>
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>cpf</strong> (<em>str</em>)</p>
+</dd>
+<dt class="field-even">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Any</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="apps.professores.services.get_cargos">
+<span class="sig-prename descclassname"><span class="pre">apps.professores.services.</span></span><span class="sig-name descname"><span class="pre">get_cargos</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/professores/services.html#get_cargos"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.professores.services.get_cargos" title="Link para esta definição">¶</a></dt>
+<dd><p>Retorna cargos cadastrados no EOL.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Retorna<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Lista de cargos ou ausência de dados.</p>
 </dd>
 <dt class="field-even">Tipo de retorno<span class="colon">:</span></dt>
 <dd class="field-even"><p><em>Any</em></p>
@@ -6168,6 +6189,33 @@ nascimento quando ausente.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="apps.alunos.serializers.AlunoDaUeSerializer">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.serializers.</span></span><span class="sig-name descname"><span class="pre">AlunoDaUeSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#AlunoDaUeSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.alunos.serializers.AlunoDaUeSerializer" title="Link para esta definição">¶</a></dt>
+<dd><p>Base: <a class="reference internal" href="#id28" title="apps.alunos.serializers.AlunoPorCodigoSerializer"><code class="xref py py-class docutils literal notranslate"><span class="pre">AlunoPorCodigoSerializer</span></code></a></p>
+<p>Serializa dados de alunos vinculados a uma unidade educacional.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="apps.alunos.serializers.AlunoDaUeSerializer.to_representation">
+<span class="sig-name descname"><span class="pre">to_representation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">instance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#AlunoDaUeSerializer.to_representation"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.alunos.serializers.AlunoDaUeSerializer.to_representation" title="Link para esta definição">¶</a></dt>
+<dd><p>Representa os alunos mantendo coerções e valores padrão.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>instance</strong> – Dados do aluno a representar.</p>
+</dd>
+<dt class="field-even">Retorna<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dados do aluno no formato legado.</p>
+</dd>
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>instance</strong> (<em>Any</em>)</p>
+</dd>
+<dt class="field-even">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str, <em>Any</em>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="apps.alunos.serializers.AlunoAtivoTurmaSerializer">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.serializers.</span></span><span class="sig-name descname"><span class="pre">AlunoAtivoTurmaSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#AlunoAtivoTurmaSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.alunos.serializers.AlunoAtivoTurmaSerializer" title="Link para esta definição">¶</a></dt>
 <dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">Serializer</span></code></p>
@@ -6235,6 +6283,20 @@ nascimento quando ausente.</p>
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.serializers.</span></span><span class="sig-name descname"><span class="pre">QuantidadeMatriculadosSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#QuantidadeMatriculadosSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.alunos.serializers.QuantidadeMatriculadosSerializer" title="Link para esta definição">¶</a></dt>
 <dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">Serializer</span></code></p>
 <p>Serializa a quantidade de matriculados no contrato legado.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="apps.alunos.serializers.QuantidadeMatriculadosSerializer.to_representation">
+<span class="sig-name descname"><span class="pre">to_representation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">instance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#QuantidadeMatriculadosSerializer.to_representation"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.alunos.serializers.QuantidadeMatriculadosSerializer.to_representation" title="Link para esta definição">¶</a></dt>
+<dd><p>Representa contagens preservando coerções e campos opcionais.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>instance</strong> (<em>Any</em>)</p>
+</dd>
+<dt class="field-even">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str, <em>Any</em>]</p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -6843,6 +6905,40 @@ Omitido quando <code class="docutils literal notranslate"><span class="pre">None
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="apps.alunos.services.get_alunos_turma_considera_inativos">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_alunos_turma_considera_inativos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Separador de parâmetros somente-nomeados (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">considerar_inativos</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_alunos_turma_considera_inativos"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.alunos.services.get_alunos_turma_considera_inativos" title="Link para esta definição">¶</a></dt>
+<dd><p>Retorna os alunos de uma turma para o filtro considera-inativos.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>codigo_turma</strong> – Código EOL da turma.</p></li>
+<li><p><strong>considerar_inativos</strong> – Inclui alunos inativos quando <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>codigo_aluno</strong> – Quando informado, restringe ao aluno correspondente.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Retorna<span class="colon">:</span></dt>
+<dd class="field-even"><p>Lista de alunos, ou lista vazia quando não houver registros.</p>
+</dd>
+<dt class="field-odd">Levanta<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>httpx.HTTPStatusError</strong> – Se o serviço externo retornar status de erro.</p></li>
+<li><p><strong>httpx.RequestError</strong> – Se o serviço externo estiver inacessível.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>codigo_turma</strong> (<em>str</em>)</p></li>
+<li><p><strong>considerar_inativos</strong> (<em>bool</em>)</p></li>
+<li><p><strong>codigo_aluno</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>Any</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="apps.alunos.services.get_alunos_por_turma_e_data_aula">
 <span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_alunos_por_turma_e_data_aula</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_aula</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_alunos_por_turma_e_data_aula"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.alunos.services.get_alunos_por_turma_e_data_aula" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna os alunos de uma turma consultando o endpoint.</p>
@@ -6935,6 +7031,39 @@ turmas.</p>
 <dd class="field-even"><ul class="simple">
 <li><p><strong>codigos_turmas</strong> (<em>list</em><em>[</em><em>int</em><em>]</em>)</p></li>
 <li><p><strong>data_fim_ticks</strong> (<em>str</em><em> | </em><em>int</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="apps.alunos.services.post_quantidade_matriculas_turmas_periodo_em_data_iso">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">post_quantidade_matriculas_turmas_periodo_em_data_iso</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigos_turmas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_fim</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#post_quantidade_matriculas_turmas_periodo_em_data_iso"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.alunos.services.post_quantidade_matriculas_turmas_periodo_em_data_iso" title="Link para esta definição">¶</a></dt>
+<dd><p>Retorna a quantidade de alocações válidas nas turmas até a data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>codigos_turmas</strong> – Códigos EOL das turmas consideradas.</p></li>
+<li><p><strong>data_fim</strong> – Data limite em formato ISO 8601.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Retorna<span class="colon">:</span></dt>
+<dd class="field-even"><p>Quantidade de alocações no período, ou <code class="docutils literal notranslate"><span class="pre">0</span></code> quando não houver
+turmas.</p>
+</dd>
+<dt class="field-odd">Levanta<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>httpx.HTTPStatusError</strong> – Se o serviço externo retornar status de erro.</p></li>
+<li><p><strong>httpx.RequestError</strong> – Se o serviço externo estiver inacessível.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>codigos_turmas</strong> (<em>list</em><em>[</em><em>int</em><em>]</em>)</p></li>
+<li><p><strong>data_fim</strong> (<em>str</em>)</p></li>
 </ul>
 </dd>
 <dt class="field-odd">Tipo de retorno<span class="colon">:</span></dt>
@@ -8479,85 +8608,126 @@ nascimento quando ausente.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="id29">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.serializers.</span></span><span class="sig-name descname"><span class="pre">AlunoAtivoTurmaSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#AlunoAtivoTurmaSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id29" title="Link para esta definição">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.serializers.</span></span><span class="sig-name descname"><span class="pre">AlunoDaUeSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#AlunoDaUeSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id29" title="Link para esta definição">¶</a></dt>
+<dd><p>Base: <a class="reference internal" href="#id28" title="apps.alunos.serializers.AlunoPorCodigoSerializer"><code class="xref py py-class docutils literal notranslate"><span class="pre">AlunoPorCodigoSerializer</span></code></a></p>
+<p>Serializa dados de alunos vinculados a uma unidade educacional.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="id30">
+<span class="sig-name descname"><span class="pre">to_representation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">instance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#AlunoDaUeSerializer.to_representation"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id30" title="Link para esta definição">¶</a></dt>
+<dd><p>Representa os alunos mantendo coerções e valores padrão.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>instance</strong> – Dados do aluno a representar.</p>
+</dd>
+<dt class="field-even">Retorna<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dados do aluno no formato legado.</p>
+</dd>
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>instance</strong> (<em>Any</em>)</p>
+</dd>
+<dt class="field-even">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str, <em>Any</em>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="id31">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.serializers.</span></span><span class="sig-name descname"><span class="pre">AlunoAtivoTurmaSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#AlunoAtivoTurmaSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id31" title="Link para esta definição">¶</a></dt>
 <dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">Serializer</span></code></p>
 <p>Serializa dados de aluno ativo em turma.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="id30">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.serializers.</span></span><span class="sig-name descname"><span class="pre">ResponsavelResumidoSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#ResponsavelResumidoSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id30" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id32">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.serializers.</span></span><span class="sig-name descname"><span class="pre">ResponsavelResumidoSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#ResponsavelResumidoSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id32" title="Link para esta definição">¶</a></dt>
 <dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">Serializer</span></code></p>
 <p>Serializa dados resumidos de responsável.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="id31">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.serializers.</span></span><span class="sig-name descname"><span class="pre">DadosResponsavelSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#DadosResponsavelSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id31" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id33">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.serializers.</span></span><span class="sig-name descname"><span class="pre">DadosResponsavelSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#DadosResponsavelSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id33" title="Link para esta definição">¶</a></dt>
 <dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">Serializer</span></code></p>
 <p>Serializa dados do responsável e dos alunos vinculados.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="id32">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.serializers.</span></span><span class="sig-name descname"><span class="pre">AtualizarResponsavelRequestSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#AtualizarResponsavelRequestSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id32" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id34">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.serializers.</span></span><span class="sig-name descname"><span class="pre">AtualizarResponsavelRequestSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#AtualizarResponsavelRequestSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id34" title="Link para esta definição">¶</a></dt>
 <dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">Serializer</span></code></p>
 <p>Serializa dados cadastrais para atualização de responsável.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="id33">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.serializers.</span></span><span class="sig-name descname"><span class="pre">AtualizarResponsavelBuscaAtivaRequestSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#AtualizarResponsavelBuscaAtivaRequestSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id33" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id35">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.serializers.</span></span><span class="sig-name descname"><span class="pre">AtualizarResponsavelBuscaAtivaRequestSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#AtualizarResponsavelBuscaAtivaRequestSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id35" title="Link para esta definição">¶</a></dt>
 <dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">Serializer</span></code></p>
 <p>Serializa dados de contato para atualização de responsável.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="id34">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.serializers.</span></span><span class="sig-name descname"><span class="pre">ObterNomesAlunosRequestSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#ObterNomesAlunosRequestSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id34" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id36">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.serializers.</span></span><span class="sig-name descname"><span class="pre">ObterNomesAlunosRequestSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#ObterNomesAlunosRequestSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id36" title="Link para esta definição">¶</a></dt>
 <dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">Serializer</span></code></p>
 <p>Serializa os filtros da consulta de nomes de alunos.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="id35">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.serializers.</span></span><span class="sig-name descname"><span class="pre">NomeAlunoSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#NomeAlunoSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id35" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id37">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.serializers.</span></span><span class="sig-name descname"><span class="pre">NomeAlunoSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#NomeAlunoSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id37" title="Link para esta definição">¶</a></dt>
 <dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">Serializer</span></code></p>
 <p>Serializa nomes e dados de matrícula-turma dos alunos.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="id36">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.serializers.</span></span><span class="sig-name descname"><span class="pre">ResponsavelTurmaSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#ResponsavelTurmaSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id36" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id38">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.serializers.</span></span><span class="sig-name descname"><span class="pre">ResponsavelTurmaSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#ResponsavelTurmaSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id38" title="Link para esta definição">¶</a></dt>
 <dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">Serializer</span></code></p>
 <p>Serializa responsáveis aptos ao acompanhamento por turma.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="id37">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.serializers.</span></span><span class="sig-name descname"><span class="pre">DadosAcompanhamentoEscolarSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#DadosAcompanhamentoEscolarSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id37" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id39">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.serializers.</span></span><span class="sig-name descname"><span class="pre">DadosAcompanhamentoEscolarSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#DadosAcompanhamentoEscolarSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id39" title="Link para esta definição">¶</a></dt>
 <dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">Serializer</span></code></p>
 <p>Serializa dados de acompanhamento escolar no contrato legado.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="id38">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.serializers.</span></span><span class="sig-name descname"><span class="pre">QuantidadeMatriculadosSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#QuantidadeMatriculadosSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id38" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id40">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.serializers.</span></span><span class="sig-name descname"><span class="pre">QuantidadeMatriculadosSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#QuantidadeMatriculadosSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id40" title="Link para esta definição">¶</a></dt>
 <dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">Serializer</span></code></p>
 <p>Serializa a quantidade de matriculados no contrato legado.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="id41">
+<span class="sig-name descname"><span class="pre">to_representation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">instance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#QuantidadeMatriculadosSerializer.to_representation"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id41" title="Link para esta definição">¶</a></dt>
+<dd><p>Representa contagens preservando coerções e campos opcionais.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>instance</strong> (<em>Any</em>)</p>
+</dd>
+<dt class="field-even">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str, <em>Any</em>]</p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="id39">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.serializers.</span></span><span class="sig-name descname"><span class="pre">QuantidadeMatriculadosCCSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#QuantidadeMatriculadosCCSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id39" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id42">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.serializers.</span></span><span class="sig-name descname"><span class="pre">QuantidadeMatriculadosCCSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/serializers.html#QuantidadeMatriculadosCCSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id42" title="Link para esta definição">¶</a></dt>
 <dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">Serializer</span></code></p>
 <p>Serializa matriculados por componente no contrato legado.</p>
 </dd></dl>
 
 <p id="module-1">Serviços do domínio de alunos.</p>
 <dl class="py function">
-<dt class="sig sig-object py" id="id40">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_informacoes_aluno</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_informacoes_aluno"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id40" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id43">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_informacoes_aluno</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_informacoes_aluno"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id43" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna informações do aluno, ou <code class="docutils literal notranslate"><span class="pre">None</span></code> se não encontrado.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -8582,8 +8752,8 @@ nascimento quando ausente.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id41">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_necessidades_especiais_aluno</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_necessidades_especiais_aluno"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id41" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id44">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_necessidades_especiais_aluno</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_necessidades_especiais_aluno"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id44" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna a necessidade especial principal do aluno.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -8608,8 +8778,8 @@ nascimento quando ausente.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id42">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">buscar_alunos_ativos_autocomplete</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ue_codigo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aluno_nome</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_referencia</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aluno_codigo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limite</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#buscar_alunos_ativos_autocomplete"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id42" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id45">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">buscar_alunos_ativos_autocomplete</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ue_codigo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aluno_nome</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_referencia</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aluno_codigo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limite</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#buscar_alunos_ativos_autocomplete"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id45" title="Link para esta definição">¶</a></dt>
 <dd><p>Busca alunos ativos para autocomplete por UE e filtros.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -8646,8 +8816,8 @@ nascimento quando ausente.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id43">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_alunos_autocomplete_ue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_ue</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigo_turmas</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nome_aluno</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigo_eol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">somente_ativos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eh_historico</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_alunos_autocomplete_ue"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id43" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id46">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_alunos_autocomplete_ue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_ue</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigo_turmas</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nome_aluno</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigo_eol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">somente_ativos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eh_historico</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_alunos_autocomplete_ue"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id46" title="Link para esta definição">¶</a></dt>
 <dd><p>Busca alunos da UE/ano para autocomplete.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -8690,8 +8860,8 @@ nascimento quando ausente.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id44">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_dados_acompanhamento_escolar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigo_dre</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigo_ue</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpf_responsavel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_dados_acompanhamento_escolar"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id44" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id47">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_dados_acompanhamento_escolar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigo_dre</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigo_ue</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpf_responsavel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_dados_acompanhamento_escolar"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id47" title="Link para esta definição">¶</a></dt>
 <dd><p>Busca dados de acompanhamento escolar dos alunos.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -8726,8 +8896,8 @@ nascimento quando ausente.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id45">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_turmas_aluno_com_historico</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">historico</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filtrar_situacao</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tipo_turma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_turmas_aluno_com_historico"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id45" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id48">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_turmas_aluno_com_historico</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">historico</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filtrar_situacao</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tipo_turma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_turmas_aluno_com_historico"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id48" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna turmas do aluno com a origem histórica explícita.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -8764,8 +8934,8 @@ nascimento quando ausente.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id46">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">listar_alunos_por_ano</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigos_aluno</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#listar_alunos_por_ano"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id46" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id49">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">listar_alunos_por_ano</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigos_aluno</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#listar_alunos_por_ano"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id49" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna alunos pelos códigos informados restritos ao ano letivo.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -8796,8 +8966,8 @@ nascimento quando ausente.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id47">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_quantidade_matriculados_cc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">componentes_curriculares</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dre_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ue_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_quantidade_matriculados_cc"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id47" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id50">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_quantidade_matriculados_cc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">componentes_curriculares</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dre_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ue_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_quantidade_matriculados_cc"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id50" title="Link para esta definição">¶</a></dt>
 <dd><p>Busca matriculados por componente curricular no ano letivo.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -8832,8 +9002,8 @@ nascimento quando ausente.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id48">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_quantidade_matriculados</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dre_codigo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ue_codigo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modalidade</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ano</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">turma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_quantidade_matriculados"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id48" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id51">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_quantidade_matriculados</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dre_codigo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ue_codigo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modalidade</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ano</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">turma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_quantidade_matriculados"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id51" title="Link para esta definição">¶</a></dt>
 <dd><p>Busca a quantidade de alunos matriculados por ano letivo.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -8872,8 +9042,8 @@ nascimento quando ausente.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id49">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_responsavel_resumido</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cpf_responsavel</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_responsavel_resumido"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id49" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id52">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_responsavel_resumido</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cpf_responsavel</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_responsavel_resumido"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id52" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna dados resumidos de um responsável.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -8898,8 +9068,8 @@ nascimento quando ausente.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id50">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_dados_responsavel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cpf_responsavel</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_dados_responsavel"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id50" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id53">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_dados_responsavel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cpf_responsavel</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_dados_responsavel"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id53" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna os dados do responsável e dos alunos vinculados.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -8924,8 +9094,8 @@ nascimento quando ausente.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id51">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">atualizar_dados_responsavel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpf_responsavel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#atualizar_dados_responsavel"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id51" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id54">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">atualizar_dados_responsavel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpf_responsavel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#atualizar_dados_responsavel"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id54" title="Link para esta definição">¶</a></dt>
 <dd><p>Atualiza os dados cadastrais do responsável.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -8958,8 +9128,8 @@ nascimento quando ausente.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id52">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">atualizar_dados_responsavel_busca_ativa</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpf_responsavel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#atualizar_dados_responsavel_busca_ativa"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id52" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id55">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">atualizar_dados_responsavel_busca_ativa</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpf_responsavel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#atualizar_dados_responsavel_busca_ativa"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id55" title="Link para esta definição">¶</a></dt>
 <dd><p>Atualiza os contatos do responsável no fluxo de busca ativa.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -8992,8 +9162,8 @@ nascimento quando ausente.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id53">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_nomes_alunos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigos_alunos</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_nomes_alunos"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id53" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id56">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_nomes_alunos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigos_alunos</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_nomes_alunos"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id56" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna nomes e matrículas-turma dos alunos.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -9024,8 +9194,8 @@ nascimento quando ausente.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id54">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_responsaveis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_dre</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigo_ue</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_responsaveis"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id54" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id57">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_responsaveis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_dre</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigo_ue</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_responsaveis"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id57" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna responsáveis aptos ao acompanhamento por turma.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -9058,8 +9228,8 @@ nascimento quando ausente.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id55">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_filiacao_aluno</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_filiacao_aluno"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id55" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id58">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_filiacao_aluno</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_filiacao_aluno"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id58" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna os dados de filiação do aluno.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -9084,8 +9254,8 @@ nascimento quando ausente.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id56">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_informacoes_alunos_turma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_informacoes_alunos_turma"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id56" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id59">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_informacoes_alunos_turma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_informacoes_alunos_turma"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id59" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna informações resumidas dos alunos de uma turma.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -9110,8 +9280,8 @@ nascimento quando ausente.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id57">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_alunos_por_turma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Separador de parâmetros somente-nomeados (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">considerar_inativos</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_aula_ticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_matricula_ticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequencia</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_alunos_por_turma"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id57" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id60">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_alunos_por_turma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Separador de parâmetros somente-nomeados (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">considerar_inativos</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_aula_ticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_matricula_ticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequencia</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_alunos_por_turma"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id60" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna os alunos de uma turma consultando o endpoint canônico.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -9153,8 +9323,42 @@ Omitido quando <code class="docutils literal notranslate"><span class="pre">None
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id58">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_alunos_por_turma_e_data_aula</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_aula</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_alunos_por_turma_e_data_aula"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id58" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id61">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_alunos_turma_considera_inativos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Separador de parâmetros somente-nomeados (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">considerar_inativos</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_alunos_turma_considera_inativos"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id61" title="Link para esta definição">¶</a></dt>
+<dd><p>Retorna os alunos de uma turma para o filtro considera-inativos.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>codigo_turma</strong> – Código EOL da turma.</p></li>
+<li><p><strong>considerar_inativos</strong> – Inclui alunos inativos quando <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>codigo_aluno</strong> – Quando informado, restringe ao aluno correspondente.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Retorna<span class="colon">:</span></dt>
+<dd class="field-even"><p>Lista de alunos, ou lista vazia quando não houver registros.</p>
+</dd>
+<dt class="field-odd">Levanta<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>httpx.HTTPStatusError</strong> – Se o serviço externo retornar status de erro.</p></li>
+<li><p><strong>httpx.RequestError</strong> – Se o serviço externo estiver inacessível.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>codigo_turma</strong> (<em>str</em>)</p></li>
+<li><p><strong>considerar_inativos</strong> (<em>bool</em>)</p></li>
+<li><p><strong>codigo_aluno</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>Any</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="id62">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_alunos_por_turma_e_data_aula</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_aula</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_alunos_por_turma_e_data_aula"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id62" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna os alunos de uma turma consultando o endpoint.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -9185,8 +9389,8 @@ Omitido quando <code class="docutils literal notranslate"><span class="pre">None
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id59">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_alunos_por_turma_e_data_matricula</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Separador de parâmetros somente-nomeados (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_matricula</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">considerar_inativos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequencia</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_alunos_por_turma_e_data_matricula"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id59" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id63">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_alunos_por_turma_e_data_matricula</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Separador de parâmetros somente-nomeados (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_matricula</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">considerar_inativos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequencia</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_alunos_por_turma_e_data_matricula"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id63" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna os alunos de uma turma consultando o endpoint.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -9221,8 +9425,8 @@ Omitido quando <code class="docutils literal notranslate"><span class="pre">None
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id60">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">post_quantidade_matriculas_turmas_periodo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigos_turmas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_fim_ticks</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#post_quantidade_matriculas_turmas_periodo"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id60" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id64">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">post_quantidade_matriculas_turmas_periodo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigos_turmas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_fim_ticks</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#post_quantidade_matriculas_turmas_periodo"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id64" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna a quantidade de alocações válidas nas turmas até a data.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -9254,8 +9458,41 @@ turmas.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id61">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_acompanhamento_escolar_turma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_acompanhamento_escolar_turma"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id61" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id65">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">post_quantidade_matriculas_turmas_periodo_em_data_iso</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigos_turmas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_fim</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#post_quantidade_matriculas_turmas_periodo_em_data_iso"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id65" title="Link para esta definição">¶</a></dt>
+<dd><p>Retorna a quantidade de alocações válidas nas turmas até a data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>codigos_turmas</strong> – Códigos EOL das turmas consideradas.</p></li>
+<li><p><strong>data_fim</strong> – Data limite em formato ISO 8601.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Retorna<span class="colon">:</span></dt>
+<dd class="field-even"><p>Quantidade de alocações no período, ou <code class="docutils literal notranslate"><span class="pre">0</span></code> quando não houver
+turmas.</p>
+</dd>
+<dt class="field-odd">Levanta<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>httpx.HTTPStatusError</strong> – Se o serviço externo retornar status de erro.</p></li>
+<li><p><strong>httpx.RequestError</strong> – Se o serviço externo estiver inacessível.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>codigos_turmas</strong> (<em>list</em><em>[</em><em>int</em><em>]</em>)</p></li>
+<li><p><strong>data_fim</strong> (<em>str</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="id66">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_acompanhamento_escolar_turma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_acompanhamento_escolar_turma"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id66" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna alunos e responsáveis vigentes de uma turma de acompanhamento.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -9281,8 +9518,8 @@ houver registros.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id62">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_todos_alunos_turma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Separador de parâmetros somente-nomeados (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_todos_alunos_turma"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id62" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id67">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_todos_alunos_turma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Separador de parâmetros somente-nomeados (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_todos_alunos_turma"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id67" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna o histórico de vínculos dos alunos com a turma.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -9313,8 +9550,8 @@ houver registros.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id63">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_matriculas_turmas_aluno</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Separador de parâmetros somente-nomeados (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_aula_ticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_matriculas_turmas_aluno"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id63" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id68">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_matriculas_turmas_aluno</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Separador de parâmetros somente-nomeados (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_aula_ticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_matriculas_turmas_aluno"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id68" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna as matrículas-turma do aluno consultando a API.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -9350,8 +9587,8 @@ registros.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id64">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_alunos_ativos_data_aula_ticks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_ticks</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_alunos_ativos_data_aula_ticks"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id64" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id69">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_alunos_ativos_data_aula_ticks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_ticks</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_alunos_ativos_data_aula_ticks"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id69" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna alunos ativos da turma na data informada em ticks.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -9382,8 +9619,8 @@ registros.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id65">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_alunos_ativos_data_aula</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_aula</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_alunos_ativos_data_aula"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id65" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id70">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_alunos_ativos_data_aula</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_aula</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_alunos_ativos_data_aula"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id70" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna alunos ativos da turma na data informada em ISO 8601.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -9414,8 +9651,8 @@ registros.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id66">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_alunos_data_matricula_ticks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_matricula_ticks</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_alunos_data_matricula_ticks"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id66" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id71">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_alunos_data_matricula_ticks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_matricula_ticks</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_alunos_data_matricula_ticks"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id71" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna alunos da turma por data de matricula.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -9431,8 +9668,8 @@ registros.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id67">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_alunos_data_matricula</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_matricula</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_alunos_data_matricula"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id67" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id72">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_alunos_data_matricula</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_matricula</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_alunos_data_matricula"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id72" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna alunos da turma por data de matricula.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -9448,8 +9685,8 @@ registros.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id68">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_turmas_aluno</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_turmas_aluno"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id68" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id73">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_turmas_aluno</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_turmas_aluno"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id73" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna turmas do aluno.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -9474,8 +9711,8 @@ registros.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id69">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_alunos_da_ue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_ue</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nome_aluno</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigo_eol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_alunos_da_ue"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id69" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id74">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_alunos_da_ue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_ue</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nome_aluno</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigo_eol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_alunos_da_ue"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id74" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna alunos matriculados em uma UE no ano letivo informado.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -9510,8 +9747,8 @@ registros.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id70">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_turmas_aluno_com_programa</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_turmas_aluno_com_programa"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id70" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id75">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_turmas_aluno_com_programa</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_turmas_aluno_com_programa"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id75" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna turmas do aluno no ano corrente, incluindo turmas de programa.</p>
 <p>Chama o endpoint de turmas com os filtros desativados
 para tipo_turma e filtragem da situação.</p>
@@ -9540,8 +9777,8 @@ Lista vazia quando a API responde 4xx (código inválido como
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id71">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_turmas_aluno_por_situacao</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filtrar_situacao_matricula</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tipo_turma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_turmas_aluno_por_situacao"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id71" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id76">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_turmas_aluno_por_situacao</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filtrar_situacao_matricula</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tipo_turma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_turmas_aluno_por_situacao"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id76" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna turmas do aluno filtradas por situação de matrícula e tipo.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -9576,8 +9813,8 @@ Lista vazia quando a API responde 4xx (código inválido como
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id72">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_alunos_ativos_turma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_alunos_ativos_turma"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id72" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id77">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_alunos_ativos_turma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_alunos_ativos_turma"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id77" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna os alunos ativos de uma turma.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -9602,8 +9839,8 @@ Lista vazia quando a API responde 4xx (código inválido como
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id73">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_alunos_ativos_turma_periodo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_referencia_fim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_referencia_inicio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_alunos_ativos_turma_periodo"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id73" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id78">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_alunos_ativos_turma_periodo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_turma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_referencia_fim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_referencia_inicio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_alunos_ativos_turma_periodo"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id78" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna alunos ativos de uma turma no período informado.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -9636,8 +9873,8 @@ Lista vazia quando a API responde 4xx (código inválido como
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id74">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_total_alunos_ativos_periodo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ano_turma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_inicio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_fim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ue_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dre_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modalidades</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_total_alunos_ativos_periodo"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id74" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id79">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_total_alunos_ativos_periodo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ano_turma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_inicio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_fim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ue_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dre_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modalidades</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_total_alunos_ativos_periodo"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id79" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna o total de alunos ativos no período.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -9678,8 +9915,8 @@ Lista vazia quando a API responde 4xx (código inválido como
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id75">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_codigos_turmas_regulares_aluno</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_referencia</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_codigos_turmas_regulares_aluno"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id75" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id80">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_codigos_turmas_regulares_aluno</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_referencia</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_codigos_turmas_regulares_aluno"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id80" title="Link para esta definição">¶</a></dt>
 <dd><p>Lista os códigos de turma do aluno no ano letivo (recorte de matrícula).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -9714,8 +9951,8 @@ vínculos).</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id76">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">montar_codigos_turmas_regulares_aluno</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tipos_turma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ue_codigo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_referencia</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">semestre</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#montar_codigos_turmas_regulares_aluno"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id76" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id81">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">montar_codigos_turmas_regulares_aluno</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tipos_turma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ue_codigo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_referencia</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">semestre</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#montar_codigos_turmas_regulares_aluno"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id81" title="Link para esta definição">¶</a></dt>
 <dd><p>Compõe os códigos de turma regulares do aluno.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -9754,8 +9991,8 @@ vínculos).</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="id77">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">listar_alunos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigos_aluno</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#listar_alunos"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id77" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id82">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">listar_alunos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigos_aluno</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#listar_alunos"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id82" title="Link para esta definição">¶</a></dt>
 <dd><p>Retorna lista de alunos pelos códigos informados.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
@@ -9781,22 +10018,22 @@ vínculos).</p>
 
 <p id="module-2">Views do domínio de alunos.</p>
 <dl class="py class">
-<dt class="sig sig-object py" id="id78">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.views.</span></span><span class="sig-name descname"><span class="pre">AlunoAutocompleteAtivosView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/views.html#AlunoAutocompleteAtivosView"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id78" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id83">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.views.</span></span><span class="sig-name descname"><span class="pre">AlunoAutocompleteAtivosView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/views.html#AlunoAutocompleteAtivosView"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id83" title="Link para esta definição">¶</a></dt>
 <dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">AlunosAPIView</span></code></p>
 <p>Lista alunos ativos para autocomplete.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="id79">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.views.</span></span><span class="sig-name descname"><span class="pre">AlunoInformacoesView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/views.html#AlunoInformacoesView"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id79" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id84">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.views.</span></span><span class="sig-name descname"><span class="pre">AlunoInformacoesView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/views.html#AlunoInformacoesView"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id84" title="Link para esta definição">¶</a></dt>
 <dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">AlunosAPIView</span></code></p>
 <p>Retorna informações completas do aluno.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="id80">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.views.</span></span><span class="sig-name descname"><span class="pre">ResponsavelResumidoView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/views.html#ResponsavelResumidoView"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id80" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id85">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.views.</span></span><span class="sig-name descname"><span class="pre">ResponsavelResumidoView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/views.html#ResponsavelResumidoView"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id85" title="Link para esta definição">¶</a></dt>
 <dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">AlunosAPIView</span></code></p>
 <p>Retorna dados resumidos de responsável.</p>
 </dd></dl>
@@ -9809,22 +10046,22 @@ vínculos).</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="id81">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.views.</span></span><span class="sig-name descname"><span class="pre">InformacoesAlunosTurmaView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/views.html#InformacoesAlunosTurmaView"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id81" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id86">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.views.</span></span><span class="sig-name descname"><span class="pre">InformacoesAlunosTurmaView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/views.html#InformacoesAlunosTurmaView"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id86" title="Link para esta definição">¶</a></dt>
 <dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">AlunosAPIView</span></code></p>
 <p>Lista informações dos alunos de uma turma.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="id82">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.views.</span></span><span class="sig-name descname"><span class="pre">AlunoNecessidadesEspeciaisView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/views.html#AlunoNecessidadesEspeciaisView"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id82" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id87">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.views.</span></span><span class="sig-name descname"><span class="pre">AlunoNecessidadesEspeciaisView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/views.html#AlunoNecessidadesEspeciaisView"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id87" title="Link para esta definição">¶</a></dt>
 <dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">AlunosAPIView</span></code></p>
 <p>Retorna necessidades especiais do aluno.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="id83">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.views.</span></span><span class="sig-name descname"><span class="pre">AlunoTurmasView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/views.html#AlunoTurmasView"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id83" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id88">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.views.</span></span><span class="sig-name descname"><span class="pre">AlunoTurmasView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/views.html#AlunoTurmasView"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id88" title="Link para esta definição">¶</a></dt>
 <dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">AlunosAPIView</span></code></p>
 <p>Retorna turmas do aluno.</p>
 </dd></dl>
@@ -9865,8 +10102,8 @@ vínculos).</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="id84">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.views.</span></span><span class="sig-name descname"><span class="pre">AlunosListView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/views.html#AlunosListView"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id84" title="Link para esta definição">¶</a></dt>
+<dt class="sig sig-object py" id="id89">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.alunos.views.</span></span><span class="sig-name descname"><span class="pre">AlunosListView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/views.html#AlunosListView"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id89" title="Link para esta definição">¶</a></dt>
 <dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">AlunosAPIView</span></code></p>
 <p>Lista alunos.</p>
 </dd></dl>
