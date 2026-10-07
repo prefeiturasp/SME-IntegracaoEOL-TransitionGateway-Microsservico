@@ -1,4 +1,6 @@
-import "@shelex/cypress-allure-plugin";
+if (Cypress.env("allure") !== false) {
+  require("@shelex/cypress-allure-plugin");
+}
 
 // Comandos
 import "./commands_api/commands_professores";

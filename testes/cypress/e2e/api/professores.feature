@@ -31,7 +31,6 @@ Funcionalidade: API - Professores
     Então retorna o status 200
     E o retorno deve conter o nome do professor
 
-  @ignore
   Cenário: Validar nome do professor não encontrado
     Dado que possuo acesso à API de professores
     Quando realizo consulta de professor por RF com RF inválido 

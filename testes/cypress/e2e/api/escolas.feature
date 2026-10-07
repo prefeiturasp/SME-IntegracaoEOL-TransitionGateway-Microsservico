@@ -36,7 +36,6 @@ Funcionalidade: API - Escolas
     Então retorna o status 200
     E o retorno deve conter lista de funcionários da escola
 
-  @ignore
   Cenário: Validar funcionários da escola sem resultados
     Dado que possuo acesso à API de escolas
     Quando realizo consulta de funcionários da escola não encontrada
@@ -114,28 +113,24 @@ Funcionalidade: API - Escolas
     Então retorna o status 200
     E o retorno deve ser uma lista vazia
 
-  @ignore
   Cenário: Validar funcionários por cargos com código UE e código DRE válidos
     Dado que possuo acesso à API de escolas
     Quando realizo consulta de funcionários por cargos com código UE e código DRE válidos
     Então retorna o status 200
     E o retorno deve conter lista de funcionários por cargos
 
-  @ignore
   Cenário: Validar retorno vazio de funcionários por cargos com código UE e código DRE inválidos
     Dado que possuo acesso à API de escolas
     Quando realizo consulta de funcionários por cargos com código UE e código DRE inválidos
     Então retorna o status 200
     E o retorno deve ser uma lista vazia
 
-  @ignore
   Cenário: Validar funcionários por funções atividades com código UE e código DRE válidos
     Dado que possuo acesso à API de escolas
     Quando realizo consulta de funcionários por funções atividades com código UE e código DRE válidos
     Então retorna o status 200
     E o retorno deve conter lista de funcionários por funções atividades
 
-  @ignore
   Cenário: Validar retorno vazio de funcionários por funções atividades com código UE e código DRE inválidos
     Dado que possuo acesso à API de escolas
     Quando realizo consulta de funcionários por funções atividades com código UE e código DRE inválidos
@@ -153,14 +148,14 @@ Funcionalidade: API - Escolas
     Quando realizo consulta de funcionários por função atividade com código UE e código função atividade inválidos
     Então retorna o status 204
 
-  @ignore
+  # # @ignore
   Cenário: Validar funcionários por funções externas com código UE, código função externa e código DRE válidos
     Dado que possuo acesso à API de escolas
     Quando realizo consulta de funcionários por funções externas com código UE, código função externa e código DRE válidos
     Então retorna o status 200
     E o retorno deve conter lista de funcionários por funções externas
 
-  @ignore
+  # # @ignore
   Cenário: Validar retorno vazio de funcionários por funções externas com código UE, código função externa e código DRE inválidos
     Dado que possuo acesso à API de escolas
     Quando realizo consulta de funcionários por funções externas com código UE, código função externa e código DRE inválidos
@@ -267,31 +262,29 @@ Funcionalidade: API - Escolas
     Então retorna o status 404
     E a mensagem de retorno deve ser "Não foram encontradas turmas de sondagem."
 
-  Cenário: Validar turmas por sala (rota nova) pelo código UE, tipo de sala e ano letivo válidos
+  Cenário: Validar turmas por sala pelo código UE, tipo de sala e ano letivo válidos
     Dado que possuo acesso à API de escolas
     Quando realizo consulta de turmas por sala pelo código UE, tipo de sala e ano letivo válidos
     Então retorna o status 200
     E o retorno deve conter dados de salas
 
-  Cenário: Validar retorno vazio de turmas por sala (rota nova) com código UE, tipo de sala e ano letivo inválidos
+  Cenário: Validar retorno vazio de turmas por sala com código UE, tipo de sala e ano letivo inválidos
     Dado que possuo acesso à API de escolas
     Quando realizo consulta de turmas por sala pelo código UE, tipo de sala e ano letivo inválidos
     Então retorna o status 200
     E o retorno deve ser uma lista vazia de turmas por sala
 
-  @ignore
-  Cenário: Validar turmas de sondagem (rota nova) pelo código UE e ano letivo válidos
+  Cenário: Validar turmas de sondagem pelo código UE e ano letivo válidos
     Dado que possuo acesso à API de escolas
-    Quando realizo consulta de turmas de sondagem (rota nova) pelo código UE e ano letivo válidos
+    Quando realizo consulta de turmas de sondagem pelo código UE e ano letivo válidos
     Então retorna o status 200
     E o retorno deve conter lista de turmas de sondagem
 
-  @ignore
-  Cenário: Validar retorno vazio de turmas de sondagem (rota nova) com código UE e ano letivo inválidos
+  Cenário: Validar retorno vazio de turmas de sondagem com código UE e ano letivo inválidos
     Dado que possuo acesso à API de escolas
-    Quando realizo consulta de turmas de sondagem (rota nova) pelo código UE e ano letivo inválidos
-    Então retorna o status 200
-    E o retorno deve ser uma lista vazia de turmas de sondagem
+    Quando realizo consulta de turmas de sondagem pelo código UE e ano letivo inválidos
+    Então retorna o status 404
+    E a mensagem de retorno deve ser "Não foram encontradas turmas de sondagem."
 
   Cenário: Validar professores por código UE e ano letivo válidos
     Dado que possuo acesso à API de escolas

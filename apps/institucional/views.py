@@ -273,16 +273,16 @@ class EscolasPorDREView(InstitucionalAPIView):
                 type=str,
             )
         ],
-        responses={200: EscolaResumoSerializer(many=True), 404: None},
+        responses={200: EscolaResumoSerializer(many=True), 204: None},
     )
     def get(self, _request: Request, codigo_eol_dre: str) -> Response:
-        try:
-            data = services.get_escolas_por_dre(codigo_eol_dre)
-        except httpx.HTTPStatusError as exc:
-            if exc.response.status_code == 404:
-                return Response(status=status.HTTP_404_NOT_FOUND)
-            raise
-        return Response([_filtrar_escola_resumo(e) for e in data])
+        """Retorna escolas por DRE."""
+        result = services.get_escolas_por_dre(codigo_eol_dre)
+
+        if not result:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        return Response([_filtrar_escola_resumo(e) for e in result])
 
 
 class EscolasSigpaePorDREView(InstitucionalAPIView):
