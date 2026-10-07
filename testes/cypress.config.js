@@ -71,6 +71,7 @@ const envKeys = [
   "DISCIPLINA_ID",
   "DISCIPLINA_ID_INEXISTENTE",
   "REGISTRO_FUNCIONAL_EMEI",
+  "ID_PERFIL",
 ];
 
 export default defineConfig({
@@ -107,9 +108,9 @@ export default defineConfig({
     },
 
     async setupNodeEvents(on, config) {
-      allureWriter(on, config);
-
-      config.env.allure = true;
+      if (config.env.allure !== false) {
+        allureWriter(on, config);
+      }
 
       const webpackConfig = {
         module: {
