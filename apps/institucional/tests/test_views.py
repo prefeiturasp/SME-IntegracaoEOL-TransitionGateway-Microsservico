@@ -297,11 +297,11 @@ class EscolasPorDREViewTest(SimpleTestCase):
         mock_svc.assert_called_once_with("100000")
 
     @patch("apps.institucional.views.services.get_escolas_por_dre")
-    def test_404_quando_dre_inexistente(self, mock_svc: MagicMock) -> None:
-        """Retorna 404 quando o sidecar responde com 404."""
-        mock_svc.side_effect = _httpx_404()
-        resp = _cliente_autenticado().get("/api/DREs/INEXISTENTE/escola")
-        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+    def test_204_quando_sem_escolas(self, mock_svc: MagicMock) -> None:
+        """Retorna 204 quando o service não devolve escolas."""
+        mock_svc.return_value = None
+        resp = _cliente_autenticado().get("/api/DREs/100000/escola")
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
     @patch("apps.institucional.views.services.get_escolas_por_dre")
     def test_propaga_erro_http_nao_404(self, mock_svc: MagicMock) -> None:
@@ -427,9 +427,7 @@ class EscolasPorDREeTipoViewTest(SimpleTestCase):
     def test_404_quando_dre_inexistente(self, mock_svc: MagicMock) -> None:
         """Retorna 404 quando o sidecar responde com 404."""
         mock_svc.side_effect = _httpx_404()
-        resp = _cliente_autenticado().get(
-            "/api/DREs/INEXISTENTE/escolas/EMEF"
-        )
+        resp = _cliente_autenticado().get("/api/DREs/INEXISTENTE/escolas/EMEF")
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
 
     @patch("apps.institucional.views.services.get_escolas_por_dre_e_tipo")
@@ -653,9 +651,7 @@ class SubprefeiturasPorEscolaViewTest(SimpleTestCase):
     def test_200_repassa_codigo_escola(self, mock_svc: MagicMock) -> None:
         """Retorna 200 repassando o código da escola ao service."""
         mock_svc.return_value = [_SUBPREFEITURA]
-        resp = _cliente_autenticado().get(
-            "/api/escolas/000001/subprefeituras"
-        )
+        resp = _cliente_autenticado().get("/api/escolas/000001/subprefeituras")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         mock_svc.assert_called_once_with("000001")
 
@@ -687,9 +683,7 @@ class SubprefeiturasPorEscolaViewTest(SimpleTestCase):
         mock_svc.side_effect = httpx.RequestError(
             "connection failed", request=MagicMock()
         )
-        resp = _cliente_autenticado().get(
-            "/api/escolas/000001/subprefeituras"
-        )
+        resp = _cliente_autenticado().get("/api/escolas/000001/subprefeituras")
         self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertEqual(
             resp.json(), {"detail": "Serviço de institucional indisponível."}

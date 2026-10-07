@@ -99,7 +99,7 @@ def get_escolas_por_dre(codigo_dre: str) -> Any:
     """
     resp = _client.get(f"{_BASE}/dres/{codigo_dre}/escola/")
     resp.raise_for_status()
-    return resp.json()
+    return _client.json_or_none(resp)
 
 
 def get_escolas_sigpae_por_dre(codigo_dre: str) -> Any:
