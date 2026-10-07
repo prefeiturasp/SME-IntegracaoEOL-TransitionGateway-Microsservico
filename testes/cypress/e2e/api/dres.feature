@@ -36,7 +36,6 @@ Funcionalidade: API - DREs
     Então retorna o status 200
     E o retorno deve conter lista de escolas da DRE
 
-  @ignore
   Cenário: Validar escolas de uma DRE não encontrada
     Dado que possuo acesso à API de DREs
     Quando realizo consulta de escolas da DRE não encontrada
