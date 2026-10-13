@@ -718,14 +718,14 @@ class GetTurmasAlunoPorSituacaoTest(SimpleTestCase):
         self.assertEqual(result, payload)
 
 
-class GetTurmasAlunoComProgramaTest(SimpleTestCase):
-    """Valida a consulta de turmas do aluno incluindo programa."""
+class GetTurmasSrmRegularAlunoTest(SimpleTestCase):
+    """Valida a consulta de turmas regulares e SRM do aluno."""
 
     @patch.object(services._client, "get")
-    def test_chama_turmas_com_filtros_desativados(
+    def test_repassa_codigos_turma_programa(
         self, mock_get: MagicMock
     ) -> None:
-        """Valida a consulta com filtros de tipo e situação desativados."""
+        """Valida o repasse dos códigos de turma de programa ao Alunos-MS."""
         payload = [{"codigo_turma": 9001}]
         mock_resp = MagicMock()
         mock_resp.status_code = 200
@@ -733,11 +733,13 @@ class GetTurmasAlunoComProgramaTest(SimpleTestCase):
         mock_resp.json.return_value = payload
         mock_get.return_value = mock_resp
 
-        result = services.get_turmas_aluno_com_programa("123456")
+        result = services.get_turmas_srm_regular_aluno(
+            "123456", [9100001]
+        )
 
         mock_get.assert_called_once_with(
-            f"{_BASE}/123456/turmas/",
-            params={"tipo_turma": "false", "filtrar_situacao": "false"},
+            f"{_BASE}/123456/turmas-srm-regular/",
+            params={"codigos_turma_programa": [9100001]},
         )
         mock_resp.raise_for_status.assert_called_once_with()
         self.assertEqual(result, payload)
@@ -751,7 +753,7 @@ class GetTurmasAlunoComProgramaTest(SimpleTestCase):
         mock_resp.status_code = 400
         mock_get.return_value = mock_resp
 
-        result = services.get_turmas_aluno_com_programa("00000")
+        result = services.get_turmas_srm_regular_aluno("00000", [])
 
         self.assertEqual(result, [])
         mock_resp.raise_for_status.assert_not_called()
@@ -765,7 +767,7 @@ class GetTurmasAlunoComProgramaTest(SimpleTestCase):
         mock_resp.status_code = 404
         mock_get.return_value = mock_resp
 
-        result = services.get_turmas_aluno_com_programa("123456")
+        result = services.get_turmas_srm_regular_aluno("123456", [])
 
         self.assertEqual(result, [])
         mock_resp.raise_for_status.assert_not_called()
