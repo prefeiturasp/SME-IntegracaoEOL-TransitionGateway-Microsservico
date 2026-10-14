@@ -86,7 +86,6 @@ urlpatterns = [
     path("api/", include("apps.professores.urls")),
     path("api/", include("apps.institucional.urls")),
     path("api/", include("apps.programasedu.urls")),
-    path("api/", include("apps.abrangencia.urls")),
     path(
         "api/matriculas",
         MatriculasAnoAtualView.as_view(),
