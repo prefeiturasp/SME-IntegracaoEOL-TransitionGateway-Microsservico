@@ -1531,6 +1531,55 @@ class GetTurmaComponentesTurmaTest(SimpleTestCase):
         self.assertEqual(resultado, [])
 
 
+class GetTurmasComponentesTurmaTest(SimpleTestCase):
+    """Valida a consulta em lote de componentes curriculares das turmas."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_envia_turmas_e_componentes_na_query(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        """Consulta várias turmas e componentes em uma única chamada."""
+        response = MagicMock()
+        payload = [
+            {
+                "turma_codigo": "9100013",
+                "componente_codigo": 89,
+                "desc_territorio_saber": "TERRITORIO FICTICIO",
+                "desc_experiencia_pedagogica": "EXPERIENCIA FICTICIA",
+            }
+        ]
+        mock_client.get.return_value = response
+        mock_client.json_or_none.return_value = payload
+
+        resultado = services.get_turmas_componentes_turma(
+            ["9100013", "9100014"],
+            ["89", "90"],
+        )
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/turmas/componentes-turma/",
+            params={
+                "codigo_turma": ["9100013", "9100014"],
+                "codigos_componentes": ["89", "90"],
+            },
+        )
+        mock_client.json_or_none.assert_called_once_with(response)
+        self.assertEqual(resultado, payload)
+
+    @patch("apps.pedagogico.services._client")
+    def test_retorna_lista_vazia_para_payload_invalido(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        """Normaliza payload vazio ou incompatível para lista vazia."""
+        mock_client.json_or_none.return_value = {"detail": "erro"}
+
+        resultado = services.get_turmas_componentes_turma(["9100013"], ["89"])
+
+        self.assertEqual(resultado, [])
+
+
 class GetCatalogoComponentesTest(SimpleTestCase):
     """Valida a consulta do catálogo de componentes curriculares."""
 
