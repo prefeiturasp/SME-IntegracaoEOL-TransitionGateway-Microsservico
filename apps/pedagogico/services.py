@@ -175,9 +175,17 @@ def get_componentes_curriculares() -> Any:
         httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
         ValueError: Se a resposta não puder ser convertida para JSON.
     """
-    response = _client.get(f"{_BASE}/")
-    response.raise_for_status()
-    return response.json()
+
+    def buscar_catalogo() -> Any:
+        response = _client.get(f"{_BASE}/")
+        response.raise_for_status()
+        return response.json()
+
+    return cache.obter_ou_calcular(
+        "pedagogico:componentes-curriculares:v1",
+        buscar_catalogo,
+        cache.TTL_RECOMENDADO_MINUTOS,
+    )
 
 
 def _codigos_turmas(payload: Any) -> list[str]:
@@ -368,6 +376,7 @@ def get_dados_turma(codigo_turma: str) -> dict[str, Any]:
         ValueError: Se a resposta nao puder ser convertida para JSON.
     """
     response = _client.get(f"{_BASE_TURMAS}/{codigo_turma}/dados/")
+    response.raise_for_status()
     return _turma_legado(response.json())
 
 

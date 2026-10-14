@@ -276,8 +276,7 @@ class DadosTurmaViewSet(PedagogicoAPIView):
             httpx.HTTPError: Se a chamada ao servico pedagogico falhar.
             ValueError: Se a resposta do servico nao for JSON valido.
         """
-        data = services.get_dados_turma(codigo_turma)
-        return Response(TurmaDadosSerializer(data).data)
+        return Response(services.get_dados_turma(codigo_turma))
 
 
 class AlunosAtivosTurmaSemRedisViewSet(PedagogicoAPIView):
@@ -1177,8 +1176,7 @@ class ComponentesCurricularesViewSet(PedagogicoAPIView):
             httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
             ValueError: Se a resposta do serviço não for JSON válido.
         """
-        data = services.get_componentes_curriculares()
-        return Response(ComponenteBaseSerializer(data, many=True).data)
+        return Response(services.get_componentes_curriculares())
 
 
 class ComponentesTurmaViewSet(PedagogicoAPIView):

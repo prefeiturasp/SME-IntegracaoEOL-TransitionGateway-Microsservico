@@ -1122,9 +1122,7 @@ class GetTurmasSondagemTest(SimpleTestCase):
         mock_get.return_value = mock_response
 
         with self.assertRaises(ValueError):
-            services.get_turmas_sondagem(
-                codigo_ue="000532", ano_letivo="2024"
-            )
+            services.get_turmas_sondagem(codigo_ue="000532", ano_letivo="2024")
 
 
 class GetComponentesUeAnosTest(SimpleTestCase):
@@ -1397,9 +1395,7 @@ class GetDadosAulaTurmaTest(SimpleTestCase):
         _chave, _calcular, minutos_para_expirar = (
             mock_obter_ou_calcular.call_args.args
         )
-        self.assertEqual(
-            minutos_para_expirar, cache.TTL_RECOMENDADO_MINUTOS
-        )
+        self.assertEqual(minutos_para_expirar, cache.TTL_RECOMENDADO_MINUTOS)
 
     @patch("apps.pedagogico.services.cache.obter_ou_calcular")
     def test_chave_varia_por_parametro(
@@ -1534,6 +1530,17 @@ class GetTurmaComponentesTurmaTest(SimpleTestCase):
 class GetCatalogoComponentesTest(SimpleTestCase):
     """Valida a consulta do catálogo de componentes curriculares."""
 
+    def setUp(self) -> None:
+        """Remove o cache do caminho, mantendo os testes determinísticos."""
+        self.enterContext(
+            patch(
+                "apps.pedagogico.services.cache.obter_ou_calcular",
+                side_effect=lambda chave, calcular, minutos_para_expirar: (
+                    calcular()
+                ),
+            )
+        )
+
     @patch("apps.pedagogico.services._client")
     def test_chama_base_sem_params(
         self,
@@ -1547,6 +1554,22 @@ class GetCatalogoComponentesTest(SimpleTestCase):
         mock_client.get.assert_called_once_with(f"{_BASE}/")
         mock_client.get.return_value.raise_for_status.assert_called_once_with()
 
+        self.assertEqual(result, [])
+
+    @patch("apps.pedagogico.services.cache.obter_ou_calcular")
+    def test_usa_cache_com_ttl_recomendado(
+        self, mock_obter_ou_calcular: MagicMock
+    ) -> None:
+        mock_obter_ou_calcular.return_value = []
+
+        result = services.get_componentes_curriculares()
+
+        chave, calcular, minutos_para_expirar = (
+            mock_obter_ou_calcular.call_args.args
+        )
+        self.assertEqual(chave, "pedagogico:componentes-curriculares:v1")
+        self.assertTrue(callable(calcular))
+        self.assertEqual(minutos_para_expirar, cache.TTL_RECOMENDADO_MINUTOS)
         self.assertEqual(result, [])
 
 
