@@ -152,24 +152,86 @@ class TurmaDadosSerializer(serializers.Serializer):
     """Serializa dados de turma no contrato legado."""
 
     ano = serializers.CharField(allow_null=True)
-    anoLetivo = serializers.IntegerField(allow_null=True)
+    anoLetivo = serializers.IntegerField(
+        source="ano_letivo",
+        allow_null=True,
+    )
     codigo = serializers.IntegerField()
-    tipoTurma = serializers.IntegerField(allow_null=True)
-    modalidade = serializers.CharField(allow_null=True)
-    codigoModalidade = serializers.IntegerField(allow_null=True)
-    nomeTurma = serializers.CharField(allow_null=True)
+    tipoTurma = serializers.IntegerField(
+        source="tipo_turma",
+        allow_null=True,
+    )
+    modalidade = serializers.SerializerMethodField()
+    codigoModalidade = serializers.SerializerMethodField(
+        method_name="get_codigo_modalidade"
+    )
+    nomeTurma = serializers.CharField(
+        source="nome_turma",
+        allow_null=True,
+    )
     semestre = serializers.IntegerField(allow_null=True)
-    duracaoTurno = serializers.IntegerField(allow_null=True)
-    tipoTurno = serializers.IntegerField(allow_null=True)
-    dataFim = serializers.CharField(allow_null=True)
-    ehistorico = serializers.BooleanField()
-    ensinoEspecial = serializers.BooleanField(allow_null=True)
-    etapaEJA = serializers.IntegerField()
-    serieEnsino = serializers.CharField(allow_null=True)
-    dataInicioTurma = serializers.CharField(allow_null=True)
+    duracaoTurno = serializers.IntegerField(
+        source="duracao_turno",
+        allow_null=True,
+    )
+    tipoTurno = serializers.IntegerField(
+        source="tipo_turno",
+        allow_null=True,
+    )
+    dataFim = serializers.SerializerMethodField(method_name="get_data_fim")
+    ehistorico = serializers.SerializerMethodField()
+    ensinoEspecial = serializers.BooleanField(
+        source="ensino_especial",
+        allow_null=True,
+    )
+    etapaEJA = serializers.SerializerMethodField(method_name="get_etapa_eja")
+    serieEnsino = serializers.SerializerMethodField(
+        method_name="get_serie_ensino"
+    )
+    dataInicioTurma = serializers.SerializerMethodField(
+        method_name="get_data_inicio_turma"
+    )
     extinta = serializers.BooleanField(allow_null=True)
-    situacao = serializers.CharField(allow_null=True)
-    ueCodigo = serializers.CharField(allow_null=True)
+    situacao = serializers.SerializerMethodField()
+    ueCodigo = serializers.CharField(
+        source="ue_codigo",
+        allow_null=True,
+    )
+
+    def get_modalidade(self, _obj: dict[str, Any]) -> None:
+        """Retorna valor legado fixo para modalidade."""
+        return None
+
+    def get_codigo_modalidade(self, _obj: dict[str, Any]) -> int:
+        """Retorna valor legado fixo para código de modalidade."""
+        return 0
+
+    def get_data_fim(self, obj: dict[str, Any]) -> str | None:
+        """Formata data de fim no padrão legado."""
+        return cast(str | None, formatar_datetime_legado(obj.get("data_fim")))
+
+    def get_ehistorico(self, obj: dict[str, Any]) -> bool:
+        """Retorna indicador histórico no formato legado."""
+        return bool(obj.get("ehistorico", False))
+
+    def get_etapa_eja(self, obj: dict[str, Any]) -> int | None:
+        """Retorna etapa EJA no formato legado."""
+        return cast(int | None, obj.get("etapa_eja", 0))
+
+    def get_serie_ensino(self, _obj: dict[str, Any]) -> None:
+        """Retorna valor legado fixo para série de ensino."""
+        return None
+
+    def get_data_inicio_turma(self, obj: dict[str, Any]) -> str | None:
+        """Formata data de início no padrão legado."""
+        return cast(
+            str | None,
+            formatar_datetime_legado(obj.get("data_inicio_turma")),
+        )
+
+    def get_situacao(self, _obj: dict[str, Any]) -> None:
+        """Retorna valor legado fixo para situação."""
+        return None
 
 
 class TurmaHistoricaGeralSerializer(serializers.Serializer):

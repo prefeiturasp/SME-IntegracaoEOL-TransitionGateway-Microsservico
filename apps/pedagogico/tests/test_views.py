@@ -62,24 +62,24 @@ _REGENCIA = {
 
 _TURMA = {
     "ano": "1",
-    "anoLetivo": 2026,
+    "ano_letivo": 2026,
     "codigo": 9100001,
-    "tipoTurma": 1,
+    "tipo_turma": 1,
     "modalidade": "Fundamental",
-    "codigoModalidade": 5,
-    "nomeTurma": "1A",
+    "codigo_modalidade": 5,
+    "nome_turma": "1A",
     "semestre": 0,
-    "duracaoTurno": 55,
-    "tipoTurno": 6,
-    "dataFim": None,
+    "duracao_turno": 55,
+    "tipo_turno": 6,
+    "data_fim": None,
     "ehistorico": False,
-    "ensinoEspecial": False,
-    "etapaEJA": 0,
-    "serieEnsino": "1o Ano",
-    "dataInicioTurma": "2026-02-04T00:00:00",
+    "ensino_especial": False,
+    "etapa_eja": 0,
+    "serie_ensino": "1o Ano",
+    "data_inicio_turma": "2026-02-04T03:00:00Z",
     "extinta": False,
     "situacao": "O",
-    "ueCodigo": "000001",
+    "ue_codigo": "000001",
 }
 
 _TURMA_HISTORICA_MS = {
@@ -663,9 +663,7 @@ class AlunosTurmaConsideraInativosViewSetTest(SimpleTestCase):
         mock_svc.return_value = []
         client = _cliente_autenticado()
 
-        resp = client.get(
-            f"{_PREFIX_TURMAS}/9100015/considera-inativos/false"
-        )
+        resp = client.get(f"{_PREFIX_TURMAS}/9100015/considera-inativos/false")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.data, [])
@@ -1040,8 +1038,7 @@ class SincronizacaoInstitucionalTurmaViewSetTest(SimpleTestCase):
         client = _cliente_autenticado()
 
         resp = client.get(
-            f"{_PREFIX_UES}/000002/turmas/abc"
-            "/sincronizacoes-institucionais"
+            f"{_PREFIX_UES}/000002/turmas/abc" "/sincronizacoes-institucionais"
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -1657,9 +1654,7 @@ class TurmasPorEscolaViewSetTest(SimpleTestCase):
         mock_svc.return_value = [self._TURMA]
         client = _cliente_autenticado()
 
-        resp = client.get(
-            f"{_PREFIX_ESCOLAS}/000532/turmas/anos_letivos/2024"
-        )
+        resp = client.get(f"{_PREFIX_ESCOLAS}/000532/turmas/anos_letivos/2024")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.data[0]["nomeTurmaEOL"], "3A")
@@ -1674,9 +1669,7 @@ class TurmasPorEscolaViewSetTest(SimpleTestCase):
         mock_svc.return_value = []
         client = _cliente_autenticado()
 
-        resp = client.get(
-            f"{_PREFIX_ESCOLAS}/000532/turmas/anos_letivos/2024"
-        )
+        resp = client.get(f"{_PREFIX_ESCOLAS}/000532/turmas/anos_letivos/2024")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.data, [])
@@ -1684,9 +1677,7 @@ class TurmasPorEscolaViewSetTest(SimpleTestCase):
     def test_403_sem_autenticacao(self) -> None:
         client = APIClient()
 
-        resp = client.get(
-            f"{_PREFIX_ESCOLAS}/000532/turmas/anos_letivos/2024"
-        )
+        resp = client.get(f"{_PREFIX_ESCOLAS}/000532/turmas/anos_letivos/2024")
 
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -1794,9 +1785,7 @@ class TurmasPorSalaV2ViewSetTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
     @patch("apps.pedagogico.views.services.get_turmas_por_tipo_sala")
-    def test_preserva_erro_http_do_sidecar(
-        self, mock_svc: MagicMock
-    ) -> None:
+    def test_preserva_erro_http_do_sidecar(self, mock_svc: MagicMock) -> None:
         request = httpx.Request("GET", "https://sidecar.local/test")
         response = httpx.Response(
             404,
@@ -1937,9 +1926,7 @@ class TurmasSondagemV2ViewSetTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
     @patch("apps.pedagogico.views.services.get_turmas_sondagem")
-    def test_preserva_erro_http_do_sidecar(
-        self, mock_svc: MagicMock
-    ) -> None:
+    def test_preserva_erro_http_do_sidecar(self, mock_svc: MagicMock) -> None:
         request = httpx.Request("GET", "https://sidecar.local/test")
         response = httpx.Response(
             404,
@@ -2055,9 +2042,7 @@ class TurmasSchemaTest(SimpleTestCase):
             ["Turma"],
         )
         self.assertEqual(
-            schema["paths"]["/api/turmas/{codigo_turma}/dados"]["get"][
-                "tags"
-            ],
+            schema["paths"]["/api/turmas/{codigo_turma}/dados"]["get"]["tags"],
             ["Turma"],
         )
         path = (
@@ -2409,7 +2394,7 @@ class ComponentesTurmaFuncionarioViewSetTest(SimpleTestCase):
         self,
         mock_svc: MagicMock,
     ) -> None:
-        """Converte a vigência UTC do sidecar para o horário local do legado."""
+        """Converte vigência UTC para o horário local do legado."""
         mock_svc.return_value = [
             {
                 **_CC,
