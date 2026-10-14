@@ -205,29 +205,58 @@ class TurmaDadosSerializerTest(SimpleTestCase):
         serializer = TurmaDadosSerializer(
             {
                 "ano": "1",
-                "anoLetivo": 2026,
+                "ano_letivo": 2026,
                 "codigo": 9100001,
-                "tipoTurma": 1,
+                "tipo_turma": 1,
                 "modalidade": "Fundamental",
-                "codigoModalidade": 5,
-                "nomeTurma": "1A",
+                "codigo_modalidade": 5,
+                "nome_turma": "1A",
                 "semestre": 0,
-                "duracaoTurno": 55,
-                "tipoTurno": 6,
-                "dataFim": None,
+                "duracao_turno": 55,
+                "tipo_turno": 6,
+                "data_fim": None,
                 "ehistorico": False,
-                "ensinoEspecial": False,
-                "etapaEJA": 0,
-                "serieEnsino": "1o Ano",
-                "dataInicioTurma": "2026-02-04T00:00:00",
+                "ensino_especial": False,
+                "etapa_eja": 0,
+                "serie_ensino": "1o Ano",
+                "data_inicio_turma": "2026-02-04T03:00:00Z",
                 "extinta": False,
                 "situacao": "O",
-                "ueCodigo": "000001",
+                "ue_codigo": "000001",
             }
         )
 
         self.assertEqual(serializer.data["anoLetivo"], 2026)
         self.assertEqual(serializer.data["nomeTurma"], "1A")
+        self.assertEqual(serializer.data["modalidade"], None)
+        self.assertEqual(serializer.data["codigoModalidade"], 0)
+        self.assertEqual(
+            serializer.data["dataInicioTurma"],
+            "2026-02-04T00:00:00",
+        )
+        self.assertEqual(serializer.data["serieEnsino"], None)
+        self.assertEqual(serializer.data["situacao"], None)
+
+    def test_preserva_fracao_minima_de_data_fim(self) -> None:
+        serializer = TurmaDadosSerializer(
+            {
+                "ano": "1",
+                "ano_letivo": 2026,
+                "codigo": 9100001,
+                "tipo_turma": 1,
+                "nome_turma": "1A",
+                "semestre": 0,
+                "duracao_turno": 55,
+                "tipo_turno": 6,
+                "data_fim": "2025-09-11T15:13:34.040000Z",
+                "ensino_especial": False,
+                "data_inicio_turma": None,
+                "extinta": False,
+                "ue_codigo": "000001",
+            }
+        )
+
+        self.assertEqual(serializer.data["dataFim"], "2025-09-11T12:13:34.04")
         self.assertEqual(serializer.data["ehistorico"], False)
 
 
@@ -374,18 +403,14 @@ class SincronizacaoInstitucionalTurmaSerializerTest(SimpleTestCase):
         serializer = SincronizacaoInstitucionalTurmaSerializer()
 
         self.assertEqual(
-            serializer.get_modalidade(
-                SimpleNamespace(codigo_modalidade=5)
-            ),
+            serializer.get_modalidade(SimpleNamespace(codigo_modalidade=5)),
             "5",
         )
 
     def test_retorna_modalidade_nula_de_objeto(self) -> None:
         serializer = SincronizacaoInstitucionalTurmaSerializer()
 
-        self.assertIsNone(
-            serializer.get_modalidade(SimpleNamespace())
-        )
+        self.assertIsNone(serializer.get_modalidade(SimpleNamespace()))
 
     def test_serializa_contrato_legado(self) -> None:
         serializer = SincronizacaoInstitucionalTurmaSerializer(
@@ -410,9 +435,7 @@ class SincronizacaoInstitucionalTurmaSerializerTest(SimpleTestCase):
                 "situacao": "O",
                 "ue_codigo": "000002",
                 "data_atualizacao": "2026-06-17T08:11:45.807000Z",
-                "data_status_turma_escola": (
-                    "2026-06-03T18:46:18.833000Z"
-                ),
+                "data_status_turma_escola": ("2026-06-03T18:46:18.833000Z"),
                 "etapa_ensino": 1,
                 "ciclo_ensino": 2,
                 "tipo_escola": 2,

@@ -1177,8 +1177,7 @@ class ComponentesCurricularesViewSet(PedagogicoAPIView):
             httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
             ValueError: Se a resposta do serviço não for JSON válido.
         """
-        data = services.get_componentes_curriculares()
-        return Response(ComponenteBaseSerializer(data, many=True).data)
+        return Response(services.get_componentes_curriculares())
 
 
 class ComponentesTurmaViewSet(PedagogicoAPIView):
