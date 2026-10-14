@@ -15,6 +15,8 @@ from apps.institucional import services as institucional_services
 from apps.pedagogico import services as pedagogico_services
 
 _BASE = "/api/v1/professores"
+# Mantém o resultado por UE e ano em cache.
+_TTL_TITULARES_UE_MINUTOS = 240
 _BASE_ACESSOS = f"{_BASE}/acessos"
 _BASE_FUNCIONARIOS = f"{_BASE}/funcionarios"
 _BASE_FUNCIONARIOS_LEGADO = "/api/v1/funcionarios"
@@ -1396,25 +1398,91 @@ def _aplicar_descricoes_componentes_turma(
                 ),
                 None,
             )
-            if (
-                componente_turma is not None
-                and componente_turma.get("desc_experiencia_pedagogica")
-                is not None
-            ):
-                descricao_territorio = componente_turma.get(
-                    "desc_territorio_saber"
-                )
-                descricao_experiencia = componente_turma[
-                    "desc_experiencia_pedagogica"
-                ]
-                componente_retorno["disciplina"] = " - ".join(
-                    descricao
-                    for descricao in (
-                        descricao_territorio,
-                        descricao_experiencia,
+            _aplicar_descricao_territorio_componente(
+                componente_retorno, componente_turma
+            )
+
+
+def _aplicar_descricao_territorio_componente(
+    componente_retorno: dict[str, Any],
+    componente_turma: dict[str, Any] | None,
+) -> None:
+    """Compõe a descrição do componente com território e experiência.
+
+    Args:
+        componente_retorno: Componente que receberá a descrição.
+        componente_turma: Componente da turma com as descrições; nada é
+            alterado quando ausente ou sem experiência pedagógica.
+    """
+    if (
+        componente_turma is None
+        or componente_turma.get("desc_experiencia_pedagogica") is None
+    ):
+        return
+    descricao_territorio = componente_turma.get("desc_territorio_saber")
+    descricao_experiencia = componente_turma["desc_experiencia_pedagogica"]
+    componente_retorno["disciplina"] = " - ".join(
+        descricao
+        for descricao in (descricao_territorio, descricao_experiencia)
+        if descricao
+    )
+
+
+def _aplicar_descricoes_componentes_turmas(
+    componentes_por_turma: dict[str, list[dict[str, Any]]],
+) -> None:
+    """Aplica descrições territoriais aos componentes de várias turmas.
+
+    Args:
+        componentes_por_turma: Componentes de retorno por código de turma.
+    """
+    codigos_por_turma = {
+        codigo_turma: {
+            str(componente["disciplina_id"])
+            for componente in componentes
+            if componente.get("disciplina_id") is not None
+            and str(componente["disciplina_id"]).strip()
+            and str(componente["disciplina_id"]).strip().lower() != "none"
+        }
+        for codigo_turma, componentes in componentes_por_turma.items()
+    }
+    turmas = [turma for turma, codigos in codigos_por_turma.items() if codigos]
+    if not turmas:
+        return
+
+    codigos_componentes = sorted(
+        set().union(*(codigos_por_turma[turma] for turma in turmas))
+    )
+    componentes_turmas = pedagogico_services.get_turmas_componentes_turma(
+        turmas,
+        codigos_componentes,
+    )
+    if not isinstance(componentes_turmas, list):
+        return
+
+    por_par: dict[tuple[str, str], dict[str, Any]] = {}
+    for componente in componentes_turmas:
+        if (
+            isinstance(componente, dict)
+            and componente.get("desc_experiencia_pedagogica") is not None
+        ):
+            par = (
+                str(componente.get("turma_codigo")),
+                str(componente.get("componente_codigo")),
+            )
+            por_par.setdefault(par, componente)
+
+    for codigo_turma in turmas:
+        for componente_retorno in componentes_por_turma[codigo_turma]:
+            _aplicar_descricao_territorio_componente(
+                componente_retorno,
+                por_par.get(
+                    (
+                        codigo_turma,
+                        str(componente_retorno.get("disciplina_id")),
                     )
-                    if descricao
-                )
+                ),
+            )
 
 
 def _possui_dados_professor_titular(componente: dict[str, Any]) -> bool:
@@ -1441,12 +1509,19 @@ def _possui_dados_professor_titular(componente: dict[str, Any]) -> bool:
     )
 
 
+class _PayloadTitularesUeInvalido(Exception):
+    """Resposta do serviço de professores que não é uma lista de titulares."""
+
+
 def buscar_professores_titulares_por_ue(
     ue_codigo: str,
     data_referencia: datetime,
     realiza_agrupamento: bool,
 ) -> list[dict[str, Any]]:
     """Busca professores titulares de uma UE na data de referência.
+
+    O resultado é cacheado por UE, data de referência e agrupamento.
+    Respostas inválidas do serviço de professores não são cacheadas.
 
     Args:
         ue_codigo: Código da unidade educacional consultada.
@@ -1460,13 +1535,49 @@ def buscar_professores_titulares_por_ue(
         httpx.HTTPError: Quando a chamada ao serviço de professores falha.
         ValueError: Quando a resposta não pode ser convertida para JSON.
     """
+    chave = (
+        f"professores-titulares-ue:{ue_codigo}:"
+        f"{data_referencia.isoformat()}:{int(realiza_agrupamento)}"
+    )
+    try:
+        return cache.obter_ou_calcular(
+            chave,
+            lambda: _calcular_professores_titulares_por_ue(
+                ue_codigo, data_referencia, realiza_agrupamento
+            ),
+            _TTL_TITULARES_UE_MINUTOS,
+        )
+    except _PayloadTitularesUeInvalido:
+        return []
+
+
+def _calcular_professores_titulares_por_ue(
+    ue_codigo: str,
+    data_referencia: datetime,
+    realiza_agrupamento: bool,
+) -> list[dict[str, Any]]:
+    """Busca e monta os professores titulares de uma UE.
+
+    Args:
+        ue_codigo: Código da unidade educacional consultada.
+        data_referencia: Data usada para consultar as atribuições vigentes.
+        realiza_agrupamento: Indica se os componentes devem ser agrupados.
+
+    Returns:
+        Professores titulares encontrados ou uma lista vazia.
+
+    Raises:
+        _PayloadTitularesUeInvalido: Quando a resposta não é uma lista.
+        httpx.HTTPError: Quando a chamada ao serviço de professores falha.
+        ValueError: Quando a resposta não pode ser convertida para JSON.
+    """
     resp = _client.get(
         f"{_BASE}/titulares/ue/{ue_codigo}/"
         f"{data_referencia.date().isoformat()}"
     )
     payload = _client.json_or_none(resp)
     if not isinstance(payload, list):
-        return []
+        raise _PayloadTitularesUeInvalido
 
     componentes_professor = [
         item for item in payload if isinstance(item, dict)
@@ -1475,12 +1586,14 @@ def buscar_professores_titulares_por_ue(
         return []
 
     componentes_api_eol = pedagogico_services.get_componentes_api_eol()
+    indice_componentes = _indexar_componentes_api_eol(componentes_api_eol)
 
     existe_vigencia_ativa = any(
         _verificar_vigencia_componente_pai(
             componentes_api_eol,
             str(componente.get("disciplina_id")),
             data_referencia,
+            indice_componentes,
         )
         for componente in componentes_professor
     )
@@ -1508,22 +1621,23 @@ def buscar_professores_titulares_por_ue(
             _montar_componente_professor_agrupado(
                 componente,
                 componentes_api_eol,
+                indice_componentes,
             )
             for componente in componentes_professor
         ]
     else:
         componentes_retorno = componentes_professor
 
-    for codigo_turma in codigos_turmas:
-        componentes_turma = [
-            componente
-            for componente in componentes_retorno
-            if str(componente.get("turma_id")) == codigo_turma
-        ]
-        _aplicar_descricoes_componentes_turma(
-            codigo_turma,
-            componentes_turma,
+    componentes_por_turma: dict[str, list[dict[str, Any]]] = {
+        codigo_turma: [] for codigo_turma in codigos_turmas
+    }
+    for componente in componentes_retorno:
+        componentes_turma = componentes_por_turma.get(
+            str(componente.get("turma_id"))
         )
+        if componentes_turma is not None:
+            componentes_turma.append(componente)
+    _aplicar_descricoes_componentes_turmas(componentes_por_turma)
 
     return componentes_retorno
 
@@ -1694,43 +1808,35 @@ def _valores_distintos(valores: Iterable[Any]) -> list[str]:
 def _montar_componente_professor_agrupado(
     componente_professor: dict[str, Any],
     componentes_api_eol: list[dict[str, Any]],
+    indice: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Monta o componente do professor usando os dados do componente pai.
 
     Args:
         componente_professor: Componente associado ao professor titular.
         componentes_api_eol: Componentes curriculares retornados pela API EOL.
+        indice: Índice opcional dos componentes por código, para evitar
+            percorrer a lista a cada consulta.
 
     Returns:
         Componente no contrato interno de professor titular, agrupado pelo pai
         quando ele existir.
     """
     disciplina_id = str(componente_professor.get("disciplina_id"))
-    componente_atual = next(
-        (
-            componente
-            for componente in componentes_api_eol
-            if isinstance(componente, dict)
-            and str(componente.get("id_componente_curricular"))
-            == disciplina_id
-        ),
-        None,
+    componente_atual = _localizar_componente_eol(
+        componentes_api_eol, disciplina_id, indice
     )
     codigo_componente_pai = (
         componente_atual.get("id_componente_curricular_pai")
         if componente_atual is not None
         else None
     )
-    componente_pai = next(
-        (
-            componente
-            for componente in componentes_api_eol
-            if isinstance(componente, dict)
-            and codigo_componente_pai is not None
-            and str(componente.get("id_componente_curricular"))
-            == str(codigo_componente_pai)
-        ),
-        None,
+    componente_pai = (
+        _localizar_componente_eol(
+            componentes_api_eol, codigo_componente_pai, indice
+        )
+        if codigo_componente_pai is not None
+        else None
     )
 
     return {
@@ -2529,10 +2635,60 @@ def _validar_componente_eh_territorio_saber_agrupado(
         return False
 
 
+def _indexar_componentes_api_eol(
+    componentes_api_eol: list[dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    """Indexa os componentes da API EOL pelo código do componente.
+
+    Em caso de código repetido, mantém o primeiro item da lista.
+
+    Args:
+        componentes_api_eol: Componentes curriculares retornados pela API EOL.
+
+    Returns:
+        Componentes indexados pelo código em texto.
+    """
+    indice: dict[str, dict[str, Any]] = {}
+    for item in componentes_api_eol:
+        if isinstance(item, dict):
+            indice.setdefault(str(item.get("id_componente_curricular")), item)
+    return indice
+
+
+def _localizar_componente_eol(
+    componentes_api_eol: list[dict[str, Any]],
+    codigo_componente: Any,
+    indice: dict[str, dict[str, Any]] | None,
+) -> dict[str, Any] | None:
+    """Localiza um componente da API EOL pelo código.
+
+    Args:
+        componentes_api_eol: Componentes curriculares retornados pela API EOL.
+        codigo_componente: Código do componente procurado.
+        indice: Índice por código; quando ausente, percorre a lista.
+
+    Returns:
+        Primeiro componente com o código informado ou ``None``.
+    """
+    codigo = str(codigo_componente)
+    if indice is not None:
+        return indice.get(codigo)
+    return next(
+        (
+            item
+            for item in componentes_api_eol
+            if isinstance(item, dict)
+            and str(item.get("id_componente_curricular")) == codigo
+        ),
+        None,
+    )
+
+
 def _verificar_vigencia_componente_pai(
     componentes_api_eol: list[dict[str, Any]],
     disciplina_id: str,
     data_referencia: datetime | None,
+    indice: dict[str, dict[str, Any]] | None = None,
 ) -> bool:
     """Verifica se o componente curricular pai está vigente.
 
@@ -2541,19 +2697,15 @@ def _verificar_vigencia_componente_pai(
         disciplina_id: ID da disciplina usada na consulta.
         data_referencia: Data de referência para verificar a vigência. Na
             ausência, utiliza a data atual.
+        indice: Índice opcional dos componentes por código, para evitar
+            percorrer a lista a cada consulta.
 
     Returns:
         True se o componente curricular pai estiver vigente; False
         caso contrário.
     """
-    componente = next(
-        (
-            item
-            for item in componentes_api_eol
-            if isinstance(item, dict)
-            and str(item.get("id_componente_curricular")) == disciplina_id
-        ),
-        None,
+    componente = _localizar_componente_eol(
+        componentes_api_eol, disciplina_id, indice
     )
     if componente is None:
         return False
@@ -2566,19 +2718,17 @@ def _verificar_vigencia_componente_pai(
     if data_base is None:
         data_base = datetime.combine(date.today(), datetime.min.time())
 
-    for item in componentes_api_eol:
-        if not isinstance(item, dict) or str(
-            item.get("id_componente_curricular")
-        ) != str(codigo_componente_pai):
-            continue
+    componente_pai = _localizar_componente_eol(
+        componentes_api_eol, codigo_componente_pai, indice
+    )
+    if componente_pai is None:
+        return False
 
-        vigencia = item.get("vigencia")
-        if vigencia is None:
-            return True
-        data_vigencia = _parse_datetime_atribuicao(vigencia)
-        return data_vigencia is not None and data_vigencia >= data_base
-
-    return False
+    vigencia = componente_pai.get("vigencia")
+    if vigencia is None:
+        return True
+    data_vigencia = _parse_datetime_atribuicao(vigencia)
+    return data_vigencia is not None and data_vigencia >= data_base
 
 
 def _calcular_professores_titulares_por_turmas(
