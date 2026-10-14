@@ -1459,6 +1459,36 @@ def _normalizar_atribuicao_territorio_turma(
     }
 
 
+def get_turmas_componentes_turma(
+    codigos_turmas: list[str], codigos_componentes: list[str]
+) -> list[dict[str, Any]]:
+    """Retorna componentes curriculares de várias turmas em uma chamada.
+
+    Args:
+        codigos_turmas: Códigos das turmas usadas na consulta.
+        codigos_componentes: Códigos dos componentes curriculares.
+
+    Returns:
+        Componentes curriculares encontrados, um item por par
+        turma/componente existente.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        ValueError: Se a resposta não puder ser convertida para JSON.
+    """
+    resp = _client.get(
+        f"{_BASE}/turmas/componentes-turma/",
+        params={
+            "codigo_turma": codigos_turmas,
+            "codigos_componentes": codigos_componentes,
+        },
+    )
+    payload = _client.json_or_none(resp)
+    if not isinstance(payload, list):
+        return []
+    return payload
+
+
 def get_turma_componentes_turma(
     codigo_turma: str, codigos_componentes: list[str]
 ) -> list[dict[str, Any]]:
