@@ -424,7 +424,6 @@ And(
     });
   },
 );
-
 // Endpoint GET - /api/ues/{codigoUe}/turmas/{codigoTurma}/sincronizacoes-institucionais
 When(
   "realizo consulta de sincronizações institucionais da turma com UE e turma válidos",
