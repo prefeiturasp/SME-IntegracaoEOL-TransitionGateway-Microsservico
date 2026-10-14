@@ -389,3 +389,98 @@ And("o retorno deve ser uma lista vazia", () => {
     }
   });
 });
+
+// Endpoint GET - /api/turmas/ue/{codigoUe}/sincronizacoes-institucionais/anos-letivos?anosLetivosVigente={anoLetivo}
+When(
+  "realizo consulta de anos letivos de sincronizações institucionais com UE e ano letivo válidos",
+  () => {
+    cy.getTurmasSincronizacoesAnosLetivos(
+      Cypress.env("UE_CODIGO"),
+      Cypress.env("ANO_LETIVO"),
+    ).as("response");
+  },
+);
+
+When(
+  "realizo consulta de anos letivos de sincronizações institucionais com UE e ano letivo inválidos",
+  () => {
+    cy.getTurmasSincronizacoesAnosLetivos(
+      Cypress.env("UE_CODIGO_INEXISTENTE"),
+      Cypress.env("ANO_LETIVO_INEXISTENTE"),
+    ).as("response");
+  },
+);
+
+And(
+  "o retorno deve conter lista de anos letivos de sincronizações institucionais",
+  () => {
+    cy.get("@response").then((response) => {
+      if (response.status === 200) {
+        expect(response.body).to.be.an("array");
+        if (response.body.length > 0) {
+          expect(response.body).not.be.empty;
+        }
+      }
+    });
+  },
+);
+
+// Endpoint GET - /api/ues/{codigoUe}/turmas/{codigoTurma}/sincronizacoes-institucionais
+When(
+  "realizo consulta de sincronizações institucionais da turma com UE e turma válidos",
+  () => {
+    cy.getUeTurmaSincronizacoesInstitucionais(
+      Cypress.env("UE_CODIGO"),
+      Cypress.env("TURMA_CODIGO"),
+    ).as("response");
+  },
+);
+
+When(
+  "realizo consulta de sincronizações institucionais da turma com UE e turma inválidos",
+  () => {
+    cy.getUeTurmaSincronizacoesInstitucionais(
+      Cypress.env("UE_CODIGO_INEXISTENTE"),
+      Cypress.env("TURMA_CODIGO_INEXISTENTE"),
+    ).as("response");
+  },
+);
+
+And(
+  "o retorno deve conter dados de sincronizações institucionais da turma",
+  () => {
+    cy.get("@response").then((response) => {
+      if (response.status === 200) {
+        expect(response.body).to.exist;
+        expect(response.body).to.not.be.empty;
+      }
+    });
+  },
+);
+
+// Endpoint GET - /api/turmas/{codigoUe}/alunos/anosLetivos/{anoLetivo}
+When("realizo consulta de alunos da turma com UE e ano letivo válidos", () => {
+  cy.getTurmasAlunosAnoLetivo(
+    Cypress.env("UE_CODIGO_ALUNOS"),
+    Cypress.env("ANO_LETIVO"),
+  ).as("response");
+});
+
+When(
+  "realizo consulta de alunos da turma com UE e ano letivo inválidos",
+  () => {
+    cy.getTurmasAlunosAnoLetivo(
+      Cypress.env("UE_CODIGO_INEXISTENTE"),
+      Cypress.env("ANO_LETIVO_INEXISTENTE"),
+    ).as("response");
+  },
+);
+
+And("o retorno deve conter dados de alunos da turma", () => {
+  cy.get("@response").then((response) => {
+    if (response.status === 200) {
+      expect(response.body).to.exist;
+      expect(response.body).to.not.be.empty;
+    }
+  });
+});
