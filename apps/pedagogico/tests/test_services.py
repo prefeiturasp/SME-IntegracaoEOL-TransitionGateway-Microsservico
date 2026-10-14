@@ -358,15 +358,8 @@ class PostListarTurmasTest(SimpleTestCase):
             payload=[9100001],
         )
         self.assertEqual(result[0]["codigo"], 9100001)
-        self.assertEqual(result[0]["anoLetivo"], 2026)
-        self.assertEqual(result[0]["nomeTurma"], "1A")
-        self.assertEqual(result[0]["dataInicioTurma"], "2026-02-04T00:00:00")
-        self.assertEqual(result[0]["modalidade"], None)
-        self.assertEqual(result[0]["codigoModalidade"], 0)
-        self.assertEqual(result[0]["serieEnsino"], None)
-        self.assertEqual(result[0]["situacao"], None)
-        self.assertEqual(result[0]["ehistorico"], False)
-        self.assertEqual(result[0]["etapaEJA"], 0)
+        self.assertEqual(result[0]["ano_letivo"], 2026)
+        self.assertEqual(result[0]["nome_turma"], "1A")
 
     @patch("apps.pedagogico.services._client")
     def test_preserva_fracao_minima_de_data_fim(
@@ -381,7 +374,7 @@ class PostListarTurmasTest(SimpleTestCase):
 
         result = services.post_listar_turmas(["3029408"])
 
-        self.assertEqual(result[0]["dataFim"], "2025-09-11T12:13:34.04")
+        self.assertEqual(result[0]["data_fim"], "2025-09-11T15:13:34.040000Z")
 
     @patch("apps.pedagogico.services._client")
     def test_lista_vazia_nao_chama_sidecar(
@@ -407,14 +400,8 @@ class GetDadosTurmaTest(SimpleTestCase):
             f"{_BASE_TURMAS}/9100001/dados/"
         )
         self.assertEqual(result["codigo"], 9100001)
-        self.assertEqual(result["tipoTurma"], 1)
-        self.assertEqual(result["ueCodigo"], "000001")
-        self.assertEqual(result["modalidade"], None)
-        self.assertEqual(result["codigoModalidade"], 0)
-        self.assertEqual(result["serieEnsino"], None)
-        self.assertEqual(result["situacao"], None)
-        self.assertEqual(result["ehistorico"], False)
-        self.assertEqual(result["etapaEJA"], 0)
+        self.assertEqual(result["tipo_turma"], 1)
+        self.assertEqual(result["ue_codigo"], "000001")
 
 
 class GetAlunosAtivosTurmaSemRedisTest(SimpleTestCase):

@@ -276,7 +276,8 @@ class DadosTurmaViewSet(PedagogicoAPIView):
             httpx.HTTPError: Se a chamada ao servico pedagogico falhar.
             ValueError: Se a resposta do servico nao for JSON valido.
         """
-        return Response(services.get_dados_turma(codigo_turma))
+        data = services.get_dados_turma(codigo_turma)
+        return Response(TurmaDadosSerializer(data).data)
 
 
 class AlunosAtivosTurmaSemRedisViewSet(PedagogicoAPIView):

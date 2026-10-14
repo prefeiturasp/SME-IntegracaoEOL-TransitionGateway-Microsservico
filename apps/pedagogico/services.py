@@ -221,40 +221,6 @@ def _payload_turmas(response: Any) -> list[str]:
     return _codigos_turmas(payload)
 
 
-def _turma_legado(item: dict[str, Any]) -> dict[str, Any]:
-    """Retorna turma no formato esperado pelo contrato.
-
-    Args:
-        item: Dados da turma recebidos para conversão.
-
-    Returns:
-        Turma formatada para resposta.
-    """
-    return {
-        "ano": item.get("ano"),
-        "anoLetivo": item.get("ano_letivo"),
-        "codigo": item["codigo"],
-        "tipoTurma": item.get("tipo_turma"),
-        "modalidade": None,
-        "codigoModalidade": 0,
-        "nomeTurma": item.get("nome_turma"),
-        "semestre": item.get("semestre"),
-        "duracaoTurno": item.get("duracao_turno"),
-        "tipoTurno": item.get("tipo_turno"),
-        "dataFim": formatar_datetime_legado(item.get("data_fim")),
-        "ehistorico": item.get("ehistorico", False),
-        "ensinoEspecial": item.get("ensino_especial"),
-        "etapaEJA": item.get("etapa_eja", 0),
-        "serieEnsino": None,
-        "dataInicioTurma": formatar_datetime_legado(
-            item.get("data_inicio_turma")
-        ),
-        "extinta": item.get("extinta"),
-        "situacao": None,
-        "ueCodigo": item.get("ue_codigo"),
-    }
-
-
 def post_codigos_turmas_contagem(
     ues_codigos: list[str],
     ano_turma: str | None = None,
@@ -359,7 +325,8 @@ def post_listar_turmas(codigos: list[str]) -> list[dict[str, Any]]:
         f"{_BASE_TURMAS}/listar-turmas/",
         payload=[int(codigo) for codigo in codigos],
     )
-    return [_turma_legado(item) for item in response.json()]
+    response.raise_for_status()
+    return cast(list[dict[str, Any]], response.json())
 
 
 def get_dados_turma(codigo_turma: str) -> dict[str, Any]:
@@ -377,7 +344,7 @@ def get_dados_turma(codigo_turma: str) -> dict[str, Any]:
     """
     response = _client.get(f"{_BASE_TURMAS}/{codigo_turma}/dados/")
     response.raise_for_status()
-    return _turma_legado(response.json())
+    return cast(dict[str, Any], response.json())
 
 
 def get_alunos_ativos_turma_sem_redis(codigo_turma: str) -> Any:
