@@ -157,3 +157,39 @@ Funcionalidade: API - Turmas
     Quando realizo consulta de turmas historicas gerais do professor inexistente
     Então retorna o status 200
     E o retorno deve ser uma lista vazia
+
+  Cenário: Validar anos letivos de sincronizações institucionais por UE e ano letivo válidos
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de anos letivos de sincronizações institucionais com UE e ano letivo válidos
+    Então retorna o status 200
+    E o retorno deve conter lista de anos letivos de sincronizações institucionais
+
+  Cenário: Validar retorno vazio de anos letivos de sincronizações institucionais com UE e ano letivo inválidos
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de anos letivos de sincronizações institucionais com UE e ano letivo inválidos
+    Então retorna o status 200
+    E o retorno deve ser uma lista vazia
+
+  Cenário: Validar sincronizações institucionais da turma com UE e turma válidos
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de sincronizações institucionais da turma com UE e turma válidos
+    Então retorna o status 200
+    E o retorno deve conter dados de sincronizações institucionais da turma
+
+  Cenário: Validar erro ao consultar sincronizações institucionais da turma com UE e turma inválidos
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de sincronizações institucionais da turma com UE e turma inválidos
+    Então retorna o status 400
+    E a mensagem de retorno deve ser "Houve um comportamento inesperado do sistema. Por favor, contate a SME."
+
+  Cenário: Validar alunos da turma por UE e ano letivo válidos
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de alunos da turma com UE e ano letivo válidos
+    Então retorna o status 200
+    E o retorno deve conter dados de alunos da turma
+
+  Cenário: Validar retorno vazio de alunos da turma com UE e ano letivo inválidos
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de alunos da turma com UE e ano letivo inválidos
+    Então retorna o status 204
+    
