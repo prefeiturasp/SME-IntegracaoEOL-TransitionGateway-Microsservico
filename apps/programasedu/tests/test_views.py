@@ -1,5 +1,6 @@
 """Valida as views do domínio de programas educacionais."""
 
+import gzip
 from unittest.mock import MagicMock, patch
 
 from django.contrib.auth.models import User
@@ -138,19 +139,43 @@ class VerificarAlunosPapViewTest(SimpleTestCase):
         )
 
 
+_CORPO_PAP = (
+    b'[{"anoLetivo":2025,"codigoTurma":9100001,"codigoUe":"000001",'
+    b'"codigoDre":"100000","codigoAluno":9100002,'
+    b'"componenteCurricularId":50}]'
+)
+
+
 class ObterAlunosPapAnoCorrenteViewTest(SimpleTestCase):
     """Valida a resposta da view de alunos PAP do ano corrente."""
 
     @patch("apps.programasedu.views.services.listar_alunos_pap_ano_corrente")
-    def test_200(self, mock_service: MagicMock) -> None:
-        """Verifica a resposta de alunos PAP do ano corrente."""
-        mock_service.return_value = []
+    def test_200_comprimido(self, mock_service: MagicMock) -> None:
+        """Verifica o corpo em gzip quando o cliente aceita gzip."""
+        mock_service.return_value = gzip.compress(_CORPO_PAP)
+        client = _cliente_autenticado()
+
+        resp = client.get(
+            "/api/alunos/pap/ano-corrente", HTTP_ACCEPT_ENCODING="gzip"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.headers["Content-Encoding"], "gzip")
+        self.assertEqual(gzip.decompress(resp.content), _CORPO_PAP)
+        mock_service.assert_called_once_with()
+
+    @patch("apps.programasedu.views.services.listar_alunos_pap_ano_corrente")
+    def test_200_sem_gzip(self, mock_service: MagicMock) -> None:
+        """Verifica o corpo descomprimido quando o cliente não aceita gzip."""
+        mock_service.return_value = gzip.compress(_CORPO_PAP)
         client = _cliente_autenticado()
 
         resp = client.get("/api/alunos/pap/ano-corrente")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        mock_service.assert_called_once_with()
+        self.assertNotIn("Content-Encoding", resp.headers)
+        self.assertIn("Accept-Encoding", resp.headers["Vary"])
+        self.assertEqual(resp.json()[0]["codigoAluno"], 9100002)
 
 
 class ObterAlunosPapPorAnoLetivoViewTest(SimpleTestCase):
@@ -159,22 +184,35 @@ class ObterAlunosPapPorAnoLetivoViewTest(SimpleTestCase):
     @patch("apps.programasedu.views.services.listar_alunos_pap_por_ano")
     def test_200(self, mock_service: MagicMock) -> None:
         """Verifica a resposta de alunos PAP por ano letivo."""
-        mock_service.return_value = [
-            {
-                "ano_letivo": 2026,
-                "codigo_turma": 100,
-                "codigo_ue": "U1",
-                "codigo_dre": "D1",
-                "codigo_aluno": 1,
-                "componente_curricular_id": 50,
-            }
-        ]
+        mock_service.return_value = gzip.compress(_CORPO_PAP)
         client = _cliente_autenticado()
 
-        resp = client.get("/api/alunos/pap/ano-letivo/2026")
+        resp = client.get("/api/alunos/pap/ano-letivo/2025")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        mock_service.assert_called_once_with(ano_letivo=2026)
+        self.assertEqual(
+            resp.json(),
+            [
+                {
+                    "anoLetivo": 2025,
+                    "codigoTurma": 9100001,
+                    "codigoUe": "000001",
+                    "codigoDre": "100000",
+                    "codigoAluno": 9100002,
+                    "componenteCurricularId": 50,
+                }
+            ],
+        )
+        mock_service.assert_called_once_with(ano_letivo=2025)
+
+    def test_exige_autenticacao(self) -> None:
+        """Verifica que a rota continua protegida por autenticação."""
+        resp = APIClient().get("/api/alunos/pap/ano-letivo/2025")
+
+        self.assertIn(
+            resp.status_code,
+            (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN),
+        )
 
 
 class ObterComponentesCurricularesTurmasProgramaAlunoViewTest(SimpleTestCase):

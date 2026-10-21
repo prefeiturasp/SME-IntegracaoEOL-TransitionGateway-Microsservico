@@ -1,10 +1,21 @@
 """Valida os serviços do domínio de programas educacionais."""
 
+import gzip
+import json
 from unittest.mock import MagicMock, patch
 
-from django.test import SimpleTestCase
+import httpx
+from django.core.cache import cache
+from django.test import SimpleTestCase, override_settings
+from django.utils import timezone
+from rest_framework.renderers import JSONRenderer
 
 from apps.programasedu import services
+from apps.programasedu.serializers import AlunoTurmaPapSerializer
+
+_CACHE_LOCAL = {
+    "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}
+}
 
 
 class ListarTurmasPapTest(SimpleTestCase):
@@ -47,37 +58,164 @@ class VerificarAlunosPapTest(SimpleTestCase):
         )
 
 
-class ListarAlunosPapAnoCorrenteTest(SimpleTestCase):
-    """Valida a consulta de alunos PAP do ano corrente."""
+_LINHA_SIDECAR = (
+    b'[{"ano_letivo":2025,"codigo_turma":9100001,"codigo_ue":"000001",'
+    b'"codigo_dre":"100000","codigo_aluno":9100002,'
+    b'"componente_curricular_id":50}]'
+)
+_LINHA_CONTRATO = [
+    {
+        "anoLetivo": 2025,
+        "codigoTurma": 9100001,
+        "codigoUe": "000001",
+        "codigoDre": "100000",
+        "codigoAluno": 9100002,
+        "componenteCurricularId": 50,
+    }
+]
+
+
+def _resposta_sidecar(corpo: bytes) -> MagicMock:
+    """Cria uma resposta simulada do serviço de programas."""
+    resposta = MagicMock()
+    resposta.content = corpo
+    return resposta
+
+
+@override_settings(CACHES=_CACHE_LOCAL)
+class ListarAlunosPapTest(SimpleTestCase):
+    """Valida a consulta, a tradução e o cache de alunos PAP."""
+
+    def setUp(self) -> None:
+        """Isola o cache entre os testes."""
+        cache.clear()
+        self.addCleanup(cache.clear)
 
     @patch.object(services._client, "get")
-    def test_chama_path_correto(self, mock_get: MagicMock) -> None:
-        """Verifica o path usado na consulta de alunos PAP do ano corrente."""
-        mock_resp = MagicMock()
-        mock_resp.json.return_value = []
-        mock_get.return_value = mock_resp
+    def test_ano_corrente_chama_path_e_traduz_campos(
+        self, mock_get: MagicMock
+    ) -> None:
+        """Verifica o path e o contrato do ano corrente."""
+        mock_get.return_value = _resposta_sidecar(_LINHA_SIDECAR)
 
-        services.listar_alunos_pap_ano_corrente()
+        corpo = services.listar_alunos_pap_ano_corrente()
 
         mock_get.assert_called_once_with(
             "/api/v1/programasedu/alunos/pap/ano-corrente"
         )
-
-
-class ListarAlunosPapPorAnoTest(SimpleTestCase):
-    """Valida a consulta de alunos PAP por ano letivo."""
+        self.assertEqual(json.loads(gzip.decompress(corpo)), _LINHA_CONTRATO)
 
     @patch.object(services._client, "get")
-    def test_chama_path_correto(self, mock_get: MagicMock) -> None:
-        """Verifica o path usado na consulta de alunos PAP por ano letivo."""
-        mock_resp = MagicMock()
-        mock_resp.json.return_value = []
-        mock_get.return_value = mock_resp
+    def test_ano_corrente_usa_cache(self, mock_get: MagicMock) -> None:
+        """Verifica que a segunda consulta não chama o serviço."""
+        mock_get.return_value = _resposta_sidecar(_LINHA_SIDECAR)
 
-        services.listar_alunos_pap_por_ano(ano_letivo=2026)
+        primeira = services.listar_alunos_pap_ano_corrente()
+        segunda = services.listar_alunos_pap_ano_corrente()
 
-        mock_get.assert_called_once_with(
-            "/api/v1/programasedu/alunos/pap/ano-letivo/2026"
+        self.assertEqual(primeira, segunda)
+        mock_get.assert_called_once()
+
+    @patch.object(services._client, "get")
+    def test_ano_encerrado_usa_cache_por_ano(
+        self, mock_get: MagicMock
+    ) -> None:
+        """Verifica que cada ano encerrado tem a sua chave de cache."""
+        mock_get.return_value = _resposta_sidecar(_LINHA_SIDECAR)
+        ano = timezone.now().year - 1
+
+        services.listar_alunos_pap_por_ano(ano_letivo=ano)
+        services.listar_alunos_pap_por_ano(ano_letivo=ano)
+        services.listar_alunos_pap_por_ano(ano_letivo=ano - 1)
+
+        self.assertEqual(mock_get.call_count, 2)
+        mock_get.assert_any_call(
+            f"/api/v1/programasedu/alunos/pap/ano-letivo/{ano}"
+        )
+
+    @patch.object(services._client, "get")
+    def test_ano_corrente_ou_futuro_nao_usa_cache(
+        self, mock_get: MagicMock
+    ) -> None:
+        """Verifica que anos corrente e futuro sempre consultam o serviço."""
+        mock_get.return_value = _resposta_sidecar(b"[]")
+        ano = timezone.now().year
+
+        services.listar_alunos_pap_por_ano(ano_letivo=ano)
+        services.listar_alunos_pap_por_ano(ano_letivo=ano)
+        services.listar_alunos_pap_por_ano(ano_letivo=ano + 1)
+
+        self.assertEqual(mock_get.call_count, 3)
+
+    @patch.object(services._client, "get")
+    def test_erro_do_servico_nao_vai_para_o_cache(
+        self, mock_get: MagicMock
+    ) -> None:
+        """Verifica que resposta de erro não é armazenada."""
+        erro = _resposta_sidecar(b"{}")
+        erro.raise_for_status.side_effect = httpx.HTTPError("falha")
+        mock_get.side_effect = [erro, _resposta_sidecar(_LINHA_SIDECAR)]
+
+        with self.assertRaises(httpx.HTTPError):
+            services.listar_alunos_pap_ano_corrente()
+        corpo = services.listar_alunos_pap_ano_corrente()
+
+        self.assertEqual(json.loads(gzip.decompress(corpo)), _LINHA_CONTRATO)
+        self.assertEqual(mock_get.call_count, 2)
+
+    @patch.object(services._client, "get")
+    def test_cache_invalido_volta_a_consultar(
+        self, mock_get: MagicMock
+    ) -> None:
+        """Verifica a recuperação quando o valor em cache é inválido."""
+        mock_get.return_value = _resposta_sidecar(_LINHA_SIDECAR)
+        with (
+            patch.object(
+                services.cache, "obter_ou_calcular", return_value=b"lixo"
+            ),
+            self.assertLogs("apps.programasedu.services", "WARNING"),
+        ):
+            corpo = services.listar_alunos_pap_ano_corrente()
+
+        self.assertEqual(json.loads(gzip.decompress(corpo)), _LINHA_CONTRATO)
+
+    def test_traduz_lista_vazia(self) -> None:
+        """Verifica que a lista vazia permanece vazia."""
+        self.assertEqual(services._traduzir_alunos_pap(b"[]"), b"[]")
+
+    def test_traduz_json_com_espacos_apos_dois_pontos(self) -> None:
+        """Verifica a tradução quando o JSON vem com espaço após ':'."""
+        corpo = (
+            b'[{"ano_letivo": 2025, "codigo_turma": 9100001, '
+            b'"codigo_ue": "000001", "codigo_dre": "100000", '
+            b'"codigo_aluno": 9100002, "componente_curricular_id": 50}]'
+        )
+
+        traduzido = services._traduzir_alunos_pap(corpo)
+
+        self.assertEqual(json.loads(traduzido), _LINHA_CONTRATO)
+
+    def test_formato_inesperado_usa_serializer(self) -> None:
+        """Verifica o fallback quando a chave não casa com o padrão."""
+        corpo = (
+            b'[{"ano_letivo" : 2025, "codigo_turma" : 9100001, '
+            b'"codigo_ue" : "000001", "codigo_dre" : "100000", '
+            b'"codigo_aluno" : 9100002, "componente_curricular_id" : 50}]'
+        )
+
+        with self.assertLogs("apps.programasedu.services", "WARNING"):
+            traduzido = services._traduzir_alunos_pap(corpo)
+
+        self.assertEqual(json.loads(traduzido), _LINHA_CONTRATO)
+
+    def test_paridade_com_o_serializer(self) -> None:
+        """Verifica que a tradução em bytes equivale ao serializer."""
+        linhas = json.loads(_LINHA_SIDECAR)
+        esperado = AlunoTurmaPapSerializer(linhas, many=True).data
+
+        self.assertEqual(
+            json.loads(services._traduzir_alunos_pap(_LINHA_SIDECAR)),
+            json.loads(JSONRenderer().render(esperado)),
         )
 
 
