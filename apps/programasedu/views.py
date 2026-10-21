@@ -1,5 +1,9 @@
 """Views do domínio de programas educacionais."""
 
+import gzip
+
+from django.http import HttpResponse
+from django.utils.cache import patch_vary_headers
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.request import Request
@@ -19,6 +23,30 @@ from apps.programasedu.serializers import (
 _TAG = ["Aluno"]
 _DOMINIO_PROGRAMASEDU = "programasedu"
 _ERRO_CODIGO_ALUNO_OBRIGATORIO = "É necessário informar o codigo_aluno."
+
+
+def _resposta_json_comprimida(
+    request: Request, corpo_gzip: bytes
+) -> HttpResponse:
+    """Monta a resposta JSON a partir de um corpo já comprimido em gzip.
+
+    Args:
+        request: Requisição recebida, usada para negociar a compressão.
+        corpo_gzip: Corpo JSON comprimido em gzip.
+
+    Returns:
+        Resposta comprimida quando o cliente aceita gzip; do contrário,
+        o corpo descomprimido.
+    """
+    if "gzip" in request.META.get("HTTP_ACCEPT_ENCODING", "").lower():
+        resposta = HttpResponse(corpo_gzip, content_type="application/json")
+        resposta["Content-Encoding"] = "gzip"
+    else:
+        resposta = HttpResponse(
+            gzip.decompress(corpo_gzip), content_type="application/json"
+        )
+    patch_vary_headers(resposta, ("Accept-Encoding",))
+    return resposta
 
 
 class ProgramasEduAPIView(DomainAPIView):
@@ -148,7 +176,7 @@ class ObterAlunosPapAnoCorrenteView(ProgramasEduAPIView):
         ),
         responses={200: AlunoTurmaPapSerializer(many=True)},
     )
-    def get(self, _request: Request) -> Response:
+    def get(self, request: Request) -> HttpResponse:
         """Lista os alunos vinculados a turmas PAP no ano corrente.
 
         Returns:
@@ -158,8 +186,8 @@ class ObterAlunosPapAnoCorrenteView(ProgramasEduAPIView):
             httpx.HTTPError: Em caso de falha de transporte ou timeout
                 na chamada ao serviço externo.
         """
-        data = services.listar_alunos_pap_ano_corrente()
-        return Response(AlunoTurmaPapSerializer(data, many=True).data)
+        corpo = services.listar_alunos_pap_ano_corrente()
+        return _resposta_json_comprimida(request, corpo)
 
 
 class ObterAlunosPapPorAnoLetivoView(ProgramasEduAPIView):
@@ -183,7 +211,7 @@ class ObterAlunosPapPorAnoLetivoView(ProgramasEduAPIView):
         ],
         responses={200: AlunoTurmaPapSerializer(many=True)},
     )
-    def get(self, _request: Request, ano_letivo: int) -> Response:
+    def get(self, request: Request, ano_letivo: int) -> HttpResponse:
         """Lista os alunos vinculados a turmas PAP no ano letivo.
 
         Args:
@@ -196,8 +224,8 @@ class ObterAlunosPapPorAnoLetivoView(ProgramasEduAPIView):
             httpx.HTTPError: Em caso de falha de transporte ou timeout
                 na chamada ao serviço externo.
         """
-        data = services.listar_alunos_pap_por_ano(ano_letivo=ano_letivo)
-        return Response(AlunoTurmaPapSerializer(data, many=True).data)
+        corpo = services.listar_alunos_pap_por_ano(ano_letivo=ano_letivo)
+        return _resposta_json_comprimida(request, corpo)
 
 
 class ObterComponentesCurricularesTurmasProgramaAlunoView(ProgramasEduAPIView):
