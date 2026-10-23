@@ -192,4 +192,90 @@ Funcionalidade: API - Turmas
     Dado que possuo acesso à API de turmas
     Quando realizo consulta de alunos da turma com UE e ano letivo inválidos
     Então retorna o status 204
-    
+
+  Cenário: Validar turma sem redis com código de turma válido
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de turma sem redis com código de turma válido
+    Então retorna o status 200
+    E o retorno deve conter dados da turma
+
+  Cenário: Validar retorno vazio de turma sem redis com código de turma inválido
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de turma sem redis com código de turma inválido
+    Então retorna o status 204
+
+  Cenário: Validar itinerário do ensino médio
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de itinerário do ensino médio
+    Então retorna o status 200
+    E o retorno deve conter lista de itinerários do ensino médio com id, nome e serie
+
+  Cenário: Validar componentes de turmas por UE, modalidade e ano letivo com dados válidos
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de componentes de turmas por UE, modalidade e ano letivo com dados válidos
+    Então retorna o status 200
+    E o retorno deve conter dados de componentes de turmas
+
+  Cenário: Validar componentes de turmas por UE, modalidade e ano letivo com dados inválidos
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de componentes de turmas por UE, modalidade e ano letivo com dados inválidos
+    Então retorna o status 200
+    E o retorno deve conter dados de componentes de turmas
+
+  Cenário: Validar alunos da turma por ano letivo com código de turma válido
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de alunos da turma por ano letivo com código de turma válido
+    Então retorna o status 200
+    E o retorno deve conter dados de alunos da turma por ano letivo
+
+  Cenário: Validar retorno vazio de alunos da turma por ano letivo com código de turma inválido
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de alunos da turma por ano letivo com código de turma inválido
+    Então retorna o status 204
+
+  Cenário: Validar todos os alunos da turma com código de turma válido
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de todos os alunos da turma com código de turma válido
+    Então retorna o status 200
+    E o retorno deve conter lista de todos os alunos da turma
+
+  Cenário: Validar retorno vazio de todos os alunos da turma com código de turma inválido
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de todos os alunos da turma com código de turma inválido
+    Então retorna o status 200
+    E o retorno deve ser uma lista vazia
+
+  Cenário: Validar turmas do aluno por código de aluno válido
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de turmas do aluno com código de aluno válido
+    Então retorna o status 200
+    E o retorno deve conter lista de turmas do aluno
+
+  Cenário: Validar retorno vazio de turmas do aluno com código de aluno inválido
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de turmas do aluno com código de aluno inválido
+    Então retorna o status 200
+    E o retorno deve ser uma lista vazia
+
+  Cenário: Validar acompanhamento escolar de todos os alunos da turma com código de turma válido
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de acompanhamento escolar de todos os alunos com código de turma válido
+    Então retorna o status 200
+    E o retorno deve conter dados de acompanhamento escolar de todos os alunos
+
+  Cenário: Validar retorno vazio de acompanhamento escolar de todos os alunos com código de turma inválido
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de acompanhamento escolar de todos os alunos com código de turma inválido
+    Então retorna o status 200
+    E o retorno deve ser uma lista vazia
+
+  Cenário: Validar todos os alunos por ano turma, modalidade, ano letivo, DRE e período com dados válidos
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de todos os alunos por ano turma, modalidade, ano letivo, DRE e período com dados válidos
+    Então retorna o status 200
+    E o retorno deve conter lista de todos os alunos por filtros
+
+  Cenário: Validar retorno vazio de todos os alunos por ano turma, modalidade, ano letivo, DRE e período com dados inválidos
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de todos os alunos por ano turma, modalidade, ano letivo, DRE e período com dados inválidos
+    Então retorna o status 204

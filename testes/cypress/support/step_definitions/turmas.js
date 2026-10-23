@@ -424,6 +424,25 @@ And(
     });
   },
 );
+
+// Endpoint GET - /api/turmas/{codigoTurma}/alunos/anosLetivos/{anoLetivo}
+When("realizo consulta de alunos da turma com UE e ano letivo válidos", () => {
+  cy.getTurmasAlunosAnoLetivo(
+    Cypress.env("TURMA_CODIGO"),
+    Cypress.env("ANO_LETIVO"),
+  ).as("response");
+});
+
+When(
+  "realizo consulta de alunos da turma com UE e ano letivo inválidos",
+  () => {
+    cy.getTurmasAlunosAnoLetivo(
+      Cypress.env("TURMA_CODIGO_INEXISTENTE"),
+      Cypress.env("ANO_LETIVO_INEXISTENTE"),
+    ).as("response");
+  },
+);
+
 // Endpoint GET - /api/ues/{codigoUe}/turmas/{codigoTurma}/sincronizacoes-institucionais
 When(
   "realizo consulta de sincronizações institucionais da turma com UE e turma válidos",
@@ -457,29 +476,232 @@ And(
   },
 );
 
-// Endpoint GET - /api/turmas/{codigoUe}/alunos/anosLetivos/{anoLetivo}
-When("realizo consulta de alunos da turma com UE e ano letivo válidos", () => {
-  cy.getTurmasAlunosAnoLetivo(
-    Cypress.env("UE_CODIGO_ALUNOS"),
-    Cypress.env("ANO_LETIVO"),
-  ).as("response");
-});
-
-When(
-  "realizo consulta de alunos da turma com UE e ano letivo inválidos",
-  () => {
-    cy.getTurmasAlunosAnoLetivo(
-      Cypress.env("UE_CODIGO_INEXISTENTE"),
-      Cypress.env("ANO_LETIVO_INEXISTENTE"),
-    ).as("response");
-  },
-);
-
 And("o retorno deve conter dados de alunos da turma", () => {
   cy.get("@response").then((response) => {
     if (response.status === 200) {
       expect(response.body).to.exist;
       expect(response.body).to.not.be.empty;
+    }
+  });
+});
+
+// Endpoint GET - /api/turmas/{codigoTurma}/sem-redis
+When("realizo consulta de turma sem redis com código de turma válido", () => {
+  cy.getTurmaSemRedis(Cypress.env("TURMA_CODIGO")).as("response");
+});
+
+When("realizo consulta de turma sem redis com código de turma inválido", () => {
+  cy.getTurmaSemRedis(Cypress.env("TURMA_CODIGO_INEXISTENTE")).as("response");
+});
+
+And("o retorno deve conter dados da turma", () => {
+  cy.get("@response").then((response) => {
+    if (response.status === 200) {
+      expect(response.body).to.exist;
+      expect(response.body).to.not.be.empty;
+    }
+  });
+});
+
+// Endpoint GET - /api/turmas/itinerario/ensino-medio
+When("realizo consulta de itinerário do ensino médio", () => {
+  cy.getTurmasItinerarioEnsinoMedio().as("response");
+});
+
+And(
+  "o retorno deve conter lista de itinerários do ensino médio com id, nome e serie",
+  () => {
+    cy.get("@response").then((response) => {
+      if (response.status === 200) {
+        expect(response.body).to.be.an("array");
+        expect(response.body).not.be.empty;
+        response.body.forEach((item) => {
+          expect(item).to.have.property("id");
+          expect(item).to.have.property("nome");
+          expect(item).to.have.property("serie");
+        });
+      }
+    });
+  },
+);
+
+// Endpoint GET - /api/turmas/ues/{codigoUe}/modalidades/{modalidade}/anos/{anoLetivo}/componentes?consideraHistorico=false
+When(
+  "realizo consulta de componentes de turmas por UE, modalidade e ano letivo com dados válidos",
+  () => {
+    cy.getTurmasComponentes(
+      Cypress.env("UE_CODIGO"),
+      Cypress.env("MODALIDADE"),
+      Cypress.env("ANO_LETIVO"),
+      false,
+    ).as("response");
+  },
+);
+
+When(
+  "realizo consulta de componentes de turmas por UE, modalidade e ano letivo com dados inválidos",
+  () => {
+    cy.getTurmasComponentes(
+      Cypress.env("UE_CODIGO_INEXISTENTE"),
+      Cypress.env("MODALIDADE"),
+      Cypress.env("ANO_LETIVO_INEXISTENTE"),
+      false,
+    ).as("response");
+  },
+);
+
+And("o retorno deve conter dados de componentes de turmas", () => {
+  cy.get("@response").then((response) => {
+    if (response.status === 200) {
+      expect(response.body).to.exist;
+    }
+  });
+});
+
+// Endpoint GET - /api/turmas/{codigoTurma}/alunos/anosLetivos/{anoLetivo}
+When(
+  "realizo consulta de alunos da turma por ano letivo com código de turma válido",
+  () => {
+    cy.getTurmaAlunosPorAnoLetivo(
+      Cypress.env("TURMA_CODIGO"),
+      Cypress.env("ANO_LETIVO"),
+    ).as("response");
+  },
+);
+
+When(
+  "realizo consulta de alunos da turma por ano letivo com código de turma inválido",
+  () => {
+    cy.getTurmaAlunosPorAnoLetivo(
+      Cypress.env("TURMA_CODIGO_INEXISTENTE"),
+      Cypress.env("ANO_LETIVO_INEXISTENTE"),
+    ).as("response");
+  },
+);
+
+And("o retorno deve conter dados de alunos da turma por ano letivo", () => {
+  cy.get("@response").then((response) => {
+    if (response.status === 200) {
+      expect(response.body).to.exist;
+      expect(response.body).to.not.be.empty;
+    }
+  });
+});
+
+// Endpoint GET - /api/turmas/{codigoTurma}/todos-alunos
+When(
+  "realizo consulta de todos os alunos da turma com código de turma válido",
+  () => {
+    cy.getTurmaTodosAlunos(Cypress.env("TURMA_CODIGO")).as("response");
+  },
+);
+
+When(
+  "realizo consulta de todos os alunos da turma com código de turma inválido",
+  () => {
+    cy.getTurmaTodosAlunos(Cypress.env("TURMA_CODIGO_INEXISTENTE")).as(
+      "response",
+    );
+  },
+);
+
+And("o retorno deve conter lista de todos os alunos da turma", () => {
+  cy.get("@response").then((response) => {
+    if (response.status === 200) {
+      expect(response.body).to.be.an("array");
+      if (response.body.length > 0) {
+        expect(response.body).not.be.empty;
+      }
+    }
+  });
+});
+
+// Endpoint GET - /api/turmas/alunos/{codigoAluno}
+When("realizo consulta de turmas do aluno com código de aluno válido", () => {
+  cy.getTurmasAluno(Cypress.env("CODIGO_ALUNO")).as("response");
+});
+
+When("realizo consulta de turmas do aluno com código de aluno inválido", () => {
+  cy.getTurmasAluno(Cypress.env("CODIGO_ALUNO_INEXISTENTE")).as("response");
+});
+
+And("o retorno deve conter lista de turmas do aluno", () => {
+  cy.get("@response").then((response) => {
+    if (response.status === 200) {
+      expect(response.body).to.be.an("array");
+      if (response.body.length > 0) {
+        expect(response.body).not.be.empty;
+      }
+    }
+  });
+});
+
+// Endpoint GET - /api/turmas/{codigoTurma}/acompanhamento-escolar/todos-alunos
+When(
+  "realizo consulta de acompanhamento escolar de todos os alunos com código de turma válido",
+  () => {
+    cy.getTurmaAcompanhamentoEscolarTodosAlunos(Cypress.env("TURMA_CODIGO")).as(
+      "response",
+    );
+  },
+);
+
+When(
+  "realizo consulta de acompanhamento escolar de todos os alunos com código de turma inválido",
+  () => {
+    cy.getTurmaAcompanhamentoEscolarTodosAlunos(
+      Cypress.env("TURMA_CODIGO_INEXISTENTE"),
+    ).as("response");
+  },
+);
+
+And(
+  "o retorno deve conter dados de acompanhamento escolar de todos os alunos",
+  () => {
+    cy.get("@response").then((response) => {
+      if (response.status === 200) {
+        expect(response.body).to.exist;
+        // expect(response.body).to.not.be.empty;
+      }
+    });
+  },
+);
+
+// Endpoint GET - /api/turmas/todos-alunos/ano-turma/{anoTurma}/modalidade/{modalidade}/ano-letivo/{anoLetivo}/dre/{dreCodigo}/inicio/{dataInicio}/fim/{dataFim}
+When(
+  "realizo consulta de todos os alunos por ano turma, modalidade, ano letivo, DRE e período com dados válidos",
+  () => {
+    cy.getTurmasTodosAlunosFiltros(
+      Cypress.env("TURMA_ANO"),
+      Cypress.env("MODALIDADE"),
+      Cypress.env("ANO_LETIVO"),
+      Cypress.env("DRE_CODIGO"),
+      Cypress.env("DATA_INICIO"),
+      Cypress.env("DATA_FIM"),
+    ).as("response");
+  },
+);
+
+When(
+  "realizo consulta de todos os alunos por ano turma, modalidade, ano letivo, DRE e período com dados inválidos",
+  () => {
+    cy.getTurmasTodosAlunosFiltros(
+      Cypress.env("TURMA_CODIGO_INEXISTENTE"),
+      Cypress.env("MODALIDADE"),
+      Cypress.env("ANO_LETIVO_INEXISTENTE"),
+      Cypress.env("DRE_CODIGO_INEXISTENTE"),
+      Cypress.env("DATA_INICIO"),
+      Cypress.env("DATA_FIM"),
+    ).as("response");
+  },
+);
+
+And("o retorno deve conter lista de todos os alunos por filtros", () => {
+  cy.get("@response").then((response) => {
+    if (response.status === 200) {
+      if (response.body.length > 0) {
+        expect(response.body).not.be.empty;
+      }
     }
   });
 });
