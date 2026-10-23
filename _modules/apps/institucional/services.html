@@ -148,7 +148,7 @@
 <span class="sd">    """</span>
     <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/dres/</span><span class="si">{</span><span class="n">codigo_dre</span><span class="si">}</span><span class="s2">/escola/"</span><span class="p">)</span>
     <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
-    <span class="k">return</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span></div>
 
 
 

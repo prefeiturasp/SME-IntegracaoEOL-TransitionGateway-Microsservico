@@ -213,24 +213,110 @@
 <span class="w">    </span><span class="sd">"""Serializa dados de turma no contrato legado."""</span>
 
     <span class="n">ano</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">anoLetivo</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">anoLetivo</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"ano_letivo"</span><span class="p">,</span>
+        <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
     <span class="n">codigo</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">()</span>
-    <span class="n">tipoTurma</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">modalidade</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">codigoModalidade</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">nomeTurma</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">tipoTurma</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"tipo_turma"</span><span class="p">,</span>
+        <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">modalidade</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">SerializerMethodField</span><span class="p">()</span>
+    <span class="n">codigoModalidade</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">SerializerMethodField</span><span class="p">(</span>
+        <span class="n">method_name</span><span class="o">=</span><span class="s2">"get_codigo_modalidade"</span>
+    <span class="p">)</span>
+    <span class="n">nomeTurma</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"nome_turma"</span><span class="p">,</span>
+        <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
     <span class="n">semestre</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">duracaoTurno</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">tipoTurno</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">dataFim</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">ehistorico</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">BooleanField</span><span class="p">()</span>
-    <span class="n">ensinoEspecial</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">BooleanField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">etapaEJA</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">()</span>
-    <span class="n">serieEnsino</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">dataInicioTurma</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">duracaoTurno</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"duracao_turno"</span><span class="p">,</span>
+        <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">tipoTurno</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"tipo_turno"</span><span class="p">,</span>
+        <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">dataFim</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">SerializerMethodField</span><span class="p">(</span><span class="n">method_name</span><span class="o">=</span><span class="s2">"get_data_fim"</span><span class="p">)</span>
+    <span class="n">ehistorico</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">SerializerMethodField</span><span class="p">()</span>
+    <span class="n">ensinoEspecial</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">BooleanField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"ensino_especial"</span><span class="p">,</span>
+        <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">etapaEJA</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">SerializerMethodField</span><span class="p">(</span><span class="n">method_name</span><span class="o">=</span><span class="s2">"get_etapa_eja"</span><span class="p">)</span>
+    <span class="n">serieEnsino</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">SerializerMethodField</span><span class="p">(</span>
+        <span class="n">method_name</span><span class="o">=</span><span class="s2">"get_serie_ensino"</span>
+    <span class="p">)</span>
+    <span class="n">dataInicioTurma</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">SerializerMethodField</span><span class="p">(</span>
+        <span class="n">method_name</span><span class="o">=</span><span class="s2">"get_data_inicio_turma"</span>
+    <span class="p">)</span>
     <span class="n">extinta</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">BooleanField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">situacao</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">ueCodigo</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+    <span class="n">situacao</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">SerializerMethodField</span><span class="p">()</span>
+    <span class="n">ueCodigo</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"ue_codigo"</span><span class="p">,</span>
+        <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+<div class="viewcode-block" id="TurmaDadosSerializer.get_modalidade">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.serializers.TurmaDadosSerializer.get_modalidade">[documentos]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_modalidade</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_obj</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Retorna valor legado fixo para modalidade."""</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="TurmaDadosSerializer.get_codigo_modalidade">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.serializers.TurmaDadosSerializer.get_codigo_modalidade">[documentos]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_codigo_modalidade</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_obj</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Retorna valor legado fixo para código de modalidade."""</span>
+        <span class="k">return</span> <span class="mi">0</span></div>
+
+
+<div class="viewcode-block" id="TurmaDadosSerializer.get_data_fim">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.serializers.TurmaDadosSerializer.get_data_fim">[documentos]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_data_fim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Formata data de fim no padrão legado."""</span>
+        <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">formatar_datetime_legado</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"data_fim"</span><span class="p">)))</span></div>
+
+
+<div class="viewcode-block" id="TurmaDadosSerializer.get_ehistorico">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.serializers.TurmaDadosSerializer.get_ehistorico">[documentos]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_ehistorico</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Retorna indicador histórico no formato legado."""</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ehistorico"</span><span class="p">,</span> <span class="kc">False</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="TurmaDadosSerializer.get_etapa_eja">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.serializers.TurmaDadosSerializer.get_etapa_eja">[documentos]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_etapa_eja</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Retorna etapa EJA no formato legado."""</span>
+        <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"etapa_eja"</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="TurmaDadosSerializer.get_serie_ensino">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.serializers.TurmaDadosSerializer.get_serie_ensino">[documentos]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_serie_ensino</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_obj</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Retorna valor legado fixo para série de ensino."""</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="TurmaDadosSerializer.get_data_inicio_turma">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.serializers.TurmaDadosSerializer.get_data_inicio_turma">[documentos]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_data_inicio_turma</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Formata data de início no padrão legado."""</span>
+        <span class="k">return</span> <span class="n">cast</span><span class="p">(</span>
+            <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">formatar_datetime_legado</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"data_inicio_turma"</span><span class="p">)),</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TurmaDadosSerializer.get_situacao">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.serializers.TurmaDadosSerializer.get_situacao">[documentos]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_situacao</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_obj</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Retorna valor legado fixo para situação."""</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+</div>
 
 
 

@@ -1030,29 +1030,29 @@
 
 
 
-<div class="viewcode-block" id="get_turmas_aluno_com_programa">
-<a class="viewcode-back" href="../../../api.html#apps.alunos.services.get_turmas_aluno_com_programa">[documentos]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">get_turmas_aluno_com_programa</span><span class="p">(</span><span class="n">codigo_aluno</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Retorna turmas do aluno no ano corrente, incluindo turmas de programa.</span>
-
-<span class="sd">    Chama o endpoint de turmas com os filtros desativados</span>
-<span class="sd">    para tipo_turma e filtragem da situação.</span>
+<div class="viewcode-block" id="get_turmas_srm_regular_aluno">
+<a class="viewcode-back" href="../../../api.html#apps.alunos.services.get_turmas_srm_regular_aluno">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_turmas_srm_regular_aluno</span><span class="p">(</span>
+    <span class="n">codigo_aluno</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">codigos_turma_programa</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Retorna as turmas regulares e de programa SRM do aluno.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        codigo_aluno: Código do aluno.</span>
+<span class="sd">        codigos_turma_programa: Códigos das turmas de programa SRM.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        Lista de turmas (regulares e de programa) retornada pela API.</span>
-<span class="sd">        Lista vazia quando a API responde 4xx (código inválido como</span>
-<span class="sd">        ``"00000"`` ou aluno sem turmas).</span>
+<span class="sd">        Lista de turmas retornada pela API. Lista vazia quando a API</span>
+<span class="sd">        responde 4xx (código inválido como ``"00000"`` ou aluno sem</span>
+<span class="sd">        turmas elegíveis).</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        httpx.HTTPStatusError: Se a API retornar erro de servidor (5xx).</span>
 <span class="sd">        httpx.RequestError: Se a API estiver inacessível.</span>
 <span class="sd">    """</span>
     <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">codigo_aluno</span><span class="si">}</span><span class="s2">/turmas/"</span><span class="p">,</span>
-        <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"tipo_turma"</span><span class="p">:</span> <span class="s2">"false"</span><span class="p">,</span> <span class="s2">"filtrar_situacao"</span><span class="p">:</span> <span class="s2">"false"</span><span class="p">},</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">codigo_aluno</span><span class="si">}</span><span class="s2">/turmas-srm-regular/"</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"codigos_turma_programa"</span><span class="p">:</span> <span class="n">codigos_turma_programa</span><span class="p">},</span>
     <span class="p">)</span>
     <span class="k">if</span> <span class="n">resp</span><span class="o">.</span><span class="n">status_code</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="mi">404</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">[]</span>

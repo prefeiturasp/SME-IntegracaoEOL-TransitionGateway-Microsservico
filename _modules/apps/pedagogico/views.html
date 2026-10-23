@@ -1238,8 +1238,7 @@
 <span class="sd">            httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
 <span class="sd">            ValueError: Se a resposta do serviço não for JSON válido.</span>
 <span class="sd">        """</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_componentes_curriculares</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">ComponenteBaseSerializer</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">services</span><span class="o">.</span><span class="n">get_componentes_curriculares</span><span class="p">())</span></div>
 
 
 

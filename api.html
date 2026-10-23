@@ -1077,6 +1077,118 @@ os itens em uma lista única antes de responder.</p>
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.pedagogico.serializers.</span></span><span class="sig-name descname"><span class="pre">TurmaDadosSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/pedagogico/serializers.html#TurmaDadosSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.pedagogico.serializers.TurmaDadosSerializer" title="Link para esta definição">¶</a></dt>
 <dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">Serializer</span></code></p>
 <p>Serializa dados de turma no contrato legado.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="apps.pedagogico.serializers.TurmaDadosSerializer.get_modalidade">
+<span class="sig-name descname"><span class="pre">get_modalidade</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">_obj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/pedagogico/serializers.html#TurmaDadosSerializer.get_modalidade"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.pedagogico.serializers.TurmaDadosSerializer.get_modalidade" title="Link para esta definição">¶</a></dt>
+<dd><p>Retorna valor legado fixo para modalidade.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>_obj</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>)</p>
+</dd>
+<dt class="field-even">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="apps.pedagogico.serializers.TurmaDadosSerializer.get_codigo_modalidade">
+<span class="sig-name descname"><span class="pre">get_codigo_modalidade</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">_obj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/pedagogico/serializers.html#TurmaDadosSerializer.get_codigo_modalidade"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.pedagogico.serializers.TurmaDadosSerializer.get_codigo_modalidade" title="Link para esta definição">¶</a></dt>
+<dd><p>Retorna valor legado fixo para código de modalidade.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>_obj</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>)</p>
+</dd>
+<dt class="field-even">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="apps.pedagogico.serializers.TurmaDadosSerializer.get_data_fim">
+<span class="sig-name descname"><span class="pre">get_data_fim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/pedagogico/serializers.html#TurmaDadosSerializer.get_data_fim"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.pedagogico.serializers.TurmaDadosSerializer.get_data_fim" title="Link para esta definição">¶</a></dt>
+<dd><p>Formata data de fim no padrão legado.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>obj</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>)</p>
+</dd>
+<dt class="field-even">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-even"><p>str | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="apps.pedagogico.serializers.TurmaDadosSerializer.get_ehistorico">
+<span class="sig-name descname"><span class="pre">get_ehistorico</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/pedagogico/serializers.html#TurmaDadosSerializer.get_ehistorico"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.pedagogico.serializers.TurmaDadosSerializer.get_ehistorico" title="Link para esta definição">¶</a></dt>
+<dd><p>Retorna indicador histórico no formato legado.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>obj</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>)</p>
+</dd>
+<dt class="field-even">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="apps.pedagogico.serializers.TurmaDadosSerializer.get_etapa_eja">
+<span class="sig-name descname"><span class="pre">get_etapa_eja</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/pedagogico/serializers.html#TurmaDadosSerializer.get_etapa_eja"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.pedagogico.serializers.TurmaDadosSerializer.get_etapa_eja" title="Link para esta definição">¶</a></dt>
+<dd><p>Retorna etapa EJA no formato legado.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>obj</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>)</p>
+</dd>
+<dt class="field-even">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-even"><p>int | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="apps.pedagogico.serializers.TurmaDadosSerializer.get_serie_ensino">
+<span class="sig-name descname"><span class="pre">get_serie_ensino</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">_obj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/pedagogico/serializers.html#TurmaDadosSerializer.get_serie_ensino"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.pedagogico.serializers.TurmaDadosSerializer.get_serie_ensino" title="Link para esta definição">¶</a></dt>
+<dd><p>Retorna valor legado fixo para série de ensino.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>_obj</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>)</p>
+</dd>
+<dt class="field-even">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="apps.pedagogico.serializers.TurmaDadosSerializer.get_data_inicio_turma">
+<span class="sig-name descname"><span class="pre">get_data_inicio_turma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/pedagogico/serializers.html#TurmaDadosSerializer.get_data_inicio_turma"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.pedagogico.serializers.TurmaDadosSerializer.get_data_inicio_turma" title="Link para esta definição">¶</a></dt>
+<dd><p>Formata data de início no padrão legado.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>obj</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>)</p>
+</dd>
+<dt class="field-even">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-even"><p>str | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="apps.pedagogico.serializers.TurmaDadosSerializer.get_situacao">
+<span class="sig-name descname"><span class="pre">get_situacao</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">_obj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/pedagogico/serializers.html#TurmaDadosSerializer.get_situacao"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.pedagogico.serializers.TurmaDadosSerializer.get_situacao" title="Link para esta definição">¶</a></dt>
+<dd><p>Retorna valor legado fixo para situação.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>_obj</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>)</p>
+</dd>
+<dt class="field-even">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -2703,6 +2815,39 @@ planejamento serão adicionados.</p></li>
 </dd>
 <dt class="field-even">Parâmetros<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>codigo_turma</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>)</p>
+</dd>
+<dt class="field-odd">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[dict[str, <em>Any</em>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="apps.pedagogico.services.get_turmas_componentes_turma">
+<span class="sig-prename descclassname"><span class="pre">apps.pedagogico.services.</span></span><span class="sig-name descname"><span class="pre">get_turmas_componentes_turma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigos_turmas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigos_componentes</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/pedagogico/services.html#get_turmas_componentes_turma"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.pedagogico.services.get_turmas_componentes_turma" title="Link para esta definição">¶</a></dt>
+<dd><p>Retorna componentes curriculares de várias turmas em uma chamada.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>codigos_turmas</strong> – Códigos das turmas usadas na consulta.</p></li>
+<li><p><strong>codigos_componentes</strong> – Códigos dos componentes curriculares.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Retorna<span class="colon">:</span></dt>
+<dd class="field-even"><p>Componentes curriculares encontrados, um item por par
+turma/componente existente.</p>
+</dd>
+<dt class="field-odd">Levanta<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>httpx.HTTPError</strong> – Se a chamada ao serviço pedagógico falhar.</p></li>
+<li><p><strong>ValueError</strong> – Se a resposta não puder ser convertida para JSON.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>codigos_turmas</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>)</p></li>
+<li><p><strong>codigos_componentes</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>)</p></li>
+</ul>
 </dd>
 <dt class="field-odd">Tipo de retorno<span class="colon">:</span></dt>
 <dd class="field-odd"><p>list[dict[str, <em>Any</em>]]</p>
@@ -5163,6 +5308,8 @@ apenas os componentes cujo titular corresponde ao RF.</p></li>
 <dt class="sig sig-object py" id="apps.professores.services.buscar_professores_titulares_por_ue">
 <span class="sig-prename descclassname"><span class="pre">apps.professores.services.</span></span><span class="sig-name descname"><span class="pre">buscar_professores_titulares_por_ue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ue_codigo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_referencia</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">realiza_agrupamento</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/professores/services.html#buscar_professores_titulares_por_ue"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.professores.services.buscar_professores_titulares_por_ue" title="Link para esta definição">¶</a></dt>
 <dd><p>Busca professores titulares de uma UE na data de referência.</p>
+<p>O resultado é cacheado por UE, data de referência e agrupamento.
+Respostas inválidas do serviço de professores não são cacheadas.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -7329,19 +7476,20 @@ registros.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="apps.alunos.services.get_turmas_aluno_com_programa">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_turmas_aluno_com_programa</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_turmas_aluno_com_programa"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.alunos.services.get_turmas_aluno_com_programa" title="Link para esta definição">¶</a></dt>
-<dd><p>Retorna turmas do aluno no ano corrente, incluindo turmas de programa.</p>
-<p>Chama o endpoint de turmas com os filtros desativados
-para tipo_turma e filtragem da situação.</p>
+<dt class="sig sig-object py" id="apps.alunos.services.get_turmas_srm_regular_aluno">
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_turmas_srm_regular_aluno</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigos_turma_programa</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_turmas_srm_regular_aluno"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.alunos.services.get_turmas_srm_regular_aluno" title="Link para esta definição">¶</a></dt>
+<dd><p>Retorna as turmas regulares e de programa SRM do aluno.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>codigo_aluno</strong> – Código do aluno.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>codigo_aluno</strong> – Código do aluno.</p></li>
+<li><p><strong>codigos_turma_programa</strong> – Códigos das turmas de programa SRM.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Retorna<span class="colon">:</span></dt>
-<dd class="field-even"><p>Lista de turmas (regulares e de programa) retornada pela API.
-Lista vazia quando a API responde 4xx (código inválido como
-<code class="docutils literal notranslate"><span class="pre">&quot;00000&quot;</span></code> ou aluno sem turmas).</p>
+<dd class="field-even"><p>Lista de turmas retornada pela API. Lista vazia quando a API
+responde 4xx (código inválido como <code class="docutils literal notranslate"><span class="pre">&quot;00000&quot;</span></code> ou aluno sem
+turmas elegíveis).</p>
 </dd>
 <dt class="field-odd">Levanta<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -7350,7 +7498,10 @@ Lista vazia quando a API responde 4xx (código inválido como
 </ul>
 </dd>
 <dt class="field-even">Parâmetros<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>codigo_aluno</strong> (<em>str</em>)</p>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>codigo_aluno</strong> (<em>str</em>)</p></li>
+<li><p><strong>codigos_turma_programa</strong> (<em>list</em><em>[</em><em>int</em><em>]</em>)</p></li>
+</ul>
 </dd>
 <dt class="field-odd">Tipo de retorno<span class="colon">:</span></dt>
 <dd class="field-odd"><p><em>Any</em></p>
@@ -8178,13 +8329,6 @@ sentinela <code class="docutils literal notranslate"><span class="pre">0001-01-0
 <dt class="sig sig-object py" id="apps.programasedu.services.obter_turma_srm_e_regular_do_aluno">
 <span class="sig-prename descclassname"><span class="pre">apps.programasedu.services.</span></span><span class="sig-name descname"><span class="pre">obter_turma_srm_e_regular_do_aluno</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/programasedu/services.html#obter_turma_srm_e_regular_do_aluno"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.programasedu.services.obter_turma_srm_e_regular_do_aluno" title="Link para esta definição">¶</a></dt>
 <dd><p>Compõe as turmas SRM e regulares do aluno no shape legado.</p>
-<ol class="arabic simple">
-<li><p>Alunos-MS retorna turmas do aluno e <code class="docutils literal notranslate"><span class="pre">codigo_tipo_turma</span></code>.</p></li>
-<li><p>ProgramasEdu-MS retorna turmas com o componente SRM 1030.</p></li>
-<li><p>Filtro: mantém turma regular (tipo 1) OU programa (tipo 3) que esteja
-no conjunto SRM.</p></li>
-<li><p>Pedagogico-MS → <code class="docutils literal notranslate"><span class="pre">nome_turma</span></code>/<code class="docutils literal notranslate"><span class="pre">tipo_turno</span></code>/etapa/ciclo por turma.</p></li>
-</ol>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>codigo_aluno</strong> – Código EOL do aluno.</p>
@@ -9748,18 +9892,19 @@ registros.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="id75">
-<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_turmas_aluno_com_programa</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_turmas_aluno_com_programa"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id75" title="Link para esta definição">¶</a></dt>
-<dd><p>Retorna turmas do aluno no ano corrente, incluindo turmas de programa.</p>
-<p>Chama o endpoint de turmas com os filtros desativados
-para tipo_turma e filtragem da situação.</p>
+<span class="sig-prename descclassname"><span class="pre">apps.alunos.services.</span></span><span class="sig-name descname"><span class="pre">get_turmas_srm_regular_aluno</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codigo_aluno</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codigos_turma_programa</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/alunos/services.html#get_turmas_srm_regular_aluno"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#id75" title="Link para esta definição">¶</a></dt>
+<dd><p>Retorna as turmas regulares e de programa SRM do aluno.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>codigo_aluno</strong> – Código do aluno.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>codigo_aluno</strong> – Código do aluno.</p></li>
+<li><p><strong>codigos_turma_programa</strong> – Códigos das turmas de programa SRM.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Retorna<span class="colon">:</span></dt>
-<dd class="field-even"><p>Lista de turmas (regulares e de programa) retornada pela API.
-Lista vazia quando a API responde 4xx (código inválido como
-<code class="docutils literal notranslate"><span class="pre">&quot;00000&quot;</span></code> ou aluno sem turmas).</p>
+<dd class="field-even"><p>Lista de turmas retornada pela API. Lista vazia quando a API
+responde 4xx (código inválido como <code class="docutils literal notranslate"><span class="pre">&quot;00000&quot;</span></code> ou aluno sem
+turmas elegíveis).</p>
 </dd>
 <dt class="field-odd">Levanta<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -9768,7 +9913,10 @@ Lista vazia quando a API responde 4xx (código inválido como
 </ul>
 </dd>
 <dt class="field-even">Parâmetros<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>codigo_aluno</strong> (<em>str</em>)</p>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>codigo_aluno</strong> (<em>str</em>)</p></li>
+<li><p><strong>codigos_turma_programa</strong> (<em>list</em><em>[</em><em>int</em><em>]</em>)</p></li>
+</ul>
 </dd>
 <dt class="field-odd">Tipo de retorno<span class="colon">:</span></dt>
 <dd class="field-odd"><p><em>Any</em></p>

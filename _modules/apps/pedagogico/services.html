@@ -230,9 +230,17 @@
 <span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
 <span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
 <span class="sd">    """</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/"</span><span class="p">)</span>
-    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
-    <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">buscar_catalogo</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/"</span><span class="p">)</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">cache</span><span class="o">.</span><span class="n">obter_ou_calcular</span><span class="p">(</span>
+        <span class="s2">"pedagogico:componentes-curriculares:v1"</span><span class="p">,</span>
+        <span class="n">buscar_catalogo</span><span class="p">,</span>
+        <span class="n">cache</span><span class="o">.</span><span class="n">TTL_RECOMENDADO_MINUTOS</span><span class="p">,</span>
+    <span class="p">)</span></div>
 
 
 
@@ -267,40 +275,6 @@
     <span class="k">if</span> <span class="n">payload</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">[]</span>
     <span class="k">return</span> <span class="n">_codigos_turmas</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_turma_legado</span><span class="p">(</span><span class="n">item</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""Retorna turma no formato esperado pelo contrato.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        item: Dados da turma recebidos para conversão.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        Turma formatada para resposta.</span>
-<span class="sd">    """</span>
-    <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">"ano"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ano"</span><span class="p">),</span>
-        <span class="s2">"anoLetivo"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ano_letivo"</span><span class="p">),</span>
-        <span class="s2">"codigo"</span><span class="p">:</span> <span class="n">item</span><span class="p">[</span><span class="s2">"codigo"</span><span class="p">],</span>
-        <span class="s2">"tipoTurma"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"tipo_turma"</span><span class="p">),</span>
-        <span class="s2">"modalidade"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="s2">"codigoModalidade"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-        <span class="s2">"nomeTurma"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"nome_turma"</span><span class="p">),</span>
-        <span class="s2">"semestre"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"semestre"</span><span class="p">),</span>
-        <span class="s2">"duracaoTurno"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"duracao_turno"</span><span class="p">),</span>
-        <span class="s2">"tipoTurno"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"tipo_turno"</span><span class="p">),</span>
-        <span class="s2">"dataFim"</span><span class="p">:</span> <span class="n">formatar_datetime_legado</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"data_fim"</span><span class="p">)),</span>
-        <span class="s2">"ehistorico"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ehistorico"</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
-        <span class="s2">"ensinoEspecial"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ensino_especial"</span><span class="p">),</span>
-        <span class="s2">"etapaEJA"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"etapa_eja"</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
-        <span class="s2">"serieEnsino"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="s2">"dataInicioTurma"</span><span class="p">:</span> <span class="n">formatar_datetime_legado</span><span class="p">(</span>
-            <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"data_inicio_turma"</span><span class="p">)</span>
-        <span class="p">),</span>
-        <span class="s2">"extinta"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"extinta"</span><span class="p">),</span>
-        <span class="s2">"situacao"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="s2">"ueCodigo"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ue_codigo"</span><span class="p">),</span>
-    <span class="p">}</span>
 
 
 <div class="viewcode-block" id="post_codigos_turmas_contagem">
@@ -418,7 +392,8 @@
         <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE_TURMAS</span><span class="si">}</span><span class="s2">/listar-turmas/"</span><span class="p">,</span>
         <span class="n">payload</span><span class="o">=</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">codigo</span><span class="p">)</span> <span class="k">for</span> <span class="n">codigo</span> <span class="ow">in</span> <span class="n">codigos</span><span class="p">],</span>
     <span class="p">)</span>
-    <span class="k">return</span> <span class="p">[</span><span class="n">_turma_legado</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()]</span></div>
+    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span></div>
 
 
 
@@ -438,7 +413,8 @@
 <span class="sd">        ValueError: Se a resposta nao puder ser convertida para JSON.</span>
 <span class="sd">    """</span>
     <span class="n">response</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE_TURMAS</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">codigo_turma</span><span class="si">}</span><span class="s2">/dados/"</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">_turma_legado</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span></div>
+    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span></div>
 
 
 
@@ -1654,6 +1630,39 @@
             <span class="n">atribuicao</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"codigo_rf"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">atribuicao</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rf_professor"</span><span class="p">)</span>
         <span class="p">),</span>
     <span class="p">}</span>
+
+
+<div class="viewcode-block" id="get_turmas_componentes_turma">
+<a class="viewcode-back" href="../../../api.html#apps.pedagogico.services.get_turmas_componentes_turma">[documentos]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_turmas_componentes_turma</span><span class="p">(</span>
+    <span class="n">codigos_turmas</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">codigos_componentes</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""Retorna componentes curriculares de várias turmas em uma chamada.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigos_turmas: Códigos das turmas usadas na consulta.</span>
+<span class="sd">        codigos_componentes: Códigos dos componentes curriculares.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Componentes curriculares encontrados, um item por par</span>
+<span class="sd">        turma/componente existente.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
+<span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
+<span class="sd">    """</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/turmas/componentes-turma/"</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">"codigo_turma"</span><span class="p">:</span> <span class="n">codigos_turmas</span><span class="p">,</span>
+            <span class="s2">"codigos_componentes"</span><span class="p">:</span> <span class="n">codigos_componentes</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">)</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="k">return</span> <span class="n">payload</span></div>
+
 
 
 <div class="viewcode-block" id="get_turma_componentes_turma">

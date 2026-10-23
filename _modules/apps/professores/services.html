@@ -50,6 +50,8 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">apps.pedagogico</span><span class="w"> </span><span class="kn">import</span> <span class="n">services</span> <span class="k">as</span> <span class="n">pedagogico_services</span>
 
 <span class="n">_BASE</span> <span class="o">=</span> <span class="s2">"/api/v1/professores"</span>
+<span class="c1"># Mantém o resultado por UE e ano em cache.</span>
+<span class="n">_TTL_TITULARES_UE_MINUTOS</span> <span class="o">=</span> <span class="mi">240</span>
 <span class="n">_BASE_ACESSOS</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/acessos"</span>
 <span class="n">_BASE_FUNCIONARIOS</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/funcionarios"</span>
 <span class="n">_BASE_FUNCIONARIOS_LEGADO</span> <span class="o">=</span> <span class="s2">"/api/v1/funcionarios"</span>
@@ -1575,25 +1577,91 @@
                 <span class="p">),</span>
                 <span class="kc">None</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="k">if</span> <span class="p">(</span>
-                <span class="n">componente_turma</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-                <span class="ow">and</span> <span class="n">componente_turma</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"desc_experiencia_pedagogica"</span><span class="p">)</span>
-                <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="p">):</span>
-                <span class="n">descricao_territorio</span> <span class="o">=</span> <span class="n">componente_turma</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-                    <span class="s2">"desc_territorio_saber"</span>
-                <span class="p">)</span>
-                <span class="n">descricao_experiencia</span> <span class="o">=</span> <span class="n">componente_turma</span><span class="p">[</span>
-                    <span class="s2">"desc_experiencia_pedagogica"</span>
-                <span class="p">]</span>
-                <span class="n">componente_retorno</span><span class="p">[</span><span class="s2">"disciplina"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">" - "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
-                    <span class="n">descricao</span>
-                    <span class="k">for</span> <span class="n">descricao</span> <span class="ow">in</span> <span class="p">(</span>
-                        <span class="n">descricao_territorio</span><span class="p">,</span>
-                        <span class="n">descricao_experiencia</span><span class="p">,</span>
+            <span class="n">_aplicar_descricao_territorio_componente</span><span class="p">(</span>
+                <span class="n">componente_retorno</span><span class="p">,</span> <span class="n">componente_turma</span>
+            <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_aplicar_descricao_territorio_componente</span><span class="p">(</span>
+    <span class="n">componente_retorno</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="n">componente_turma</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Compõe a descrição do componente com território e experiência.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        componente_retorno: Componente que receberá a descrição.</span>
+<span class="sd">        componente_turma: Componente da turma com as descrições; nada é</span>
+<span class="sd">            alterado quando ausente ou sem experiência pedagógica.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">componente_turma</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="ow">or</span> <span class="n">componente_turma</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"desc_experiencia_pedagogica"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="k">return</span>
+    <span class="n">descricao_territorio</span> <span class="o">=</span> <span class="n">componente_turma</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"desc_territorio_saber"</span><span class="p">)</span>
+    <span class="n">descricao_experiencia</span> <span class="o">=</span> <span class="n">componente_turma</span><span class="p">[</span><span class="s2">"desc_experiencia_pedagogica"</span><span class="p">]</span>
+    <span class="n">componente_retorno</span><span class="p">[</span><span class="s2">"disciplina"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">" - "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+        <span class="n">descricao</span>
+        <span class="k">for</span> <span class="n">descricao</span> <span class="ow">in</span> <span class="p">(</span><span class="n">descricao_territorio</span><span class="p">,</span> <span class="n">descricao_experiencia</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">descricao</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_aplicar_descricoes_componentes_turmas</span><span class="p">(</span>
+    <span class="n">componentes_por_turma</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Aplica descrições territoriais aos componentes de várias turmas.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        componentes_por_turma: Componentes de retorno por código de turma.</span>
+<span class="sd">    """</span>
+    <span class="n">codigos_por_turma</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">codigo_turma</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">componente</span><span class="p">[</span><span class="s2">"disciplina_id"</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">componente</span> <span class="ow">in</span> <span class="n">componentes</span>
+            <span class="k">if</span> <span class="n">componente</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"disciplina_id"</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="nb">str</span><span class="p">(</span><span class="n">componente</span><span class="p">[</span><span class="s2">"disciplina_id"</span><span class="p">])</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="nb">str</span><span class="p">(</span><span class="n">componente</span><span class="p">[</span><span class="s2">"disciplina_id"</span><span class="p">])</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">"none"</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">codigo_turma</span><span class="p">,</span> <span class="n">componentes</span> <span class="ow">in</span> <span class="n">componentes_por_turma</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+    <span class="p">}</span>
+    <span class="n">turmas</span> <span class="o">=</span> <span class="p">[</span><span class="n">turma</span> <span class="k">for</span> <span class="n">turma</span><span class="p">,</span> <span class="n">codigos</span> <span class="ow">in</span> <span class="n">codigos_por_turma</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">codigos</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">turmas</span><span class="p">:</span>
+        <span class="k">return</span>
+
+    <span class="n">codigos_componentes</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+        <span class="nb">set</span><span class="p">()</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="n">codigos_por_turma</span><span class="p">[</span><span class="n">turma</span><span class="p">]</span> <span class="k">for</span> <span class="n">turma</span> <span class="ow">in</span> <span class="n">turmas</span><span class="p">))</span>
+    <span class="p">)</span>
+    <span class="n">componentes_turmas</span> <span class="o">=</span> <span class="n">pedagogico_services</span><span class="o">.</span><span class="n">get_turmas_componentes_turma</span><span class="p">(</span>
+        <span class="n">turmas</span><span class="p">,</span>
+        <span class="n">codigos_componentes</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">componentes_turmas</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">return</span>
+
+    <span class="n">por_par</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">componente</span> <span class="ow">in</span> <span class="n">componentes_turmas</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">componente</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="n">componente</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"desc_experiencia_pedagogica"</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="p">):</span>
+            <span class="n">par</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="nb">str</span><span class="p">(</span><span class="n">componente</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"turma_codigo"</span><span class="p">)),</span>
+                <span class="nb">str</span><span class="p">(</span><span class="n">componente</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"componente_codigo"</span><span class="p">)),</span>
+            <span class="p">)</span>
+            <span class="n">por_par</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">par</span><span class="p">,</span> <span class="n">componente</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">codigo_turma</span> <span class="ow">in</span> <span class="n">turmas</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">componente_retorno</span> <span class="ow">in</span> <span class="n">componentes_por_turma</span><span class="p">[</span><span class="n">codigo_turma</span><span class="p">]:</span>
+            <span class="n">_aplicar_descricao_territorio_componente</span><span class="p">(</span>
+                <span class="n">componente_retorno</span><span class="p">,</span>
+                <span class="n">por_par</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                    <span class="p">(</span>
+                        <span class="n">codigo_turma</span><span class="p">,</span>
+                        <span class="nb">str</span><span class="p">(</span><span class="n">componente_retorno</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"disciplina_id"</span><span class="p">)),</span>
                     <span class="p">)</span>
-                    <span class="k">if</span> <span class="n">descricao</span>
-                <span class="p">)</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_possui_dados_professor_titular</span><span class="p">(</span><span class="n">componente</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -1620,6 +1688,10 @@
     <span class="p">)</span>
 
 
+<span class="k">class</span><span class="w"> </span><span class="nc">_PayloadTitularesUeInvalido</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Resposta do serviço de professores que não é uma lista de titulares."""</span>
+
+
 <div class="viewcode-block" id="buscar_professores_titulares_por_ue">
 <a class="viewcode-back" href="../../../api.html#apps.professores.services.buscar_professores_titulares_por_ue">[documentos]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">buscar_professores_titulares_por_ue</span><span class="p">(</span>
@@ -1628,6 +1700,9 @@
     <span class="n">realiza_agrupamento</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">"""Busca professores titulares de uma UE na data de referência.</span>
+
+<span class="sd">    O resultado é cacheado por UE, data de referência e agrupamento.</span>
+<span class="sd">    Respostas inválidas do serviço de professores não são cacheadas.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        ue_codigo: Código da unidade educacional consultada.</span>
@@ -1641,13 +1716,50 @@
 <span class="sd">        httpx.HTTPError: Quando a chamada ao serviço de professores falha.</span>
 <span class="sd">        ValueError: Quando a resposta não pode ser convertida para JSON.</span>
 <span class="sd">    """</span>
+    <span class="n">chave</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"professores-titulares-ue:</span><span class="si">{</span><span class="n">ue_codigo</span><span class="si">}</span><span class="s2">:"</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">data_referencia</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">realiza_agrupamento</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+    <span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">cache</span><span class="o">.</span><span class="n">obter_ou_calcular</span><span class="p">(</span>
+            <span class="n">chave</span><span class="p">,</span>
+            <span class="k">lambda</span><span class="p">:</span> <span class="n">_calcular_professores_titulares_por_ue</span><span class="p">(</span>
+                <span class="n">ue_codigo</span><span class="p">,</span> <span class="n">data_referencia</span><span class="p">,</span> <span class="n">realiza_agrupamento</span>
+            <span class="p">),</span>
+            <span class="n">_TTL_TITULARES_UE_MINUTOS</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="n">_PayloadTitularesUeInvalido</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_calcular_professores_titulares_por_ue</span><span class="p">(</span>
+    <span class="n">ue_codigo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">data_referencia</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span>
+    <span class="n">realiza_agrupamento</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""Busca e monta os professores titulares de uma UE.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ue_codigo: Código da unidade educacional consultada.</span>
+<span class="sd">        data_referencia: Data usada para consultar as atribuições vigentes.</span>
+<span class="sd">        realiza_agrupamento: Indica se os componentes devem ser agrupados.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Professores titulares encontrados ou uma lista vazia.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        _PayloadTitularesUeInvalido: Quando a resposta não é uma lista.</span>
+<span class="sd">        httpx.HTTPError: Quando a chamada ao serviço de professores falha.</span>
+<span class="sd">        ValueError: Quando a resposta não pode ser convertida para JSON.</span>
+<span class="sd">    """</span>
     <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
         <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/titulares/ue/</span><span class="si">{</span><span class="n">ue_codigo</span><span class="si">}</span><span class="s2">/"</span>
         <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">data_referencia</span><span class="o">.</span><span class="n">date</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span>
     <span class="p">)</span>
     <span class="n">payload</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">json_or_none</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-        <span class="k">return</span> <span class="p">[]</span>
+        <span class="k">raise</span> <span class="n">_PayloadTitularesUeInvalido</span>
 
     <span class="n">componentes_professor</span> <span class="o">=</span> <span class="p">[</span>
         <span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">payload</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
@@ -1656,12 +1768,14 @@
         <span class="k">return</span> <span class="p">[]</span>
 
     <span class="n">componentes_api_eol</span> <span class="o">=</span> <span class="n">pedagogico_services</span><span class="o">.</span><span class="n">get_componentes_api_eol</span><span class="p">()</span>
+    <span class="n">indice_componentes</span> <span class="o">=</span> <span class="n">_indexar_componentes_api_eol</span><span class="p">(</span><span class="n">componentes_api_eol</span><span class="p">)</span>
 
     <span class="n">existe_vigencia_ativa</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span>
         <span class="n">_verificar_vigencia_componente_pai</span><span class="p">(</span>
             <span class="n">componentes_api_eol</span><span class="p">,</span>
             <span class="nb">str</span><span class="p">(</span><span class="n">componente</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"disciplina_id"</span><span class="p">)),</span>
             <span class="n">data_referencia</span><span class="p">,</span>
+            <span class="n">indice_componentes</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">for</span> <span class="n">componente</span> <span class="ow">in</span> <span class="n">componentes_professor</span>
     <span class="p">)</span>
@@ -1689,25 +1803,25 @@
             <span class="n">_montar_componente_professor_agrupado</span><span class="p">(</span>
                 <span class="n">componente</span><span class="p">,</span>
                 <span class="n">componentes_api_eol</span><span class="p">,</span>
+                <span class="n">indice_componentes</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">for</span> <span class="n">componente</span> <span class="ow">in</span> <span class="n">componentes_professor</span>
         <span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">componentes_retorno</span> <span class="o">=</span> <span class="n">componentes_professor</span>
 
-    <span class="k">for</span> <span class="n">codigo_turma</span> <span class="ow">in</span> <span class="n">codigos_turmas</span><span class="p">:</span>
-        <span class="n">componentes_turma</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">componente</span>
-            <span class="k">for</span> <span class="n">componente</span> <span class="ow">in</span> <span class="n">componentes_retorno</span>
-            <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">componente</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"turma_id"</span><span class="p">))</span> <span class="o">==</span> <span class="n">codigo_turma</span>
-        <span class="p">]</span>
-        <span class="n">_aplicar_descricoes_componentes_turma</span><span class="p">(</span>
-            <span class="n">codigo_turma</span><span class="p">,</span>
-            <span class="n">componentes_turma</span><span class="p">,</span>
+    <span class="n">componentes_por_turma</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">codigo_turma</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">codigo_turma</span> <span class="ow">in</span> <span class="n">codigos_turmas</span>
+    <span class="p">}</span>
+    <span class="k">for</span> <span class="n">componente</span> <span class="ow">in</span> <span class="n">componentes_retorno</span><span class="p">:</span>
+        <span class="n">componentes_turma</span> <span class="o">=</span> <span class="n">componentes_por_turma</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">componente</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"turma_id"</span><span class="p">))</span>
         <span class="p">)</span>
+        <span class="k">if</span> <span class="n">componentes_turma</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">componentes_turma</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">componente</span><span class="p">)</span>
+    <span class="n">_aplicar_descricoes_componentes_turmas</span><span class="p">(</span><span class="n">componentes_por_turma</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">componentes_retorno</span></div>
-
+    <span class="k">return</span> <span class="n">componentes_retorno</span>
 
 
 <div class="viewcode-block" id="buscar_professor_titular_por_turma_disciplina">
@@ -1879,43 +1993,35 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">_montar_componente_professor_agrupado</span><span class="p">(</span>
     <span class="n">componente_professor</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
     <span class="n">componentes_api_eol</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+    <span class="n">indice</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""Monta o componente do professor usando os dados do componente pai.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        componente_professor: Componente associado ao professor titular.</span>
 <span class="sd">        componentes_api_eol: Componentes curriculares retornados pela API EOL.</span>
+<span class="sd">        indice: Índice opcional dos componentes por código, para evitar</span>
+<span class="sd">            percorrer a lista a cada consulta.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Componente no contrato interno de professor titular, agrupado pelo pai</span>
 <span class="sd">        quando ele existir.</span>
 <span class="sd">    """</span>
     <span class="n">disciplina_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">componente_professor</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"disciplina_id"</span><span class="p">))</span>
-    <span class="n">componente_atual</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
-        <span class="p">(</span>
-            <span class="n">componente</span>
-            <span class="k">for</span> <span class="n">componente</span> <span class="ow">in</span> <span class="n">componentes_api_eol</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">componente</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
-            <span class="ow">and</span> <span class="nb">str</span><span class="p">(</span><span class="n">componente</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id_componente_curricular"</span><span class="p">))</span>
-            <span class="o">==</span> <span class="n">disciplina_id</span>
-        <span class="p">),</span>
-        <span class="kc">None</span><span class="p">,</span>
+    <span class="n">componente_atual</span> <span class="o">=</span> <span class="n">_localizar_componente_eol</span><span class="p">(</span>
+        <span class="n">componentes_api_eol</span><span class="p">,</span> <span class="n">disciplina_id</span><span class="p">,</span> <span class="n">indice</span>
     <span class="p">)</span>
     <span class="n">codigo_componente_pai</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">componente_atual</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id_componente_curricular_pai"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">componente_atual</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="k">else</span> <span class="kc">None</span>
     <span class="p">)</span>
-    <span class="n">componente_pai</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
-        <span class="p">(</span>
-            <span class="n">componente</span>
-            <span class="k">for</span> <span class="n">componente</span> <span class="ow">in</span> <span class="n">componentes_api_eol</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">componente</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
-            <span class="ow">and</span> <span class="n">codigo_componente_pai</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="ow">and</span> <span class="nb">str</span><span class="p">(</span><span class="n">componente</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id_componente_curricular"</span><span class="p">))</span>
-            <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">codigo_componente_pai</span><span class="p">)</span>
-        <span class="p">),</span>
-        <span class="kc">None</span><span class="p">,</span>
+    <span class="n">componente_pai</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">_localizar_componente_eol</span><span class="p">(</span>
+            <span class="n">componentes_api_eol</span><span class="p">,</span> <span class="n">codigo_componente_pai</span><span class="p">,</span> <span class="n">indice</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">codigo_componente_pai</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">else</span> <span class="kc">None</span>
     <span class="p">)</span>
 
     <span class="k">return</span> <span class="p">{</span>
@@ -2759,10 +2865,60 @@
         <span class="k">return</span> <span class="kc">False</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_indexar_componentes_api_eol</span><span class="p">(</span>
+    <span class="n">componentes_api_eol</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""Indexa os componentes da API EOL pelo código do componente.</span>
+
+<span class="sd">    Em caso de código repetido, mantém o primeiro item da lista.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        componentes_api_eol: Componentes curriculares retornados pela API EOL.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Componentes indexados pelo código em texto.</span>
+<span class="sd">    """</span>
+    <span class="n">indice</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">componentes_api_eol</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">indice</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id_componente_curricular"</span><span class="p">)),</span> <span class="n">item</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">indice</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_localizar_componente_eol</span><span class="p">(</span>
+    <span class="n">componentes_api_eol</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+    <span class="n">codigo_componente</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">indice</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Localiza um componente da API EOL pelo código.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        componentes_api_eol: Componentes curriculares retornados pela API EOL.</span>
+<span class="sd">        codigo_componente: Código do componente procurado.</span>
+<span class="sd">        indice: Índice por código; quando ausente, percorre a lista.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Primeiro componente com o código informado ou ``None``.</span>
+<span class="sd">    """</span>
+    <span class="n">codigo</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">codigo_componente</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">indice</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">indice</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">codigo</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">next</span><span class="p">(</span>
+        <span class="p">(</span>
+            <span class="n">item</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">componentes_api_eol</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id_componente_curricular"</span><span class="p">))</span> <span class="o">==</span> <span class="n">codigo</span>
+        <span class="p">),</span>
+        <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_verificar_vigencia_componente_pai</span><span class="p">(</span>
     <span class="n">componentes_api_eol</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
     <span class="n">disciplina_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">data_referencia</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">indice</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Verifica se o componente curricular pai está vigente.</span>
 
@@ -2771,19 +2927,15 @@
 <span class="sd">        disciplina_id: ID da disciplina usada na consulta.</span>
 <span class="sd">        data_referencia: Data de referência para verificar a vigência. Na</span>
 <span class="sd">            ausência, utiliza a data atual.</span>
+<span class="sd">        indice: Índice opcional dos componentes por código, para evitar</span>
+<span class="sd">            percorrer a lista a cada consulta.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        True se o componente curricular pai estiver vigente; False</span>
 <span class="sd">        caso contrário.</span>
 <span class="sd">    """</span>
-    <span class="n">componente</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
-        <span class="p">(</span>
-            <span class="n">item</span>
-            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">componentes_api_eol</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
-            <span class="ow">and</span> <span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id_componente_curricular"</span><span class="p">))</span> <span class="o">==</span> <span class="n">disciplina_id</span>
-        <span class="p">),</span>
-        <span class="kc">None</span><span class="p">,</span>
+    <span class="n">componente</span> <span class="o">=</span> <span class="n">_localizar_componente_eol</span><span class="p">(</span>
+        <span class="n">componentes_api_eol</span><span class="p">,</span> <span class="n">disciplina_id</span><span class="p">,</span> <span class="n">indice</span>
     <span class="p">)</span>
     <span class="k">if</span> <span class="n">componente</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span>
@@ -2796,19 +2948,17 @@
     <span class="k">if</span> <span class="n">data_base</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">data_base</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">(),</span> <span class="n">datetime</span><span class="o">.</span><span class="n">min</span><span class="o">.</span><span class="n">time</span><span class="p">())</span>
 
-    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">componentes_api_eol</span><span class="p">:</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">str</span><span class="p">(</span>
-            <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id_componente_curricular"</span><span class="p">)</span>
-        <span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">(</span><span class="n">codigo_componente_pai</span><span class="p">):</span>
-            <span class="k">continue</span>
+    <span class="n">componente_pai</span> <span class="o">=</span> <span class="n">_localizar_componente_eol</span><span class="p">(</span>
+        <span class="n">componentes_api_eol</span><span class="p">,</span> <span class="n">codigo_componente_pai</span><span class="p">,</span> <span class="n">indice</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">componente_pai</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
 
-        <span class="n">vigencia</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"vigencia"</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">vigencia</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">True</span>
-        <span class="n">data_vigencia</span> <span class="o">=</span> <span class="n">_parse_datetime_atribuicao</span><span class="p">(</span><span class="n">vigencia</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">data_vigencia</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">data_vigencia</span> <span class="o">&gt;=</span> <span class="n">data_base</span>
-
-    <span class="k">return</span> <span class="kc">False</span>
+    <span class="n">vigencia</span> <span class="o">=</span> <span class="n">componente_pai</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"vigencia"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">vigencia</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="n">data_vigencia</span> <span class="o">=</span> <span class="n">_parse_datetime_atribuicao</span><span class="p">(</span><span class="n">vigencia</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">data_vigencia</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">data_vigencia</span> <span class="o">&gt;=</span> <span class="n">data_base</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_calcular_professores_titulares_por_turmas</span><span class="p">(</span>
