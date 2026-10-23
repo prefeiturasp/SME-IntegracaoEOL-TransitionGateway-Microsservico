@@ -13,6 +13,55 @@ ALLOWED_HOSTS = [
     host.strip() for host in os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",")
 ]
 
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {name} {module} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+            "stream": "ext://sys.stdout",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "django.request": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "django.server": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "apps": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "gunicorn": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}
+
 INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.auth",
@@ -26,7 +75,6 @@ INSTALLED_APPS = [
     "apps.institucional",
     "apps.alunos",
     "apps.matriculas",
-    "apps.abrangencia",
 ]
 
 MIDDLEWARE = [
@@ -99,14 +147,6 @@ SPECTACULAR_SETTINGS = {
     # Mantém os parâmetros na ordem declarada nas views, alinhada ao Swagger
     # do legado, em vez da ordenação alfabética padrão.
     "SORT_OPERATION_PARAMETERS": False,
-    # A ordenação padrão de tags segue a ordem alfabética dos paths
-    # (SORT_OPERATIONS), o que coloca "/api/DREs/..." antes de
-    # "/api/abrangencia/...". Força Abrangencia acima de
-    # DiretoriaRegionalEducacao no agrupamento do Swagger UI.
-    "TAGS": [
-        {"name": "Abrangencia"},
-        {"name": "DiretoriaRegionalEducacao"},
-    ],
     "APPEND_COMPONENTS": {
         "securitySchemes": {
             "ApiKeyAuth": {

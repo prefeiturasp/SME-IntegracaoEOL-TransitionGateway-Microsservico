@@ -95,11 +95,14 @@ class GetEscolasPorDRETest(SimpleTestCase):
     def test_chama_path_com_codigo_dre(self, mock_client: MagicMock) -> None:
         """Monta o path de escolas com o código da DRE."""
         mock_client.get.return_value.raise_for_status = MagicMock()
-        mock_client.get.return_value.json.return_value = []
+        mock_client.json_or_none.return_value = []
 
         result = services.get_escolas_por_dre("X1")
 
         mock_client.get.assert_called_once_with(f"{_BASE}/dres/X1/escola/")
+        mock_client.json_or_none.assert_called_once_with(
+            mock_client.get.return_value
+        )
         self.assertEqual(result, [])
 
 

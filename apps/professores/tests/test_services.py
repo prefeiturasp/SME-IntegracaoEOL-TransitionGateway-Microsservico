@@ -2310,9 +2310,20 @@ class BuscarProfessoresTitularesPorTurmaTest(SimpleTestCase):
 class BuscarProfessoresTitularesPorUeTest(SimpleTestCase):
     """Valida a integração da busca de titulares por UE."""
 
+    def setUp(self) -> None:
+        """Remove o cache do caminho, mantendo os testes determinísticos."""
+        self.enterContext(
+            patch(
+                "apps.professores.services.cache.obter_ou_calcular",
+                side_effect=lambda chave, calcular, minutos_para_expirar: (
+                    calcular()
+                ),
+            )
+        )
+
     @patch(
         "apps.professores.services.pedagogico_services."
-        "get_turma_componentes_turma"
+        "get_turmas_componentes_turma"
     )
     @patch(
         "apps.professores.services.pedagogico_services."
@@ -2357,7 +2368,7 @@ class BuscarProfessoresTitularesPorUeTest(SimpleTestCase):
         mock_client.json_or_none.assert_called_once_with(response)
         mock_componentes_api_eol.assert_called_once_with()
         mock_atribuicoes_territorio.assert_called_once_with(["9100002"])
-        mock_componentes_turma.assert_called_once_with("9100002", ["89"])
+        mock_componentes_turma.assert_called_once_with(["9100002"], ["89"])
         self.assertEqual(resultado, payload)
 
     @patch(
@@ -2390,7 +2401,7 @@ class BuscarProfessoresTitularesPorUeTest(SimpleTestCase):
 
     @patch(
         "apps.professores.services.pedagogico_services."
-        "get_turma_componentes_turma"
+        "get_turmas_componentes_turma"
     )
     @patch(
         "apps.professores.services.pedagogico_services."
@@ -2431,6 +2442,7 @@ class BuscarProfessoresTitularesPorUeTest(SimpleTestCase):
         mock_atribuicoes_territorio.return_value = []
         mock_componentes_turma.return_value = [
             {
+                "turma_codigo": "9100002",
                 "componente_codigo": 6,
                 "desc_territorio_saber": "III - ORIENTACAO",
                 "desc_experiencia_pedagogica": "OUTRAS",
@@ -2447,11 +2459,11 @@ class BuscarProfessoresTitularesPorUeTest(SimpleTestCase):
             resultado[0]["disciplina"], "III - ORIENTACAO - OUTRAS"
         )
         self.assertEqual(resultado[0]["disciplina_id"], "6")
-        mock_componentes_turma.assert_called_once_with("9100002", ["6"])
+        mock_componentes_turma.assert_called_once_with(["9100002"], ["6"])
 
     @patch(
         "apps.professores.services.pedagogico_services."
-        "get_turma_componentes_turma"
+        "get_turmas_componentes_turma"
     )
     @patch(
         "apps.professores.services.pedagogico_services."
@@ -2502,7 +2514,233 @@ class BuscarProfessoresTitularesPorUeTest(SimpleTestCase):
         self.assertEqual(resultado[0]["disciplina_id"], "800001")
         self.assertEqual(resultado[0]["disciplinas_id"], "800001")
         self.assertEqual(resultado[0]["turma_id"], 9100002)
-        mock_componentes_turma.assert_called_once_with("9100002", ["800001"])
+        mock_componentes_turma.assert_called_once_with(["9100002"], ["800001"])
+
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_turmas_componentes_turma"
+    )
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_professores_turmas_territorio_saber"
+    )
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_componentes_api_eol"
+    )
+    @patch("apps.professores.services._client")
+    def test_consulta_componentes_de_todas_as_turmas_em_uma_chamada(
+        self,
+        mock_client: MagicMock,
+        mock_componentes_api_eol: MagicMock,
+        mock_atribuicoes_territorio: MagicMock,
+        mock_componentes_turma: MagicMock,
+    ) -> None:
+        """Aplica a descrição por turma sem uma chamada por turma."""
+        mock_client.json_or_none.return_value = [
+            {
+                "professor_rf": "000001",
+                "disciplina": "A",
+                "disciplina_id": "89",
+                "turma_id": 9100001,
+            },
+            {
+                "professor_rf": "000002",
+                "disciplina": "B",
+                "disciplina_id": "89",
+                "turma_id": 9100002,
+            },
+            {
+                "professor_rf": "000003",
+                "disciplina": "C",
+                "disciplina_id": "90",
+                "turma_id": 9100002,
+            },
+            {
+                "professor_rf": "000004",
+                "disciplina": "D",
+                "disciplina_id": "91",
+                "turma_id": 9100003,
+            },
+        ]
+        mock_componentes_api_eol.return_value = []
+        mock_atribuicoes_territorio.return_value = []
+        mock_componentes_turma.return_value = [
+            {
+                "turma_codigo": "9100001",
+                "componente_codigo": 89,
+                "desc_territorio_saber": "TERR 1",
+                "desc_experiencia_pedagogica": "EXP 1",
+            },
+            {
+                "turma_codigo": "9100002",
+                "componente_codigo": 90,
+                "desc_territorio_saber": None,
+                "desc_experiencia_pedagogica": "EXP 2",
+            },
+            {
+                "turma_codigo": "9100003",
+                "componente_codigo": 91,
+                "desc_territorio_saber": "TERR 3",
+                "desc_experiencia_pedagogica": None,
+            },
+        ]
+
+        resultado = services.buscar_professores_titulares_por_ue(
+            "094765",
+            datetime(2026, 8, 10),
+            False,
+        )
+
+        mock_componentes_turma.assert_called_once_with(
+            ["9100001", "9100002", "9100003"], ["89", "90", "91"]
+        )
+        self.assertEqual(
+            [item["disciplina"] for item in resultado],
+            ["TERR 1 - EXP 1", "B", "EXP 2", "D"],
+        )
+
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_turmas_componentes_turma"
+    )
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_professores_turmas_territorio_saber"
+    )
+    @patch(
+        "apps.professores.services.pedagogico_services."
+        "get_componentes_api_eol"
+    )
+    @patch("apps.professores.services._client")
+    def test_nao_consulta_componentes_sem_codigo_de_disciplina(
+        self,
+        mock_client: MagicMock,
+        mock_componentes_api_eol: MagicMock,
+        mock_atribuicoes_territorio: MagicMock,
+        mock_componentes_turma: MagicMock,
+    ) -> None:
+        """Ignora componentes sem código de disciplina utilizável."""
+        mock_client.json_or_none.return_value = [
+            {
+                "professor_rf": "000001",
+                "disciplina": "A",
+                "disciplina_id": None,
+                "turma_id": 9100001,
+            },
+        ]
+        mock_componentes_api_eol.return_value = []
+        mock_atribuicoes_territorio.return_value = []
+
+        services.buscar_professores_titulares_por_ue(
+            "094765",
+            datetime(2026, 8, 10),
+            False,
+        )
+
+        mock_componentes_turma.assert_not_called()
+
+    @patch("apps.professores.services.cache.obter_ou_calcular")
+    def test_usa_chave_e_ttl_do_legado_por_ue_data_e_agrupamento(
+        self, mock_obter_ou_calcular: MagicMock
+    ) -> None:
+        """Cacheia por UE, data de referência e agrupamento por 240 min."""
+        mock_obter_ou_calcular.return_value = []
+
+        services.buscar_professores_titulares_por_ue(
+            "094765",
+            datetime(2026, 8, 10),
+            True,
+        )
+
+        chave, _calcular, minutos_para_expirar = (
+            mock_obter_ou_calcular.call_args.args
+        )
+        self.assertEqual(
+            chave,
+            "professores-titulares-ue:094765:2026-08-10T00:00:00:1",
+        )
+        self.assertEqual(minutos_para_expirar, 240)
+
+    @patch("apps.professores.services._client")
+    def test_payload_invalido_nao_vai_para_o_cache(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Resposta inválida devolve lista vazia sem gravar no cache."""
+        mock_client.json_or_none.return_value = {"detail": "erro"}
+        gravacoes: list[str] = []
+
+        def sem_cache(chave, calcular, minutos_para_expirar):
+            valor = calcular()
+            gravacoes.append(chave)
+            return valor
+
+        with patch(
+            "apps.professores.services.cache.obter_ou_calcular",
+            side_effect=sem_cache,
+        ):
+            resultado = services.buscar_professores_titulares_por_ue(
+                "094765",
+                datetime(2026, 8, 10),
+                False,
+            )
+
+        self.assertEqual(resultado, [])
+        self.assertEqual(gravacoes, [])
+
+
+class ComponentesApiEolIndexadosTest(SimpleTestCase):
+    """Valida a busca indexada de componentes da API EOL."""
+
+    def test_indice_mantem_o_primeiro_e_ignora_itens_invalidos(self) -> None:
+        """Em código repetido vale o primeiro item, como na busca linear."""
+        componentes = [
+            {"id_componente_curricular": 1, "descricao": "primeiro"},
+            "invalido",
+            {"id_componente_curricular": 1, "descricao": "repetido"},
+        ]
+
+        indice = services._indexar_componentes_api_eol(componentes)
+
+        self.assertEqual(indice["1"]["descricao"], "primeiro")
+        self.assertEqual(len(indice), 1)
+
+    def test_resultado_com_e_sem_indice_e_o_mesmo(self) -> None:
+        """Vigência e agrupamento não dependem de usar o índice."""
+        componentes = [
+            {
+                "id_componente_curricular": 89,
+                "id_componente_curricular_pai": 6,
+            },
+            {
+                "id_componente_curricular": 6,
+                "descricao": "PAI",
+                "vigencia": "2030-01-01T00:00:00",
+            },
+            {
+                "id_componente_curricular": 7,
+                "id_componente_curricular_pai": 99,
+            },
+        ]
+        indice = services._indexar_componentes_api_eol(componentes)
+        data = datetime(2026, 8, 10)
+        item = {"disciplina_id": "89", "disciplina": "X", "turma_id": 1}
+
+        for codigo in ("89", "6", "7", "404"):
+            self.assertEqual(
+                services._verificar_vigencia_componente_pai(
+                    componentes, codigo, data
+                ),
+                services._verificar_vigencia_componente_pai(
+                    componentes, codigo, data, indice
+                ),
+            )
+        self.assertEqual(
+            services._montar_componente_professor_agrupado(item, componentes),
+            services._montar_componente_professor_agrupado(
+                item, componentes, indice
+            ),
+        )
 
 
 class BuscarProfessorTitularPorTurmaDisciplinaTest(SimpleTestCase):

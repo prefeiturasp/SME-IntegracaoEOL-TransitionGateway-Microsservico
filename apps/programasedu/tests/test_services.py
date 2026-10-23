@@ -159,15 +159,15 @@ class ObterTurmaSrmERegularDoAlunoTest(SimpleTestCase):
     @patch("apps.programasedu.services.obter_dados_srm_paee_aluno")
     @patch(
         "apps.programasedu.services.alunos_services."
-        "get_turmas_aluno_com_programa"
+        "get_turmas_srm_regular_aluno"
     )
-    def test_filtra_regular_ou_srm_e_compoe_shape(
+    def test_repassa_srm_e_compoe_shape(
         self,
         mock_turmas: MagicMock,
         mock_srm: MagicMock,
         mock_listar: MagicMock,
     ) -> None:
-        """Verifica o filtro regular-ou-SRM e a composição dos campos."""
+        """Verifica o repasse das turmas SRM e a composição dos campos."""
         mock_turmas.return_value = [
             {
                 "codigo_aluno": 7000001,
@@ -195,12 +195,6 @@ class ObterTurmaSrmERegularDoAlunoTest(SimpleTestCase):
                 "ddd_celular": None,
                 "numero_celular": None,
             },
-            {
-                "codigo_aluno": 7000001,
-                "ano_letivo": 2026,
-                "codigo_turma": 999,
-                "codigo_tipo_turma": 3,
-            },
         ]
         mock_srm.return_value = [{"codigo_turma": 555}]
         mock_listar.return_value = [
@@ -222,7 +216,7 @@ class ObterTurmaSrmERegularDoAlunoTest(SimpleTestCase):
 
         resultado = services.obter_turma_srm_e_regular_do_aluno("7000001")
 
-        # Programa sem SRM (999) é descartado; sobram regular e SRM.
+        mock_turmas.assert_called_once_with("7000001", [555])
         self.assertEqual(
             sorted(r["codigo_turma"] for r in resultado), [555, 9100001]
         )
@@ -240,12 +234,16 @@ class ObterTurmaSrmERegularDoAlunoTest(SimpleTestCase):
             regular["data_atualizacao_tabela"], "0001-01-01T00:00:00"
         )
 
+    @patch("apps.programasedu.services.obter_dados_srm_paee_aluno")
     @patch(
         "apps.programasedu.services.alunos_services."
-        "get_turmas_aluno_com_programa"
+        "get_turmas_srm_regular_aluno"
     )
-    def test_sem_turmas_retorna_vazio(self, mock_turmas: MagicMock) -> None:
+    def test_sem_turmas_retorna_vazio(
+        self, mock_turmas: MagicMock, mock_srm: MagicMock
+    ) -> None:
         """Verifica que aluno sem turmas resulta em lista vazia."""
+        mock_srm.return_value = []
         mock_turmas.return_value = []
 
         self.assertEqual(

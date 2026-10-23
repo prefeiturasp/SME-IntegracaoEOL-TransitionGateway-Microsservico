@@ -899,27 +899,27 @@ def get_alunos_da_ue(
     return _client.json_or_none(resp) or []
 
 
-def get_turmas_aluno_com_programa(codigo_aluno: str) -> Any:
-    """Retorna turmas do aluno no ano corrente, incluindo turmas de programa.
-
-    Chama o endpoint de turmas com os filtros desativados
-    para tipo_turma e filtragem da situação.
+def get_turmas_srm_regular_aluno(
+    codigo_aluno: str, codigos_turma_programa: list[int]
+) -> Any:
+    """Retorna as turmas regulares e de programa SRM do aluno.
 
     Args:
         codigo_aluno: Código do aluno.
+        codigos_turma_programa: Códigos das turmas de programa SRM.
 
     Returns:
-        Lista de turmas (regulares e de programa) retornada pela API.
-        Lista vazia quando a API responde 4xx (código inválido como
-        ``"00000"`` ou aluno sem turmas).
+        Lista de turmas retornada pela API. Lista vazia quando a API
+        responde 4xx (código inválido como ``"00000"`` ou aluno sem
+        turmas elegíveis).
 
     Raises:
         httpx.HTTPStatusError: Se a API retornar erro de servidor (5xx).
         httpx.RequestError: Se a API estiver inacessível.
     """
     resp = _client.get(
-        f"{_BASE}/{codigo_aluno}/turmas/",
-        params={"tipo_turma": "false", "filtrar_situacao": "false"},
+        f"{_BASE}/{codigo_aluno}/turmas-srm-regular/",
+        params={"codigos_turma_programa": codigos_turma_programa},
     )
     if resp.status_code in (400, 404):
         return []

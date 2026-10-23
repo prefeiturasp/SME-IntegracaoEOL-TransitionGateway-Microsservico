@@ -19,7 +19,6 @@ Funcionalidade: API - Funcionários
     Então retorna o status 200
     E o retorno deve conter o nome do funcionário
 
-  @ignore
   Cenário: Validar nome do funcionário no EOL não encontrado
     Dado que possuo acesso à API de funcionários
     Quando realizo consulta de nome do funcionário no EOL não encontrado

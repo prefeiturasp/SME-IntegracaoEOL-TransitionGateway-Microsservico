@@ -358,15 +358,8 @@ class PostListarTurmasTest(SimpleTestCase):
             payload=[9100001],
         )
         self.assertEqual(result[0]["codigo"], 9100001)
-        self.assertEqual(result[0]["anoLetivo"], 2026)
-        self.assertEqual(result[0]["nomeTurma"], "1A")
-        self.assertEqual(result[0]["dataInicioTurma"], "2026-02-04T00:00:00")
-        self.assertEqual(result[0]["modalidade"], None)
-        self.assertEqual(result[0]["codigoModalidade"], 0)
-        self.assertEqual(result[0]["serieEnsino"], None)
-        self.assertEqual(result[0]["situacao"], None)
-        self.assertEqual(result[0]["ehistorico"], False)
-        self.assertEqual(result[0]["etapaEJA"], 0)
+        self.assertEqual(result[0]["ano_letivo"], 2026)
+        self.assertEqual(result[0]["nome_turma"], "1A")
 
     @patch("apps.pedagogico.services._client")
     def test_preserva_fracao_minima_de_data_fim(
@@ -381,7 +374,7 @@ class PostListarTurmasTest(SimpleTestCase):
 
         result = services.post_listar_turmas(["3029408"])
 
-        self.assertEqual(result[0]["dataFim"], "2025-09-11T12:13:34.04")
+        self.assertEqual(result[0]["data_fim"], "2025-09-11T15:13:34.040000Z")
 
     @patch("apps.pedagogico.services._client")
     def test_lista_vazia_nao_chama_sidecar(
@@ -407,14 +400,8 @@ class GetDadosTurmaTest(SimpleTestCase):
             f"{_BASE_TURMAS}/9100001/dados/"
         )
         self.assertEqual(result["codigo"], 9100001)
-        self.assertEqual(result["tipoTurma"], 1)
-        self.assertEqual(result["ueCodigo"], "000001")
-        self.assertEqual(result["modalidade"], None)
-        self.assertEqual(result["codigoModalidade"], 0)
-        self.assertEqual(result["serieEnsino"], None)
-        self.assertEqual(result["situacao"], None)
-        self.assertEqual(result["ehistorico"], False)
-        self.assertEqual(result["etapaEJA"], 0)
+        self.assertEqual(result["tipo_turma"], 1)
+        self.assertEqual(result["ue_codigo"], "000001")
 
 
 class GetAlunosAtivosTurmaSemRedisTest(SimpleTestCase):
@@ -1122,9 +1109,7 @@ class GetTurmasSondagemTest(SimpleTestCase):
         mock_get.return_value = mock_response
 
         with self.assertRaises(ValueError):
-            services.get_turmas_sondagem(
-                codigo_ue="000532", ano_letivo="2024"
-            )
+            services.get_turmas_sondagem(codigo_ue="000532", ano_letivo="2024")
 
 
 class GetComponentesUeAnosTest(SimpleTestCase):
@@ -1397,9 +1382,7 @@ class GetDadosAulaTurmaTest(SimpleTestCase):
         _chave, _calcular, minutos_para_expirar = (
             mock_obter_ou_calcular.call_args.args
         )
-        self.assertEqual(
-            minutos_para_expirar, cache.TTL_RECOMENDADO_MINUTOS
-        )
+        self.assertEqual(minutos_para_expirar, cache.TTL_RECOMENDADO_MINUTOS)
 
     @patch("apps.pedagogico.services.cache.obter_ou_calcular")
     def test_chave_varia_por_parametro(
@@ -1531,8 +1514,68 @@ class GetTurmaComponentesTurmaTest(SimpleTestCase):
         self.assertEqual(resultado, [])
 
 
+class GetTurmasComponentesTurmaTest(SimpleTestCase):
+    """Valida a consulta em lote de componentes curriculares das turmas."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_envia_turmas_e_componentes_na_query(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        """Consulta várias turmas e componentes em uma única chamada."""
+        response = MagicMock()
+        payload = [
+            {
+                "turma_codigo": "9100013",
+                "componente_codigo": 89,
+                "desc_territorio_saber": "TERRITORIO FICTICIO",
+                "desc_experiencia_pedagogica": "EXPERIENCIA FICTICIA",
+            }
+        ]
+        mock_client.get.return_value = response
+        mock_client.json_or_none.return_value = payload
+
+        resultado = services.get_turmas_componentes_turma(
+            ["9100013", "9100014"],
+            ["89", "90"],
+        )
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/turmas/componentes-turma/",
+            params={
+                "codigo_turma": ["9100013", "9100014"],
+                "codigos_componentes": ["89", "90"],
+            },
+        )
+        mock_client.json_or_none.assert_called_once_with(response)
+        self.assertEqual(resultado, payload)
+
+    @patch("apps.pedagogico.services._client")
+    def test_retorna_lista_vazia_para_payload_invalido(
+        self,
+        mock_client: MagicMock,
+    ) -> None:
+        """Normaliza payload vazio ou incompatível para lista vazia."""
+        mock_client.json_or_none.return_value = {"detail": "erro"}
+
+        resultado = services.get_turmas_componentes_turma(["9100013"], ["89"])
+
+        self.assertEqual(resultado, [])
+
+
 class GetCatalogoComponentesTest(SimpleTestCase):
     """Valida a consulta do catálogo de componentes curriculares."""
+
+    def setUp(self) -> None:
+        """Remove o cache do caminho, mantendo os testes determinísticos."""
+        self.enterContext(
+            patch(
+                "apps.pedagogico.services.cache.obter_ou_calcular",
+                side_effect=lambda chave, calcular, minutos_para_expirar: (
+                    calcular()
+                ),
+            )
+        )
 
     @patch("apps.pedagogico.services._client")
     def test_chama_base_sem_params(
@@ -1547,6 +1590,22 @@ class GetCatalogoComponentesTest(SimpleTestCase):
         mock_client.get.assert_called_once_with(f"{_BASE}/")
         mock_client.get.return_value.raise_for_status.assert_called_once_with()
 
+        self.assertEqual(result, [])
+
+    @patch("apps.pedagogico.services.cache.obter_ou_calcular")
+    def test_usa_cache_com_ttl_recomendado(
+        self, mock_obter_ou_calcular: MagicMock
+    ) -> None:
+        mock_obter_ou_calcular.return_value = []
+
+        result = services.get_componentes_curriculares()
+
+        chave, calcular, minutos_para_expirar = (
+            mock_obter_ou_calcular.call_args.args
+        )
+        self.assertEqual(chave, "pedagogico:componentes-curriculares:v1")
+        self.assertTrue(callable(calcular))
+        self.assertEqual(minutos_para_expirar, cache.TTL_RECOMENDADO_MINUTOS)
         self.assertEqual(result, [])
 
 

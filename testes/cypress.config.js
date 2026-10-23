@@ -65,12 +65,11 @@ const envKeys = [
   "CODIGO_ALUNO_MATRICULA",
   "TIPO_SALA",
   "TIPO_SALA_INEXISTENTE",
-  "ABRANGENCIA_FILTRO_TURMAS",
-  "ABRANGENCIA_FILTRO_TURMAS_INEXISTENTE",
   "REGISTRO_FUNCIONAL_INEXISTENTE",
   "DISCIPLINA_ID",
   "DISCIPLINA_ID_INEXISTENTE",
   "REGISTRO_FUNCIONAL_EMEI",
+  "ID_PERFIL",
 ];
 
 export default defineConfig({
@@ -107,9 +106,9 @@ export default defineConfig({
     },
 
     async setupNodeEvents(on, config) {
-      allureWriter(on, config);
-
-      config.env.allure = true;
+      if (config.env.allure !== false) {
+        allureWriter(on, config);
+      }
 
       const webpackConfig = {
         module: {

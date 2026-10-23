@@ -183,7 +183,7 @@ Cypress.Commands.add(
       method: "GET",
       url: `${Cypress.env(
         "API_URL",
-      )}/api/escolas/${codigoUe}/funcionarios/cargos/?cargos=${cargos}&codigo_dre=${codigoDre}`,
+      )}/api/escolas/${codigoUe}/funcionarios/cargos?cargos=${cargos}&codigo_dre=${codigoDre}`,
       headers: {
         accept: "application/json",
         [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -200,7 +200,7 @@ Cypress.Commands.add(
       method: "GET",
       url: `${Cypress.env(
         "API_URL",
-      )}/api/escolas/${codigoUe}/funcionarios/funcoes-atividades/?funcoes_atividades=${funcoesAtividades}&codigo_dre=${codigoDre}`,
+      )}/api/escolas/${codigoUe}/funcionarios/funcoes-atividades?funcoes_atividades=${funcoesAtividades}&codigo_dre=${codigoDre}`,
       headers: {
         accept: "application/json",
         [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
@@ -234,7 +234,7 @@ Cypress.Commands.add(
       method: "GET",
       url: `${Cypress.env(
         "API_URL",
-      )}/api/escolas/${codigoUe}/funcionarios/funcoes-externas/?funcoes=${funcoes}&codigo_dre=${codigoDre}`,
+      )}/api/escolas/${codigoUe}/funcionarios/funcoes-externas?funcoes=${funcoes}&codigo_dre=${codigoDre}`,
       headers: {
         accept: "application/json",
         [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),

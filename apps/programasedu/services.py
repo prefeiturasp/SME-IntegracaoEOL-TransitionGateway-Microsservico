@@ -8,8 +8,6 @@ from apps.pedagogico import services as pedagogico_services
 
 _BASE = "/api/v1/programasedu/alunos"
 
-_TIPO_TURMA_REGULAR = 1
-_TIPO_TURMA_PROGRAMA = 3
 
 _DESC_ETAPA_ENSINO = {
     1: "EI",
@@ -116,12 +114,6 @@ def obter_dados_srm_paee_aluno(codigo_aluno: str) -> Any:
 def obter_turma_srm_e_regular_do_aluno(codigo_aluno: str) -> list[dict]:
     """Compõe as turmas SRM e regulares do aluno no shape legado.
 
-    1. Alunos-MS retorna turmas do aluno e ``codigo_tipo_turma``.
-    2. ProgramasEdu-MS retorna turmas com o componente SRM 1030.
-    3. Filtro: mantém turma regular (tipo 1) OU programa (tipo 3) que esteja
-       no conjunto SRM.
-    4. Pedagogico-MS → ``nome_turma``/``tipo_turno``/etapa/ciclo por turma.
-
     Args:
         codigo_aluno: Código EOL do aluno.
 
@@ -129,24 +121,19 @@ def obter_turma_srm_e_regular_do_aluno(codigo_aluno: str) -> list[dict]:
         Lista de dicts (snake_case) prontos para o
         ``TurmaSrmRegularDoAlunoSerializer``.
     """
-    turmas_aluno = (
-        alunos_services.get_turmas_aluno_com_programa(codigo_aluno) or []
-    )
-    if not turmas_aluno:
-        return []
-
     dados_srm = obter_dados_srm_paee_aluno(codigo_aluno) or []
-    codigos_srm = {item.get("codigo_turma") for item in dados_srm}
+    codigos_srm = sorted(
+        {
+            item["codigo_turma"]
+            for item in dados_srm
+            if item.get("codigo_turma") is not None
+        }
+    )
 
-    selecionadas = [
-        t
-        for t in turmas_aluno
-        if t.get("codigo_tipo_turma") == _TIPO_TURMA_REGULAR
-        or (
-            t.get("codigo_tipo_turma") == _TIPO_TURMA_PROGRAMA
-            and t.get("codigo_turma") in codigos_srm
-        )
-    ]
+    selecionadas = (
+        alunos_services.get_turmas_srm_regular_aluno(codigo_aluno, codigos_srm)
+        or []
+    )
     if not selecionadas:
         return []
 
