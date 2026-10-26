@@ -1235,28 +1235,28 @@ class Lote5ResponsaveisENomesServiceTest(SimpleTestCase):
         mock_get.return_value.raise_for_status.assert_called_once_with()
         self.assertEqual(result, payload)
 
-    @patch.object(services._client, "post")
-    def test_post_responsavel_repassa_payload(
-        self, mock_post: MagicMock
+    @patch.object(services._client, "put")
+    def test_atualizar_dados_cadastrais_repassa_payload(
+        self, mock_put: MagicMock
     ) -> None:
-        """Verifica a atualização cadastral."""
+        """Verifica a atualização cadastral na rota dedicada do sidecar."""
         payload = {"email": "novo@sme.com.br"}
-        mock_post.return_value = _resp_lista([])
-        mock_post.return_value.content = b"true"
-        mock_post.return_value.json.return_value = True
+        mock_put.return_value = _resp_lista([])
+        mock_put.return_value.content = b"true"
+        mock_put.return_value.json.return_value = True
 
         result = services.atualizar_dados_responsavel(
             "1234567", "12345678901", payload
         )
 
-        mock_post.assert_called_once_with(
-            f"{_BASE}/1234567/responsaveis/12345678901",
+        mock_put.assert_called_once_with(
+            f"{_BASE}/1234567/responsaveis/12345678901/dados-cadastrais",
             payload=payload,
         )
         self.assertTrue(result)
 
     @patch.object(services._client, "put")
-    def test_put_responsavel_preserva_retorno_falso(
+    def test_atualizar_contatos_preserva_retorno_falso(
         self, mock_put: MagicMock
     ) -> None:
         """Verifica a atualização de contatos sem vínculo encontrado."""
@@ -1269,7 +1269,7 @@ class Lote5ResponsaveisENomesServiceTest(SimpleTestCase):
         )
 
         mock_put.assert_called_once_with(
-            f"{_BASE}/1234567/responsaveis/00000000000",
+            f"{_BASE}/1234567/responsaveis/00000000000/contatos",
             payload={"email": None},
         )
         self.assertFalse(result)

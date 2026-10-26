@@ -1,6 +1,6 @@
 """Valida as views do domínio de alunos."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import httpx
@@ -136,6 +136,11 @@ def _http_status_error(
     )
 
 
+_MSG_ERRO_INESPERADO_LEGADO = (
+    "Houve um comportamento inesperado do sistema. Por favor, contate a SME."
+)
+
+
 def _request_error() -> httpx.RequestError:
     request = httpx.Request("GET", "https://sidecar.local/test")
     return httpx.ConnectError("Sidecar indisponivel", request=request)
@@ -151,6 +156,51 @@ def _http_status_error_texto(
         request=request,
         response=response,
     )
+
+
+class ResponsavelSchemaDeprecacaoTest(SimpleTestCase):
+    """Valida a depreciação das rotas antigas de escrita do responsável."""
+
+    def test_rotas_antigas_deprecadas_e_novas_nao(self) -> None:
+        from drf_spectacular.generators import SchemaGenerator
+
+        paths = SchemaGenerator().get_schema(request=None, public=True)[
+            "paths"
+        ]
+        base = "/api/alunos/{codigo_aluno}/responsaveis/{cpf_responsavel}"
+
+        schemas = SchemaGenerator().get_schema(request=None, public=True)[
+            "components"
+        ]["schemas"]
+        propriedades = schemas["AtualizarResponsavelRequest"]["properties"]
+        for campo in ("dataNascimento", "dataAtualizacao"):
+            formatos = [
+                opcao.get("format") for opcao in propriedades[campo]["oneOf"]
+            ]
+            self.assertIn("date-time", formatos)
+
+        for operacao in (
+            paths[f"{base}/dados-cadastrais"]["put"],
+            paths[base]["post"],
+        ):
+            exemplos = operacao["requestBody"]["content"]["application/json"][
+                "examples"
+            ]
+            valor = next(iter(exemplos.values()))["value"]
+            self.assertEqual(valor["dataNascimento"], "string")
+            gerado = datetime.fromisoformat(
+                valor["dataAtualizacao"].replace("Z", "+00:00")
+            )
+            self.assertLess(
+                abs(datetime.now(timezone.utc) - gerado).total_seconds(), 60
+            )
+
+        self.assertTrue(paths[base]["post"]["deprecated"])
+        self.assertTrue(paths[base]["put"]["deprecated"])
+        self.assertNotIn("deprecated", paths[f"{base}/contatos"]["put"])
+        self.assertNotIn(
+            "deprecated", paths[f"{base}/dados-cadastrais"]["put"]
+        )
 
 
 class AlunosUrlsTest(SimpleTestCase):
@@ -3866,6 +3916,170 @@ class Lote5ResponsaveisENomesViewTest(SimpleTestCase):
                 "numero_comercial": "55556666",
             },
         )
+
+    @patch("apps.alunos.views.services.atualizar_dados_responsavel")
+    def test_put_dados_cadastrais_traduz_camel_case(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Verifica a rota dedicada de dados cadastrais."""
+        mock_service.return_value = True
+        client = _cliente_autenticado()
+
+        resp = client.put(
+            "/api/alunos/1234567/responsaveis/12345678901/dados-cadastrais",
+            {"email": "novo@sme.com.br", "nomeMae": "MAE", "dddCelular": "11"},
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertIs(resp.json(), True)
+        mock_service.assert_called_once_with(
+            "1234567",
+            "12345678901",
+            {
+                "email": "novo@sme.com.br",
+                "nome_mae": "MAE",
+                "ddd_celular": "11",
+            },
+        )
+
+    @patch(
+        "apps.alunos.views.services.atualizar_dados_responsavel_busca_ativa"
+    )
+    def test_put_contatos_traduz_camel_case(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Verifica a rota dedicada de contatos."""
+        mock_service.return_value = True
+        client = _cliente_autenticado()
+
+        resp = client.put(
+            "/api/alunos/1234567/responsaveis/12345678901/contatos",
+            {
+                "email": "novo@sme.com.br",
+                "dddCelular": "11",
+                "numeroResidencial": "33334444",
+            },
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertIs(resp.json(), True)
+        mock_service.assert_called_once_with(
+            "1234567",
+            "12345678901",
+            {
+                "email": "novo@sme.com.br",
+                "ddd_celular": "11",
+                "numero_residencial": "33334444",
+            },
+        )
+
+    def test_rotas_dedicadas_responsavel_nao_aceitam_post(self) -> None:
+        """Verifica que as rotas dedicadas aceitam apenas PUT."""
+        client = _cliente_autenticado()
+
+        for sufixo in ("contatos", "dados-cadastrais"):
+            resp = client.post(
+                f"/api/alunos/1234567/responsaveis/12345678901/{sufixo}",
+                {},
+                format="json",
+            )
+            self.assertEqual(resp.status_code, 405)
+
+    @patch("apps.alunos.views.services.atualizar_dados_responsavel")
+    def test_put_dados_cadastrais_sidecar_indisponivel_503(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Verifica a falha de conexão com o sidecar."""
+        mock_service.side_effect = _request_error()
+        client = _cliente_autenticado()
+
+        resp = client.put(
+            "/api/alunos/1234567/responsaveis/12345678901/dados-cadastrais",
+            {},
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, 503)
+
+    @patch(
+        "apps.alunos.views.services.atualizar_dados_responsavel_busca_ativa"
+    )
+    def test_put_contatos_400_do_sidecar_vira_mensagem_generica(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Verifica que dado rejeitado pelo sidecar sai como texto puro."""
+        mock_service.side_effect = _http_status_error(
+            400, {"ddd_celular": ["Ensure this field has no more than 4"]}
+        )
+        client = _cliente_autenticado()
+
+        resp = client.put(
+            "/api/alunos/1234567/responsaveis/12345678901/contatos",
+            {"dddCelular": "string"},
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json(), _MSG_ERRO_INESPERADO_LEGADO)
+
+    @patch("apps.alunos.views.services.atualizar_dados_responsavel")
+    def test_put_dados_cadastrais_400_do_sidecar_vira_mensagem_generica(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Verifica a mensagem genérica na rota de dados cadastrais."""
+        mock_service.side_effect = _http_status_error(400, {"email": ["x"]})
+        client = _cliente_autenticado()
+
+        resp = client.put(
+            "/api/alunos/1234567/responsaveis/12345678901/dados-cadastrais",
+            {"email": "string"},
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json(), _MSG_ERRO_INESPERADO_LEGADO)
+
+    @patch(
+        "apps.alunos.views.services.atualizar_dados_responsavel_busca_ativa"
+    )
+    def test_put_contatos_corpo_invalido_nao_chama_sidecar(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Verifica que corpo malformado retorna 400 sem chamar o sidecar."""
+        client = _cliente_autenticado()
+
+        resp = client.put(
+            "/api/alunos/1234567/responsaveis/12345678901/contatos",
+            {"dddCelular": {"a": 1}},
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json(), _MSG_ERRO_INESPERADO_LEGADO)
+        mock_service.assert_not_called()
+
+    @patch(
+        "apps.alunos.views.services.atualizar_dados_responsavel_busca_ativa"
+    )
+    def test_put_contatos_outros_erros_do_sidecar_sao_repassados(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Verifica que status diferentes de 400 continuam repassados."""
+        mock_service.side_effect = _http_status_error(
+            503, {"detail": "indisponivel"}
+        )
+        client = _cliente_autenticado()
+
+        resp = client.put(
+            "/api/alunos/1234567/responsaveis/12345678901/contatos",
+            {},
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, 503)
+        self.assertEqual(resp.json(), {"detail": "indisponivel"})
 
     @patch("apps.alunos.views.services.get_nomes_alunos")
     def test_obter_nomes_retorna_contrato_legado(
