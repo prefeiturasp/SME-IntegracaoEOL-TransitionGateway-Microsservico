@@ -793,6 +793,21 @@ class DadosAcompanhamentoEscolarViewTest(SimpleTestCase):
 class QuantidadeMatriculadosViewTest(SimpleTestCase):
     """Valida a view de quantidade de matriculados."""
 
+    def test_schema_query_parameters_camel_case(self) -> None:
+        """Expõe somente os nomes públicos dos filtros de contagem."""
+        resposta = APIClient().get("/api/v1/schema")
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        path = next(
+            path
+            for path in resposta.data["paths"]
+            if path.endswith("/matriculados/quantidade")
+        )
+        parametros = resposta.data["paths"][path]["get"]["parameters"]
+        self.assertEqual(
+            {item["name"] for item in parametros if item["in"] == "query"},
+            {"dreCodigo", "ueCodigo", "modalidade", "ano", "turma"},
+        )
+
     def setUp(self) -> None:
         """Isola o armazenamento entre cenários de resposta."""
         cache.clear()
