@@ -225,3 +225,48 @@ Cypress.Commands.add(
     });
   },
 );
+
+Cypress.Commands.add(
+  "getTurmasSincronizacoesAnosLetivos",
+  (codigoUe, anoLetivo) => {
+    return cy.request({
+      method: "GET",
+      url: `${Cypress.env("API_URL")}/api/turmas/ue/${codigoUe}/sincronizacoes-institucionais/anos-letivos`,
+      qs: {
+        anosLetivosVigente: anoLetivo,
+      },
+      headers: {
+        accept: "application/json",
+        [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+      },
+      failOnStatusCode: false,
+    });
+  },
+);
+
+Cypress.Commands.add(
+  "getUeTurmaSincronizacoesInstitucionais",
+  (codigoUe, codigoTurma) => {
+    return cy.request({
+      method: "GET",
+      url: `${Cypress.env("API_URL")}/api/ues/${codigoUe}/turmas/${codigoTurma}/sincronizacoes-institucionais`,
+      headers: {
+        accept: "application/json",
+        [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+      },
+      failOnStatusCode: false,
+    });
+  },
+);
+
+Cypress.Commands.add("getTurmasAlunosAnoLetivo", (codigoUe, anoLetivo) => {
+  return cy.request({
+    method: "GET",
+    url: `${Cypress.env("API_URL")}/api/turmas/${codigoUe}/alunos/anosLetivos/${anoLetivo}`,
+    headers: {
+      accept: "application/json",
+      [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+    },
+    failOnStatusCode: false,
+  });
+});
