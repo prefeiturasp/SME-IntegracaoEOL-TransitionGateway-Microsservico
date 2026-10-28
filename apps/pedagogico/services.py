@@ -775,12 +775,12 @@ def get_componentes_por_turmas_ue(
         httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
         ValueError: Se a resposta não puder ser convertida para JSON.
     """
-    params: dict[str, Any] = {"turmas": turmas}
-
-    return _client.get(
+    response = _client.get(
         f"{_BASE}/ues/{ue_id}/turmas",
-        params=params,
-    ).json()
+        params={"turmas": turmas},
+    )
+    response.raise_for_status()
+    return response.json()
 
 
 def get_componentes_turmas_programa(
@@ -821,7 +821,9 @@ def get_componentes_regencia(ano_turma: int) -> Any:
         httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
         ValueError: Se a resposta não puder ser convertida para JSON.
     """
-    return _client.get(f"{_BASE}/anos/{ano_turma}/regencia").json()
+    response = _client.get(f"{_BASE}/anos/{ano_turma}/regencia")
+    response.raise_for_status()
+    return response.json()
 
 
 def validar_componente_pap(
@@ -958,7 +960,7 @@ def get_componentes_por_lista_turmas(
         httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
         ValueError: Se a resposta não puder ser convertida para JSON.
     """
-    return _client.get(
+    response = _client.get(
         f"{_BASE}/turmas",
         params={
             "codigoTurmas": codigos_turmas,
@@ -967,7 +969,9 @@ def get_componentes_por_lista_turmas(
             ),
             "incluirExtintas": incluir_extintas,
         },
-    ).json()
+    )
+    response.raise_for_status()
+    return response.json()
 
 
 def get_componentes_turmas_regulares(codigos_turmas: list[str]) -> Any:
@@ -1192,7 +1196,9 @@ def get_grade_curricular(ano_letivo: int) -> Any:
         httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
         ValueError: Se a resposta não puder ser convertida para JSON.
     """
-    return _client.get(f"{_BASE}/grade-curricular/{ano_letivo}").json()
+    response = _client.get(f"{_BASE}/grade-curricular/{ano_letivo}")
+    response.raise_for_status()
+    return response.json()
 
 
 def get_agrupamentos_correlacionados(
@@ -1216,11 +1222,13 @@ def get_agrupamentos_correlacionados(
     params: dict[str, Any] = {}
     if data_base_tick is not None:
         params["data_base"] = _ticks_dotnet_para_data(data_base_tick)
-    return _client.get(
+    response = _client.get(
         f"{_BASE}/{codigo_componente}/territorio-saber"
         "/agrupamentos-correlacionados/",
         params=params,
-    ).json()
+    )
+    response.raise_for_status()
+    return response.json()
 
 
 def post_agrupamentos_correlacionados(
@@ -1244,11 +1252,13 @@ def post_agrupamentos_correlacionados(
     params: dict[str, Any] = {}
     if data_base_tick is not None:
         params["data_base"] = _ticks_dotnet_para_data(data_base_tick)
-    return _client.post(
+    response = _client.post(
         f"{_BASE}/territorio-saber/agrupamentos-correlacionados/",
         payload=ids,
         params=params,
-    ).json()
+    )
+    response.raise_for_status()
+    return response.json()
 
 
 def post_agrupamentos_territorio(ids: list[int]) -> Any:

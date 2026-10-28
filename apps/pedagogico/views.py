@@ -5,12 +5,16 @@ from collections.abc import Callable
 from typing import Any, cast
 
 import httpx
+from django.http import HttpResponse
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework.exceptions import NotFound
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.alunos.serializers import AlunoMatriculaTurmaSerializer
+from apps.core import cache
+from apps.core.cache_responses import resposta_serializada_cacheada
 from apps.core.datetime import validar_data_str
 from apps.core.responses import api_unavailable_response, detail_response
 from apps.core.views import DomainAPIView
@@ -39,6 +43,8 @@ _TAG = ["ComponenteCurricular"]
 _TAG_TURMA = ["Turma"]
 _TAG_ESCOLA = ["Escola"]
 _DOMINIO_PEDAGOGICO = "pedagogico"
+# Limita a defasagem das atribuicoes que mudam ao longo do dia.
+_TTL_ATRIBUICOES_MINUTOS = 5
 _RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA = (
     "Resposta do servico pedagogico invalida."
 )
@@ -761,7 +767,7 @@ class ItinerariosEnsinoMedioViewSet(PedagogicoAPIView):
         description="Retorna os itinerários disponíveis no ensino médio.",
         responses={200: ItinerarioEnsinoMedioSerializer(many=True)},
     )
-    def get(self, _request: Request) -> Response:
+    def get(self, _request: Request) -> HttpResponse | Response:
         """Retorna os itinerários do ensino médio.
 
         Args:
@@ -771,7 +777,14 @@ class ItinerariosEnsinoMedioViewSet(PedagogicoAPIView):
             Resposta HTTP com os itinerários encontrados.
         """
         try:
-            data = services.get_itinerarios_ensino_medio()
+            return resposta_serializada_cacheada(
+                _request,
+                chave="pedagogico:itinerarios-ensino-medio:v1",
+                buscar=services.get_itinerarios_ensino_medio,
+                serializer_class=ItinerarioEnsinoMedioSerializer,
+                ttl=cache.TTL_RECOMENDADO_MINUTOS,
+                validar=True,
+            )
         except httpx.HTTPStatusError as exc:
             try:
                 body = exc.response.json()
@@ -788,17 +801,6 @@ class ItinerariosEnsinoMedioViewSet(PedagogicoAPIView):
                 _RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA,
                 502,
             )
-
-        serializer = ItinerarioEnsinoMedioSerializer(
-            data=data,
-            many=True,
-        )
-        if not serializer.is_valid():
-            return detail_response(
-                _RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA,
-                502,
-            )
-        return Response(serializer.validated_data)
 
 
 class ModalidadesEnsinoViewSet(PedagogicoAPIView):
@@ -812,7 +814,7 @@ class ModalidadesEnsinoViewSet(PedagogicoAPIView):
             404: dict,
         },
     )
-    def get(self, _request: Request) -> Response:
+    def get(self, _request: Request) -> HttpResponse | Response:
         """Retorna as descrições das modalidades de ensino.
 
         Args:
@@ -822,8 +824,22 @@ class ModalidadesEnsinoViewSet(PedagogicoAPIView):
             Resposta HTTP com as modalidades encontradas, ou 404 quando
             o catálogo estiver vazio (paridade com o legado).
         """
-        try:
+
+        def buscar_modalidades() -> list[str]:
             data = services.get_modalidades_ensino()
+            if not data:
+                raise NotFound(_MSG_MODALIDADES_ENSINO_VAZIA)
+            return data
+
+        try:
+            return resposta_serializada_cacheada(
+                _request,
+                chave="pedagogico:modalidades-ensino:v1",
+                buscar=buscar_modalidades,
+                serializer_class=ModalidadeEnsinoListSerializer,
+                ttl=cache.TTL_RECOMENDADO_MINUTOS,
+                many=False,
+            )
         except httpx.HTTPStatusError as exc:
             try:
                 body = exc.response.json()
@@ -840,10 +856,6 @@ class ModalidadesEnsinoViewSet(PedagogicoAPIView):
                 _RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA,
                 502,
             )
-
-        if not data:
-            return detail_response(_MSG_MODALIDADES_ENSINO_VAZIA, 404)
-        return Response(ModalidadeEnsinoListSerializer(data).data)
 
 
 class TurmasPorTipoSalaViewSet(PedagogicoAPIView):
@@ -1203,7 +1215,7 @@ class ComponentesTurmaViewSet(PedagogicoAPIView):
         ],
         responses={200: ComponenteBaseSerializer(many=True)},
     )
-    def get(self, request: Request, ue_id: str) -> Response:
+    def get(self, request: Request, ue_id: str) -> HttpResponse | Response:
         """Retorna componentes das turmas de uma UE.
 
         Args:
@@ -1217,11 +1229,17 @@ class ComponentesTurmaViewSet(PedagogicoAPIView):
             httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
             ValueError: Se a resposta do serviço não for JSON válido.
         """
-        data = services.get_componentes_por_turmas_ue(
-            ue_id=ue_id,
-            turmas=request.query_params.getlist("turmas"),
+        turmas = sorted(set(request.query_params.getlist("turmas")))
+        filtros = json.dumps([ue_id, turmas])
+        return resposta_serializada_cacheada(
+            request,
+            chave=f"pedagogico:componentes-ue-turmas:v1:{filtros}",
+            buscar=lambda: services.get_componentes_por_turmas_ue(
+                ue_id=ue_id, turmas=turmas
+            ),
+            serializer_class=ComponenteBaseSerializer,
+            ttl=_TTL_ATRIBUICOES_MINUTOS,
         )
-        return Response(ComponenteBaseSerializer(data, many=True).data)
 
 
 class ComponentesTurmaProgramaViewSet(PedagogicoAPIView):
@@ -1282,11 +1300,11 @@ class ComponentesRegenciaViewSet(PedagogicoAPIView):
         description="Retorna componentes curriculares de regência.",
         responses={200: ComponenteRegenciaSerializer(many=True)},
     )
-    def get(self, _request: Request, ano_turma: int) -> Response:
+    def get(self, request: Request, ano_turma: int) -> HttpResponse | Response:
         """Retorna componentes de regência por ano de turma.
 
         Args:
-            _request: Requisição HTTP recebida.
+            request: Requisição HTTP recebida.
             ano_turma: Ano da turma.
 
         Returns:
@@ -1296,10 +1314,14 @@ class ComponentesRegenciaViewSet(PedagogicoAPIView):
             httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
             ValueError: Se a resposta do serviço não for JSON válido.
         """
-        data = services.get_componentes_regencia(ano_turma)
-        if data == []:
-            return Response(status=204)
-        return Response(ComponenteRegenciaSerializer(data, many=True).data)
+        return resposta_serializada_cacheada(
+            request,
+            chave=f"pedagogico:componentes-regencia:v1:{ano_turma}",
+            buscar=lambda: services.get_componentes_regencia(ano_turma),
+            serializer_class=ComponenteRegenciaSerializer,
+            ttl=cache.TTL_RECOMENDADO_MINUTOS,
+            status_vazio=204,
+        )
 
 
 class ValidarComponentePapViewSet(PedagogicoAPIView):
@@ -1564,7 +1586,7 @@ class ComponentesPorListaTurmasViewSet(PedagogicoAPIView):
         operation_id="componentes_lista_turmas",
         responses={200: ComponenteCurricularSerializer(many=True)},
     )
-    def get(self, request: Request) -> Response:
+    def get(self, request: Request) -> HttpResponse | Response:
         """Retorna componentes das turmas informadas.
 
         Args:
@@ -1577,16 +1599,24 @@ class ComponentesPorListaTurmasViewSet(PedagogicoAPIView):
             httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
             ValueError: Se a resposta do serviço não for JSON válido.
         """
-        data = services.get_componentes_por_lista_turmas(
-            codigos_turmas=request.query_params.getlist("codigoTurmas"),
-            adicionar_componentes_planejamento=(
-                request.query_params.get(
-                    "adicionarComponentesPlanejamento", "true"
-                ).lower()
-                == "true"
-            ),
+        turmas = request.query_params.getlist("codigoTurmas")
+        planejamento = (
+            request.query_params.get(
+                "adicionarComponentesPlanejamento", "true"
+            ).lower()
+            == "true"
         )
-        return Response(ComponenteCurricularSerializer(data, many=True).data)
+        filtros = json.dumps([turmas, planejamento, False])
+        return resposta_serializada_cacheada(
+            request,
+            chave=f"pedagogico:componentes-lista-turmas:v1:{filtros}",
+            buscar=lambda: services.get_componentes_por_lista_turmas(
+                codigos_turmas=turmas,
+                adicionar_componentes_planejamento=planejamento,
+            ),
+            serializer_class=ComponenteCurricularSerializer,
+            ttl=_TTL_ATRIBUICOES_MINUTOS,
+        )
 
 
 class ComponentesTurmasRegularesViewSet(PedagogicoAPIView):
@@ -1893,7 +1923,9 @@ class GradeComponentesCurricularesViewSet(PedagogicoAPIView):
         ),
         responses={200: GradeCurricularSerializer(many=True)},
     )
-    def get(self, _request: Request, ano_letivo: int) -> Response:
+    def get(
+        self, _request: Request, ano_letivo: int
+    ) -> HttpResponse | Response:
         """Retorna a grade curricular por ano letivo.
 
         Args:
@@ -1907,8 +1939,13 @@ class GradeComponentesCurricularesViewSet(PedagogicoAPIView):
             httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
             ValueError: Se a resposta do serviço não for JSON válido.
         """
-        data = services.get_grade_curricular(ano_letivo)
-        return Response(GradeCurricularSerializer(data, many=True).data)
+        return resposta_serializada_cacheada(
+            _request,
+            chave=f"pedagogico:grade-curricular:v1:{ano_letivo}",
+            buscar=lambda: services.get_grade_curricular(ano_letivo),
+            serializer_class=GradeCurricularSerializer,
+            ttl=cache.TTL_RECOMENDADO_MINUTOS,
+        )
 
 
 class AgrupamentosCorrelacionadosViewSet(PedagogicoAPIView):
@@ -1934,7 +1971,9 @@ class AgrupamentosCorrelacionadosViewSet(PedagogicoAPIView):
         ],
         responses={200: ComponenteCurricularSerializer(many=True)},
     )
-    def get(self, request: Request, codigo_componente: int) -> Response:
+    def get(
+        self, request: Request, codigo_componente: int
+    ) -> HttpResponse | Response:
         """Retorna agrupamentos correlacionados por `cod_agrupamento`.
 
         Args:
@@ -1949,11 +1988,20 @@ class AgrupamentosCorrelacionadosViewSet(PedagogicoAPIView):
             OverflowError: Se os ticks excederem o limite do datetime.
             ValueError: Se a resposta do serviço não for JSON válido.
         """
-        data = services.get_agrupamentos_correlacionados(
-            codigo_componente=codigo_componente,
-            data_base_tick=_obter_data_base_tick(request),
+        data_base_tick = _obter_data_base_tick(request)
+        return resposta_serializada_cacheada(
+            request,
+            chave=(
+                "pedagogico:agrupamentos-correlacionados:v1:"
+                f"{codigo_componente}:{data_base_tick}"
+            ),
+            buscar=lambda: services.get_agrupamentos_correlacionados(
+                codigo_componente=codigo_componente,
+                data_base_tick=data_base_tick,
+            ),
+            serializer_class=ComponenteCurricularSerializer,
+            ttl=_TTL_ATRIBUICOES_MINUTOS,
         )
-        return Response(ComponenteCurricularSerializer(data, many=True).data)
 
 
 class AgrupamentosCorrelacionadosLoteViewSet(PedagogicoAPIView):
@@ -1980,7 +2028,7 @@ class AgrupamentosCorrelacionadosLoteViewSet(PedagogicoAPIView):
         ],
         responses={200: ComponenteCurricularSerializer(many=True)},
     )
-    def post(self, request: Request) -> Response:
+    def post(self, request: Request) -> HttpResponse | Response:
         """Retorna agrupamentos correlacionados em lote.
 
         Args:
@@ -1999,11 +2047,18 @@ class AgrupamentosCorrelacionadosLoteViewSet(PedagogicoAPIView):
         if not serializer.validated_data:
             return Response([])
 
-        data = services.post_agrupamentos_correlacionados(
-            ids=serializer.validated_data,
-            data_base_tick=_obter_data_base_tick(request),
+        ids = serializer.validated_data
+        data_base_tick = _obter_data_base_tick(request)
+        filtros = json.dumps([ids, data_base_tick])
+        return resposta_serializada_cacheada(
+            request,
+            chave=f"pedagogico:agrupamentos-correlacionados-lote:v1:{filtros}",
+            buscar=lambda: services.post_agrupamentos_correlacionados(
+                ids=ids, data_base_tick=data_base_tick
+            ),
+            serializer_class=ComponenteCurricularSerializer,
+            ttl=_TTL_ATRIBUICOES_MINUTOS,
         )
-        return Response(ComponenteCurricularSerializer(data, many=True).data)
 
 
 class AgrupamentosTerritorioViewSet(PedagogicoAPIView):
