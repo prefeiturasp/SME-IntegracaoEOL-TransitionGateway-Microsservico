@@ -37,6 +37,14 @@ class NumeroAlunoChamadaField(serializers.CharField):
 
 
 @extend_schema_field(OpenApiTypes.DATETIME)
+class DataHoraRepassadaField(serializers.CharField):
+    """Repassa data/hora como recebida e a documenta como ``date-time``.
+
+    Não valida nem converte o valor: o domínio dono do dado interpreta o texto.
+    """
+
+
+@extend_schema_field(OpenApiTypes.DATETIME)
 class DatetimeLegadoField(serializers.Field):
     """Serializa data/hora no formato ISO do contrato legado."""
 
@@ -783,13 +791,13 @@ class AtualizarResponsavelRequestSerializer(serializers.Serializer):
         required=False,
         allow_null=True,
     )
-    dataNascimento = serializers.CharField(  # NOSONAR
+    dataNascimento = DataHoraRepassadaField(  # NOSONAR
         source="data_nascimento",
         required=False,
         allow_blank=True,
         allow_null=True,
     )
-    dataAtualizacao = serializers.CharField(  # NOSONAR
+    dataAtualizacao = DataHoraRepassadaField(  # NOSONAR
         source="data_atualizacao",
         required=False,
         allow_blank=True,

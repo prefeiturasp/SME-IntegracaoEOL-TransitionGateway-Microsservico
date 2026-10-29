@@ -36,6 +36,8 @@ from apps.alunos.views import (
     QuantidadeMatriculadosView,
     ResponsaveisView,
     ResponsavelAlunoView,
+    ResponsavelContatosView,
+    ResponsavelDadosCadastraisView,
     ResponsavelResumidoView,
     TodosAlunosTurmaView,
     TotalAlunosAtivosPeriodoView,
@@ -195,6 +197,17 @@ urlpatterns = [
         "<str:codigo_aluno>/responsaveis/filiacao",
         FiliacaoAlunoView.as_view(),
         name="aluno-filiacao",
+    ),
+    path(
+        "<str:codigo_aluno>/responsaveis/<str:cpf_responsavel>/contatos",
+        ResponsavelContatosView.as_view(),
+        name="aluno-responsavel-contatos",
+    ),
+    path(
+        "<str:codigo_aluno>/responsaveis/<str:cpf_responsavel>/"
+        "dados-cadastrais",
+        ResponsavelDadosCadastraisView.as_view(),
+        name="aluno-responsavel-dados-cadastrais",
     ),
     path(
         "<str:codigo_aluno>/responsaveis/<str:cpf_responsavel>",

@@ -366,8 +366,9 @@ def atualizar_dados_responsavel(
         httpx.HTTPStatusError: Se o serviço retornar status de erro.
         httpx.RequestError: Se o serviço estiver inacessível.
     """
-    resp = _client.post(
-        f"{_BASE}/{codigo_aluno}/responsaveis/{cpf_responsavel}",
+    resp = _client.put(
+        f"{_BASE}/{codigo_aluno}/responsaveis/{cpf_responsavel}"
+        "/dados-cadastrais",
         payload=payload,
     )
     resp.raise_for_status()
@@ -394,7 +395,7 @@ def atualizar_dados_responsavel_busca_ativa(
         httpx.RequestError: Se o serviço estiver inacessível.
     """
     resp = _client.put(
-        f"{_BASE}/{codigo_aluno}/responsaveis/{cpf_responsavel}",
+        f"{_BASE}/{codigo_aluno}/responsaveis/{cpf_responsavel}/contatos",
         payload=payload,
     )
     resp.raise_for_status()
