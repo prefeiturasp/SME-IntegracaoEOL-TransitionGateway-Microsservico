@@ -1,6 +1,6 @@
 """Valida as views do domínio de alunos."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import httpx
@@ -192,7 +192,7 @@ class ResponsavelSchemaDeprecacaoTest(SimpleTestCase):
                 valor["dataAtualizacao"].replace("Z", "+00:00")
             )
             self.assertLess(
-                abs(datetime.now(timezone.utc) - gerado).total_seconds(), 60
+                abs(datetime.now(UTC) - gerado).total_seconds(), 60
             )
 
         self.assertTrue(paths[base]["post"]["deprecated"])

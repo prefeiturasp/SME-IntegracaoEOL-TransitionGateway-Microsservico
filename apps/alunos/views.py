@@ -1,7 +1,7 @@
 """Views do domínio de alunos."""
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, cast
 
 import httpx
@@ -26,13 +26,17 @@ from apps.alunos.serializers import (
     AlunoDaUeSerializer,
     AlunoInformacoesSerializer,
     AlunoMatriculaTurmaSerializer,
+    AlunoNaTurmaConsideraInativosSerializer,
     AlunoPorCodigoSerializer,
+    AlunosDaTurmaPorAnoLetivoSerializer,
     AtualizarResponsavelBuscaAtivaRequestSerializer,
     AtualizarResponsavelRequestSerializer,
     DadosAcompanhamentoEscolarSerializer,
     DadosResponsavelSerializer,
     FiliacaoResponsavelSerializer,
     InformacoesAlunoTurmaSerializer,
+    MatriculasAlunoNaTurmaSerializer,
+    MatriculasTurmasDoAlunoSerializer,
     NecessidadeEspecialSerializer,
     NomeAlunoSerializer,
     ObterNomesAlunosRequestSerializer,
@@ -87,7 +91,7 @@ class _ExemploDadosCadastrais(OpenApiExample):
     @property
     def value(self) -> dict[str, Any]:
         """Monta o corpo de exemplo a cada leitura do schema."""
-        agora = datetime.now(timezone.utc)
+        agora = datetime.now(UTC)
         return {
             "id": 0,
             "cpf": "string",
@@ -1599,7 +1603,7 @@ class AlunoTurmaConsideraInativosView(AlunosAPIView):
                 OpenApiParameter.PATH,
             ),
         ],
-        responses={200: AlunoMatriculaTurmaSerializer, 204: None},
+        responses={200: AlunoNaTurmaConsideraInativosSerializer, 204: None},
     )
     def get(
         self,
@@ -1608,7 +1612,21 @@ class AlunoTurmaConsideraInativosView(AlunosAPIView):
         codigo_aluno: str,
         considera_inativos: str,
     ) -> Response:
-        """Retorna dados de um aluno em uma turma."""
+        """Retorna o aluno na turma conforme o filtro de inativos.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            codigo_turma: Código EOL da turma recebido no caminho da URL.
+            codigo_aluno: Código EOL do aluno recebido no caminho da URL.
+            considera_inativos: Texto que indica se a consulta deve incluir
+                inativos, interpretado como booleano pela view.
+
+        Returns:
+            Resposta 200 com o primeiro aluno encontrado ou 204 sem corpo
+            quando não houver resultado ou o código da turma não for
+            positivo. Parâmetros inválidos geram resposta 400; falhas HTTP
+            preservam a resposta da origem e falhas de transporte geram 503.
+        """
         try:
             codigo_turma_int = int(codigo_turma)
             int(codigo_aluno)
@@ -1637,7 +1655,7 @@ class AlunoTurmaConsideraInativosView(AlunosAPIView):
 
         if not data:
             return Response(status=204)
-        return Response(AlunoMatriculaTurmaSerializer(data[0]).data)
+        return Response(AlunoNaTurmaConsideraInativosSerializer(data[0]).data)
 
 
 class AlunoMatriculasTurmaView(AlunosAPIView):
@@ -1653,7 +1671,7 @@ class AlunoMatriculasTurmaView(AlunosAPIView):
             OpenApiParameter("codigo_turma", int, OpenApiParameter.PATH),
             OpenApiParameter("codigo_aluno", int, OpenApiParameter.PATH),
         ],
-        responses={200: AlunoMatriculaTurmaSerializer(many=True)},
+        responses={200: MatriculasAlunoNaTurmaSerializer(many=True)},
     )
     def get(
         self,
@@ -1661,7 +1679,7 @@ class AlunoMatriculasTurmaView(AlunosAPIView):
         codigo_turma: str,
         codigo_aluno: str,
     ) -> Response:
-        """Lista as matrículas do aluno na turma informada.
+        """Lista as matrículas ativas e inativas do aluno na turma.
 
         Args:
             _request: Requisição HTTP recebida.
@@ -1669,8 +1687,10 @@ class AlunoMatriculasTurmaView(AlunosAPIView):
             codigo_aluno: Código EOL do aluno.
 
         Returns:
-            Lista de matrículas do aluno na turma, ou lista vazia quando
-            não houver correspondência.
+            Resposta 200 com a lista de matrículas ou lista vazia quando
+            não houver correspondência. Códigos não numéricos geram
+            resposta 400; falhas HTTP preservam a resposta da origem e
+            falhas de transporte geram 503.
         """
         try:
             int(codigo_turma)
@@ -1689,7 +1709,7 @@ class AlunoMatriculasTurmaView(AlunosAPIView):
         except httpx.RequestError as exc:
             return _api_unavailable_response(exc)
 
-        return Response(AlunoMatriculaTurmaSerializer(data, many=True).data)
+        return Response(MatriculasAlunoNaTurmaSerializer(data, many=True).data)
 
 
 class TotalAlunosTurmasPeriodoView(AlunosAPIView):
@@ -2012,23 +2032,22 @@ class MatriculasTurmasAlunoView(AlunosAPIView):
                 "anoLetivo", int, OpenApiParameter.QUERY, required=False
             ),
         ],
-        responses={200: AlunoMatriculaTurmaSerializer(many=True)},
+        responses={200: MatriculasTurmasDoAlunoSerializer(many=True)},
     )
     def get(self, request: Request, codigo_aluno: str) -> Response:
         """Lista as matrículas-turma do aluno.
 
         Args:
             request: Requisição com os filtros opcionais ``dataAulaTicks`` e
-                ``anoLetivo``.
+                ``anoLetivo``. O filtro de ticks zero é repassado ao MS;
+                ano letivo zero equivale à ausência do filtro de ano.
             codigo_aluno: Código EOL do aluno.
 
         Returns:
-            Uma linha por matrícula do aluno, ou lista vazia quando não
-            houver correspondência.
-
-        Raises:
-            httpx.HTTPError: Se a comunicação com o serviço de alunos
-                falhar de forma não tratada.
+            Resposta 200 com uma linha por matrícula ou lista vazia quando
+            não houver correspondência. Filtros não numéricos geram
+            resposta 400; falhas HTTP preservam a resposta da origem e
+            falhas de transporte geram 503.
         """
         data_aula_ticks = request.query_params.get("dataAulaTicks")
         ano_letivo = request.query_params.get("anoLetivo")
@@ -2051,7 +2070,9 @@ class MatriculasTurmasAlunoView(AlunosAPIView):
         except httpx.RequestError as exc:
             return _api_unavailable_response(exc)
 
-        return Response(AlunoMatriculaTurmaSerializer(data, many=True).data)
+        return Response(
+            MatriculasTurmasDoAlunoSerializer(data, many=True).data
+        )
 
 
 class AlunosTurmaAnoLetivoView(AlunosAPIView):
@@ -2069,7 +2090,7 @@ class AlunosTurmaAnoLetivoView(AlunosAPIView):
             OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
         ],
         responses={
-            200: AlunoMatriculaTurmaSerializer(many=True),
+            200: AlunosDaTurmaPorAnoLetivoSerializer(many=True),
             204: None,
         },
     )
@@ -2087,12 +2108,10 @@ class AlunosTurmaAnoLetivoView(AlunosAPIView):
             ano_letivo: Ano letivo usado no filtro; zero traz todos os anos.
 
         Returns:
-            Alunos da turma no ano letivo, ou resposta vazia quando não
-            houver correspondência.
-
-        Raises:
-            httpx.HTTPError: Se a comunicação com o serviço de alunos
-                falhar de forma não tratada.
+            Resposta 200 com a lista de alunos ou 204 sem corpo quando não
+            houver correspondência. Turma ausente ou parâmetros não
+            numéricos geram resposta 400; falhas HTTP preservam a resposta
+            da origem e falhas de transporte geram 503.
         """
         if not codigo_turma:
             return _legacy_string_response(_MSG_CODIGO_TURMA_LEGADO, 400)
@@ -2116,7 +2135,9 @@ class AlunosTurmaAnoLetivoView(AlunosAPIView):
 
         if not data:
             return Response(status=204)
-        return Response(AlunoMatriculaTurmaSerializer(data, many=True).data)
+        return Response(
+            AlunosDaTurmaPorAnoLetivoSerializer(data, many=True).data
+        )
 
 
 class AlunosCalculoFrequenciaTurmaView(AlunosAPIView):
