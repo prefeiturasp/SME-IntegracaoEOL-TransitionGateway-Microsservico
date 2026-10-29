@@ -344,6 +344,59 @@ class GetTurmasRecorteFundMedioEjaTest(SimpleTestCase):
         self.assertEqual(result, [])
 
 
+class GetTurmasRecortePorTipoTest(SimpleTestCase):
+    """Valida o recorte de turmas por tipo, UE, semestre e componente."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_envia_componente_codigo_quando_informado(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Repassa o componente como query param ao sidecar."""
+        mock_client.json_or_none.return_value = [9100001]
+
+        result = services.get_turmas_recorte_por_tipo(
+            [9100001, 9100002], [1], "000001", 1, 9999
+        )
+
+        mock_client.post.assert_called_once_with(
+            f"{_BASE_TURMAS}/recorte-por-tipo/",
+            payload=[9100001, 9100002],
+            params={
+                "tipos_turma": [1],
+                "ue_codigo": "000001",
+                "semestre": 1,
+                "componente_codigo": 9999,
+            },
+        )
+        self.assertEqual(result, [9100001])
+
+    @patch("apps.pedagogico.services._client")
+    def test_omite_componente_codigo_quando_ausente(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Sem componente, o sidecar não recebe o parâmetro."""
+        mock_client.json_or_none.return_value = [9100001]
+
+        services.get_turmas_recorte_por_tipo([9100001])
+
+        mock_client.post.assert_called_once_with(
+            f"{_BASE_TURMAS}/recorte-por-tipo/",
+            payload=[9100001],
+            params=None,
+        )
+
+    @patch("apps.pedagogico.services._client")
+    def test_lista_vazia_nao_chama_sidecar(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Sem códigos candidatos, não consulta o sidecar."""
+        self.assertEqual(
+            services.get_turmas_recorte_por_tipo([], componente_codigo=9999),
+            [],
+        )
+        mock_client.post.assert_not_called()
+
+
 class PostListarTurmasTest(SimpleTestCase):
     """Valida a listagem de dados de turmas."""
 
