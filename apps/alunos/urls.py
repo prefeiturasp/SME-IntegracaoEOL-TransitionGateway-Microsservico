@@ -93,12 +93,12 @@ turma_urlpatterns = [
     ),
     path(
         "<str:codigo_turma>/aluno/<str:codigo_aluno>/"  # NOSONAR
-        "considera-inativos/<str:considera_inativos>/",
+        "considera-inativos/<str:considera_inativos>",
         AlunoTurmaConsideraInativosView.as_view(),
         name="aluno-turma-considera-inativos",
     ),
     path(
-        "<str:codigo_turma>/aluno/<str:codigo_aluno>/matriculas/",
+        "<str:codigo_turma>/aluno/<str:codigo_aluno>/matriculas",
         AlunoMatriculasTurmaView.as_view(),
         name="aluno-matriculas-turma",
     ),
