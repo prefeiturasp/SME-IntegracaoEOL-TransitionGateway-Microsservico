@@ -203,6 +203,31 @@ class ResponsavelSchemaDeprecacaoTest(SimpleTestCase):
         )
 
 
+class RotasFiltroFuncionalSchemaDeprecacaoTest(SimpleTestCase):
+    """Valida a depreciação das rotas substituídas por versões com filtro."""
+
+    def test_rotas_antigas_deprecadas_e_novas_nao(self) -> None:
+        from drf_spectacular.generators import SchemaGenerator
+
+        paths = SchemaGenerator().get_schema(request=None, public=True)[
+            "paths"
+        ]
+        turmas = "/api/turmas/anos-letivos/{ano_letivo}/alunos/{codigo_aluno}"
+        autocomplete = "/api/alunos/ues/{codigo_ue}/anosLetivos/{ano_letivo}"
+
+        for rota in (
+            f"{turmas}/componentes-curriculares/"
+            "{componente_curricular_codigo}",
+            f"{autocomplete}/autocomplete",
+        ):
+            self.assertTrue(paths[rota]["get"]["deprecated"], rota)
+        for rota in (
+            f"{turmas}/turmas-por-componente/{{componente_curricular_codigo}}",
+            f"{autocomplete}/autocomplete-por-situacao",
+        ):
+            self.assertNotIn("deprecated", paths[rota]["get"], rota)
+
+
 class AlunosUrlsTest(SimpleTestCase):
     """Valida os nomes dos parâmetros nas rotas."""
 

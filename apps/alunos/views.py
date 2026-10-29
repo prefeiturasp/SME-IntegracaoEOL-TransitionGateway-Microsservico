@@ -12,6 +12,7 @@ from drf_spectacular.utils import (
     OpenApiResponse,
     OpenApiTypes,
     extend_schema,
+    extend_schema_view,
 )
 from rest_framework.request import Request
 
@@ -440,43 +441,52 @@ def _responder_autocomplete_ue(
     return Response(AlunoAutocompleteUeSerializer(data, many=True).data)
 
 
-class AlunoAutocompleteUeView(AlunosAPIView):
-    """Lista alunos da UE/ano para autocomplete."""
+def _parametros_autocomplete_ue(
+    somente_ativos: str,
+) -> list[OpenApiParameter]:
+    """Descreve os parâmetros das rotas de autocomplete de alunos da UE.
 
-    @extend_schema(
-        tags=_TAG,
-        summary="Autocomplete de alunos da UE por ano letivo",
-        description=(
-            "Retorna alunos da UE no ano letivo por filtro. O parâmetro "
-            "`somenteAtivos` é aceito mas não filtra; para filtrar por "
-            "situação use `autocomplete-por-situacao`."
+    Args:
+        somente_ativos: Nome do parâmetro de situação na rota.
+
+    Returns:
+        Parâmetros de rota e de query na ordem exposta no Swagger.
+    """
+    return [
+        OpenApiParameter("codigo_ue", str, OpenApiParameter.PATH),
+        OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
+        OpenApiParameter(
+            "codigoTurmas", int, OpenApiParameter.QUERY, many=True
         ),
-        parameters=[
-            OpenApiParameter("codigo_ue", str, OpenApiParameter.PATH),
-            OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
-            OpenApiParameter(
-                "codigoTurmas", int, OpenApiParameter.QUERY, many=True
-            ),
-            OpenApiParameter("nomeAluno", str, OpenApiParameter.QUERY),
-            OpenApiParameter("codigoEol", str, OpenApiParameter.QUERY),
-            OpenApiParameter("somenteAtivos", bool, OpenApiParameter.QUERY),
-            OpenApiParameter("ehHistorico", bool, OpenApiParameter.QUERY),
-            OpenApiParameter(
-                "limite",
-                int,
-                OpenApiParameter.QUERY,
-                default=10,
-            ),
-        ],
-        responses={200: OpenApiResponse(description="Success")},
-    )
+        OpenApiParameter("nomeAluno", str, OpenApiParameter.QUERY),
+        OpenApiParameter("codigoEol", str, OpenApiParameter.QUERY),
+        OpenApiParameter(somente_ativos, bool, OpenApiParameter.QUERY),
+        OpenApiParameter("ehHistorico", bool, OpenApiParameter.QUERY),
+        OpenApiParameter(
+            "limite",
+            int,
+            OpenApiParameter.QUERY,
+            default=10,
+        ),
+    ]
+
+
+class _AutocompleteUeBaseView(AlunosAPIView):
+    """Base das rotas de autocomplete de alunos da UE/ano.
+
+    Attributes:
+        parametro_somente_ativos: Nome do parâmetro de situação aceito.
+        filtra_por_situacao: Repassa o parâmetro ao sidecar quando verdadeiro;
+            do contrário ele é aceito e descartado.
+    """
+
+    parametro_somente_ativos = "somenteAtivos"
+    filtra_por_situacao = False
+
     def get(
         self, request: Request, codigo_ue: str, ano_letivo: str
     ) -> Response:
         """Busca alunos da UE no ano letivo para autocomplete.
-
-        O parâmetro ``somenteAtivos`` é aceito e não é repassado: esta rota
-        não filtra por situação da matrícula.
 
         Args:
             request: Requisição HTTP recebida.
@@ -486,13 +496,37 @@ class AlunoAutocompleteUeView(AlunosAPIView):
         Returns:
             Alunos encontrados compatíveis com os filtros.
         """
-        return _responder_autocomplete_ue(request, codigo_ue, ano_letivo, None)
+        somente_ativos = (
+            _query_value(request, self.parametro_somente_ativos)
+            if self.filtra_por_situacao
+            else None
+        )
+        return _responder_autocomplete_ue(
+            request, codigo_ue, ano_letivo, somente_ativos
+        )
 
 
-class AlunoAutocompleteUePorSituacaoView(AlunosAPIView):
-    """Lista alunos da UE/ano para autocomplete, filtrando por situação."""
+@extend_schema_view(
+    get=extend_schema(
+        tags=_TAG,
+        summary="Autocomplete de alunos da UE por ano letivo",
+        description=(
+            "DEPRECADO — use `GET /api/alunos/ues/{codigo_ue}/anosLetivos/"
+            "{ano_letivo}/autocomplete-por-situacao`. Retorna alunos da UE "
+            "no ano letivo por filtro; o parâmetro `somenteAtivos` é aceito "
+            "mas não filtra."
+        ),
+        deprecated=True,
+        parameters=_parametros_autocomplete_ue("somenteAtivos"),
+        responses={200: OpenApiResponse(description="Success")},
+    )
+)
+class AlunoAutocompleteUeView(_AutocompleteUeBaseView):
+    """Lista alunos da UE/ano para autocomplete, sem filtro de situação."""
 
-    @extend_schema(
+
+@extend_schema_view(
+    get=extend_schema(
         tags=_TAG,
         summary="Autocomplete de alunos da UE por ano letivo e situação",
         description=(
@@ -501,44 +535,15 @@ class AlunoAutocompleteUePorSituacaoView(AlunosAPIView):
             "situação ativa (ativo, pendente de rematrícula e "
             "rematriculado)."
         ),
-        parameters=[
-            OpenApiParameter("codigo_ue", str, OpenApiParameter.PATH),
-            OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
-            OpenApiParameter(
-                "codigoTurmas", int, OpenApiParameter.QUERY, many=True
-            ),
-            OpenApiParameter("nomeAluno", str, OpenApiParameter.QUERY),
-            OpenApiParameter("codigoEol", str, OpenApiParameter.QUERY),
-            OpenApiParameter("somente_ativos", bool, OpenApiParameter.QUERY),
-            OpenApiParameter("ehHistorico", bool, OpenApiParameter.QUERY),
-            OpenApiParameter(
-                "limite",
-                int,
-                OpenApiParameter.QUERY,
-                default=10,
-            ),
-        ],
+        parameters=_parametros_autocomplete_ue("somente_ativos"),
         responses={200: OpenApiResponse(description="Success")},
     )
-    def get(
-        self, request: Request, codigo_ue: str, ano_letivo: str
-    ) -> Response:
-        """Busca alunos da UE no ano letivo filtrando pela situação.
+)
+class AlunoAutocompleteUePorSituacaoView(_AutocompleteUeBaseView):
+    """Lista alunos da UE/ano para autocomplete, filtrando por situação."""
 
-        Args:
-            request: Requisição HTTP recebida.
-            codigo_ue: Código EOL da unidade educacional.
-            ano_letivo: Ano letivo consultado.
-
-        Returns:
-            Alunos encontrados compatíveis com os filtros.
-        """
-        return _responder_autocomplete_ue(
-            request,
-            codigo_ue,
-            ano_letivo,
-            _query_value(request, "somente_ativos"),
-        )
+    parametro_somente_ativos = "somente_ativos"
+    filtra_por_situacao = True
 
 
 class DadosAcompanhamentoEscolarView(AlunosAPIView):
@@ -2333,10 +2338,13 @@ class CodigoTurmaAlunoComponenteCurricularView(AlunosAPIView):
     @extend_schema(
         tags=["Turma"],
         description=(
-            "Retorna os códigos de turma do aluno no ano letivo. O código "
-            "do componente curricular é aceito na rota mas ignorado; para "
-            "filtrar pelo componente use `turmas-por-componente`."
+            "DEPRECADO — use `GET /api/turmas/anos-letivos/{ano_letivo}"
+            "/alunos/{codigo_aluno}/turmas-por-componente/"
+            "{componente_curricular_codigo}`. Retorna os códigos de turma "
+            "do aluno no ano letivo; o código do componente curricular é "
+            "aceito na rota mas ignorado."
         ),
+        deprecated=True,
         parameters=[
             OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
             OpenApiParameter("codigo_aluno", int, OpenApiParameter.PATH),
