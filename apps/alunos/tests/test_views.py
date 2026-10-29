@@ -203,6 +203,31 @@ class ResponsavelSchemaDeprecacaoTest(SimpleTestCase):
         )
 
 
+class RotasFiltroFuncionalSchemaDeprecacaoTest(SimpleTestCase):
+    """Valida a depreciação das rotas substituídas por versões com filtro."""
+
+    def test_rotas_antigas_deprecadas_e_novas_nao(self) -> None:
+        from drf_spectacular.generators import SchemaGenerator
+
+        paths = SchemaGenerator().get_schema(request=None, public=True)[
+            "paths"
+        ]
+        turmas = "/api/turmas/anos-letivos/{ano_letivo}/alunos/{codigo_aluno}"
+        autocomplete = "/api/alunos/ues/{codigo_ue}/anosLetivos/{ano_letivo}"
+
+        for rota in (
+            f"{turmas}/componentes-curriculares/"
+            "{componente_curricular_codigo}",
+            f"{autocomplete}/autocomplete",
+        ):
+            self.assertTrue(paths[rota]["get"]["deprecated"], rota)
+        for rota in (
+            f"{turmas}/turmas-por-componente/{{componente_curricular_codigo}}",
+            f"{autocomplete}/autocomplete-por-situacao",
+        ):
+            self.assertNotIn("deprecated", paths[rota]["get"], rota)
+
+
 class AlunosUrlsTest(SimpleTestCase):
     """Valida os nomes dos parâmetros nas rotas."""
 
@@ -568,6 +593,106 @@ class AlunoAutocompleteAtivosViewTest(SimpleTestCase):
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
 
+class AlunoAutocompleteUePorSituacaoViewTest(SimpleTestCase):
+    """Valida o autocomplete da UE com filtro de situação."""
+
+    _PATH = (
+        "/api/alunos/ues/100001/anosLetivos/2026/autocomplete-por-situacao"
+    )
+    _SVC = "apps.alunos.views.services.get_alunos_autocomplete_ue"
+
+    @patch(_SVC)
+    def test_repassa_somente_ativos(self, mock_service: MagicMock) -> None:
+        """Envia somente_ativos ao service e mantém os demais filtros."""
+        mock_service.return_value = [
+            {
+                "codigo_aluno": 123456,
+                "nome_aluno": "Fulano de Tal",
+                "nome_social_aluno": None,
+                "codigo_turma": 9001,
+                "numero_aluno_chamada": "15",
+            }
+        ]
+
+        resp = _cliente_autenticado().get(
+            self._PATH
+            + "?somente_ativos=true&nomeAluno=Fulano&codigoTurmas=9001"
+            "&limite=5"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()[0]["codigoAluno"], 123456)
+        mock_service.assert_called_once_with(
+            codigo_ue="100001",
+            ano_letivo="2026",
+            codigo_turmas=["9001"],
+            nome_aluno="Fulano",
+            codigo_eol=None,
+            somente_ativos="true",
+            eh_historico=None,
+            limite=5,
+        )
+
+    @patch(_SVC)
+    def test_omitido_nao_envia_somente_ativos(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Quando não informado, o parâmetro ``somente_ativos`` não é enviado."""
+        mock_service.return_value = []
+
+        resp = _cliente_autenticado().get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertIsNone(mock_service.call_args.kwargs["somente_ativos"])
+
+    @patch(_SVC)
+    def test_camel_case_nao_controla_o_filtro(
+        self, mock_service: MagicMock
+    ) -> None:
+        """O contrato novo nasce em snake_case; somenteAtivos é ignorado."""
+        mock_service.return_value = []
+
+        _cliente_autenticado().get(self._PATH + "?somenteAtivos=true")
+
+        self.assertIsNone(mock_service.call_args.kwargs["somente_ativos"])
+
+    @patch(_SVC)
+    def test_400_quando_limite_invalido(self, mock_service: MagicMock) -> None:
+        """Valida que o parâmetro ``limite`` é um inteiro positivo."""
+        resp = _cliente_autenticado().get(self._PATH + "?limite=abc")
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_service.assert_not_called()
+
+    @patch(_SVC)
+    def test_repassa_erro_do_sidecar(self, mock_service: MagicMock) -> None:
+        """Repassa o erro do sidecar para o cliente."""
+        mock_service.side_effect = _http_status_error(
+            404, {"detail": "Não foram encontradas turmas para o aluno."}
+        )
+
+        resp = _cliente_autenticado().get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch(_SVC)
+    def test_503_quando_sidecar_indisponivel(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Repassa o erro de indisponibilidade do sidecar para o cliente."""
+        mock_service.side_effect = _request_error()
+
+        resp = _cliente_autenticado().get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    def test_403_sem_autenticacao(self) -> None:
+        """Valida que a view exige autenticação."""
+        resp = APIClient().get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
 class AlunoAutocompleteUeViewTest(SimpleTestCase):
     """Valida a view de autocomplete de alunos da UE por ano letivo."""
 
@@ -654,7 +779,7 @@ class AlunoAutocompleteUeViewTest(SimpleTestCase):
             codigo_turmas=["9001", "9002"],
             nome_aluno="Fulano",
             codigo_eol="123456",
-            somente_ativos="true",
+            somente_ativos=None,
             eh_historico="false",
             limite=5,
         )
@@ -3536,6 +3661,7 @@ class CodigoTurmaAlunoComponenteCurricularViewTest(SimpleTestCase):
             ano_letivo="2026",
             codigo_aluno="7000001",
             tipos_turma=[1],
+            componente_codigo=None,
         )
 
     @patch(_SVC)
@@ -3553,6 +3679,85 @@ class CodigoTurmaAlunoComponenteCurricularViewTest(SimpleTestCase):
     def test_403_sem_autenticacao(self) -> None:
         """Testa que o endpoint retorna 403 quando não há autenticação."""
         resp = APIClient().get(self._PATH)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class CodigoTurmaAlunoPorComponenteViewTest(SimpleTestCase):
+    """Valida a rota de turmas do aluno filtradas por componente."""
+
+    _PATH = (
+        "/api/turmas/anos-letivos/2026/alunos/7000001"
+        "/turmas-por-componente/9999"
+    )
+    _SVC = "apps.alunos.views.services.montar_codigos_turmas_regulares_aluno"
+
+    @patch(_SVC)
+    def test_200_repassa_componente_e_tipos_turma(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Testa o retorno de turmas considerando o componente e os tipos de turma."""
+        mock_service.return_value = [12345]
+
+        resp = _cliente_autenticado().get(self._PATH + "?tiposTurma=1")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), ["12345"])
+        mock_service.assert_called_once_with(
+            ano_letivo="2026",
+            codigo_aluno="7000001",
+            tipos_turma=[1],
+            componente_codigo=9999,
+        )
+
+    @patch(_SVC)
+    def test_200_lista_vazia_quando_filtro_zera_o_resultado(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Testa o retorno de lista vazia quando o filtro não encontra turmas."""
+        mock_service.return_value = []
+
+        resp = _cliente_autenticado().get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [])
+
+    @patch(_SVC)
+    def test_400_quando_componente_nao_numerico(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Testa que o endpoint retorna 400 quando o componente não é numérico."""
+        resp = _cliente_autenticado().get(
+            "/api/turmas/anos-letivos/2026/alunos/7000001"
+            "/turmas-por-componente/abc"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_service.assert_not_called()
+
+    @patch(_SVC)
+    def test_repassa_erro_do_sidecar(self, mock_service: MagicMock) -> None:
+        """Testa que o endpoint repassa o erro do sidecar quando ocorre um erro HTTP."""
+        mock_service.side_effect = _http_status_error(500, {"detail": "erro"})
+
+        resp = _cliente_autenticado().get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @patch(_SVC)
+    def test_503_quando_sidecar_indisponivel(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Testa que o endpoint retorna 503 quando o sidecar está indisponível."""
+        mock_service.side_effect = _request_error()
+
+        resp = _cliente_autenticado().get(self._PATH)
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    def test_403_sem_autenticacao(self) -> None:
+        """Testa que o endpoint retorna 403 quando não há autenticação."""
+        resp = APIClient().get(self._PATH)
+
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
 

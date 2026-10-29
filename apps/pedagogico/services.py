@@ -131,14 +131,17 @@ def get_turmas_recorte_por_tipo(
     tipos_turma: list[int] | None = None,
     ue_codigo: str | None = None,
     semestre: int | None = None,
+    componente_codigo: int | None = None,
 ) -> list[int]:
-    """Filtra códigos de turma por tipo de turma, UE e semestre.
+    """Filtra códigos de turma por tipo, UE, semestre e componente.
 
     Args:
         codigos: Códigos de turma candidatos (vindos do Alunos-MS).
         tipos_turma: Tipos de turma aceitos; sem filtro quando vazio.
         ue_codigo: Código da UE; sem filtro quando ausente.
         semestre: Semestre da turma; sem filtro quando ausente.
+        componente_codigo: Componente exigido nas turmas; sem filtro quando
+            ausente.
 
     Returns:
         Subconjunto dos códigos que atende ao recorte.
@@ -155,6 +158,8 @@ def get_turmas_recorte_por_tipo(
         params["ue_codigo"] = ue_codigo
     if semestre is not None:
         params["semestre"] = semestre
+    if componente_codigo is not None:
+        params["componente_codigo"] = componente_codigo
     resp = _client.post(
         f"{_BASE_TURMAS}/recorte-por-tipo/",
         payload=[int(codigo) for codigo in codigos],
