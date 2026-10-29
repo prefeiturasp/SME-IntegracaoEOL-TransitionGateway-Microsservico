@@ -87,17 +87,17 @@ CAMPOS_ARTIFICIAIS = {
 CONTRATOS = (
     (
         MatriculasAlunoNaTurmaSerializer,
-        "/api/turmas/9100003/aluno/7000001/matriculas/",
-        "/api/turmas/{codigo_turma}/aluno/{codigo_aluno}/matriculas/",
+        "/api/turmas/9100003/aluno/7000001/matriculas",
+        "/api/turmas/{codigo_turma}/aluno/{codigo_aluno}/matriculas",
         "get_alunos_por_turma",
         True,
         {"considerar_inativos": True, "codigo_aluno": "7000001"},
     ),
     (
         AlunoNaTurmaConsideraInativosSerializer,
-        "/api/turmas/9100003/aluno/7000001/considera-inativos/true/",
+        "/api/turmas/9100003/aluno/7000001/considera-inativos/true",
         "/api/turmas/{codigo_turma}/aluno/{codigo_aluno}/"
-        "considera-inativos/{considera_inativos}/",
+        "considera-inativos/{considera_inativos}",
         "get_alunos_turma_considera_inativos",
         False,
         {"considerar_inativos": True, "codigo_aluno": "7000001"},
@@ -247,8 +247,8 @@ class ViewsConsultaMatriculaTest(SimpleTestCase):
                     self.assertEqual(resposta.content, b"")
 
     @override_settings(APPEND_SLASH=True)
-    def test_rotas_sem_barra_redirecionam_para_canonicas(self) -> None:
-        """Redireciona a URL sem barra preservando os filtros da consulta."""
+    def test_rotas_sem_barra_mantem_contrato_original(self) -> None:
+        """Responde diretamente sem barra e mantém 404 com barra final."""
         for _, rota, _, metodo, lista, _ in CONTRATOS[:2]:
             with (
                 self.subTest(rota=rota),
@@ -257,20 +257,17 @@ class ViewsConsultaMatriculaTest(SimpleTestCase):
                     return_value=[DADOS_MATRICULA],
                 ) as consulta,
             ):
-                sem_barra = self.client.get(
-                    f"{rota.rstrip('/')}?anoLetivo=2025"
-                )
-                self.assertEqual(sem_barra.status_code, 301)
-                self.assertEqual(
-                    sem_barra["Location"], f"{rota}?anoLetivo=2025"
-                )
-                consulta.assert_not_called()
-                com_barra = self.client.get(sem_barra["Location"])
-                self.assertEqual(com_barra.status_code, 200)
+                sem_barra = self.client.get(rota)
+                self.assertEqual(sem_barra.status_code, 200)
+                self.assertNotIn("Location", sem_barra)
                 esperado = (
                     [RESPOSTA_MATRICULA] if lista else RESPOSTA_MATRICULA
                 )
-                self.assertEqual(com_barra.json(), esperado)
+                self.assertEqual(sem_barra.json(), esperado)
+                consulta.reset_mock()
+                com_barra = self.client.get(f"{rota}/")
+                self.assertEqual(com_barra.status_code, 404)
+                consulta.assert_not_called()
 
     def test_considera_inativos_false(self) -> None:
         """Preserva o contrato e repassa o filtro booleano falso."""
@@ -316,4 +313,4 @@ class SchemaConsultaMatriculaTest(SimpleTestCase):
                 if rota == CONTRATOS[1][2] or rota == CONTRATOS[3][2]:
                     self.assertNotIn("content", respostas["204"])
         for _, _, rota, _, _, _ in CONTRATOS[:2]:
-            self.assertNotIn(rota.rstrip("/"), schema["paths"])
+            self.assertNotIn(f"{rota}/", schema["paths"])
