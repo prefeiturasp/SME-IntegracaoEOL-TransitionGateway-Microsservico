@@ -1,4 +1,4 @@
-"""Serializers de saida para o contrato legado de alunos."""
+"""Serializers de saída para os contratos de alunos."""
 
 from collections.abc import Callable
 from functools import cached_property
@@ -371,6 +371,111 @@ class AlunoMatriculaTurmaSerializer(serializers.Serializer):
         elif data.get("numeroAlunoChamada") in (None, ""):
             data["numeroAlunoChamada"] = "000"
         return data
+
+
+class ConsultaAlunoMatriculaTurmaSerializer(serializers.Serializer):
+    """Serializa os campos comuns às consultas de aluno, matrícula e turma.
+
+    Compartilha a definição dos 20 campos alimentados pelo domínio Alunos
+    entre os contratos por consulta. Preserva o formato legado de datas,
+    o indicador inteiro de deficiência e os valores padrão de chamada e
+    celular. A seleção de registros cabe aos services e às views.
+    """
+
+    codigoAluno = serializers.IntegerField(
+        source="codigo_aluno", allow_null=True
+    )
+    nomeAluno = serializers.CharField(source="nome_aluno", allow_null=True)
+    dataNascimento = DataHoraLegadoComZField(source="data_nascimento")
+    nomeSocialAluno = serializers.CharField(
+        source="nome_social_aluno", allow_null=True
+    )
+    codigoSituacaoMatricula = serializers.IntegerField(
+        source="codigo_situacao_matricula", allow_null=True
+    )
+    situacaoMatricula = serializers.CharField(
+        source="situacao_matricula", allow_null=True
+    )
+    dataSituacao = DataHoraLegadoComZField(source="data_situacao")
+    dataMatricula = DataHoraLegadoComZField(source="data_matricula")
+    numeroAlunoChamada = serializers.CharField(
+        source="numero_aluno_chamada", default="000"
+    )
+    celularResponsavel = serializers.CharField(
+        source="celular_responsavel", allow_blank=True, default=""
+    )
+    possuiDeficiencia = InteiroBooleanoField(source="possui_deficiencia")
+    nomeResponsavel = serializers.CharField(
+        source="nome_responsavel", allow_null=True
+    )
+    tipoResponsavel = serializers.IntegerField(
+        source="tipo_responsavel", allow_null=True
+    )
+    dataAtualizacaoContato = DataHoraLegadoComZField(
+        source="data_atualizacao_contato"
+    )
+    codigoMatricula = serializers.IntegerField(
+        source="codigo_matricula", allow_null=True
+    )
+    sequencia = serializers.IntegerField(allow_null=True)
+    codigoTurma = serializers.IntegerField(
+        source="codigo_turma", allow_null=True
+    )
+    codigoEscola = serializers.CharField(
+        source="codigo_escola", allow_null=True
+    )
+    ano = serializers.IntegerField(source="ano_letivo", allow_null=True)
+    codigoDre = serializers.CharField(source="codigo_dre", allow_null=True)
+
+    def to_representation(self, instance: Any) -> dict[str, Any]:
+        """Serializa a consulta e normaliza chamada e celular ausentes.
+
+        Args:
+            instance: Dicionário ou objeto com os dados de aluno e matrícula.
+
+        Returns:
+            Campos do contrato com chamada "000" e celular "" quando os valores forem ausentes, nulos ou vazios.
+        """
+        dados = cast(dict[str, Any], super().to_representation(instance))
+        dados["numeroAlunoChamada"] = dados.get("numeroAlunoChamada") or "000"
+        dados["celularResponsavel"] = dados.get("celularResponsavel") or ""
+        return dados
+
+
+class MatriculasAlunoNaTurmaSerializer(ConsultaAlunoMatriculaTurmaSerializer):
+    """Serializa cada matrícula de um aluno na turma informada.
+
+    Usado pela consulta que inclui matrículas ativas e inativas e retorna
+    uma lista de vínculos do aluno com a turma.
+    """
+
+
+class AlunoNaTurmaConsideraInativosSerializer(
+    ConsultaAlunoMatriculaTurmaSerializer
+):
+    """Serializa o aluno consultado em uma turma como objeto único.
+
+    A view seleciona o primeiro resultado após a consulta com o filtro de
+    inclusão de inativos e retorna 204 quando não há correspondência.
+    """
+
+
+class MatriculasTurmasDoAlunoSerializer(ConsultaAlunoMatriculaTurmaSerializer):
+    """Serializa cada matrícula do aluno nas turmas e anos consultados.
+
+    Usado na listagem com filtros opcionais de data da aula e ano letivo,
+    com um registro por matrícula selecionada pelo domínio Alunos.
+    """
+
+
+class AlunosDaTurmaPorAnoLetivoSerializer(
+    ConsultaAlunoMatriculaTurmaSerializer
+):
+    """Serializa cada aluno da turma no ano letivo consultado.
+
+    A consulta retorna um registro por aluno e permite informar zero no
+    ano letivo para consultar os vínculos sem restrição de ano.
+    """
 
 
 class TodosAlunosTurmaSerializer(AlunoMatriculaTurmaSerializer):
