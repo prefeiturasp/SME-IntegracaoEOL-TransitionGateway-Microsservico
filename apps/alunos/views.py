@@ -12,6 +12,7 @@ from drf_spectacular.utils import (
     OpenApiResponse,
     OpenApiTypes,
     extend_schema,
+    extend_schema_view,
 )
 from rest_framework.request import Request
 
@@ -25,13 +26,17 @@ from apps.alunos.serializers import (
     AlunoDaUeSerializer,
     AlunoInformacoesSerializer,
     AlunoMatriculaTurmaSerializer,
+    AlunoNaTurmaConsideraInativosSerializer,
     AlunoPorCodigoSerializer,
+    AlunosDaTurmaPorAnoLetivoSerializer,
     AtualizarResponsavelBuscaAtivaRequestSerializer,
     AtualizarResponsavelRequestSerializer,
     DadosAcompanhamentoEscolarSerializer,
     DadosResponsavelSerializer,
     FiliacaoResponsavelSerializer,
     InformacoesAlunoTurmaSerializer,
+    MatriculasAlunoNaTurmaSerializer,
+    MatriculasTurmasDoAlunoSerializer,
     NecessidadeEspecialSerializer,
     NomeAlunoSerializer,
     ObterNomesAlunosRequestSerializer,
@@ -400,32 +405,48 @@ class AlunoAutocompleteAtivosView(AlunosAPIView):
         return Response(AlunoAutocompleteSerializer(data, many=True).data)
 
 
-class AlunoAutocompleteUeView(AlunosAPIView):
-    """Lista alunos da UE/ano para autocomplete."""
+def _parametros_autocomplete_ue(
+    somente_ativos: str,
+) -> list[OpenApiParameter]:
+    """Descreve os parâmetros das rotas de autocomplete de alunos da UE.
 
-    @extend_schema(
-        tags=_TAG,
-        summary="Autocomplete de alunos da UE por ano letivo",
-        description="Retorna alunos da UE no ano letivo por filtro.",
-        parameters=[
-            OpenApiParameter("codigo_ue", str, OpenApiParameter.PATH),
-            OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
-            OpenApiParameter(
-                "codigoTurmas", int, OpenApiParameter.QUERY, many=True
-            ),
-            OpenApiParameter("nomeAluno", str, OpenApiParameter.QUERY),
-            OpenApiParameter("codigoEol", str, OpenApiParameter.QUERY),
-            OpenApiParameter("somenteAtivos", bool, OpenApiParameter.QUERY),
-            OpenApiParameter("ehHistorico", bool, OpenApiParameter.QUERY),
-            OpenApiParameter(
-                "limite",
-                int,
-                OpenApiParameter.QUERY,
-                default=10,
-            ),
-        ],
-        responses={200: OpenApiResponse(description="Success")},
-    )
+    Args:
+        somente_ativos: Nome do parâmetro de situação na rota.
+
+    Returns:
+        Parâmetros de rota e de query na ordem exposta no Swagger.
+    """
+    return [
+        OpenApiParameter("codigo_ue", str, OpenApiParameter.PATH),
+        OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
+        OpenApiParameter(
+            "codigoTurmas", int, OpenApiParameter.QUERY, many=True
+        ),
+        OpenApiParameter("nomeAluno", str, OpenApiParameter.QUERY),
+        OpenApiParameter("codigoEol", str, OpenApiParameter.QUERY),
+        OpenApiParameter(somente_ativos, bool, OpenApiParameter.QUERY),
+        OpenApiParameter("ehHistorico", bool, OpenApiParameter.QUERY),
+        OpenApiParameter(
+            "limite",
+            int,
+            OpenApiParameter.QUERY,
+            default=10,
+        ),
+    ]
+
+
+class _AutocompleteUeBaseView(AlunosAPIView):
+    """Base das rotas de autocomplete de alunos da UE/ano.
+
+    Attributes:
+        parametro_somente_ativos: Nome do parâmetro de situação aceito.
+        filtra_por_situacao: Repassa o parâmetro ao sidecar quando verdadeiro;
+            do contrário ele é aceito e descartado.
+    """
+
+    parametro_somente_ativos = "somenteAtivos"
+    filtra_por_situacao = False
+
     def get(
         self, request: Request, codigo_ue: str, ano_letivo: str
     ) -> Response:
@@ -439,19 +460,23 @@ class AlunoAutocompleteUeView(AlunosAPIView):
         Returns:
             Alunos encontrados compatíveis com os filtros.
         """
+        somente_ativos = (
+            _query_value(request, self.parametro_somente_ativos)
+            if self.filtra_por_situacao
+            else None
+        )
         try:
             limite = _query_int(request, "limite", 10)
         except ValueError as exc:
             return detail_response(str(exc))
-        codigo_turmas = request.query_params.getlist("codigoTurmas")
         try:
             data = services.get_alunos_autocomplete_ue(
                 codigo_ue=codigo_ue,
                 ano_letivo=ano_letivo,
-                codigo_turmas=codigo_turmas,
+                codigo_turmas=request.query_params.getlist("codigoTurmas"),
                 nome_aluno=_query_value(request, "nomeAluno"),
                 codigo_eol=_query_value(request, "codigoEol"),
-                somente_ativos=_query_value(request, "somenteAtivos"),
+                somente_ativos=somente_ativos,
                 eh_historico=_query_value(request, "ehHistorico"),
                 limite=limite,
             )
@@ -460,6 +485,46 @@ class AlunoAutocompleteUeView(AlunosAPIView):
         except httpx.RequestError as exc:
             return _api_unavailable_response(exc)
         return Response(AlunoAutocompleteUeSerializer(data, many=True).data)
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=_TAG,
+        summary="Autocomplete de alunos da UE por ano letivo",
+        description=(
+            "DEPRECADO — use `GET /api/alunos/ues/{codigo_ue}/anosLetivos/"
+            "{ano_letivo}/autocomplete-por-situacao`. Retorna alunos da UE "
+            "no ano letivo por filtro; o parâmetro `somenteAtivos` é aceito "
+            "mas não filtra."
+        ),
+        deprecated=True,
+        parameters=_parametros_autocomplete_ue("somenteAtivos"),
+        responses={200: OpenApiResponse(description="Success")},
+    )
+)
+class AlunoAutocompleteUeView(_AutocompleteUeBaseView):
+    """Lista alunos da UE/ano para autocomplete, sem filtro de situação."""
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=_TAG,
+        summary="Autocomplete de alunos da UE por ano letivo e situação",
+        description=(
+            "Retorna alunos da UE no ano letivo por filtro. Com "
+            "`somente_ativos` verdadeiro, mantém apenas vínculos em "
+            "situação ativa (ativo, pendente de rematrícula e "
+            "rematriculado)."
+        ),
+        parameters=_parametros_autocomplete_ue("somente_ativos"),
+        responses={200: OpenApiResponse(description="Success")},
+    )
+)
+class AlunoAutocompleteUePorSituacaoView(_AutocompleteUeBaseView):
+    """Lista alunos da UE/ano para autocomplete, filtrando por situação."""
+
+    parametro_somente_ativos = "somente_ativos"
+    filtra_por_situacao = True
 
 
 class DadosAcompanhamentoEscolarView(AlunosAPIView):
@@ -1538,7 +1603,7 @@ class AlunoTurmaConsideraInativosView(AlunosAPIView):
                 OpenApiParameter.PATH,
             ),
         ],
-        responses={200: AlunoMatriculaTurmaSerializer, 204: None},
+        responses={200: AlunoNaTurmaConsideraInativosSerializer, 204: None},
     )
     def get(
         self,
@@ -1547,7 +1612,21 @@ class AlunoTurmaConsideraInativosView(AlunosAPIView):
         codigo_aluno: str,
         considera_inativos: str,
     ) -> Response:
-        """Retorna dados de um aluno em uma turma."""
+        """Retorna o aluno na turma conforme o filtro de inativos.
+
+        Args:
+            _request: Requisição HTTP recebida.
+            codigo_turma: Código EOL da turma recebido no caminho da URL.
+            codigo_aluno: Código EOL do aluno recebido no caminho da URL.
+            considera_inativos: Texto que indica se a consulta deve incluir
+                inativos, interpretado como booleano pela view.
+
+        Returns:
+            Resposta 200 com o primeiro aluno encontrado ou 204 sem corpo
+            quando não houver resultado ou o código da turma não for
+            positivo. Parâmetros inválidos geram resposta 400; falhas HTTP
+            preservam a resposta da origem e falhas de transporte geram 503.
+        """
         try:
             codigo_turma_int = int(codigo_turma)
             int(codigo_aluno)
@@ -1576,7 +1655,7 @@ class AlunoTurmaConsideraInativosView(AlunosAPIView):
 
         if not data:
             return Response(status=204)
-        return Response(AlunoMatriculaTurmaSerializer(data[0]).data)
+        return Response(AlunoNaTurmaConsideraInativosSerializer(data[0]).data)
 
 
 class AlunoMatriculasTurmaView(AlunosAPIView):
@@ -1592,7 +1671,7 @@ class AlunoMatriculasTurmaView(AlunosAPIView):
             OpenApiParameter("codigo_turma", int, OpenApiParameter.PATH),
             OpenApiParameter("codigo_aluno", int, OpenApiParameter.PATH),
         ],
-        responses={200: AlunoMatriculaTurmaSerializer(many=True)},
+        responses={200: MatriculasAlunoNaTurmaSerializer(many=True)},
     )
     def get(
         self,
@@ -1600,7 +1679,7 @@ class AlunoMatriculasTurmaView(AlunosAPIView):
         codigo_turma: str,
         codigo_aluno: str,
     ) -> Response:
-        """Lista as matrículas do aluno na turma informada.
+        """Lista as matrículas ativas e inativas do aluno na turma.
 
         Args:
             _request: Requisição HTTP recebida.
@@ -1608,8 +1687,10 @@ class AlunoMatriculasTurmaView(AlunosAPIView):
             codigo_aluno: Código EOL do aluno.
 
         Returns:
-            Lista de matrículas do aluno na turma, ou lista vazia quando
-            não houver correspondência.
+            Resposta 200 com a lista de matrículas ou lista vazia quando
+            não houver correspondência. Códigos não numéricos geram
+            resposta 400; falhas HTTP preservam a resposta da origem e
+            falhas de transporte geram 503.
         """
         try:
             int(codigo_turma)
@@ -1628,7 +1709,7 @@ class AlunoMatriculasTurmaView(AlunosAPIView):
         except httpx.RequestError as exc:
             return _api_unavailable_response(exc)
 
-        return Response(AlunoMatriculaTurmaSerializer(data, many=True).data)
+        return Response(MatriculasAlunoNaTurmaSerializer(data, many=True).data)
 
 
 class TotalAlunosTurmasPeriodoView(AlunosAPIView):
@@ -1951,23 +2032,22 @@ class MatriculasTurmasAlunoView(AlunosAPIView):
                 "anoLetivo", int, OpenApiParameter.QUERY, required=False
             ),
         ],
-        responses={200: AlunoMatriculaTurmaSerializer(many=True)},
+        responses={200: MatriculasTurmasDoAlunoSerializer(many=True)},
     )
     def get(self, request: Request, codigo_aluno: str) -> Response:
         """Lista as matrículas-turma do aluno.
 
         Args:
             request: Requisição com os filtros opcionais ``dataAulaTicks`` e
-                ``anoLetivo``.
+                ``anoLetivo``. O filtro de ticks zero é repassado ao MS;
+                ano letivo zero equivale à ausência do filtro de ano.
             codigo_aluno: Código EOL do aluno.
 
         Returns:
-            Uma linha por matrícula do aluno, ou lista vazia quando não
-            houver correspondência.
-
-        Raises:
-            httpx.HTTPError: Se a comunicação com o serviço de alunos
-                falhar de forma não tratada.
+            Resposta 200 com uma linha por matrícula ou lista vazia quando
+            não houver correspondência. Filtros não numéricos geram
+            resposta 400; falhas HTTP preservam a resposta da origem e
+            falhas de transporte geram 503.
         """
         data_aula_ticks = request.query_params.get("dataAulaTicks")
         ano_letivo = request.query_params.get("anoLetivo")
@@ -1990,7 +2070,9 @@ class MatriculasTurmasAlunoView(AlunosAPIView):
         except httpx.RequestError as exc:
             return _api_unavailable_response(exc)
 
-        return Response(AlunoMatriculaTurmaSerializer(data, many=True).data)
+        return Response(
+            MatriculasTurmasDoAlunoSerializer(data, many=True).data
+        )
 
 
 class AlunosTurmaAnoLetivoView(AlunosAPIView):
@@ -2008,7 +2090,7 @@ class AlunosTurmaAnoLetivoView(AlunosAPIView):
             OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
         ],
         responses={
-            200: AlunoMatriculaTurmaSerializer(many=True),
+            200: AlunosDaTurmaPorAnoLetivoSerializer(many=True),
             204: None,
         },
     )
@@ -2026,12 +2108,10 @@ class AlunosTurmaAnoLetivoView(AlunosAPIView):
             ano_letivo: Ano letivo usado no filtro; zero traz todos os anos.
 
         Returns:
-            Alunos da turma no ano letivo, ou resposta vazia quando não
-            houver correspondência.
-
-        Raises:
-            httpx.HTTPError: Se a comunicação com o serviço de alunos
-                falhar de forma não tratada.
+            Resposta 200 com a lista de alunos ou 204 sem corpo quando não
+            houver correspondência. Turma ausente ou parâmetros não
+            numéricos geram resposta 400; falhas HTTP preservam a resposta
+            da origem e falhas de transporte geram 503.
         """
         if not codigo_turma:
             return _legacy_string_response(_MSG_CODIGO_TURMA_LEGADO, 400)
@@ -2055,7 +2135,9 @@ class AlunosTurmaAnoLetivoView(AlunosAPIView):
 
         if not data:
             return Response(status=204)
-        return Response(AlunoMatriculaTurmaSerializer(data, many=True).data)
+        return Response(
+            AlunosDaTurmaPorAnoLetivoSerializer(data, many=True).data
+        )
 
 
 class AlunosCalculoFrequenciaTurmaView(AlunosAPIView):
@@ -2215,39 +2297,40 @@ class CodigosTurmasRegularesAlunoView(AlunosAPIView):
         return Response([str(codigo) for codigo in codigos])
 
 
-class CodigoTurmaAlunoComponenteCurricularView(AlunosAPIView):
-    """Lista códigos de turma do aluno por componente curricular.
+def _parametros_turmas_aluno_componente() -> list[OpenApiParameter]:
+    """Descreve os parâmetros das rotas de turmas do aluno por componente.
 
-    Alias do endpoint ``.../regulares``: o componente curricular é aceito
-    na rota mas ignorado no corpo do handler, consultando a mesma função.
-    Aqui só ``tiposTurma`` é considerado, conforme a assinatura deste
-    endpoint.
+    Returns:
+        Parâmetros de rota e de query na ordem exposta no Swagger.
+    """
+    return [
+        OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
+        OpenApiParameter("codigo_aluno", int, OpenApiParameter.PATH),
+        OpenApiParameter(
+            "componente_curricular_codigo",
+            int,
+            OpenApiParameter.PATH,
+        ),
+        OpenApiParameter(
+            "tiposTurma",
+            OpenApiTypes.INT,
+            OpenApiParameter.QUERY,
+            many=True,
+            required=False,
+        ),
+    ]
+
+
+class _CodigoTurmaAlunoBaseView(AlunosAPIView):
+    """Base das rotas de códigos de turma regulares do aluno.
+
+    Attributes:
+        filtra_por_componente: Aplica o componente da rota às turmas quando
+            verdadeiro; do contrário ele é aceito e ignorado.
     """
 
-    @extend_schema(
-        tags=["Turma"],
-        description=(
-            "Retorna os códigos de turma do aluno no ano letivo. O código "
-            "do componente curricular é aceito na rota mas ignorado."
-        ),
-        parameters=[
-            OpenApiParameter("ano_letivo", int, OpenApiParameter.PATH),
-            OpenApiParameter("codigo_aluno", int, OpenApiParameter.PATH),
-            OpenApiParameter(
-                "componente_curricular_codigo",
-                int,
-                OpenApiParameter.PATH,
-            ),
-            OpenApiParameter(
-                "tiposTurma",
-                OpenApiTypes.INT,
-                OpenApiParameter.QUERY,
-                many=True,
-                required=False,
-            ),
-        ],
-        responses={200: OpenApiResponse(description="Success")},
-    )
+    filtra_por_componente = False
+
     def get(
         self,
         request: Request,
@@ -2255,24 +2338,35 @@ class CodigoTurmaAlunoComponenteCurricularView(AlunosAPIView):
         codigo_aluno: str,
         componente_curricular_codigo: str,
     ) -> Response:
-        """Lista os códigos de turma do aluno, ignorando o componente.
+        """Lista os códigos de turma regulares do aluno no ano letivo.
 
         Args:
             request: Requisição com o filtro ``tiposTurma``.
             ano_letivo: Ano letivo consultado.
             codigo_aluno: Código EOL do aluno.
-            componente_curricular_codigo: Aceito na rota mas ignorado.
+            componente_curricular_codigo: Componente exigido nas turmas
+                quando ``filtra_por_componente``; do contrário ignorado.
 
         Returns:
-            Lista de códigos de turma (inteiros), ou lista vazia quando não
-            houver correspondência.
+            Códigos de turma como string, lista vazia quando não houver
+            correspondência, ou a resposta de erro da API de origem; 400
+            quando o componente exigido não é numérico.
         """
+        componente = None
+        if self.filtra_por_componente:
+            try:
+                componente = int(componente_curricular_codigo)
+            except ValueError:
+                return detail_response(
+                    "componente_curricular_codigo deve ser inteiro."
+                )
         tipos_turma = _query_int_list(request, "tiposTurma", "tipos_turma")
         try:
             codigos = services.montar_codigos_turmas_regulares_aluno(
                 ano_letivo=ano_letivo,
                 codigo_aluno=codigo_aluno,
                 tipos_turma=tipos_turma,
+                componente_codigo=componente,
             )
         except httpx.HTTPStatusError as exc:
             return _api_error_response(exc)
@@ -2280,6 +2374,43 @@ class CodigoTurmaAlunoComponenteCurricularView(AlunosAPIView):
             return _api_unavailable_response(exc)
         # Os códigos são devolvidos como string (IReadOnlyList<string>).
         return Response([str(codigo) for codigo in codigos])
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Turma"],
+        description=(
+            "DEPRECADO — use `GET /api/turmas/anos-letivos/{ano_letivo}"
+            "/alunos/{codigo_aluno}/turmas-por-componente/"
+            "{componente_curricular_codigo}`. Retorna os códigos de turma "
+            "do aluno no ano letivo; o código do componente curricular é "
+            "aceito na rota mas ignorado."
+        ),
+        deprecated=True,
+        parameters=_parametros_turmas_aluno_componente(),
+        responses={200: OpenApiResponse(description="Success")},
+    )
+)
+class CodigoTurmaAlunoComponenteCurricularView(_CodigoTurmaAlunoBaseView):
+    """Lista códigos de turma do aluno, ignorando o componente curricular."""
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Turma"],
+        description=(
+            "Retorna os códigos de turma do aluno no ano letivo que têm o "
+            "componente curricular, direto ou como pai vigente de um "
+            "componente da turma."
+        ),
+        parameters=_parametros_turmas_aluno_componente(),
+        responses={200: OpenApiResponse(description="Success")},
+    )
+)
+class CodigoTurmaAlunoPorComponenteView(_CodigoTurmaAlunoBaseView):
+    """Lista códigos de turma regulares do aluno que têm o componente."""
+
+    filtra_por_componente = True
 
 
 class AlunoNecessidadesEspeciaisView(AlunosAPIView):

@@ -5,6 +5,7 @@ from django.urls import path
 from apps.alunos.views import (
     AcompanhamentoEscolarTurmaView,
     AlunoAutocompleteAtivosView,
+    AlunoAutocompleteUePorSituacaoView,
     AlunoAutocompleteUeView,
     AlunoInformacoesView,
     AlunoMatriculasTurmaView,
@@ -26,6 +27,7 @@ from apps.alunos.views import (
     AlunoTurmasView,
     CodigosTurmasRegularesAlunoView,
     CodigoTurmaAlunoComponenteCurricularView,
+    CodigoTurmaAlunoPorComponenteView,
     DadosAcompanhamentoEscolarView,
     DadosResponsavelView,
     FiliacaoAlunoView,
@@ -134,6 +136,12 @@ turma_urlpatterns = [
         CodigoTurmaAlunoComponenteCurricularView.as_view(),
         name="codigo-turma-aluno-componente-curricular",
     ),
+    path(
+        "anos-letivos/<str:ano_letivo>/alunos/<str:codigo_aluno>/"  # NOSONAR
+        "turmas-por-componente/<str:componente_curricular_codigo>",
+        CodigoTurmaAlunoPorComponenteView.as_view(),
+        name="codigo-turma-aluno-por-componente",
+    ),
 ]
 
 urlpatterns = [
@@ -152,6 +160,12 @@ urlpatterns = [
         "ues/<str:codigo_ue>/anosLetivos/<str:ano_letivo>/autocomplete",
         AlunoAutocompleteUeView.as_view(),
         name="aluno-autocomplete-ue",
+    ),
+    path(
+        "ues/<str:codigo_ue>/anosLetivos/<str:ano_letivo>/"
+        "autocomplete-por-situacao",
+        AlunoAutocompleteUePorSituacaoView.as_view(),
+        name="aluno-autocomplete-ue-por-situacao",
     ),
     path(
         "dados-acompanhamento-escolar",
