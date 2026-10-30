@@ -1,7 +1,7 @@
 """Views do domínio de alunos."""
 
 import json
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any, cast
 
 import httpx
@@ -91,7 +91,7 @@ class _ExemploDadosCadastrais(OpenApiExample):
     @property
     def value(self) -> dict[str, Any]:
         """Monta o corpo de exemplo a cada leitura do schema."""
-        agora = datetime.now(UTC)
+        agora = datetime.now(timezone.utc)
         return {
             "id": 0,
             "cpf": "string",
