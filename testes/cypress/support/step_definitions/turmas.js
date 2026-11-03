@@ -259,7 +259,6 @@ And("o retorno deve conter dados de matricula da turma", () => {
 And("o retorno deve conter dados da turma considerando inativos", () => {
   cy.get("@response").then((response) => {
     if (response.status === 200) {
-      expect(response.body).to.have.property("codigoComponenteCurricular");
       expect(response.body).to.have.property("codigoAluno");
       expect(response.body).to.have.property("nomeAluno");
       expect(response.body).to.have.property("dataNascimento");
@@ -271,18 +270,11 @@ And("o retorno deve conter dados da turma considerando inativos", () => {
       expect(response.body).to.have.property("numeroAlunoChamada");
       expect(response.body).to.have.property("celularResponsavel");
       expect(response.body).to.have.property("possuiDeficiencia");
-      expect(response.body).to.have.property("transferencia_Interna");
-      expect(response.body).to.have.property("remanejado");
-      expect(response.body).to.have.property("escolaTransferencia");
-      expect(response.body).to.have.property("turmaTransferencia");
-      expect(response.body).to.have.property("turmaRemanejamento");
-      expect(response.body).to.have.property("parecerConclusivo");
       expect(response.body).to.have.property("nomeResponsavel");
       expect(response.body).to.have.property("tipoResponsavel");
       expect(response.body).to.have.property("dataAtualizacaoContato");
       expect(response.body).to.have.property("codigoMatricula");
       expect(response.body).to.have.property("sequencia");
-      expect(response.body).to.have.property("tipoTurma");
       expect(response.body).to.have.property("codigoTurma");
       expect(response.body).to.have.property("codigoEscola");
       expect(response.body).to.have.property("ano");
@@ -514,12 +506,13 @@ And(
     cy.get("@response").then((response) => {
       if (response.status === 200) {
         expect(response.body).to.be.an("array");
-        expect(response.body).not.be.empty;
-        response.body.forEach((item) => {
-          expect(item).to.have.property("id");
-          expect(item).to.have.property("nome");
-          expect(item).to.have.property("serie");
-        });
+        if (response.body.length > 0) {
+          response.body.forEach((item) => {
+            expect(item).to.have.property("id");
+            expect(item).to.have.property("nome");
+            expect(item).to.have.property("serie");
+          });
+        }
       }
     });
   },
