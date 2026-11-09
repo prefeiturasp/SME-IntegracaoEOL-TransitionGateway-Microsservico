@@ -180,6 +180,14 @@ def _cliente_autenticado() -> APIClient:
 class ComponentesTurmaViewSetTest(SimpleTestCase):
     """Valida a view de componentes por turmas de uma UE."""
 
+    def setUp(self) -> None:
+        self.enterContext(
+            patch(
+                "apps.core.cache_responses.cache.obter_ou_calcular",
+                side_effect=lambda chave, calcular, ttl: calcular(),
+            )
+        )
+
     @patch("apps.pedagogico.views.services.get_componentes_por_turmas_ue")
     def test_200_repassa_turmas(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_BASE_CC]
@@ -1378,6 +1386,14 @@ class SincronizacoesInstitucionaisAnosLetivosViewSetTest(SimpleTestCase):
 class ItinerariosEnsinoMedioViewSetTest(SimpleTestCase):
     """Valida a listagem de itinerários do ensino médio."""
 
+    def setUp(self) -> None:
+        self.enterContext(
+            patch(
+                "apps.core.cache_responses.cache.obter_ou_calcular",
+                side_effect=lambda chave, calcular, ttl: calcular(),
+            )
+        )
+
     @patch("apps.pedagogico.views.services.get_itinerarios_ensino_medio")
     def test_200_converte_serie_e_preserva_ordem_e_duplicidades(
         self,
@@ -1390,7 +1406,7 @@ class ItinerariosEnsinoMedioViewSetTest(SimpleTestCase):
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(
-            resp.data,
+            resp.json(),
             [
                 {
                     "id": 9,
@@ -1417,7 +1433,7 @@ class ItinerariosEnsinoMedioViewSetTest(SimpleTestCase):
         resp = client.get(f"{_PREFIX_TURMAS}/itinerario/ensino-medio")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.data, [])
+        self.assertEqual(resp.json(), [])
 
     def test_403_sem_autenticacao(self) -> None:
         client = APIClient()
@@ -1534,6 +1550,14 @@ class ItinerariosEnsinoMedioViewSetTest(SimpleTestCase):
 class ModalidadesEnsinoViewSetTest(SimpleTestCase):
     """Valida a listagem de modalidades de ensino."""
 
+    def setUp(self) -> None:
+        self.enterContext(
+            patch(
+                "apps.core.cache_responses.cache.obter_ou_calcular",
+                side_effect=lambda chave, calcular, ttl: calcular(),
+            )
+        )
+
     @patch("apps.pedagogico.views.services.get_modalidades_ensino")
     def test_200_retorna_lista_de_strings(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = ["Infantil", "Fundamental"]
@@ -1542,7 +1566,7 @@ class ModalidadesEnsinoViewSetTest(SimpleTestCase):
         resp = client.get(f"{_PREFIX_ESCOLAS}/modalidades_ensino")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.data, ["Infantil", "Fundamental"])
+        self.assertEqual(resp.json(), ["Infantil", "Fundamental"])
 
     @patch("apps.pedagogico.views.services.get_modalidades_ensino")
     def test_404_quando_vazio(self, mock_svc: MagicMock) -> None:
@@ -2259,6 +2283,14 @@ class ComponentesCurricularesViewSetTest(SimpleTestCase):
 class GradeComponentesCurricularesViewSetTest(SimpleTestCase):
     """Valida a view de grade curricular por ano letivo."""
 
+    def setUp(self) -> None:
+        self.enterContext(
+            patch(
+                "apps.core.cache_responses.cache.obter_ou_calcular",
+                side_effect=lambda chave, calcular, ttl: calcular(),
+            )
+        )
+
     @patch("apps.pedagogico.views.services.get_grade_curricular")
     def test_200_retorna_grade(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_GRADE]
@@ -2268,15 +2300,23 @@ class GradeComponentesCurricularesViewSetTest(SimpleTestCase):
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(
-            resp.data[0]["codigoComponenteCurricular"],
+            resp.json()[0]["codigoComponenteCurricular"],
             1,
         )
-        self.assertEqual(resp.data[0]["codigoAnoTurma"], "1")
+        self.assertEqual(resp.json()[0]["codigoAnoTurma"], "1")
         mock_svc.assert_called_once_with(2024)
 
 
 class ComponentesRegenciaViewSetTest(SimpleTestCase):
     """Valida a view de componentes de regencia."""
+
+    def setUp(self) -> None:
+        self.enterContext(
+            patch(
+                "apps.core.cache_responses.cache.obter_ou_calcular",
+                side_effect=lambda chave, calcular, ttl: calcular(),
+            )
+        )
 
     @patch("apps.pedagogico.views.services.get_componentes_regencia")
     def test_200_retorna_regencia(self, mock_svc: MagicMock) -> None:
@@ -2286,14 +2326,14 @@ class ComponentesRegenciaViewSetTest(SimpleTestCase):
         resp = client.get(f"{_PREFIX}/anos/2024/regencia")
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.data[0]["anoTurma"], "1")
-        self.assertEqual(resp.data[0]["anoLetivo"], 2024)
+        self.assertEqual(resp.json()[0]["anoTurma"], "1")
+        self.assertEqual(resp.json()[0]["anoLetivo"], 2024)
         self.assertEqual(
-            resp.data[0]["codigoComponenteTerritorioSaber"],
+            resp.json()[0]["codigoComponenteTerritorioSaber"],
             0,
         )
         self.assertEqual(
-            resp.data[0]["componentePlanejamentoRegencia"],
+            resp.json()[0]["componentePlanejamentoRegencia"],
             False,
         )
         mock_svc.assert_called_once_with(2024)
@@ -2471,6 +2511,14 @@ class ComponentesPlanejamentoViewSetTest(SimpleTestCase):
 
 class ComponentesPorListaTurmasViewSetTest(SimpleTestCase):
     """Valida a view de componentes por lista de turmas."""
+
+    def setUp(self) -> None:
+        self.enterContext(
+            patch(
+                "apps.core.cache_responses.cache.obter_ou_calcular",
+                side_effect=lambda chave, calcular, ttl: calcular(),
+            )
+        )
 
     @patch("apps.pedagogico.views.services.get_componentes_por_lista_turmas")
     def test_repassa_turmas_e_planejamento(
@@ -2673,6 +2721,14 @@ _AGRUPAMENTO: dict[str, Any] = {
 class AgrupamentosCorrelacionadosViewSetTest(SimpleTestCase):
     """Valida a view de agrupamentos correlacionados por cod_agrupamento."""
 
+    def setUp(self) -> None:
+        self.enterContext(
+            patch(
+                "apps.core.cache_responses.cache.obter_ou_calcular",
+                side_effect=lambda chave, calcular, ttl: calcular(),
+            )
+        )
+
     @patch("apps.pedagogico.views.services.get_agrupamentos_correlacionados")
     def test_200_sem_data_base_tick(self, mock_svc: MagicMock) -> None:
         mock_svc.return_value = [_AGRUPAMENTO]
@@ -2683,9 +2739,11 @@ class AgrupamentosCorrelacionadosViewSetTest(SimpleTestCase):
         )
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.data[0]["codigo"], 9001)
-        self.assertEqual(resp.data[0]["territorioSaber"], True)
-        self.assertEqual(resp.data[0]["codigosTerritoriosAgrupamento"], [1214])
+        self.assertEqual(resp.json()[0]["codigo"], 9001)
+        self.assertEqual(resp.json()[0]["territorioSaber"], True)
+        self.assertEqual(
+            resp.json()[0]["codigosTerritoriosAgrupamento"], [1214]
+        )
         mock_svc.assert_called_once_with(
             codigo_componente=1214,
             data_base_tick=None,
@@ -2710,6 +2768,14 @@ class AgrupamentosCorrelacionadosViewSetTest(SimpleTestCase):
 
 class AgrupamentosCorrelacionadosLoteViewSetTest(SimpleTestCase):
     """Valida a view de agrupamentos correlacionados em lote."""
+
+    def setUp(self) -> None:
+        self.enterContext(
+            patch(
+                "apps.core.cache_responses.cache.obter_ou_calcular",
+                side_effect=lambda chave, calcular, ttl: calcular(),
+            )
+        )
 
     @patch("apps.pedagogico.views.services.post_agrupamentos_correlacionados")
     def test_200_repassa_ids(self, mock_svc: MagicMock) -> None:

@@ -70,6 +70,7 @@ const envKeys = [
   "DISCIPLINA_ID_INEXISTENTE",
   "REGISTRO_FUNCIONAL_EMEI",
   "ID_PERFIL",
+  "UE_CODIGO_ALUNOS",
 ];
 
 export default defineConfig({

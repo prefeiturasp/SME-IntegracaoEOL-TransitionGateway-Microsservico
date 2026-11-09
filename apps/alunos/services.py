@@ -105,7 +105,8 @@ def get_alunos_autocomplete_ue(
         codigo_turmas: Códigos de turma usados como filtro opcional.
         nome_aluno: Nome parcial do aluno para filtro.
         codigo_eol: Código EOL do aluno para filtro direto.
-        somente_ativos: Indicador repassado por compatibilidade.
+        somente_ativos: Indicador repassado ao sidecar apenas quando
+            informado; as rotas que não filtram por situação o omitem.
         eh_historico: Consulta os vínculos históricos quando verdadeiro.
         limite: Quantidade máxima de resultados.
 
@@ -366,8 +367,9 @@ def atualizar_dados_responsavel(
         httpx.HTTPStatusError: Se o serviço retornar status de erro.
         httpx.RequestError: Se o serviço estiver inacessível.
     """
-    resp = _client.post(
-        f"{_BASE}/{codigo_aluno}/responsaveis/{cpf_responsavel}",
+    resp = _client.put(
+        f"{_BASE}/{codigo_aluno}/responsaveis/{cpf_responsavel}"
+        "/dados-cadastrais",
         payload=payload,
     )
     resp.raise_for_status()
@@ -394,7 +396,7 @@ def atualizar_dados_responsavel_busca_ativa(
         httpx.RequestError: Se o serviço estiver inacessível.
     """
     resp = _client.put(
-        f"{_BASE}/{codigo_aluno}/responsaveis/{cpf_responsavel}",
+        f"{_BASE}/{codigo_aluno}/responsaveis/{cpf_responsavel}/contatos",
         payload=payload,
     )
     resp.raise_for_status()
@@ -1093,6 +1095,7 @@ def _calcular_turmas_regulares_aluno(
     ue_codigo: str | None,
     data_referencia: str | None,
     semestre: int | None,
+    componente_codigo: int | None = None,
 ) -> list[int]:
     """Busca e intersecta os códigos de turma regulares do aluno.
 
@@ -1106,6 +1109,8 @@ def _calcular_turmas_regulares_aluno(
         ue_codigo: Código da UE; sem filtro quando ausente.
         data_referencia: Data de referência (ISO) do filtro de situação.
         semestre: Semestre da turma; sem filtro quando ausente.
+        componente_codigo: Componente exigido nas turmas; sem filtro quando
+            ausente.
 
     Returns:
         Códigos de turma que atendem ao recorte, na ordem do Alunos-MS.
@@ -1123,7 +1128,7 @@ def _calcular_turmas_regulares_aluno(
         return []
     permitidos = set(
         pedagogico_services.get_turmas_recorte_por_tipo(
-            codigos, tipos_turma, ue_codigo, semestre
+            codigos, tipos_turma, ue_codigo, semestre, componente_codigo
         )
     )
     return [codigo for codigo in codigos if codigo in permitidos]
@@ -1136,6 +1141,7 @@ def montar_codigos_turmas_regulares_aluno(
     ue_codigo: str | None = None,
     data_referencia: str | None = None,
     semestre: int | None = None,
+    componente_codigo: int | None = None,
 ) -> list[int]:
     """Compõe os códigos de turma regulares do aluno.
 
@@ -1146,6 +1152,8 @@ def montar_codigos_turmas_regulares_aluno(
         ue_codigo: Código da UE; sem filtro quando ausente.
         data_referencia: Data de referência (ISO) do filtro de situação.
         semestre: Semestre da turma; sem filtro quando ausente.
+        componente_codigo: Componente exigido nas turmas; sem filtro quando
+            ausente.
 
     Returns:
         Códigos de turma que atendem ao recorte, na ordem do Alunos-MS.
@@ -1162,6 +1170,8 @@ def montar_codigos_turmas_regulares_aluno(
         data_referencia or "",
         semestre if semestre is not None else "",
     )
+    if componente_codigo is not None:
+        chave += f":componente={componente_codigo}"
     return cache.obter_ou_calcular(
         chave,
         lambda: _calcular_turmas_regulares_aluno(
@@ -1171,6 +1181,7 @@ def montar_codigos_turmas_regulares_aluno(
             ue_codigo,
             data_referencia,
             semestre,
+            componente_codigo,
         ),
         cache.TTL_RECOMENDADO_MINUTOS,
     )

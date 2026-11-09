@@ -972,8 +972,44 @@ class MontarCodigosTurmasRegularesAlunoTest(SimpleTestCase):
         self.assertEqual(result, [23456, 12345])
         mock_alunos.assert_called_once_with("2026", "7000001", None)
         mock_recorte.assert_called_once_with(
-            [23456, 12345, 99999], [1], "000006", 1
+            [23456, 12345, 99999], [1], "000006", 1, None
         )
+
+    @patch("apps.pedagogico.services.get_turmas_recorte_por_tipo")
+    @patch("apps.alunos.services.get_codigos_turmas_regulares_aluno")
+    def test_repassa_componente_ao_recorte(
+        self, mock_alunos: MagicMock, mock_recorte: MagicMock
+    ) -> None:
+        """Entrega o componente ao microsserviço designado e mantém a ordem."""
+        mock_alunos.return_value = [23456, 12345, 99999]
+        mock_recorte.return_value = [12345]
+
+        result = services.montar_codigos_turmas_regulares_aluno(
+            ano_letivo="2026",
+            codigo_aluno="7000001",
+            componente_codigo=9999,
+        )
+
+        self.assertEqual(result, [12345])
+        mock_recorte.assert_called_once_with(
+            [23456, 12345, 99999], None, None, None, 9999
+        )
+
+    @patch("apps.alunos.services.cache.obter_ou_calcular")
+    def test_chave_de_cache_distingue_o_componente(
+        self, mock_obter_ou_calcular: MagicMock
+    ) -> None:
+        """Evita que a rota sem filtro e a com filtro compartilhem cache."""
+        mock_obter_ou_calcular.return_value = []
+
+        services.montar_codigos_turmas_regulares_aluno("2026", "7000001")
+        services.montar_codigos_turmas_regulares_aluno(
+            "2026", "7000001", componente_codigo=9999
+        )
+
+        chaves = [c.args[0] for c in mock_obter_ou_calcular.call_args_list]
+        self.assertEqual(len(set(chaves)), 2)
+        self.assertTrue(chaves[1].endswith(":componente=9999"))
 
     @patch("apps.pedagogico.services.get_turmas_recorte_por_tipo")
     @patch("apps.alunos.services.get_codigos_turmas_regulares_aluno")
@@ -1057,6 +1093,19 @@ class GetAlunosAutocompleteUeTest(SimpleTestCase):
             },
         )
         self.assertEqual(result, payload)
+
+    @patch.object(services._client, "get")
+    def test_omite_somente_ativos_quando_nao_informado(
+        self, mock_get: MagicMock
+    ) -> None:
+        """Valida que o parâmetro ``somente_ativos`` não é enviado quando não informado."""
+        mock_get.return_value = _resp_lista([])
+
+        services.get_alunos_autocomplete_ue(
+            codigo_ue="100001", ano_letivo="2026"
+        )
+
+        self.assertNotIn("somente_ativos", mock_get.call_args.kwargs["params"])
 
     @patch.object(services._client, "get")
     def test_params_minimos(self, mock_get: MagicMock) -> None:
@@ -1235,28 +1284,28 @@ class Lote5ResponsaveisENomesServiceTest(SimpleTestCase):
         mock_get.return_value.raise_for_status.assert_called_once_with()
         self.assertEqual(result, payload)
 
-    @patch.object(services._client, "post")
-    def test_post_responsavel_repassa_payload(
-        self, mock_post: MagicMock
+    @patch.object(services._client, "put")
+    def test_atualizar_dados_cadastrais_repassa_payload(
+        self, mock_put: MagicMock
     ) -> None:
-        """Verifica a atualização cadastral."""
+        """Verifica a atualização cadastral na rota dedicada do sidecar."""
         payload = {"email": "novo@sme.com.br"}
-        mock_post.return_value = _resp_lista([])
-        mock_post.return_value.content = b"true"
-        mock_post.return_value.json.return_value = True
+        mock_put.return_value = _resp_lista([])
+        mock_put.return_value.content = b"true"
+        mock_put.return_value.json.return_value = True
 
         result = services.atualizar_dados_responsavel(
             "1234567", "12345678901", payload
         )
 
-        mock_post.assert_called_once_with(
-            f"{_BASE}/1234567/responsaveis/12345678901",
+        mock_put.assert_called_once_with(
+            f"{_BASE}/1234567/responsaveis/12345678901/dados-cadastrais",
             payload=payload,
         )
         self.assertTrue(result)
 
     @patch.object(services._client, "put")
-    def test_put_responsavel_preserva_retorno_falso(
+    def test_atualizar_contatos_preserva_retorno_falso(
         self, mock_put: MagicMock
     ) -> None:
         """Verifica a atualização de contatos sem vínculo encontrado."""
@@ -1269,7 +1318,7 @@ class Lote5ResponsaveisENomesServiceTest(SimpleTestCase):
         )
 
         mock_put.assert_called_once_with(
-            f"{_BASE}/1234567/responsaveis/00000000000",
+            f"{_BASE}/1234567/responsaveis/00000000000/contatos",
             payload={"email": None},
         )
         self.assertFalse(result)
