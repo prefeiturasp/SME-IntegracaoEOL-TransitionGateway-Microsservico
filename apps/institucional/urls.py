@@ -75,7 +75,7 @@ urlpatterns = [
     path(
         "DREs/<str:codigo_eol_dre>/escolas",
         EscolasPorDREouEscolaOuSigpaeView.as_view(),
-        name="escolas-por-dre-tipo",
+        name="escolas-por-dre-tipo-ou-sigpae",
     ),
     path(
         "DREs/<str:codigo_eol_dre>/supervisores",

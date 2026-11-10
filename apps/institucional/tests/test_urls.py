@@ -57,6 +57,12 @@ class URLsInstitucionalTest(SimpleTestCase):
         self.assertEqual(match.kwargs["codigo_eol_dre"], "100000")
         self.assertEqual(match.kwargs["tipo_escola"], "EMEF")
 
+    def test_escolas_por_dre_com_filtros_resolve(self) -> None:
+        """Resolve a rota com filtros opcionais para a nova view."""
+        match = resolve("/api/DREs/100000/escolas")
+        self.assertEqual(match.view_name, "escolas-por-dre-tipo-ou-sigpae")
+        self.assertEqual(match.kwargs, {"codigo_eol_dre": "100000"})
+
     def test_escola_tipos_escolas_resolve(self) -> None:
         match = resolve("/api/escolas/tiposEscolas")
         self.assertEqual(match.view_name, "escola-tipos-escolas")

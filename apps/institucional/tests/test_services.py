@@ -2,6 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
+import httpx
 from django.test import SimpleTestCase
 
 from apps.institucional import services
@@ -135,6 +136,83 @@ class GetEscolasSigpaePorDRETest(SimpleTestCase):
         result = services.get_escolas_sigpae_por_dre("X1")
 
         self.assertIsNone(result)
+
+
+class GetEscolasPorDRETipoTest(SimpleTestCase):
+    """Valida a consulta de escolas por DRE com tipo opcional."""
+
+    @patch("apps.institucional.services._client")
+    def test_chama_path_sem_tipo_escola(self, mock_client: MagicMock) -> None:
+        """Consulta escolas da DRE sem enviar filtro de tipo."""
+        escolas = [{"codigoEscola": "000001", "nomeEscola": "EMEF TESTE"}]
+        mock_client.json_or_none.return_value = escolas
+
+        result = services.get_escolas_por_dre_tipo("100000")
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/dres/100000/escolas/", params={}
+        )
+        mock_client.get.return_value.raise_for_status.assert_called_once_with()
+        mock_client.json_or_none.assert_called_once_with(
+            mock_client.get.return_value
+        )
+        self.assertEqual(result, escolas)
+
+    @patch("apps.institucional.services._client")
+    def test_envia_tipo_escola_id(self, mock_client: MagicMock) -> None:
+        """Traduz o filtro de tipo para o parâmetro esperado pelo sidecar."""
+        escolas = [{"codigoEscola": "000001", "nomeEscola": "EMEF TESTE"}]
+        mock_client.json_or_none.return_value = escolas
+
+        result = services.get_escolas_por_dre_tipo("100000", "1")
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/dres/100000/escolas/", params={"tipo_escola_id": "1"}
+        )
+        mock_client.get.return_value.raise_for_status.assert_called_once_with()
+        mock_client.json_or_none.assert_called_once_with(
+            mock_client.get.return_value
+        )
+        self.assertEqual(result, escolas)
+
+    @patch("apps.institucional.services._client")
+    def test_tipo_escola_vazio_nao_envia_filtro(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Omite o filtro quando o tipo é uma string vazia."""
+        mock_client.json_or_none.return_value = []
+
+        result = services.get_escolas_por_dre_tipo("100000", "")
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/dres/100000/escolas/", params={}
+        )
+        self.assertEqual(result, [])
+
+    @patch("apps.institucional.services._client")
+    def test_retorna_none_quando_sem_conteudo(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Retorna None quando o sidecar responde sem conteúdo."""
+        mock_client.json_or_none.return_value = None
+
+        result = services.get_escolas_por_dre_tipo("100000")
+
+        self.assertIsNone(result)
+
+    @patch("apps.institucional.services._client")
+    def test_propaga_erro_http(self, mock_client: MagicMock) -> None:
+        """Propaga erro HTTP sem tentar desserializar a resposta."""
+        mock_response = mock_client.get.return_value
+        mock_response.status_code = 404
+        mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+            "404", request=MagicMock(), response=mock_response
+        )
+
+        with self.assertRaises(httpx.HTTPStatusError):
+            services.get_escolas_por_dre_tipo("INEXISTENTE", "1")
+
+        mock_client.json_or_none.assert_not_called()
 
 
 class GetUesPorDRETest(SimpleTestCase):
