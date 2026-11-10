@@ -120,6 +120,32 @@ def get_escolas_sigpae_por_dre(codigo_dre: str) -> Any:
     return _client.json_or_none(resp)
 
 
+def get_escolas_por_dre_tipo(
+    codigo_dre: str, tipo_escola: str | None = None
+) -> Any:
+    """Lista escolas de uma Diretoria Regional de Educação por tipo e formato.
+
+    Args:
+        codigo_dre: Código da Diretoria Regional de Educação.
+        tipo_escola: Tipo de escola usado no filtro.
+
+    Returns:
+        Escolas vinculadas à Diretoria Regional de Educação, ao tipo
+        informado e no formato solicitado.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status
+            HTTP de erro.
+    """
+    parametros = {"tipo_escola_id": tipo_escola} if tipo_escola else {}
+    resp = _client.get(
+        f"{_BASE}/dres/{codigo_dre}/escolas/",
+        params=parametros,
+    )
+    resp.raise_for_status()
+    return _client.json_or_none(resp)
+
+
 def get_escolas_por_dre_e_tipo(codigo_dre: str, tipo_escola: str) -> Any:
     """Lista escolas de uma Diretoria Regional de Educação por tipo.
 

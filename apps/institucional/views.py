@@ -368,6 +368,81 @@ class SubprefeiturasPorDREView(InstitucionalAPIView):
         return Response(data)
 
 
+class EscolasPorDREouEscolaOuSigpaeView(InstitucionalAPIView):
+    """Lista escolas de uma DRE de acordo com filtros."""
+
+    @extend_schema(
+        tags=_TAG_DRE,
+        summary="Escolas de uma DRE por tipo e/ou escolas no formato SIGPAE.",
+        description=(
+            "Retorna lista de unidades educacionais vinculadas de acordo"
+            " com o filtro utilzado.\n\n"
+            "Contrato D12: "
+            "`GET /api/DREs/{codigoEolDRE}/escolas/`"
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="codigo_eol_dre",
+                location=OpenApiParameter.PATH,
+                description="Código EOL da DRE",
+                required=True,
+                type=str,
+            ),
+            OpenApiParameter(
+                name="tipo_escola",
+                location=OpenApiParameter.QUERY,
+                description="Código do tipo de escola",
+                required=False,
+                type=int,
+            ),
+            OpenApiParameter(
+                name="formato_sigpae",
+                location=OpenApiParameter.QUERY,
+                description="Indica se as escolas devem"
+                " ser filtradas no formato SIGPAE",
+                required=False,
+                type=bool,
+            ),
+        ],
+        responses={200: EscolaSigpaeSerializer(many=True), 404: None},
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_eol_dre: str,
+    ) -> Response:
+        """Retorna escolas por DRE, filtradas por tipo ou no formato SIGPAE."""
+        funcoes_formato = {
+            False: _filtrar_escola_por_dre_tipo,
+            True: _filtrar_escola_sigpae,
+        }
+
+        if not codigo_eol_dre.strip():
+            return Response(
+                "Código EOL da DRE obrigatório.",
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        parametros = _request.query_params.dict()
+        formato_sigpae = parametros.get("formato_sigpae", "false") == "true"
+        tipo_escola = parametros.get("tipo_escola", None)
+        if funcoes_formato.get(formato_sigpae) is None:
+            return Response(
+                "Formato inválido. Use 'true' ou 'false'.",
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            data = services.get_escolas_por_dre_tipo(
+                codigo_eol_dre, tipo_escola
+            )
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+            raise
+        return Response(
+            [funcoes_formato.get(formato_sigpae, lambda x: x)(e) for e in data]
+        )
+
+
 class EscolasPorDREeTipoView(InstitucionalAPIView):
     """Lista escolas de uma DRE por tipo."""
 
