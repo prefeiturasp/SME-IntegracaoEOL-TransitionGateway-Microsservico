@@ -638,7 +638,7 @@ class DadosEscolaView(InstitucionalAPIView):
         ),
         parameters=[
             OpenApiParameter(
-                name="codigo_escola_eol",
+                name="codigoEscolaEol",
                 location=OpenApiParameter.PATH,
                 description="Código EOL da escola",
                 required=True,
@@ -647,9 +647,9 @@ class DadosEscolaView(InstitucionalAPIView):
         ],
         responses={200: DadosEscolaSerializer, 404: None},
     )
-    def get(self, _request: Request, codigo_escola_eol: str) -> Response:
+    def get(self, _request: Request, codigoEscolaEol: str) -> Response:
         try:
-            data = services.get_dados_escola(codigo_escola_eol)
+            data = services.get_dados_escola(codigoEscolaEol)
         except httpx.HTTPStatusError as exc:
             if exc.response.status_code == 404:
                 return Response(status=status.HTTP_404_NOT_FOUND)
