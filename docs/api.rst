@@ -138,6 +138,8 @@ Pedagógico
 
 .. autoclass:: apps.pedagogico.views.AgrupamentosTerritorioViewSet
 
+.. autoclass:: apps.pedagogico.views.ComponentesConsolidadosViewSet
+
 Professores
 -----------
 
