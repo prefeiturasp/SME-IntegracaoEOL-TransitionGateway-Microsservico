@@ -79,6 +79,37 @@ _UNIDADE_CODIGO_INTEGRACAO = {
     "codigoIntegracao": None,
 }
 
+_UNIDADE_COMPLETA = {
+    "codigoEol": "000001",
+    "nomeOficial": "EMEF TESTE",
+    "nomeNaoOficial": None,
+    "tipoUnidadeAdmin": "DIRETORIA REGIONAL DE EDUCACAO",
+    "tipoUE": "ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL",
+    "logadouro": "RUA TESTE",
+    "numero": "100",
+    "bairro": "IPIRANGA",
+    "cep": 1310100,
+    "distrito": "IPIRANGA",
+    "subPrefeitura": "IPIRANGA",
+    "nomeDre": "DRE IPIRANGA",
+    "email": None,
+    "telefone1": None,
+    "telefone2": None,
+    "anoConstrucao": None,
+    "propriedade": None,
+    "capacidadeVagasMatutino": 100,
+    "capacidadeVagasVespertino": 100,
+    "capacidadeVagasNoturno": 0,
+    "capacidadeVagasIntermediario": 0,
+    "capacidadeVagasIntegral": 0,
+    "capacidadeVagasTotal": 200,
+    "organizacaoParceira": False,
+    "quantidadeDeFuncionarios": 20,
+    "status": "ATIVO",
+    "subprefeituraId": 13,
+    "tipoUnidadeAdmId": 24,
+}
+
 _TIPO_ESCOLA = {
     "codigo": 1,
     "descricaoSigla": "EMEF",
@@ -445,7 +476,7 @@ class EscolasPorDREeTipoeSigpaeViewTest(SimpleTestCase):
                 with self.subTest(
                     formato_sigpae=formato_sigpae, tipo_escola=tipo_escola
                 ):
-                    parametros = {}
+                    parametros: dict[str, str] = {}
                     if formato_sigpae is not None:
                         parametros["formato_sigpae"] = formato_sigpae
                     if tipo_escola is not None:
@@ -582,6 +613,201 @@ class EscolasPorDREeTipoViewTest(SimpleTestCase):
         )
         with self.assertRaises(httpx.HTTPStatusError):
             _cliente_autenticado().get("/api/DREs/100000/escolas/EMEF")
+
+
+class UnidadesPorDreConsolidadaViewTest(SimpleTestCase):
+    """Valida a consulta de unidades por DRE nos três formatos."""
+
+    @patch(
+        "apps.institucional.views.services.get_unidades_por_dre_consolidadas"
+    )
+    def test_200_retorna_completo_por_padrao(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Assume o retorno completo quando o parâmetro está ausente."""
+        mock_svc.return_value = [_UNIDADE_COMPLETA]
+
+        resp = _cliente_autenticado().get(
+            "/api/DREs/100000/unidades/consolidadas"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), [_UNIDADE_COMPLETA])
+        mock_svc.assert_called_once_with("100000", "completo")
+
+    @patch(
+        "apps.institucional.views.services.get_unidades_por_dre_consolidadas"
+    )
+    def test_200_preserva_contrato_completo(self, mock_svc: MagicMock) -> None:
+        """Preserva todos os campos, valores e a ordem das unidades."""
+        unidades = [
+            {**_UNIDADE_COMPLETA, "codigoEol": "000003"},
+            _UNIDADE_COMPLETA,
+        ]
+        mock_svc.return_value = unidades
+
+        resp = _cliente_autenticado().get(
+            "/api/DREs/100000/unidades/consolidadas", {"retorno": "completo"}
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), unidades)
+        mock_svc.assert_called_once_with("100000", "completo")
+
+    @patch(
+        "apps.institucional.views.services.get_unidades_por_dre_consolidadas"
+    )
+    def test_200_retorna_codigos(self, mock_svc: MagicMock) -> None:
+        """Preserva a ordem dos códigos e seus zeros à esquerda."""
+        mock_svc.return_value = ["000003", "000001"]
+
+        resp = _cliente_autenticado().get(
+            "/api/DREs/100000/unidades/consolidadas", {"retorno": "codigos"}
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), ["000003", "000001"])
+        mock_svc.assert_called_once_with("100000", "codigos")
+
+    @patch(
+        "apps.institucional.views.services.get_unidades_por_dre_consolidadas"
+    )
+    def test_200_filtra_campos_integracao(self, mock_svc: MagicMock) -> None:
+        """Mantém os três campos de integração, incluindo valores nulos."""
+        outra_unidade = {
+            "codigoUe": "000002",
+            "nomeUe": "EMEF OUTRA",
+            "codigoIntegracao": "INT002",
+        }
+        mock_svc.return_value = [
+            {
+                **unidade,
+                "tipoEscolaId": 1,
+                "tipoUnidadeId": 1,
+                "subprefeituraId": 50,
+                "dreId": "100000",
+            }
+            for unidade in (_UNIDADE_CODIGO_INTEGRACAO, outra_unidade)
+        ]
+
+        resp = _cliente_autenticado().get(
+            "/api/DREs/100000/unidades/consolidadas",
+            {"retorno": "integracao"},
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.json(), [_UNIDADE_CODIGO_INTEGRACAO, outra_unidade]
+        )
+        mock_svc.assert_called_once_with("100000", "integracao")
+
+    @patch(
+        "apps.institucional.views.services.get_unidades_por_dre_consolidadas"
+    )
+    def test_200_sem_resultados(self, mock_svc: MagicMock) -> None:
+        """Retorna lista vazia sem resultados ou conteúdo em cada formato."""
+        respostas_vazias: tuple[list[object] | None, ...] = ([], None)
+        for retorno in ("completo", "codigos", "integracao"):
+            for dados in respostas_vazias:
+                with self.subTest(retorno=retorno, dados=dados):
+                    mock_svc.reset_mock()
+                    mock_svc.return_value = dados
+
+                    resp = _cliente_autenticado().get(
+                        "/api/DREs/100000/unidades/consolidadas",
+                        {"retorno": retorno},
+                    )
+
+                    self.assertEqual(resp.status_code, status.HTTP_200_OK)
+                    self.assertEqual(resp.json(), [])
+                    mock_svc.assert_called_once_with("100000", retorno)
+
+    @patch(
+        "apps.institucional.views.services.get_unidades_por_dre_consolidadas"
+    )
+    def test_400_quando_codigo_dre_em_branco(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Rejeita código de DRE em branco sem consultar o serviço."""
+        resp = _cliente_autenticado().get(
+            "/api/DREs/%20/unidades/consolidadas"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(resp.json(), "Código EOL da DRE obrigatório.")
+        mock_svc.assert_not_called()
+
+    @patch(
+        "apps.institucional.views.services.get_unidades_por_dre_consolidadas"
+    )
+    def test_400_quando_retorno_invalido(self, mock_svc: MagicMock) -> None:
+        """Rejeita retorno vazio ou desconhecido sem consultar o serviço."""
+        for retorno in ("", "invalido", "COMPLETO"):
+            with self.subTest(retorno=retorno):
+                resp = _cliente_autenticado().get(
+                    "/api/DREs/100000/unidades/consolidadas",
+                    {"retorno": retorno},
+                )
+
+                self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertEqual(
+                    resp.json(),
+                    "Retorno inválido. Use 'completo', 'codigos' "
+                    "ou 'integracao'.",
+                )
+                mock_svc.assert_not_called()
+
+    @patch(
+        "apps.institucional.views.services.get_unidades_por_dre_consolidadas"
+    )
+    def test_404_quando_servico_retorna_404(self, mock_svc: MagicMock) -> None:
+        """Retorna 404 sem corpo quando o microsserviço responde com 404."""
+        mock_svc.side_effect = _httpx_404()
+
+        resp = _cliente_autenticado().get(
+            "/api/DREs/INEXISTENTE/unidades/consolidadas"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(resp.content, b"")
+        mock_svc.assert_called_once_with("INEXISTENTE", "completo")
+
+    @patch(
+        "apps.institucional.views.services.get_unidades_por_dre_consolidadas"
+    )
+    def test_propaga_erro_http_nao_404(self, mock_svc: MagicMock) -> None:
+        """Propaga HTTPStatusError quando o microsserviço responde com 500."""
+        mock_svc.side_effect = _httpx_status_error(
+            500, {"detail": "Erro interno"}
+        )
+
+        with self.assertRaises(httpx.HTTPStatusError):
+            _cliente_autenticado().get(
+                "/api/DREs/100000/unidades/consolidadas"
+            )
+
+        mock_svc.assert_called_once_with("100000", "completo")
+
+    @patch(
+        "apps.institucional.views.services.get_unidades_por_dre_consolidadas"
+    )
+    def test_503_quando_servico_indisponivel(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna a resposta padronizada para falhas de transporte."""
+        mock_svc.side_effect = httpx.RequestError(
+            "connection failed", request=MagicMock()
+        )
+
+        resp = _cliente_autenticado().get(
+            "/api/DREs/100000/unidades/consolidadas"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(
+            resp.json(), {"detail": "Serviço de institucional indisponível."}
+        )
+        mock_svc.assert_called_once_with("100000", "completo")
 
 
 class UesPorDREViewTest(SimpleTestCase):
