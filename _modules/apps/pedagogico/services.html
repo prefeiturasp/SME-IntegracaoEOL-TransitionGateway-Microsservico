@@ -183,14 +183,17 @@
     <span class="n">tipos_turma</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">ue_codigo</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">semestre</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">componente_codigo</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""Filtra códigos de turma por tipo de turma, UE e semestre.</span>
+<span class="w">    </span><span class="sd">"""Filtra códigos de turma por tipo, UE, semestre e componente.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        codigos: Códigos de turma candidatos (vindos do Alunos-MS).</span>
 <span class="sd">        tipos_turma: Tipos de turma aceitos; sem filtro quando vazio.</span>
 <span class="sd">        ue_codigo: Código da UE; sem filtro quando ausente.</span>
 <span class="sd">        semestre: Semestre da turma; sem filtro quando ausente.</span>
+<span class="sd">        componente_codigo: Componente exigido nas turmas; sem filtro quando</span>
+<span class="sd">            ausente.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Subconjunto dos códigos que atende ao recorte.</span>
@@ -207,6 +210,8 @@
         <span class="n">params</span><span class="p">[</span><span class="s2">"ue_codigo"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ue_codigo</span>
     <span class="k">if</span> <span class="n">semestre</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">params</span><span class="p">[</span><span class="s2">"semestre"</span><span class="p">]</span> <span class="o">=</span> <span class="n">semestre</span>
+    <span class="k">if</span> <span class="n">componente_codigo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">"componente_codigo"</span><span class="p">]</span> <span class="o">=</span> <span class="n">componente_codigo</span>
     <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
         <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE_TURMAS</span><span class="si">}</span><span class="s2">/recorte-por-tipo/"</span><span class="p">,</span>
         <span class="n">payload</span><span class="o">=</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">codigo</span><span class="p">)</span> <span class="k">for</span> <span class="n">codigo</span> <span class="ow">in</span> <span class="n">codigos</span><span class="p">],</span>
@@ -884,12 +889,12 @@
 <span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
 <span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
 <span class="sd">    """</span>
-    <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"turmas"</span><span class="p">:</span> <span class="n">turmas</span><span class="p">}</span>
-
-    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
         <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/ues/</span><span class="si">{</span><span class="n">ue_id</span><span class="si">}</span><span class="s2">/turmas"</span><span class="p">,</span>
-        <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
-    <span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+        <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"turmas"</span><span class="p">:</span> <span class="n">turmas</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
 
 
 
@@ -936,7 +941,9 @@
 <span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
 <span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
 <span class="sd">    """</span>
-    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/anos/</span><span class="si">{</span><span class="n">ano_turma</span><span class="si">}</span><span class="s2">/regencia"</span><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/anos/</span><span class="si">{</span><span class="n">ano_turma</span><span class="si">}</span><span class="s2">/regencia"</span><span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
 
 
 
@@ -1088,7 +1095,7 @@
 <span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
 <span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
 <span class="sd">    """</span>
-    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
         <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/turmas"</span><span class="p">,</span>
         <span class="n">params</span><span class="o">=</span><span class="p">{</span>
             <span class="s2">"codigoTurmas"</span><span class="p">:</span> <span class="n">codigos_turmas</span><span class="p">,</span>
@@ -1097,7 +1104,9 @@
             <span class="p">),</span>
             <span class="s2">"incluirExtintas"</span><span class="p">:</span> <span class="n">incluir_extintas</span><span class="p">,</span>
         <span class="p">},</span>
-    <span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+    <span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
 
 
 
@@ -1340,7 +1349,9 @@
 <span class="sd">        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
 <span class="sd">        ValueError: Se a resposta não puder ser convertida para JSON.</span>
 <span class="sd">    """</span>
-    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/grade-curricular/</span><span class="si">{</span><span class="n">ano_letivo</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/grade-curricular/</span><span class="si">{</span><span class="n">ano_letivo</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
 
 
 
@@ -1367,11 +1378,13 @@
     <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">if</span> <span class="n">data_base_tick</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">params</span><span class="p">[</span><span class="s2">"data_base"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_ticks_dotnet_para_data</span><span class="p">(</span><span class="n">data_base_tick</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
         <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">codigo_componente</span><span class="si">}</span><span class="s2">/territorio-saber"</span>
         <span class="s2">"/agrupamentos-correlacionados/"</span><span class="p">,</span>
         <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
-    <span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+    <span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
 
 
 
@@ -1398,11 +1411,13 @@
     <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">if</span> <span class="n">data_base_tick</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">params</span><span class="p">[</span><span class="s2">"data_base"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_ticks_dotnet_para_data</span><span class="p">(</span><span class="n">data_base_tick</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
         <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/territorio-saber/agrupamentos-correlacionados/"</span><span class="p">,</span>
         <span class="n">payload</span><span class="o">=</span><span class="n">ids</span><span class="p">,</span>
         <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
-    <span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+    <span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
 
 
 

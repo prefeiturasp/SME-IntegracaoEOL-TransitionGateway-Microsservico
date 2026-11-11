@@ -40,12 +40,16 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">cast</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">django.http</span><span class="w"> </span><span class="kn">import</span> <span class="n">HttpResponse</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">drf_spectacular.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenApiTypes</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">drf_spectacular.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenApiParameter</span><span class="p">,</span> <span class="n">extend_schema</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rest_framework.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">NotFound</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">rest_framework.request</span><span class="w"> </span><span class="kn">import</span> <span class="n">Request</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">rest_framework.response</span><span class="w"> </span><span class="kn">import</span> <span class="n">Response</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">apps.alunos.serializers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AlunoMatriculaTurmaSerializer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">apps.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">apps.core.cache_responses</span><span class="w"> </span><span class="kn">import</span> <span class="n">resposta_serializada_cacheada</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">apps.core.datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">validar_data_str</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">apps.core.responses</span><span class="w"> </span><span class="kn">import</span> <span class="n">api_unavailable_response</span><span class="p">,</span> <span class="n">detail_response</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">apps.core.views</span><span class="w"> </span><span class="kn">import</span> <span class="n">DomainAPIView</span>
@@ -74,6 +78,8 @@
 <span class="n">_TAG_TURMA</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Turma"</span><span class="p">]</span>
 <span class="n">_TAG_ESCOLA</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Escola"</span><span class="p">]</span>
 <span class="n">_DOMINIO_PEDAGOGICO</span> <span class="o">=</span> <span class="s2">"pedagogico"</span>
+<span class="c1"># Limita a defasagem das atribuicoes que mudam ao longo do dia.</span>
+<span class="n">_TTL_ATRIBUICOES_MINUTOS</span> <span class="o">=</span> <span class="mi">5</span>
 <span class="n">_RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA</span> <span class="o">=</span> <span class="p">(</span>
     <span class="s2">"Resposta do servico pedagogico invalida."</span>
 <span class="p">)</span>
@@ -819,7 +825,7 @@
         <span class="n">description</span><span class="o">=</span><span class="s2">"Retorna os itinerários disponíveis no ensino médio."</span><span class="p">,</span>
         <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">ItinerarioEnsinoMedioSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)},</span>
     <span class="p">)</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HttpResponse</span> <span class="o">|</span> <span class="n">Response</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Retorna os itinerários do ensino médio.</span>
 
 <span class="sd">        Args:</span>
@@ -829,7 +835,14 @@
 <span class="sd">            Resposta HTTP com os itinerários encontrados.</span>
 <span class="sd">        """</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_itinerarios_ensino_medio</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">resposta_serializada_cacheada</span><span class="p">(</span>
+                <span class="n">_request</span><span class="p">,</span>
+                <span class="n">chave</span><span class="o">=</span><span class="s2">"pedagogico:itinerarios-ensino-medio:v1"</span><span class="p">,</span>
+                <span class="n">buscar</span><span class="o">=</span><span class="n">services</span><span class="o">.</span><span class="n">get_itinerarios_ensino_medio</span><span class="p">,</span>
+                <span class="n">serializer_class</span><span class="o">=</span><span class="n">ItinerarioEnsinoMedioSerializer</span><span class="p">,</span>
+                <span class="n">ttl</span><span class="o">=</span><span class="n">cache</span><span class="o">.</span><span class="n">TTL_RECOMENDADO_MINUTOS</span><span class="p">,</span>
+                <span class="n">validar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">body</span> <span class="o">=</span> <span class="n">exc</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
@@ -845,18 +858,7 @@
             <span class="k">return</span> <span class="n">detail_response</span><span class="p">(</span>
                 <span class="n">_RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA</span><span class="p">,</span>
                 <span class="mi">502</span><span class="p">,</span>
-            <span class="p">)</span>
-
-        <span class="n">serializer</span> <span class="o">=</span> <span class="n">ItinerarioEnsinoMedioSerializer</span><span class="p">(</span>
-            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
-            <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">serializer</span><span class="o">.</span><span class="n">is_valid</span><span class="p">():</span>
-            <span class="k">return</span> <span class="n">detail_response</span><span class="p">(</span>
-                <span class="n">_RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA</span><span class="p">,</span>
-                <span class="mi">502</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">serializer</span><span class="o">.</span><span class="n">validated_data</span><span class="p">)</span></div>
+            <span class="p">)</span></div>
 
 
 
@@ -871,7 +873,7 @@
             <span class="mi">404</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">)</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HttpResponse</span> <span class="o">|</span> <span class="n">Response</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Retorna as descrições das modalidades de ensino.</span>
 
 <span class="sd">        Args:</span>
@@ -881,8 +883,22 @@
 <span class="sd">            Resposta HTTP com as modalidades encontradas, ou 404 quando</span>
 <span class="sd">            o catálogo estiver vazio (paridade com o legado).</span>
 <span class="sd">        """</span>
-        <span class="k">try</span><span class="p">:</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">buscar_modalidades</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_modalidades_ensino</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="n">_MSG_MODALIDADES_ENSINO_VAZIA</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">data</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">resposta_serializada_cacheada</span><span class="p">(</span>
+                <span class="n">_request</span><span class="p">,</span>
+                <span class="n">chave</span><span class="o">=</span><span class="s2">"pedagogico:modalidades-ensino:v1"</span><span class="p">,</span>
+                <span class="n">buscar</span><span class="o">=</span><span class="n">buscar_modalidades</span><span class="p">,</span>
+                <span class="n">serializer_class</span><span class="o">=</span><span class="n">ModalidadeEnsinoListSerializer</span><span class="p">,</span>
+                <span class="n">ttl</span><span class="o">=</span><span class="n">cache</span><span class="o">.</span><span class="n">TTL_RECOMENDADO_MINUTOS</span><span class="p">,</span>
+                <span class="n">many</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">body</span> <span class="o">=</span> <span class="n">exc</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
@@ -899,10 +915,6 @@
                 <span class="n">_RESPOSTA_SERVICO_PEDAGOGICO_INVALIDA</span><span class="p">,</span>
                 <span class="mi">502</span><span class="p">,</span>
             <span class="p">)</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">detail_response</span><span class="p">(</span><span class="n">_MSG_MODALIDADES_ENSINO_VAZIA</span><span class="p">,</span> <span class="mi">404</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">ModalidadeEnsinoListSerializer</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">TurmasPorTipoSalaViewSet</span><span class="p">(</span><span class="n">PedagogicoAPIView</span><span class="p">):</span>
@@ -1267,7 +1279,7 @@
         <span class="p">],</span>
         <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">ComponenteBaseSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)},</span>
     <span class="p">)</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">ue_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">ue_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HttpResponse</span> <span class="o">|</span> <span class="n">Response</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Retorna componentes das turmas de uma UE.</span>
 
 <span class="sd">        Args:</span>
@@ -1281,11 +1293,17 @@
 <span class="sd">            httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
 <span class="sd">            ValueError: Se a resposta do serviço não for JSON válido.</span>
 <span class="sd">        """</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_componentes_por_turmas_ue</span><span class="p">(</span>
-            <span class="n">ue_id</span><span class="o">=</span><span class="n">ue_id</span><span class="p">,</span>
-            <span class="n">turmas</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s2">"turmas"</span><span class="p">),</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">ComponenteBaseSerializer</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span></div>
+        <span class="n">turmas</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s2">"turmas"</span><span class="p">)))</span>
+        <span class="n">filtros</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">([</span><span class="n">ue_id</span><span class="p">,</span> <span class="n">turmas</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">resposta_serializada_cacheada</span><span class="p">(</span>
+            <span class="n">request</span><span class="p">,</span>
+            <span class="n">chave</span><span class="o">=</span><span class="sa">f</span><span class="s2">"pedagogico:componentes-ue-turmas:v1:</span><span class="si">{</span><span class="n">filtros</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="n">buscar</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">services</span><span class="o">.</span><span class="n">get_componentes_por_turmas_ue</span><span class="p">(</span>
+                <span class="n">ue_id</span><span class="o">=</span><span class="n">ue_id</span><span class="p">,</span> <span class="n">turmas</span><span class="o">=</span><span class="n">turmas</span>
+            <span class="p">),</span>
+            <span class="n">serializer_class</span><span class="o">=</span><span class="n">ComponenteBaseSerializer</span><span class="p">,</span>
+            <span class="n">ttl</span><span class="o">=</span><span class="n">_TTL_ATRIBUICOES_MINUTOS</span><span class="p">,</span>
+        <span class="p">)</span></div>
 
 
 
@@ -1352,11 +1370,11 @@
         <span class="n">description</span><span class="o">=</span><span class="s2">"Retorna componentes curriculares de regência."</span><span class="p">,</span>
         <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">ComponenteRegenciaSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)},</span>
     <span class="p">)</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">ano_turma</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">ano_turma</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HttpResponse</span> <span class="o">|</span> <span class="n">Response</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Retorna componentes de regência por ano de turma.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            _request: Requisição HTTP recebida.</span>
+<span class="sd">            request: Requisição HTTP recebida.</span>
 <span class="sd">            ano_turma: Ano da turma.</span>
 
 <span class="sd">        Returns:</span>
@@ -1366,10 +1384,14 @@
 <span class="sd">            httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
 <span class="sd">            ValueError: Se a resposta do serviço não for JSON válido.</span>
 <span class="sd">        """</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_componentes_regencia</span><span class="p">(</span><span class="n">ano_turma</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">data</span> <span class="o">==</span> <span class="p">[]:</span>
-            <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="mi">204</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">ComponenteRegenciaSerializer</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">resposta_serializada_cacheada</span><span class="p">(</span>
+            <span class="n">request</span><span class="p">,</span>
+            <span class="n">chave</span><span class="o">=</span><span class="sa">f</span><span class="s2">"pedagogico:componentes-regencia:v1:</span><span class="si">{</span><span class="n">ano_turma</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="n">buscar</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">services</span><span class="o">.</span><span class="n">get_componentes_regencia</span><span class="p">(</span><span class="n">ano_turma</span><span class="p">),</span>
+            <span class="n">serializer_class</span><span class="o">=</span><span class="n">ComponenteRegenciaSerializer</span><span class="p">,</span>
+            <span class="n">ttl</span><span class="o">=</span><span class="n">cache</span><span class="o">.</span><span class="n">TTL_RECOMENDADO_MINUTOS</span><span class="p">,</span>
+            <span class="n">status_vazio</span><span class="o">=</span><span class="mi">204</span><span class="p">,</span>
+        <span class="p">)</span></div>
 
 
 
@@ -1649,7 +1671,7 @@
         <span class="n">operation_id</span><span class="o">=</span><span class="s2">"componentes_lista_turmas"</span><span class="p">,</span>
         <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">ComponenteCurricularSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)},</span>
     <span class="p">)</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HttpResponse</span> <span class="o">|</span> <span class="n">Response</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Retorna componentes das turmas informadas.</span>
 
 <span class="sd">        Args:</span>
@@ -1662,16 +1684,24 @@
 <span class="sd">            httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
 <span class="sd">            ValueError: Se a resposta do serviço não for JSON válido.</span>
 <span class="sd">        """</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_componentes_por_lista_turmas</span><span class="p">(</span>
-            <span class="n">codigos_turmas</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s2">"codigoTurmas"</span><span class="p">),</span>
-            <span class="n">adicionar_componentes_planejamento</span><span class="o">=</span><span class="p">(</span>
-                <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-                    <span class="s2">"adicionarComponentesPlanejamento"</span><span class="p">,</span> <span class="s2">"true"</span>
-                <span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-                <span class="o">==</span> <span class="s2">"true"</span>
-            <span class="p">),</span>
+        <span class="n">turmas</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s2">"codigoTurmas"</span><span class="p">)</span>
+        <span class="n">planejamento</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="s2">"adicionarComponentesPlanejamento"</span><span class="p">,</span> <span class="s2">"true"</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="o">==</span> <span class="s2">"true"</span>
         <span class="p">)</span>
-        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">ComponenteCurricularSerializer</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span></div>
+        <span class="n">filtros</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">([</span><span class="n">turmas</span><span class="p">,</span> <span class="n">planejamento</span><span class="p">,</span> <span class="kc">False</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">resposta_serializada_cacheada</span><span class="p">(</span>
+            <span class="n">request</span><span class="p">,</span>
+            <span class="n">chave</span><span class="o">=</span><span class="sa">f</span><span class="s2">"pedagogico:componentes-lista-turmas:v1:</span><span class="si">{</span><span class="n">filtros</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="n">buscar</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">services</span><span class="o">.</span><span class="n">get_componentes_por_lista_turmas</span><span class="p">(</span>
+                <span class="n">codigos_turmas</span><span class="o">=</span><span class="n">turmas</span><span class="p">,</span>
+                <span class="n">adicionar_componentes_planejamento</span><span class="o">=</span><span class="n">planejamento</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">serializer_class</span><span class="o">=</span><span class="n">ComponenteCurricularSerializer</span><span class="p">,</span>
+            <span class="n">ttl</span><span class="o">=</span><span class="n">_TTL_ATRIBUICOES_MINUTOS</span><span class="p">,</span>
+        <span class="p">)</span></div>
 
 
 
@@ -1996,7 +2026,9 @@
         <span class="p">),</span>
         <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">GradeCurricularSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)},</span>
     <span class="p">)</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HttpResponse</span> <span class="o">|</span> <span class="n">Response</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Retorna a grade curricular por ano letivo.</span>
 
 <span class="sd">        Args:</span>
@@ -2010,8 +2042,13 @@
 <span class="sd">            httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.</span>
 <span class="sd">            ValueError: Se a resposta do serviço não for JSON válido.</span>
 <span class="sd">        """</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_grade_curricular</span><span class="p">(</span><span class="n">ano_letivo</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">GradeCurricularSerializer</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">resposta_serializada_cacheada</span><span class="p">(</span>
+            <span class="n">_request</span><span class="p">,</span>
+            <span class="n">chave</span><span class="o">=</span><span class="sa">f</span><span class="s2">"pedagogico:grade-curricular:v1:</span><span class="si">{</span><span class="n">ano_letivo</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="n">buscar</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">services</span><span class="o">.</span><span class="n">get_grade_curricular</span><span class="p">(</span><span class="n">ano_letivo</span><span class="p">),</span>
+            <span class="n">serializer_class</span><span class="o">=</span><span class="n">GradeCurricularSerializer</span><span class="p">,</span>
+            <span class="n">ttl</span><span class="o">=</span><span class="n">cache</span><span class="o">.</span><span class="n">TTL_RECOMENDADO_MINUTOS</span><span class="p">,</span>
+        <span class="p">)</span></div>
 
 
 
@@ -2040,7 +2077,9 @@
         <span class="p">],</span>
         <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">ComponenteCurricularSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)},</span>
     <span class="p">)</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">codigo_componente</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">codigo_componente</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HttpResponse</span> <span class="o">|</span> <span class="n">Response</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Retorna agrupamentos correlacionados por `cod_agrupamento`.</span>
 
 <span class="sd">        Args:</span>
@@ -2055,11 +2094,20 @@
 <span class="sd">            OverflowError: Se os ticks excederem o limite do datetime.</span>
 <span class="sd">            ValueError: Se a resposta do serviço não for JSON válido.</span>
 <span class="sd">        """</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">get_agrupamentos_correlacionados</span><span class="p">(</span>
-            <span class="n">codigo_componente</span><span class="o">=</span><span class="n">codigo_componente</span><span class="p">,</span>
-            <span class="n">data_base_tick</span><span class="o">=</span><span class="n">_obter_data_base_tick</span><span class="p">(</span><span class="n">request</span><span class="p">),</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">ComponenteCurricularSerializer</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span></div>
+        <span class="n">data_base_tick</span> <span class="o">=</span> <span class="n">_obter_data_base_tick</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">resposta_serializada_cacheada</span><span class="p">(</span>
+            <span class="n">request</span><span class="p">,</span>
+            <span class="n">chave</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">"pedagogico:agrupamentos-correlacionados:v1:"</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">codigo_componente</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">data_base_tick</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">),</span>
+            <span class="n">buscar</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">services</span><span class="o">.</span><span class="n">get_agrupamentos_correlacionados</span><span class="p">(</span>
+                <span class="n">codigo_componente</span><span class="o">=</span><span class="n">codigo_componente</span><span class="p">,</span>
+                <span class="n">data_base_tick</span><span class="o">=</span><span class="n">data_base_tick</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">serializer_class</span><span class="o">=</span><span class="n">ComponenteCurricularSerializer</span><span class="p">,</span>
+            <span class="n">ttl</span><span class="o">=</span><span class="n">_TTL_ATRIBUICOES_MINUTOS</span><span class="p">,</span>
+        <span class="p">)</span></div>
 
 
 
@@ -2089,7 +2137,7 @@
         <span class="p">],</span>
         <span class="n">responses</span><span class="o">=</span><span class="p">{</span><span class="mi">200</span><span class="p">:</span> <span class="n">ComponenteCurricularSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)},</span>
     <span class="p">)</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HttpResponse</span> <span class="o">|</span> <span class="n">Response</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Retorna agrupamentos correlacionados em lote.</span>
 
 <span class="sd">        Args:</span>
@@ -2108,11 +2156,18 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">serializer</span><span class="o">.</span><span class="n">validated_data</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">Response</span><span class="p">([])</span>
 
-        <span class="n">data</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">post_agrupamentos_correlacionados</span><span class="p">(</span>
-            <span class="n">ids</span><span class="o">=</span><span class="n">serializer</span><span class="o">.</span><span class="n">validated_data</span><span class="p">,</span>
-            <span class="n">data_base_tick</span><span class="o">=</span><span class="n">_obter_data_base_tick</span><span class="p">(</span><span class="n">request</span><span class="p">),</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">ComponenteCurricularSerializer</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span></div>
+        <span class="n">ids</span> <span class="o">=</span> <span class="n">serializer</span><span class="o">.</span><span class="n">validated_data</span>
+        <span class="n">data_base_tick</span> <span class="o">=</span> <span class="n">_obter_data_base_tick</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="n">filtros</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">([</span><span class="n">ids</span><span class="p">,</span> <span class="n">data_base_tick</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">resposta_serializada_cacheada</span><span class="p">(</span>
+            <span class="n">request</span><span class="p">,</span>
+            <span class="n">chave</span><span class="o">=</span><span class="sa">f</span><span class="s2">"pedagogico:agrupamentos-correlacionados-lote:v1:</span><span class="si">{</span><span class="n">filtros</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="n">buscar</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">services</span><span class="o">.</span><span class="n">post_agrupamentos_correlacionados</span><span class="p">(</span>
+                <span class="n">ids</span><span class="o">=</span><span class="n">ids</span><span class="p">,</span> <span class="n">data_base_tick</span><span class="o">=</span><span class="n">data_base_tick</span>
+            <span class="p">),</span>
+            <span class="n">serializer_class</span><span class="o">=</span><span class="n">ComponenteCurricularSerializer</span><span class="p">,</span>
+            <span class="n">ttl</span><span class="o">=</span><span class="n">_TTL_ATRIBUICOES_MINUTOS</span><span class="p">,</span>
+        <span class="p">)</span></div>
 
 
 

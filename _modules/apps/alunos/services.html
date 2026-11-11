@@ -151,7 +151,8 @@
 <span class="sd">        codigo_turmas: Códigos de turma usados como filtro opcional.</span>
 <span class="sd">        nome_aluno: Nome parcial do aluno para filtro.</span>
 <span class="sd">        codigo_eol: Código EOL do aluno para filtro direto.</span>
-<span class="sd">        somente_ativos: Indicador repassado por compatibilidade.</span>
+<span class="sd">        somente_ativos: Indicador repassado ao sidecar apenas quando</span>
+<span class="sd">            informado; as rotas que não filtram por situação o omitem.</span>
 <span class="sd">        eh_historico: Consulta os vínculos históricos quando verdadeiro.</span>
 <span class="sd">        limite: Quantidade máxima de resultados.</span>
 
@@ -436,8 +437,9 @@
 <span class="sd">        httpx.HTTPStatusError: Se o serviço retornar status de erro.</span>
 <span class="sd">        httpx.RequestError: Se o serviço estiver inacessível.</span>
 <span class="sd">    """</span>
-    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">codigo_aluno</span><span class="si">}</span><span class="s2">/responsaveis/</span><span class="si">{</span><span class="n">cpf_responsavel</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">put</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">codigo_aluno</span><span class="si">}</span><span class="s2">/responsaveis/</span><span class="si">{</span><span class="n">cpf_responsavel</span><span class="si">}</span><span class="s2">"</span>
+        <span class="s2">"/dados-cadastrais"</span><span class="p">,</span>
         <span class="n">payload</span><span class="o">=</span><span class="n">payload</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
@@ -467,7 +469,7 @@
 <span class="sd">        httpx.RequestError: Se o serviço estiver inacessível.</span>
 <span class="sd">    """</span>
     <span class="n">resp</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">put</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">codigo_aluno</span><span class="si">}</span><span class="s2">/responsaveis/</span><span class="si">{</span><span class="n">cpf_responsavel</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">codigo_aluno</span><span class="si">}</span><span class="s2">/responsaveis/</span><span class="si">{</span><span class="n">cpf_responsavel</span><span class="si">}</span><span class="s2">/contatos"</span><span class="p">,</span>
         <span class="n">payload</span><span class="o">=</span><span class="n">payload</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
@@ -1242,6 +1244,7 @@
     <span class="n">ue_codigo</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">data_referencia</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">semestre</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">componente_codigo</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""Busca e intersecta os códigos de turma regulares do aluno.</span>
 
@@ -1255,6 +1258,8 @@
 <span class="sd">        ue_codigo: Código da UE; sem filtro quando ausente.</span>
 <span class="sd">        data_referencia: Data de referência (ISO) do filtro de situação.</span>
 <span class="sd">        semestre: Semestre da turma; sem filtro quando ausente.</span>
+<span class="sd">        componente_codigo: Componente exigido nas turmas; sem filtro quando</span>
+<span class="sd">            ausente.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Códigos de turma que atendem ao recorte, na ordem do Alunos-MS.</span>
@@ -1272,7 +1277,7 @@
         <span class="k">return</span> <span class="p">[]</span>
     <span class="n">permitidos</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span>
         <span class="n">pedagogico_services</span><span class="o">.</span><span class="n">get_turmas_recorte_por_tipo</span><span class="p">(</span>
-            <span class="n">codigos</span><span class="p">,</span> <span class="n">tipos_turma</span><span class="p">,</span> <span class="n">ue_codigo</span><span class="p">,</span> <span class="n">semestre</span>
+            <span class="n">codigos</span><span class="p">,</span> <span class="n">tipos_turma</span><span class="p">,</span> <span class="n">ue_codigo</span><span class="p">,</span> <span class="n">semestre</span><span class="p">,</span> <span class="n">componente_codigo</span>
         <span class="p">)</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="p">[</span><span class="n">codigo</span> <span class="k">for</span> <span class="n">codigo</span> <span class="ow">in</span> <span class="n">codigos</span> <span class="k">if</span> <span class="n">codigo</span> <span class="ow">in</span> <span class="n">permitidos</span><span class="p">]</span>
@@ -1287,6 +1292,7 @@
     <span class="n">ue_codigo</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">data_referencia</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">semestre</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">componente_codigo</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""Compõe os códigos de turma regulares do aluno.</span>
 
@@ -1297,6 +1303,8 @@
 <span class="sd">        ue_codigo: Código da UE; sem filtro quando ausente.</span>
 <span class="sd">        data_referencia: Data de referência (ISO) do filtro de situação.</span>
 <span class="sd">        semestre: Semestre da turma; sem filtro quando ausente.</span>
+<span class="sd">        componente_codigo: Componente exigido nas turmas; sem filtro quando</span>
+<span class="sd">            ausente.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Códigos de turma que atendem ao recorte, na ordem do Alunos-MS.</span>
@@ -1313,6 +1321,8 @@
         <span class="n">data_referencia</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">,</span>
         <span class="n">semestre</span> <span class="k">if</span> <span class="n">semestre</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">""</span><span class="p">,</span>
     <span class="p">)</span>
+    <span class="k">if</span> <span class="n">componente_codigo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">chave</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">":componente=</span><span class="si">{</span><span class="n">componente_codigo</span><span class="si">}</span><span class="s2">"</span>
     <span class="k">return</span> <span class="n">cache</span><span class="o">.</span><span class="n">obter_ou_calcular</span><span class="p">(</span>
         <span class="n">chave</span><span class="p">,</span>
         <span class="k">lambda</span><span class="p">:</span> <span class="n">_calcular_turmas_regulares_aluno</span><span class="p">(</span>
@@ -1322,6 +1332,7 @@
             <span class="n">ue_codigo</span><span class="p">,</span>
             <span class="n">data_referencia</span><span class="p">,</span>
             <span class="n">semestre</span><span class="p">,</span>
+            <span class="n">componente_codigo</span><span class="p">,</span>
         <span class="p">),</span>
         <span class="n">cache</span><span class="o">.</span><span class="n">TTL_RECOMENDADO_MINUTOS</span><span class="p">,</span>
     <span class="p">)</span></div>

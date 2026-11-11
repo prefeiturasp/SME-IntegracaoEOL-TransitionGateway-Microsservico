@@ -35,11 +35,21 @@
   <h1>Código-fonte para apps.programasedu.services</h1><div class="highlight"><pre>
 <span></span><span class="sd">"""Serviços do domínio de programas educacionais."""</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">gzip</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">django.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">timezone</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rest_framework.renderers</span><span class="w"> </span><span class="kn">import</span> <span class="n">JSONRenderer</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">apps.alunos</span><span class="w"> </span><span class="kn">import</span> <span class="n">services</span> <span class="k">as</span> <span class="n">alunos_services</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">apps.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">apps.core.api_clients</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_api_client</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">apps.pedagogico</span><span class="w"> </span><span class="kn">import</span> <span class="n">services</span> <span class="k">as</span> <span class="n">pedagogico_services</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">apps.programasedu.serializers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AlunoTurmaPapSerializer</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <span class="n">_BASE</span> <span class="o">=</span> <span class="s2">"/api/v1/programasedu/alunos"</span>
 
@@ -103,26 +113,123 @@
 
 
 
+<span class="c1"># Nomes dos campos emitidos pelo serviço de programas e seus equivalentes no</span>
+<span class="c1"># contrato público. A troca é feita sobre os bytes para não materializar</span>
+<span class="c1"># centenas de milhares de linhas em objetos Python.</span>
+<span class="n">_CAMPOS_ALUNO_PAP</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="p">(</span><span class="sa">b</span><span class="s1">'"ano_letivo":'</span><span class="p">,</span> <span class="sa">b</span><span class="s1">'"anoLetivo":'</span><span class="p">),</span>
+    <span class="p">(</span><span class="sa">b</span><span class="s1">'"codigo_turma":'</span><span class="p">,</span> <span class="sa">b</span><span class="s1">'"codigoTurma":'</span><span class="p">),</span>
+    <span class="p">(</span><span class="sa">b</span><span class="s1">'"codigo_ue":'</span><span class="p">,</span> <span class="sa">b</span><span class="s1">'"codigoUe":'</span><span class="p">),</span>
+    <span class="p">(</span><span class="sa">b</span><span class="s1">'"codigo_dre":'</span><span class="p">,</span> <span class="sa">b</span><span class="s1">'"codigoDre":'</span><span class="p">),</span>
+    <span class="p">(</span><span class="sa">b</span><span class="s1">'"codigo_aluno":'</span><span class="p">,</span> <span class="sa">b</span><span class="s1">'"codigoAluno":'</span><span class="p">),</span>
+    <span class="p">(</span><span class="sa">b</span><span class="s1">'"componente_curricular_id":'</span><span class="p">,</span> <span class="sa">b</span><span class="s1">'"componenteCurricularId":'</span><span class="p">),</span>
+<span class="p">)</span>
+<span class="n">_PREFIXO_CACHE_ALUNOS_PAP</span> <span class="o">=</span> <span class="s2">"programasedu:alunos-pap:v1"</span>
+<span class="n">_MAGIA_GZIP</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">((</span><span class="mh">0x1F</span><span class="p">,</span> <span class="mh">0x8B</span><span class="p">))</span>
+<span class="n">_TTL_ALUNOS_PAP_ANO_CORRENTE</span> <span class="o">=</span> <span class="n">cache</span><span class="o">.</span><span class="n">TTL_RECOMENDADO_MINUTOS</span>
+<span class="n">_TTL_ALUNOS_PAP_ANO_ENCERRADO</span> <span class="o">=</span> <span class="n">cache</span><span class="o">.</span><span class="n">TTL_LEGADO_PADRAO_MINUTOS</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_traduzir_alunos_pap</span><span class="p">(</span><span class="n">corpo</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Traduz o JSON de alunos PAP para os nomes do contrato público.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        corpo: Array JSON devolvido pelo serviço de programas.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Array JSON com os campos no formato do contrato público.</span>
+<span class="sd">    """</span>
+    <span class="n">traduzido</span> <span class="o">=</span> <span class="n">corpo</span>
+    <span class="k">for</span> <span class="n">origem</span><span class="p">,</span> <span class="n">destino</span> <span class="ow">in</span> <span class="n">_CAMPOS_ALUNO_PAP</span><span class="p">:</span>
+        <span class="n">traduzido</span> <span class="o">=</span> <span class="n">traduzido</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">origem</span><span class="p">,</span> <span class="n">destino</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">origem</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">traduzido</span> <span class="k">for</span> <span class="n">origem</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">_CAMPOS_ALUNO_PAP</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Formato inesperado de alunos PAP; usando serializer"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">bytes</span><span class="p">(</span>
+            <span class="n">JSONRenderer</span><span class="p">()</span><span class="o">.</span><span class="n">render</span><span class="p">(</span>
+                <span class="n">AlunoTurmaPapSerializer</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">corpo</span><span class="p">),</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">traduzido</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_buscar_alunos_pap_comprimido</span><span class="p">(</span><span class="n">caminho</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Busca alunos PAP no serviço de programas e devolve JSON em gzip.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        caminho: Caminho da consulta no serviço de programas.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Array JSON do contrato público comprimido em gzip.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        httpx.HTTPError: Em caso de falha de transporte ou resposta de erro.</span>
+<span class="sd">    """</span>
+    <span class="n">resposta</span> <span class="o">=</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">caminho</span><span class="p">)</span>
+    <span class="n">resposta</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">gzip</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">_traduzir_alunos_pap</span><span class="p">(</span><span class="n">resposta</span><span class="o">.</span><span class="n">content</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">mtime</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_alunos_pap_em_cache</span><span class="p">(</span>
+    <span class="n">chave</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">caminho</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">minutos_para_expirar</span><span class="p">:</span> <span class="nb">int</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Obtém o gzip de alunos PAP do cache ou do serviço de programas.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        chave: Chave de cache da consulta.</span>
+<span class="sd">        caminho: Caminho da consulta no serviço de programas.</span>
+<span class="sd">        minutos_para_expirar: Tempo de vida do valor em cache.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Array JSON do contrato público comprimido em gzip.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">buscar</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_buscar_alunos_pap_comprimido</span><span class="p">(</span><span class="n">caminho</span><span class="p">)</span>
+
+    <span class="n">armazenado</span> <span class="o">=</span> <span class="n">cache</span><span class="o">.</span><span class="n">obter_ou_calcular</span><span class="p">(</span><span class="n">chave</span><span class="p">,</span> <span class="n">buscar</span><span class="p">,</span> <span class="n">minutos_para_expirar</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">armazenado</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)</span> <span class="ow">and</span> <span class="n">armazenado</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="n">_MAGIA_GZIP</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">armazenado</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Alunos PAP armazenados em formato inválido"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">buscar</span><span class="p">()</span>
+
+
 <div class="viewcode-block" id="listar_alunos_pap_ano_corrente">
 <a class="viewcode-back" href="../../../api.html#apps.programasedu.services.listar_alunos_pap_ano_corrente">[documentos]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">listar_alunos_pap_ano_corrente</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Lista alunos PAP do ano corrente."""</span>
-    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/pap/ano-corrente"</span><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">listar_alunos_pap_ano_corrente</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Lista alunos PAP do ano corrente.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Array JSON do contrato público comprimido em gzip.</span>
+<span class="sd">    """</span>
+    <span class="n">ano</span> <span class="o">=</span> <span class="n">timezone</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">year</span>
+    <span class="k">return</span> <span class="n">_alunos_pap_em_cache</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_PREFIXO_CACHE_ALUNOS_PAP</span><span class="si">}</span><span class="s2">:ano-corrente:</span><span class="si">{</span><span class="n">ano</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/pap/ano-corrente"</span><span class="p">,</span>
+        <span class="n">_TTL_ALUNOS_PAP_ANO_CORRENTE</span><span class="p">,</span>
+    <span class="p">)</span></div>
 
 
 
 <div class="viewcode-block" id="listar_alunos_pap_por_ano">
 <a class="viewcode-back" href="../../../api.html#apps.programasedu.services.listar_alunos_pap_por_ano">[documentos]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">listar_alunos_pap_por_ano</span><span class="p">(</span><span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">listar_alunos_pap_por_ano</span><span class="p">(</span><span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Lista alunos PAP do ano letivo informado.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        ano_letivo: Ano letivo usado na consulta.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        Alunos PAP do ano letivo informado.</span>
+<span class="sd">        Array JSON do contrato público comprimido em gzip. Anos corrente e</span>
+<span class="sd">        futuros não são armazenados em cache.</span>
 <span class="sd">    """</span>
-    <span class="k">return</span> <span class="n">_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/pap/ano-letivo/</span><span class="si">{</span><span class="n">ano_letivo</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+    <span class="n">caminho</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_BASE</span><span class="si">}</span><span class="s2">/pap/ano-letivo/</span><span class="si">{</span><span class="n">ano_letivo</span><span class="si">}</span><span class="s2">"</span>
+    <span class="k">if</span> <span class="n">ano_letivo</span> <span class="o">&gt;=</span> <span class="n">timezone</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">year</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_buscar_alunos_pap_comprimido</span><span class="p">(</span><span class="n">caminho</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_alunos_pap_em_cache</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_PREFIXO_CACHE_ALUNOS_PAP</span><span class="si">}</span><span class="s2">:ano-letivo:</span><span class="si">{</span><span class="n">ano_letivo</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="n">caminho</span><span class="p">,</span>
+        <span class="n">_TTL_ALUNOS_PAP_ANO_ENCERRADO</span><span class="p">,</span>
+    <span class="p">)</span></div>
 
 
 

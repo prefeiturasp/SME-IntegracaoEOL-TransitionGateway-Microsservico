@@ -33,7 +33,7 @@
           <div class="body" role="main">
             
   <h1>Código-fonte para apps.alunos.serializers</h1><div class="highlight"><pre>
-<span></span><span class="sd">"""Serializers de saida para o contrato legado de alunos."""</span>
+<span></span><span class="sd">"""Serializers de saída para os contratos de alunos."""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">cached_property</span>
@@ -77,6 +77,17 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">to_representation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="s2">"0"</span> <span class="k">if</span> <span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
 </div>
+
+
+
+<div class="viewcode-block" id="DataHoraRepassadaField">
+<a class="viewcode-back" href="../../../api.html#apps.alunos.serializers.DataHoraRepassadaField">[documentos]</a>
+<span class="nd">@extend_schema_field</span><span class="p">(</span><span class="n">OpenApiTypes</span><span class="o">.</span><span class="n">DATETIME</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DataHoraRepassadaField</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Repassa data/hora como recebida e a documenta como ``date-time``.</span>
+
+<span class="sd">    Não valida nem converte o valor: o domínio dono do dado interpreta o texto.</span>
+<span class="sd">    """</span></div>
 
 
 
@@ -321,12 +332,16 @@
 
 
 
-<div class="viewcode-block" id="AlunoMatriculaTurmaSerializer">
-<a class="viewcode-back" href="../../../api.html#apps.alunos.serializers.AlunoMatriculaTurmaSerializer">[documentos]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">AlunoMatriculaTurmaSerializer</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">Serializer</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Serializa dados de aluno e sua matrícula na turma."""</span>
+<div class="viewcode-block" id="AlunoMatriculaTurmaBaseSerializer">
+<a class="viewcode-back" href="../../../api.html#apps.alunos.serializers.AlunoMatriculaTurmaBaseSerializer">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AlunoMatriculaTurmaBaseSerializer</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">Serializer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Define os campos compartilhados de aluno e matrícula na turma.</span>
 
-    <span class="n">codigoComponenteCurricular</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="sd">    Reúne os campos com os mesmos tipos, origens e formatos nos contratos</span>
+<span class="sd">    amplo e específicos. Chamada e celular são definidos por cada contrato,</span>
+<span class="sd">    que também aplica sua própria normalização de saída.</span>
+<span class="sd">    """</span>
+
     <span class="n">codigoAluno</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span>
         <span class="n">source</span><span class="o">=</span><span class="s2">"codigo_aluno"</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span>
     <span class="p">)</span>
@@ -343,22 +358,7 @@
     <span class="p">)</span>
     <span class="n">dataSituacao</span> <span class="o">=</span> <span class="n">DataHoraLegadoComZField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"data_situacao"</span><span class="p">)</span>
     <span class="n">dataMatricula</span> <span class="o">=</span> <span class="n">DataHoraLegadoComZField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"data_matricula"</span><span class="p">)</span>
-    <span class="n">numeroAlunoChamada</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span>
-        <span class="n">source</span><span class="o">=</span><span class="s2">"numero_aluno_chamada"</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span>
-    <span class="p">)</span>
-    <span class="n">celularResponsavel</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span>
-        <span class="n">source</span><span class="o">=</span><span class="s2">"celular_responsavel"</span><span class="p">,</span>
-        <span class="n">allow_blank</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">default</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span>
-    <span class="p">)</span>
     <span class="n">possuiDeficiencia</span> <span class="o">=</span> <span class="n">InteiroBooleanoField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"possui_deficiencia"</span><span class="p">)</span>
-    <span class="n">transferencia_Interna</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">BooleanField</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="n">remanejado</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">BooleanField</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="n">escolaTransferencia</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-    <span class="n">turmaTransferencia</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-    <span class="n">turmaRemanejamento</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-    <span class="n">parecerConclusivo</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
     <span class="n">nomeResponsavel</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span>
         <span class="n">source</span><span class="o">=</span><span class="s2">"nome_responsavel"</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span>
     <span class="p">)</span>
@@ -372,7 +372,6 @@
         <span class="n">source</span><span class="o">=</span><span class="s2">"codigo_matricula"</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span>
     <span class="p">)</span>
     <span class="n">sequencia</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">tipoTurma</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
     <span class="n">codigoTurma</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span>
         <span class="n">source</span><span class="o">=</span><span class="s2">"codigo_turma"</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span>
     <span class="p">)</span>
@@ -380,7 +379,32 @@
         <span class="n">source</span><span class="o">=</span><span class="s2">"codigo_escola"</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span>
     <span class="p">)</span>
     <span class="n">ano</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"ano_letivo"</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">codigoDre</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"codigo_dre"</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">codigoDre</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"codigo_dre"</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="AlunoMatriculaTurmaSerializer">
+<a class="viewcode-back" href="../../../api.html#apps.alunos.serializers.AlunoMatriculaTurmaSerializer">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AlunoMatriculaTurmaSerializer</span><span class="p">(</span><span class="n">AlunoMatriculaTurmaBaseSerializer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Serializa dados de aluno e sua matrícula na turma."""</span>
+
+    <span class="n">codigoComponenteCurricular</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">numeroAlunoChamada</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"numero_aluno_chamada"</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">celularResponsavel</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"celular_responsavel"</span><span class="p">,</span>
+        <span class="n">allow_blank</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">transferencia_Interna</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">BooleanField</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">remanejado</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">BooleanField</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">escolaTransferencia</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">turmaTransferencia</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">turmaRemanejamento</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">parecerConclusivo</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">tipoTurma</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
     <span class="nb">id</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 
     <span class="n">_CAMPOS_DATA</span> <span class="o">=</span> <span class="p">{</span>
@@ -451,6 +475,92 @@
             <span class="n">data</span><span class="p">[</span><span class="s2">"numeroAlunoChamada"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"000"</span>
         <span class="k">return</span> <span class="n">data</span></div>
 </div>
+
+
+
+<div class="viewcode-block" id="ConsultaAlunoMatriculaTurmaSerializer">
+<a class="viewcode-back" href="../../../api.html#apps.alunos.serializers.ConsultaAlunoMatriculaTurmaSerializer">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConsultaAlunoMatriculaTurmaSerializer</span><span class="p">(</span><span class="n">AlunoMatriculaTurmaBaseSerializer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Serializa os campos comuns às consultas de aluno, matrícula e turma.</span>
+
+<span class="sd">    Compartilha a definição dos 20 campos alimentados pelo domínio Alunos</span>
+<span class="sd">    entre os contratos por consulta. Preserva o formato legado de datas,</span>
+<span class="sd">    o indicador inteiro de deficiência e os valores padrão de chamada e</span>
+<span class="sd">    celular. A seleção de registros cabe aos services e às views.</span>
+<span class="sd">    """</span>
+
+    <span class="n">numeroAlunoChamada</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"numero_aluno_chamada"</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">"000"</span>
+    <span class="p">)</span>
+    <span class="n">celularResponsavel</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"celular_responsavel"</span><span class="p">,</span> <span class="n">allow_blank</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">""</span>
+    <span class="p">)</span>
+
+<div class="viewcode-block" id="ConsultaAlunoMatriculaTurmaSerializer.to_representation">
+<a class="viewcode-back" href="../../../api.html#apps.alunos.serializers.ConsultaAlunoMatriculaTurmaSerializer.to_representation">[documentos]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_representation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Serializa a consulta e normaliza chamada e celular ausentes.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            instance: Dicionário ou objeto com os dados de aluno e matrícula.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Campos do contrato com chamada "000" e celular "" quando os</span>
+<span class="sd">            valores forem ausentes, nulos ou vazios.</span>
+<span class="sd">        """</span>
+        <span class="n">dados</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">to_representation</span><span class="p">(</span><span class="n">instance</span><span class="p">))</span>
+        <span class="n">dados</span><span class="p">[</span><span class="s2">"numeroAlunoChamada"</span><span class="p">]</span> <span class="o">=</span> <span class="n">dados</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"numeroAlunoChamada"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"000"</span>
+        <span class="n">dados</span><span class="p">[</span><span class="s2">"celularResponsavel"</span><span class="p">]</span> <span class="o">=</span> <span class="n">dados</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"celularResponsavel"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span>
+        <span class="k">return</span> <span class="n">dados</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="MatriculasAlunoNaTurmaSerializer">
+<a class="viewcode-back" href="../../../api.html#apps.alunos.serializers.MatriculasAlunoNaTurmaSerializer">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MatriculasAlunoNaTurmaSerializer</span><span class="p">(</span><span class="n">ConsultaAlunoMatriculaTurmaSerializer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Serializa cada matrícula de um aluno na turma informada.</span>
+
+<span class="sd">    Usado pela consulta que inclui matrículas ativas e inativas e retorna</span>
+<span class="sd">    uma lista de vínculos do aluno com a turma.</span>
+<span class="sd">    """</span></div>
+
+
+
+<div class="viewcode-block" id="AlunoNaTurmaConsideraInativosSerializer">
+<a class="viewcode-back" href="../../../api.html#apps.alunos.serializers.AlunoNaTurmaConsideraInativosSerializer">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AlunoNaTurmaConsideraInativosSerializer</span><span class="p">(</span>
+    <span class="n">ConsultaAlunoMatriculaTurmaSerializer</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Serializa o aluno consultado em uma turma como objeto único.</span>
+
+<span class="sd">    A view seleciona o primeiro resultado após a consulta com o filtro de</span>
+<span class="sd">    inclusão de inativos e retorna 204 quando não há correspondência.</span>
+<span class="sd">    """</span></div>
+
+
+
+<div class="viewcode-block" id="MatriculasTurmasDoAlunoSerializer">
+<a class="viewcode-back" href="../../../api.html#apps.alunos.serializers.MatriculasTurmasDoAlunoSerializer">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MatriculasTurmasDoAlunoSerializer</span><span class="p">(</span><span class="n">ConsultaAlunoMatriculaTurmaSerializer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Serializa cada matrícula do aluno nas turmas e anos consultados.</span>
+
+<span class="sd">    Usado na listagem com filtros opcionais de data da aula e ano letivo,</span>
+<span class="sd">    com um registro por matrícula selecionada pelo domínio Alunos.</span>
+<span class="sd">    """</span></div>
+
+
+
+<div class="viewcode-block" id="AlunosDaTurmaPorAnoLetivoSerializer">
+<a class="viewcode-back" href="../../../api.html#apps.alunos.serializers.AlunosDaTurmaPorAnoLetivoSerializer">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AlunosDaTurmaPorAnoLetivoSerializer</span><span class="p">(</span>
+    <span class="n">ConsultaAlunoMatriculaTurmaSerializer</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Serializa cada aluno da turma no ano letivo consultado.</span>
+
+<span class="sd">    A consulta retorna um registro por aluno e permite informar zero no</span>
+<span class="sd">    ano letivo para consultar os vínculos sem restrição de ano.</span>
+<span class="sd">    """</span></div>
 
 
 
@@ -919,13 +1029,13 @@
         <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="n">dataNascimento</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span>  <span class="c1"># NOSONAR</span>
+    <span class="n">dataNascimento</span> <span class="o">=</span> <span class="n">DataHoraRepassadaField</span><span class="p">(</span>  <span class="c1"># NOSONAR</span>
         <span class="n">source</span><span class="o">=</span><span class="s2">"data_nascimento"</span><span class="p">,</span>
         <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">allow_blank</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="n">dataAtualizacao</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span>  <span class="c1"># NOSONAR</span>
+    <span class="n">dataAtualizacao</span> <span class="o">=</span> <span class="n">DataHoraRepassadaField</span><span class="p">(</span>  <span class="c1"># NOSONAR</span>
         <span class="n">source</span><span class="o">=</span><span class="s2">"data_atualizacao"</span><span class="p">,</span>
         <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">allow_blank</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
