@@ -2046,3 +2046,56 @@ class GetProfessoresTurmaTerritorioSaberPayloadTest(SimpleTestCase):
         resultado = services.get_professores_turma_territorio_saber("9100013")
 
         self.assertEqual(resultado, [])
+
+
+class GetComponentesConsolidadosTest(SimpleTestCase):
+    """Valida o encaminhamento dos componentes consolidados."""
+
+    @patch("apps.pedagogico.services._client")
+    def test_consulta_anos_escolares(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Encaminha os anos escolares repetidos ao serviço pedagógico."""
+        mock_client.get.return_value.json.return_value = [{"codigo": 6}]
+
+        resultado = services.get_componentes_consolidados(
+            "009148", 5, 2026, ["1", "2"]
+        )
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/ues/009148/modalidades/5/anos/2026/consolidado/",
+            params={"anos_escolares": ["1", "2"]},
+        )
+        mock_client.get.return_value.raise_for_status.assert_called_once_with()
+        self.assertEqual(resultado, [{"codigo": 6}])
+
+    @patch("apps.pedagogico.services._client")
+    def test_consulta_turmas_programa(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Encaminha somente o indicador de turmas programa."""
+        mock_client.get.return_value.json.return_value = []
+
+        resultado = services.get_componentes_consolidados(
+            "009148", 5, 2026, somente_programa=True
+        )
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/ues/009148/modalidades/5/anos/2026/consolidado/",
+            params={"somente_programa": "true"},
+        )
+        self.assertEqual(resultado, [])
+
+    @patch("apps.pedagogico.services._client")
+    def test_consulta_sem_filtros(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Mantém o comportamento de modalidade/etapa sem ano escolar."""
+        mock_client.get.return_value.json.return_value = []
+
+        services.get_componentes_consolidados("009148", 5, 2026)
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/ues/009148/modalidades/5/anos/2026/consolidado/",
+            params={},
+        )
