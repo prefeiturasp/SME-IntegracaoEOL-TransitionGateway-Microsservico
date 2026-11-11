@@ -120,7 +120,7 @@ class ProfessoresUrlsTest(SimpleTestCase):
     def test_preserva_rf_funcionarios_cargo(self) -> None:
         match = resolve("/api/funcionarios/cargo/7900001")
 
-        self.assertEqual(match.kwargs, {"registro_funcional": "7900001"})
+        self.assertEqual(match.kwargs, {"registroFuncional": "7900001"})
 
     def test_resolve_funcionarios_conecta_formacao(self) -> None:
         match = resolve(
@@ -1074,12 +1074,84 @@ class CargosFuncionarioViewTest(SimpleTestCase):
         ]
         client = _cliente_autenticado()
 
-        resp = client.get("/api/funcionarios/cargo/7900001")
+        for accept in (
+            "application/json",
+            "*/*",
+            "text/plain",
+            "text/json",
+            "text/html",
+            "application/xml",
+            "application/json-patch+json",
+        ):
+            with self.subTest(accept=accept):
+                mock_service.reset_mock()
+                resp = client.get(
+                    "/api/funcionarios/cargo/7900001", HTTP_ACCEPT=accept
+                )
 
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.json()[0]["cdCargoBase"], 3360)
-        self.assertEqual(resp.json()[0]["cargoBase"], "DIRETOR")
-        mock_service.assert_called_once_with("7900001")
+                self.assertEqual(resp.status_code, status.HTTP_200_OK)
+                self.assertEqual(resp["Content-Type"], "application/json")
+                self.assertEqual(resp.json()[0]["cdCargoBase"], 3360)
+                self.assertEqual(resp.json()[0]["cargoBase"], "DIRETOR")
+                mock_service.assert_called_once_with("7900001")
+
+    @patch("apps.professores.views.services.get_cargos_funcionario")
+    def test_400_registro_em_branco_com_accept_texto(
+        self, mock_service: MagicMock
+    ) -> None:
+        resp = _cliente_autenticado().get(
+            "/api/funcionarios/cargo/%20", HTTP_ACCEPT="text/plain"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(resp["Content-Type"], "application/json")
+        mock_service.assert_not_called()
+
+    @patch("apps.professores.views.services.get_cargos_funcionario")
+    def test_503_em_json_com_accept_texto(
+        self, mock_service: MagicMock
+    ) -> None:
+        mock_service.side_effect = httpx.ConnectError("conexão indisponível")
+
+        resp = _cliente_autenticado().get(
+            "/api/funcionarios/cargo/7900001", HTTP_ACCEPT="text/plain"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(resp["Content-Type"], "application/json")
+        self.assertEqual(
+            resp.json(), {"detail": "Serviço de professores indisponível."}
+        )
+
+    def test_403_sem_autenticacao_com_accept_texto(self) -> None:
+        resp = APIClient().get(
+            "/api/funcionarios/cargo/7900001", HTTP_ACCEPT="text/plain"
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp["Content-Type"], "application/json")
+
+    def test_schema_preserva_parametros_legados_e_resposta_json(self) -> None:
+        from drf_spectacular.generators import SchemaGenerator
+
+        paths = SchemaGenerator().get_schema(request=None, public=True)[
+            "paths"
+        ]
+        cargos = paths["/api/funcionarios/cargo/{registroFuncional}"]["get"]
+        escola = paths["/api/escolas/dados/{codigoEscolaEol}"]["get"]
+
+        self.assertEqual(
+            [p["name"] for p in cargos["parameters"] if p["in"] == "path"],
+            ["registroFuncional"],
+        )
+        self.assertEqual(
+            [p["name"] for p in escola["parameters"] if p["in"] == "path"],
+            ["codigoEscolaEol"],
+        )
+        self.assertEqual(
+            set(cargos["responses"]["200"]["content"]),
+            {"application/json"},
+        )
 
 
 class FuncionariosConectaFormacaoViewTest(SimpleTestCase):

@@ -133,7 +133,7 @@ urlpatterns = [
         name="escola-unidades-parceiras",
     ),
     path(
-        "escolas/dados/<str:codigo_escola_eol>",
+        "escolas/dados/<str:codigoEscolaEol>",
         DadosEscolaView.as_view(),
         name="escola-dados",
     ),
