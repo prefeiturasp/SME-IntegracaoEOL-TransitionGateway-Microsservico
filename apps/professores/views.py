@@ -32,6 +32,7 @@ from apps.professores.constants import (
 from apps.professores.serializers import (
     AbrangenciaLegadoSerializer,
     AbrangenciaTemporariaSerializer,
+    BuscaProfessorPorRfQuerySerializer,
     BuscarFuncionariosPorUeSerializer,
     BuscarProfessorTitularPorDisciplinaSerializer,
     BuscarTurmasElegiveisSerializer,
@@ -1681,12 +1682,94 @@ class FuncionarioPerfilTurmaDisciplinasPlanejamentoView(ProfessoresAPIView):
         )
 
 
+class BuscaProfessorPorRfView(ProfessoresAPIView):
+    """Consulta professor por RF e ano com filtros opcionais."""
+
+    @extend_schema(
+        tags=_TAG_PROFESSOR,
+        summary="Buscar professor por RF e ano letivo",
+        description=(
+            "Localiza uma pessoa pelo RF informado e devolve somente seu "
+            "identificador e nome quando ela atende aos critérios da busca. "
+            "Mesmo que existam várias atribuições, retorna um único objeto; "
+            "não lista turmas, cargos ou unidades.\n\n"
+            "**Busca simples (`tipo_busca=rf`):** exige atribuição de aula "
+            "não cancelada, iniciada até hoje, cuja disponibilização esteja "
+            "em aberto ou tenha ocorrido no ano informado. O ano se refere "
+            "à disponibilização, não ao ano da atribuição. Não aplica DRE, "
+            "UE ou outros cargos e não busca contratos externos.\n\n"
+            "**Busca com localização (`tipo_busca=rf_dre_ue`):** exige "
+            "atribuição não cancelada no ano informado e, se preenchida, na "
+            "UE indicada. Com `buscar_outros_cargos=true`, ignora o filtro "
+            "de UE; isso não inclui automaticamente servidores sem aula. "
+            "Se não encontrar atribuição, trata o identificador como CPF "
+            "e procura contrato externo não cancelado, sem filtro de ano "
+            "ou localização. A DRE é aceita, mas não filtra a consulta.\n\n"
+            "O tipo explícito prevalece. Sem tipo, DRE ou UE selecionam a "
+            "busca com localização; sem ambos, usa a busca simples. "
+            "Retorna 200 com `codigoRF` e `nome`, ou 204 sem corpo quando "
+            "não há correspondência. Substitui BuscarPorRf e BuscarPorRfDreUe "
+            "preservando os comportamentos atuais."
+        ),
+        parameters=[BuscaProfessorPorRfQuerySerializer],
+        responses={200: ProfessorBuscarPorRfSerializer, 204: None, 400: dict},
+    )
+    def get(
+        self, request: Request, codigo_rf: str, ano_letivo: int
+    ) -> Response:
+        """Localiza um professor pelos critérios de atribuição da busca.
+
+        Permite obter RF/CPF e nome a partir do identificador recebido, sem
+        listar suas turmas, cargos ou unidades. O MS Professores executa as
+        regras de negócio e o Gateway adapta ``codigo_rf`` para ``codigoRF``.
+
+        O tipo ``rf`` exige atribuição iniciada e não cancelada, com
+        disponibilização em aberto ou no ano informado, sem filtro de UE.
+        O tipo ``rf_dre_ue`` busca atribuições não canceladas no ano e na UE,
+        ignora UE com outros cargos e pode localizar contrato externo por CPF
+        quando não encontra atribuição. Esse fallback não filtra ano ou UE.
+        A DRE recebida não é aplicada pela consulta atual.
+
+        Valida os filtros e os encaminha ao MS. O tipo explícito prevalece;
+        sem ele, DRE ou UE selecionam ``rf_dre_ue`` e sua ausência seleciona
+        ``rf``. Retorna 200 com identificador e nome ou 204 sem
+        correspondência.
+
+        Args:
+            request: Requisição com DRE, UE, outros cargos e tipo de busca.
+            codigo_rf: RF do servidor ou CPF do professor externo.
+            ano_letivo: Ano letivo positivo.
+
+        Returns:
+            Resumo encontrado, ausência de conteúdo ou erro de validação.
+        """
+        if not codigo_rf.strip() or ano_letivo < 1:
+            return detail_response(
+                "É necessário informar o código RF e o ano letivo."
+            )
+        filtros = BuscaProfessorPorRfQuerySerializer(data=request.query_params)
+        filtros.is_valid(raise_exception=True)
+        data = services.buscar_professor_por_rf(
+            codigo_rf, ano_letivo, filtros.validated_data
+        )
+        if data is None:
+            return Response(status=204)
+        return Response(ProfessorBuscarPorRfSerializer(data).data)
+
+
 class ProfessorBuscarPorRfView(ProfessoresAPIView):
     """Retorna dados resumidos de professor."""
 
     @extend_schema(
         tags=_TAG_PROFESSOR,
-        description=("Retorna professor por RF e ano letivo."),
+        deprecated=True,
+        description=(
+            "Depreciado. Use GET /api/professores/{codigo_rf}/"
+            "anos_letivos/{ano_letivo}?tipo_busca=rf. A nova rota concentra "
+            "as consultas com filtros opcionais e encaminha para a mesma "
+            "busca existente. Esta rota continua disponível para "
+            "compatibilidade, com o comportamento atual."
+        ),
         parameters=[
             OpenApiParameter(
                 "buscar_outros_cargos",
@@ -1703,7 +1786,12 @@ class ProfessorBuscarPorRfView(ProfessoresAPIView):
         codigo_rf: str,
         ano_letivo: int,
     ) -> Response:
-        """Retorna professor por RF e ano letivo.
+        """Consulta identificador e nome do professor por RF e ano letivo.
+
+        Encaminha a busca simples e o parâmetro de outros cargos ao MS
+        Professores, que mantém seus critérios de atribuição. Adapta o
+        identificador retornado para ``codigoRF`` e mantém ausência de
+        conteúdo quando a consulta não encontra o professor.
 
         Args:
             request: Requisição com o filtro opcional de outros cargos.
@@ -2936,7 +3024,15 @@ class ProfessorBuscarPorRfDreUeView(ProfessoresAPIView):
 
     @extend_schema(
         tags=_TAG_PROFESSOR,
-        description=("Retorna professor por RF, DRE e UE no ano letivo."),
+        deprecated=True,
+        description=(
+            "Depreciado. Use GET /api/professores/{codigo_rf}/"
+            "anos_letivos/{ano_letivo}?tipo_busca=rf_dre_ue, inclusive "
+            "quando DRE/UE não forem informadas. A nova rota distingue as "
+            "consultas e encaminha para a mesma busca existente. Esta rota "
+            "continua disponível para compatibilidade, com o comportamento "
+            "atual."
+        ),
         parameters=[
             OpenApiParameter(
                 "dre_id",
@@ -2965,10 +3061,16 @@ class ProfessorBuscarPorRfDreUeView(ProfessoresAPIView):
         codigo_rf: str,
         ano_letivo: int,
     ) -> Response:
-        """Retorna professor por RF, DRE e UE no ano letivo.
+        """Consulta identificador e nome por RF, ano e localização informada.
+
+        Encaminha DRE, UE e outros cargos à consulta com localização do MS
+        Professores. O MS mantém as regras de atribuição e fallback externo,
+        incluindo quais filtros são efetivamente aplicados. Adapta o
+        identificador retornado para ``codigoRF`` e mantém ausência de
+        conteúdo quando não há resultado.
 
         Args:
-            request: Requisição com os filtros opcionais de DRE e UE.
+            request: Requisição com filtros de DRE, UE e outros cargos.
             codigo_rf: RF usado na consulta.
             ano_letivo: Ano letivo de referência.
 

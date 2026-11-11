@@ -327,6 +327,23 @@ class ProfessorAutocompleteQuerySerializer(QueryParamsSerializer):
     campos_simples = ("ue_id", "nome")
 
 
+class BuscaProfessorPorRfQuerySerializer(serializers.Serializer):
+    """Valida filtros do contrato unificado de busca por RF."""
+
+    dre_id = serializers.CharField(required=False, max_length=20)
+    ue_id = serializers.CharField(required=False, max_length=20)
+    buscar_outros_cargos = serializers.BooleanField(default=False)
+    tipo_busca = serializers.ChoiceField(
+        choices=("rf", "rf_dre_ue"),
+        required=False,
+        help_text=(
+            "rf reproduz BuscarPorRf; rf_dre_ue reproduz BuscarPorRfDreUe, "
+            "inclusive sem filtros. Se omitido, DRE/UE selecionam rf_dre_ue; "
+            "sem localização, usa rf."
+        ),
+    )
+
+
 class ProfessorBuscarPorRfQuerySerializer(serializers.Serializer):
     """Normaliza filtros da busca de professor por RF."""
 
