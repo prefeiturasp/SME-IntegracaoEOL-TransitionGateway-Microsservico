@@ -647,9 +647,10 @@ class DadosEscolaView(InstitucionalAPIView):
         ],
         responses={200: DadosEscolaSerializer, 404: None},
     )
-    def get(self, _request: Request, codigoEscolaEol: str) -> Response:
+    def get(self, _request: Request, **kwargs: str) -> Response:
+        codigo_escola_eol = kwargs["codigoEscolaEol"]
         try:
-            data = services.get_dados_escola(codigoEscolaEol)
+            data = services.get_dados_escola(codigo_escola_eol)
         except httpx.HTTPStatusError as exc:
             if exc.response.status_code == 404:
                 return Response(status=status.HTTP_404_NOT_FOUND)
