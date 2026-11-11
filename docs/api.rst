@@ -155,6 +155,8 @@ Professores
 
 .. autoclass:: apps.professores.views.ValidadeProfessorView
 
+.. autoclass:: apps.professores.views.BuscaProfessorPorRfView
+
 .. autoclass:: apps.professores.views.ProfessorBuscarPorRfView
 
 .. autoclass:: apps.professores.views.ProfessorBuscarPorRfDreUeView
