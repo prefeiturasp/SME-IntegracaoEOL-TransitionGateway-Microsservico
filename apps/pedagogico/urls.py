@@ -9,6 +9,7 @@ from apps.pedagogico.views import (
     AlunosAtivosTurmaRedisMultplexViewSet,
     AlunosAtivosTurmaSemRedisViewSet,
     AlunosTurmaConsideraInativosViewSet,
+    ComponentesConsolidadosViewSet,
     ComponentesFuncionarioViewSet,
     ComponentesPlanejamentoViewSet,
     ComponentesPorListaTurmasViewSet,
@@ -217,5 +218,11 @@ urlpatterns = [
         "<int:codigo_componente>/territorio-saber/"
         + "agrupamentos-correlacionados",
         AgrupamentosCorrelacionadosViewSet.as_view(),
+    ),
+    path(
+        "ues/<str:ue_id>/modalidades/<int:modalidade>/anos/"
+        "<int:ano_letivo>/consolidado",
+        ComponentesConsolidadosViewSet.as_view(),
+        name="componentes-consolidados",
     ),
 ]
