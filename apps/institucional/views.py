@@ -990,9 +990,13 @@ class EscolasListPostView(InstitucionalAPIView):
     """Lista escolas pelos códigos informados no corpo da requisição."""
 
     @extend_schema(
+        deprecated=True,
         tags=_TAG_ESCOLA,
         summary="Escolas por lista de códigos",
         description=(
+            "DEPRECADO — use `GET /api/escolas/unidades"
+            "?codigos={codigoEol}&apenasParceiras=false`. "
+            "Repita codigos na query para consultar várias unidades.\n\n"
             "Retorna escolas correspondentes aos códigos EOL informados no "
             "corpo da requisição."
         ),
@@ -1232,9 +1236,13 @@ class UnidadesParceirasView(InstitucionalAPIView):
     """Retorna unidades parceiras pelos códigos informados."""
 
     @extend_schema(
+        deprecated=True,
         tags=_TAG_ESCOLA,
         summary="Unidades parceiras",
         description=(
+            "DEPRECADO — use `GET /api/escolas/unidades"
+            "?codigos={codigoEol}&apenasParceiras=true`. "
+            "Repita codigos na query para consultar várias unidades.\n\n"
             "Retorna a lista de unidades parceiras informadas no corpo da "
             "requisição."
         ),
