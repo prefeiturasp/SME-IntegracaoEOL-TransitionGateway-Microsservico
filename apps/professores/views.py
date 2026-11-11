@@ -10,6 +10,7 @@ from drf_spectacular.utils import (
     OpenApiResponse,
     extend_schema,
 )
+from rest_framework.renderers import JSONRenderer
 from rest_framework.request import Request
 
 from apps.core.datetime import (
@@ -2376,9 +2377,25 @@ class CargosView(ProfessoresAPIView):
 class CargosFuncionarioView(ProfessoresAPIView):
     """Retorna cargos por registro funcional."""
 
+    renderer_classes = [JSONRenderer]
+
+    def perform_content_negotiation(
+        self, request: Request, force: bool = False
+    ) -> tuple[JSONRenderer, str]:
+        """Define o JSON no cabeçalho Accept.
+
+        Args:
+            request: Requisição recebida, cujo Accept é desconsiderado.
+
+        Returns:
+            Renderizador JSON e seu tipo de mídia.
+        """
+        renderer = JSONRenderer()
+        return renderer, renderer.media_type
+
     @extend_schema(
         tags=_TAG_FUNCIONARIO,
-        description=("Retorna cargos por registro funcional."),
+        description=("Retorna cargos por registro funcional em JSON. "),
         responses={
             200: CargoFuncionarioConectaSerializer(many=True),
             204: None,
@@ -2386,15 +2403,16 @@ class CargosFuncionarioView(ProfessoresAPIView):
             502: dict,
         },
     )
-    def get(self, _request: Request, registro_funcional: str) -> Response:
+    def get(self, _request: Request, **kwargs: str) -> Response:
         """Retorna cargos por registro funcional.
 
         Args:
-            registro_funcional: Registro funcional usado na consulta.
+            kwargs: Parâmetros da rota, incluindo registroFuncional.
 
         Returns:
             Cargos encontrados, ou ausência de conteúdo.
         """
+        registro_funcional = kwargs["registroFuncional"]
         if not registro_funcional.strip():
             return detail_response(_MSG_REGISTRO_FUNCIONAL_OBRIGATORIO)
         data = services.get_cargos_funcionario(registro_funcional)
