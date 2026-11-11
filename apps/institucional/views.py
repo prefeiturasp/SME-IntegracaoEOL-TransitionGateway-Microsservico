@@ -8,6 +8,7 @@ from drf_spectacular.utils import (
     OpenApiExample,
     OpenApiParameter,
     OpenApiResponse,
+    PolymorphicProxySerializer,
     extend_schema,
 )
 from rest_framework import status
@@ -32,6 +33,7 @@ from apps.institucional.serializers import (
     UnidadeEducacionalSerializer,
     UnidadeEolSerializer,
     UnidadeParceiraSerializer,
+    UnidadesQuerySerializer,
 )
 from apps.professores import services as professores_services
 from apps.professores.serializers import ProfessorEscolaLegadoSerializer
@@ -1031,6 +1033,87 @@ class EscolasListPostView(InstitucionalAPIView):
                 )
         return Response([])
 
+
+class UnidadesPorCodigosView(InstitucionalAPIView):
+    """Consulta escolas por códigos EOL, com filtro opcional de parceiras."""
+
+    @extend_schema(
+        tags=_TAG_ESCOLA,
+        summary="Unidades por lista de códigos",
+        description=(
+            "Consulta unidades pelos códigos EOL informados na query. "
+            "Repita codigos para consultar várias unidades. "
+            "Com apenasParceiras=false ou ausente, retorna os sete campos "
+            "básicos de escola, DRE e tipo. Com true, retorna somente "
+            "parceiras, com codigo, nome e email. "
+            "Consultas sem resultados retornam uma lista vazia."
+        ),
+        parameters=[UnidadesQuerySerializer],
+        responses={
+            200: OpenApiResponse(
+                response=PolymorphicProxySerializer(
+                    component_name="UnidadesPorCodigos",
+                    serializers=[
+                        UnidadeEducacionalSerializer,
+                        UnidadeParceiraSerializer,
+                    ],
+                    resource_type_field_name=None,
+                    many=True,
+                ),
+                description="Lista de escolas ou unidades parceiras.",
+                examples=[
+                    OpenApiExample(
+                        "TodasUnidades",
+                        summary="apenasParceiras = false (padrão)",
+                        value={
+                            "codigoEscola": "000001",
+                            "nomeEscola": "ESCOLA EXEMPLO",
+                            "codigoDRE": "100000",
+                            "nomeDRE": "DRE EXEMPLO",
+                            "siglaDRE": "DRE-EX",
+                            "tipoEscola": "ESCOLA MUNICIPAL",
+                            "siglaTipoEscola": "EMEF",
+                        },
+                        response_only=True,
+                    ),
+                    OpenApiExample(
+                        "ApenasParceiras",
+                        summary="apenasParceiras = true",
+                        value={
+                            "codigo": "000002",
+                            "nome": "CEI UNIDADE PARCEIRA EXEMPLO",
+                            "email": None,
+                        },
+                        response_only=True,
+                    ),
+                ],
+            ),
+            400: OpenApiTypes.OBJECT,
+        },
+    )
+    def get(self, request: Request) -> Response:
+        """Retorna unidades nos contratos de escolas ou de parceiras."""
+        dados: dict[str, Any] = {
+            "codigos": request.query_params.getlist("codigos")
+        }
+        if "apenasParceiras" in request.query_params:
+            dados["apenasParceiras"] = request.query_params["apenasParceiras"]
+        parametros = UnidadesQuerySerializer(data=dados)
+        parametros.is_valid(raise_exception=True)
+        apenas_parceiras = parametros.validated_data["apenasParceiras"]
+        try:
+            data = services.get_unidades_por_codigos(
+                parametros.validated_data["codigos"], apenas_parceiras
+            )
+        except httpx.HTTPStatusError as exc:
+            return _api_error_response(exc)
+        except httpx.RequestError:
+            return _api_unavailable_response()
+        if not data:
+            return Response([])
+        if apenas_parceiras:
+            return Response(UnidadeParceiraSerializer(data, many=True).data)
+        return Response([_filtrar_toda_unidade(item) for item in data])
 
 class EscolaDetalheView(InstitucionalAPIView):
     """Retorna dados de uma escola."""

@@ -274,6 +274,33 @@ def post_escolas(codigos: list[str]) -> Any:
     return _client.json_or_none(resp)
 
 
+def get_unidades_por_codigos(
+    codigos: list[str], apenas_parceiras: bool = False
+) -> Any:
+    """Consulta unidades por códigos EOL, com filtro opcional de parceiras.
+
+    Args:
+        codigos: Códigos EOL das unidades a consultar.
+        apenas_parceiras: Indica se devem retornar somente parceiras.
+
+    Returns:
+        Unidades encontradas ou None quando não há conteúdo.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status HTTP
+            de erro.
+    """
+    resp = _client.get(
+        f"{_BASE}/escolas/unidades/",
+        params={
+            "codigos": codigos,
+            "apenasParceiras": str(apenas_parceiras).lower(),
+        },
+    )
+    resp.raise_for_status()
+    return _client.json_or_none(resp)
+
+
 def get_subprefeituras_por_escola(codigo_escola: str) -> Any:
     """Lista subprefeituras vinculadas a uma escola.
 

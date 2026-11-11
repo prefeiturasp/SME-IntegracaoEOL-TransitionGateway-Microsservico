@@ -25,6 +25,7 @@ from apps.institucional.views import (
     UnidadeCodigoIntegracaoPorDREView,
     UnidadeEolView,
     UnidadesParceirasView,
+    UnidadesPorCodigosView,
     UnidadesPorDreConsolidadaView,
     UnidadesPorDREView,
 )
@@ -103,6 +104,11 @@ urlpatterns = [
         "escolas/tiposEscolas",
         TiposEscolasView.as_view(),
         name="escola-tipos-escolas",
+    ),
+    path(
+        "escolas/unidades",
+        UnidadesPorCodigosView.as_view(),
+        name="escola-unidades",
     ),
     path(
         "escolas/equipamentos",

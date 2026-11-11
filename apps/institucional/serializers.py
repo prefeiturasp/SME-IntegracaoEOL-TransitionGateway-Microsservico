@@ -1,6 +1,25 @@
-"""Serializers de saída do domínio institucional."""
+"""Serializers de entrada e saída do domínio institucional."""
 
 from rest_framework import serializers
+
+
+class UnidadesQuerySerializer(serializers.Serializer):
+    """Valida a consulta de unidades por códigos e o filtro de parceiras."""
+
+    codigos = serializers.ListField(
+        child=serializers.CharField(allow_blank=False),
+        allow_empty=False,
+        help_text=(
+            "Códigos EOL das unidades."
+        ),
+    )
+    apenasParceiras = serializers.BooleanField(
+        default=False,
+        help_text=(
+            "Quando true, retorna somente unidades parceiras. Quando false "
+            "ou ausente, inclui parceiras e não parceiras."
+        ),
+    )
 
 
 class DRESerializer(serializers.Serializer):
