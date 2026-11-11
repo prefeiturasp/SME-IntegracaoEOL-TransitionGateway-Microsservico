@@ -1452,6 +1452,30 @@ class InformacoesAlunosTurmaViewTest(SimpleTestCase):
         mock_service.assert_called_once_with("9001")
 
     @patch("apps.alunos.views.services.get_informacoes_alunos_turma")
+    def test_200_retorna_numero_chamada_zero(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Mantém zero como número de chamada quando não há chamada."""
+        mock_service.return_value = [
+            {
+                "numero_chamada": 0,
+                "codigo_aluno": 123456,
+                "nome_aluno": "Fulano da Silva",
+                "nome_social_aluno": None,
+                "sexo": "M",
+                "raca": "Parda",
+                "codigo_raca": 3,
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/alunos/9001/turma/informacoes")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()[0]["numeroChamada"], 0)
+        mock_service.assert_called_once_with("9001")
+
+    @patch("apps.alunos.views.services.get_informacoes_alunos_turma")
     def test_400_quando_codigo_turma_nao_e_inteiro(
         self, mock_service: MagicMock
     ) -> None:

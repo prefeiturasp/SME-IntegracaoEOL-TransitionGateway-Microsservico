@@ -1292,7 +1292,7 @@ class InformacoesAlunosTurmaView(AlunosAPIView):
                 OpenApiParameter.PATH,
             )
         ],
-        responses={200: OpenApiResponse(description="Success")},
+        responses={200: InformacoesAlunoTurmaSerializer(many=True)},
     )
     def get(self, _request: Request, codigo_turma: str) -> Response:
         """Busca informações resumidas dos alunos de uma turma.
