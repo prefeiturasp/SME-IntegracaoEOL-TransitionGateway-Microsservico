@@ -257,11 +257,13 @@ class EscolasPorDREView(InstitucionalAPIView):
     """Lista escolas vinculadas a uma DRE."""
 
     @extend_schema(
+        deprecated=True,
         tags=_TAG_DRE,
         summary="Escolas de uma DRE",
         description=(
-            "Retorna lista das unidades educacionais vinculadas "
-            "à Diretoria Regional de Educação informada.\n\n"
+            "DEPRECADO — use "
+            "`GET /api/DREs/{codigoEolDRE}/escolas"
+            "/?tipo_escola={tipoEscola}&formato_sigpae={formatoSigpae}`.\n\n"
             "Contrato D06: `GET /api/DREs/{codigoEolDRE}/escola`."
         ),
         parameters=[
@@ -289,11 +291,13 @@ class EscolasSigpaePorDREView(InstitucionalAPIView):
     """Lista escolas de uma DRE no formato SIGPAE."""
 
     @extend_schema(
+        deprecated=True,
         tags=_TAG_DRE,
         summary="Escolas SIGPAE de uma DRE",
         description=(
-            "Retorna lista de unidades educacionais de uma DRE "
-            "no formato esperado pelo SIGPAE.\n\n"
+            "DEPRECADO — use "
+            "`GET /api/DREs/{codigoEolDRE}/escolas"
+            "/?tipo_escola={tipoEscola}&formato_sigpae={formatoSigpae}`.\n\n"
             "Contrato D09: `GET /api/dres/{codigoEolDRE}/escola/Sigpae/`."
         ),
         parameters=[
@@ -368,7 +372,7 @@ class SubprefeiturasPorDREView(InstitucionalAPIView):
         return Response(data)
 
 
-class EscolasPorDREouEscolaOuSigpaeView(InstitucionalAPIView):
+class EscolasPorDREeTipoeSigpaeView(InstitucionalAPIView):
     """Lista escolas de uma DRE de acordo com filtros."""
 
     @extend_schema(
@@ -438,6 +442,9 @@ class EscolasPorDREouEscolaOuSigpaeView(InstitucionalAPIView):
             if exc.response.status_code == 404:
                 return Response(status=status.HTTP_404_NOT_FOUND)
             raise
+        #Regra mais comum entre os endpoints consolidados
+        if not data:
+            return Response([], status=status.HTTP_200_OK)
         return Response(
             [funcoes_formato.get(formato_sigpae, lambda x: x)(e) for e in data]
         )
@@ -447,11 +454,13 @@ class EscolasPorDREeTipoView(InstitucionalAPIView):
     """Lista escolas de uma DRE por tipo."""
 
     @extend_schema(
+        deprecated=True,
         tags=_TAG_DRE,
         summary="Escolas de uma DRE por tipo",
         description=(
-            "Retorna lista de unidades educacionais vinculadas à DRE "
-            "filtradas pelo tipo de escola informado.\n\n"
+            "DEPRECADO — use "
+            "`GET /api/DREs/{codigoEolDRE}/escolas"
+            "/?tipo_escola={tipoEscola}&formato_sigpae={formatoSigpae}`.\n\n"
             "Contrato D05: "
             "`GET /api/DREs/{codigoEolDRE}/escolas/{tipoEscola}`."
         ),

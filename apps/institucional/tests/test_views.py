@@ -404,7 +404,7 @@ class EscolasSigpaePorDREViewTest(SimpleTestCase):
         )
 
 
-class EscolasPorDREouEscolaOuSigpaeViewTest(SimpleTestCase):
+class EscolasPorDREeTipoeSigpaeViewTest(SimpleTestCase):
     """Valida a busca de escolas por DRE com filtros opcionais."""
 
     @patch("apps.institucional.views.services.get_escolas_por_dre_tipo")

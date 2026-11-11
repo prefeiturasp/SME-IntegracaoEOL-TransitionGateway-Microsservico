@@ -12,7 +12,7 @@ from apps.institucional.views import (
     EscolaProfessoresView,
     EscolasListPostView,
     EscolasPorDREeTipoView,
-    EscolasPorDREouEscolaOuSigpaeView,
+    EscolasPorDREeTipoeSigpaeView,
     EscolasPorDREView,
     EscolasSigpaePorDREView,
     SincronizacoesInstitucionaisView,
@@ -74,7 +74,7 @@ urlpatterns = [
     ),
     path(
         "DREs/<str:codigo_eol_dre>/escolas",
-        EscolasPorDREouEscolaOuSigpaeView.as_view(),
+        EscolasPorDREeTipoeSigpaeView.as_view(),
         name="escolas-por-dre-tipo-ou-sigpae",
     ),
     path(
