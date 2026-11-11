@@ -8,6 +8,7 @@ import httpx
 from django.http import HttpResponse
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework import serializers
 from rest_framework.exceptions import NotFound
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -1248,10 +1249,10 @@ class ComponentesTurmaProgramaViewSet(PedagogicoAPIView):
     @extend_schema(
         tags=_TAG,
         summary="Componentes de turmas programa por UE e modalidade",
-        description=(
-            "Retorna componentes de turmas programa (projetos especiais) "
-            "para UE + modalidade + ano letivo.\n\n"
-            "**Modalidades:** 1=EI, 3=EJA, 4=CIEJA, 5=EF, 6=EM.\n\n"
+        deprecated=True,
+        description=("DEPRECIADO — use "
+            "GET /api/v1/componentes-curriculares/ues/{ue_id}/modalidades/"
+            "{modalidade}/anos/{ano_letivo}/consolidado"
         ),
         parameters=[
             OpenApiParameter(
@@ -1857,10 +1858,10 @@ class ComponentesTurmaAnoViewSet(PedagogicoAPIView):
     @extend_schema(
         tags=_TAG,
         summary="Componentes por UE, modalidade, ano e anos escolares",
-        description=(
-            "Retorna componentes da grade de oferta filtrados pelos "
-            "anos escolares informados via query param `anosEscolares`.\n\n"
-            "**Modalidades:** 1=EI, 3=EJA, 4=CIEJA, 5=EF, 6=EM.\n\n"
+        deprecated=True,
+        description=("DEPRECIADO — use "
+            "GET /api/v1/componentes-curriculares/ues/{ue_id}/modalidades/"
+            "{modalidade}/anos/{ano_letivo}/consolidado"
         ),
         parameters=[
             OpenApiParameter(
@@ -2097,3 +2098,99 @@ class AgrupamentosTerritorioViewSet(PedagogicoAPIView):
             ids=serializer.validated_data,
         )
         return Response(ComponenteCurricularSerializer(data, many=True).data)
+
+
+class ComponentesConsolidadosViewSet(PedagogicoAPIView):
+    """Lista componentes curriculares por modalidade ou turmas programa."""
+
+    @extend_schema(
+        tags=_TAG,
+        summary="Componentes curriculares consolidados por UE e modalidade",
+        description=(
+            "Retorna componentes da grade de oferta ou de turmas programa, "
+            "conforme os filtros `anosEscolares` e `somentePrograma`.\n\n"
+            "**Modalidades:** 1=EI, 3=EJA, 4=CIEJA, 5=EF, 6=EM.\n\n"
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="modalidade",
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.PATH,
+                required=True,
+                enum=[1, 3, 4, 5, 6],
+                description="Modalidades permitidas.",
+            ),
+            OpenApiParameter(
+                "anosEscolares",
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                required=False,
+                many=True,
+                description="Anos escolares da grade de oferta.",
+            ),
+            OpenApiParameter(
+                "somentePrograma",
+                OpenApiTypes.BOOL,
+                OpenApiParameter.QUERY,
+                required=False,
+                description="Consulta componentes de turmas programa.",
+            ),
+        ],
+        responses={200: ComponenteCurricularSerializer(many=True)},
+    )
+    def get(
+        self,
+        request: Request,
+        ue_id: str,
+        modalidade: int,
+        ano_letivo: int,
+    ) -> Response:
+        """Retorna componentes curriculares conforme os filtros informados.
+
+        Args:
+            request: Requisição HTTP com os filtros opcionais.
+            ue_id: Código da unidade educacional.
+            modalidade: Modalidade de ensino.
+            ano_letivo: Ano letivo.
+
+        Returns:
+            Resposta HTTP com os componentes curriculares encontrados.
+
+        Raises:
+            serializers.ValidationError: Se os filtros forem inválidos.
+            httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+            ValueError: Se a resposta do serviço não for JSON válido.
+        """
+        anos = request.query_params.getlist(
+            "anosEscolares"
+        ) or request.query_params.getlist("anos_escolares")
+
+        anos_escolares = serializers.ListField(
+            child=serializers.CharField(allow_blank=False)
+        ).run_validation(anos)
+
+        programa = request.query_params.get(
+            "somentePrograma",
+            request.query_params.get("somente_programa", False),
+        )
+
+        somente_programa = serializers.BooleanField().run_validation(
+            programa
+        )
+
+        if somente_programa and anos_escolares:
+            raise serializers.ValidationError(
+                {"anosEscolares": "Não aplicável a turmas programa."}
+            )
+
+        dados = services.get_componentes_consolidados(
+            ue_id=ue_id,
+            modalidade=modalidade,
+            ano_letivo=ano_letivo,
+            anos_escolares=anos_escolares,
+            somente_programa=somente_programa,
+        )
+
+        return Response(
+            ComponenteCurricularSerializer(dados, many=True).data
+        )
