@@ -45,11 +45,15 @@ Institucional
 
 .. autoclass:: apps.institucional.views.UnidadesPorDREView
 
+.. autoclass:: apps.institucional.views.UnidadesPorDreConsolidadaView
+
 .. autoclass:: apps.institucional.views.EscolasPorDREView
 
 .. autoclass:: apps.institucional.views.EscolasSigpaePorDREView
 
 .. autoclass:: apps.institucional.views.EscolasPorDREeTipoView
+
+.. autoclass:: apps.institucional.views.EscolasPorDREeTipoeSigpaeView
 
 .. autoclass:: apps.institucional.views.UnidadeCodigoIntegracaoPorDREView
 
@@ -60,6 +64,8 @@ Institucional
 .. autoclass:: apps.institucional.views.TiposEscolasView
 
 .. autoclass:: apps.institucional.views.EscolasListPostView
+
+.. autoclass:: apps.institucional.views.UnidadesPorCodigosView
 
 .. autoclass:: apps.institucional.views.EscolaDetalheView
 
