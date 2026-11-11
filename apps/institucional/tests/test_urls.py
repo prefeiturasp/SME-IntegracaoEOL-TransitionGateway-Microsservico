@@ -71,6 +71,12 @@ class URLsInstitucionalTest(SimpleTestCase):
         match = resolve("/api/escolas")
         self.assertEqual(match.view_name, "escola-list-post")
 
+    def test_escola_unidades_resolve_antes_do_detalhe(self) -> None:
+        """Resolve unidades como rota literal, sem capturá-la como código."""
+        match = resolve("/api/escolas/unidades")
+        self.assertEqual(match.view_name, "escola-unidades")
+        self.assertEqual(match.kwargs, {})
+
     def test_equipamentos_resolve_antes_do_detalhe(self) -> None:
         # Garante que "equipamentos/" não é capturado pelo padrão
         # <str:codigoEscolaEol>/

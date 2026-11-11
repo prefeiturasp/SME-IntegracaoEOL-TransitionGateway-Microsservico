@@ -1170,6 +1170,188 @@ class EscolasListPostViewTest(SimpleTestCase):
         )
 
 
+class UnidadesPorCodigosViewTest(SimpleTestCase):
+    """Valida a consulta consolidada nos contratos de escolas e parceiras."""
+
+    @patch("apps.institucional.views.services.get_unidades_por_codigos")
+    def test_200_retorna_escolas_por_padrao_e_com_false(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Retorna os sete campos legados na ordem recebida do serviço."""
+        escola = {
+            "codigoEscola": "000001",
+            "nomeEscola": "EMEF TESTE",
+            "codigoDRE": "X1",
+            "nomeDRE": "DRE FICTICIA UM",
+            "siglaDRE": "DRE-X1",
+            "tipoEscola": "EMEF",
+            "siglaTipoEscola": "EMEF",
+        }
+        outra_escola = {**escola, "codigoEscola": "000003"}
+        mock_svc.return_value = [
+            {**outra_escola, "codigoTipoEscola": 1, "dreId": "interna"},
+            _ESCOLA_RESUMO,
+        ]
+        for filtro in ({}, {"apenasParceiras": "false"}):
+            with self.subTest(filtro=filtro):
+                mock_svc.reset_mock()
+
+                resp = _cliente_autenticado().get(
+                    "/api/escolas/unidades",
+                    {"codigos": ["000001", "000003"], **filtro},
+                )
+
+                self.assertEqual(resp.status_code, status.HTTP_200_OK)
+                self.assertEqual(resp.json(), [outra_escola, escola])
+                mock_svc.assert_called_once_with(["000001", "000003"], False)
+
+    @patch("apps.institucional.views.services.get_dados_escola")
+    @patch("apps.institucional.views.services.get_unidades_por_codigos")
+    def test_200_retorna_parceiras_sem_complementar_codigos(
+        self, mock_svc: MagicMock, mock_dados: MagicMock
+    ) -> None:
+        """Preserva ordem e email nulo sem completar códigos não retornados."""
+        parceiras: list[dict[str, str | None]] = [
+            {"codigo": "000003", "nome": "CEI TESTE", "email": None},
+            {
+                "codigo": "000001",
+                "nome": "CEI OUTRA",
+                "email": "cei@example.com",
+            },
+        ]
+        mock_svc.return_value = [
+            {**item, "tipoEscolaId": 1, "dreId": "interna"}
+            for item in parceiras
+        ]
+
+        resp = _cliente_autenticado().get(
+            "/api/escolas/unidades",
+            {
+                "codigos": ["000001", "000002", "000003"],
+                "apenasParceiras": "true",
+            },
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json(), parceiras)
+        mock_svc.assert_called_once_with(["000001", "000002", "000003"], True)
+        mock_dados.assert_not_called()
+
+    @patch("apps.institucional.views.services.get_unidades_por_codigos")
+    def test_200_lista_vazia_quando_sem_resultados(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Normaliza a ausência de registros ou conteúdo nos dois formatos."""
+        respostas_vazias: tuple[list[object] | None, ...] = ([], None)
+        for apenas_parceiras in ("false", "true"):
+            for dados in respostas_vazias:
+                with self.subTest(filtro=apenas_parceiras, dados=dados):
+                    mock_svc.reset_mock()
+                    mock_svc.return_value = dados
+
+                    resp = _cliente_autenticado().get(
+                        "/api/escolas/unidades",
+                        {
+                            "codigos": ["999999"],
+                            "apenasParceiras": apenas_parceiras,
+                        },
+                    )
+
+                    self.assertEqual(resp.status_code, status.HTTP_200_OK)
+                    self.assertEqual(resp.json(), [])
+                    mock_svc.assert_called_once_with(
+                        ["999999"], apenas_parceiras == "true"
+                    )
+
+    @patch("apps.institucional.views.services.get_unidades_por_codigos")
+    def test_400_rejeita_codigos_ausentes_ou_em_branco(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Rejeita listas vazias e qualquer código vazio antes da consulta."""
+        parametros_invalidos: tuple[dict[str, list[str]], ...] = (
+            {},
+            {"codigos": []},
+            {"codigos": [""]},
+            {"codigos": ["   "]},
+            {"codigos": ["000001", ""]},
+        )
+        for parametros in parametros_invalidos:
+            with self.subTest(parametros=parametros):
+                resp = _cliente_autenticado().get(
+                    "/api/escolas/unidades", parametros
+                )
+
+                self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertIn("codigos", resp.json())
+                mock_svc.assert_not_called()
+
+    @patch("apps.institucional.views.services.get_unidades_por_codigos")
+    def test_400_rejeita_booleano_invalido(self, mock_svc: MagicMock) -> None:
+        """Não transforma filtros inválidos silenciosamente em false."""
+        for filtro in ("", "invalido", "2"):
+            with self.subTest(filtro=filtro):
+                resp = _cliente_autenticado().get(
+                    "/api/escolas/unidades",
+                    {"codigos": ["000001"], "apenasParceiras": filtro},
+                )
+
+                self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertIn("apenasParceiras", resp.json())
+                mock_svc.assert_not_called()
+
+    @patch("apps.institucional.views.services.get_unidades_por_codigos")
+    def test_preserva_status_e_corpo_dos_erros_http(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Mantém o tratamento de erros usado nos POST existentes."""
+        for status_code in (400, 404, 500):
+            with self.subTest(status_code=status_code):
+                mock_svc.reset_mock()
+                body = {"detail": "Erro na consulta"}
+                mock_svc.side_effect = _httpx_status_error(status_code, body)
+
+                resp = _cliente_autenticado().get(
+                    "/api/escolas/unidades", {"codigos": ["000001"]}
+                )
+
+                self.assertEqual(resp.status_code, status_code)
+                self.assertEqual(resp.json(), body)
+                mock_svc.assert_called_once_with(["000001"], False)
+
+    @patch("apps.institucional.views.services.get_unidades_por_codigos")
+    def test_503_quando_servico_indisponivel(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Padroniza falhas de conexão e timeout como indisponibilidade."""
+        for erro in (httpx.ConnectError, httpx.ReadTimeout):
+            with self.subTest(erro=erro):
+                mock_svc.reset_mock()
+                mock_svc.side_effect = erro("connection failed")
+
+                resp = _cliente_autenticado().get(
+                    "/api/escolas/unidades", {"codigos": ["000001"]}
+                )
+
+                self.assertEqual(
+                    resp.status_code, status.HTTP_503_SERVICE_UNAVAILABLE
+                )
+                self.assertEqual(
+                    resp.json(),
+                    {"detail": "Serviço de institucional indisponível."},
+                )
+                mock_svc.assert_called_once_with(["000001"], False)
+
+    @patch("apps.institucional.views.services.get_unidades_por_codigos")
+    def test_requer_autenticacao(self, mock_svc: MagicMock) -> None:
+        """Mantém a autenticação exigida nas demais rotas do gateway."""
+        resp = APIClient().get(
+            "/api/escolas/unidades", {"codigos": ["000001"]}
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        mock_svc.assert_not_called()
+
+
 class EscolaDetalheViewTest(SimpleTestCase):
     """Valida a view de detalhe de escola."""
 

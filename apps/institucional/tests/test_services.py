@@ -316,6 +316,101 @@ class PostEscolasTest(SimpleTestCase):
         self.assertIsNone(result)
 
 
+class GetUnidadesPorCodigosTest(SimpleTestCase):
+    """Valida a consulta consolidada de unidades pelo endpoint GET."""
+
+    @patch("apps.institucional.services._client.post")
+    @patch("apps.institucional.services._client.get")
+    def test_consulta_get_com_codigos_e_false_por_padrao(
+        self, mock_get: MagicMock, mock_post: MagicMock
+    ) -> None:
+        """Envia a lista na query, preservando ordem e zeros à esquerda."""
+        unidades = [{"codigoEscola": "000003"}, {"codigoEscola": "000001"}]
+        mock_get.return_value = httpx.Response(
+            200, json=unidades, request=httpx.Request("GET", "http://api/")
+        )
+
+        result = services.get_unidades_por_codigos(["000003", "000001"])
+
+        self.assertEqual(result, unidades)
+        mock_get.assert_called_once_with(
+            f"{_BASE}/escolas/unidades/",
+            params={
+                "codigos": ["000003", "000001"],
+                "apenasParceiras": "false",
+            },
+        )
+        mock_post.assert_not_called()
+
+    @patch("apps.institucional.services._client.get")
+    def test_consulta_get_com_apenas_parceiras(
+        self, mock_get: MagicMock
+    ) -> None:
+        """Serializa o filtro true na query e preserva o email nulo."""
+        unidades = [{"codigo": "000002", "nome": "CEI TESTE", "email": None}]
+        mock_get.return_value = httpx.Response(
+            200, json=unidades, request=httpx.Request("GET", "http://api/")
+        )
+
+        result = services.get_unidades_por_codigos(["000002"], True)
+
+        self.assertEqual(result, unidades)
+        mock_get.assert_called_once_with(
+            f"{_BASE}/escolas/unidades/",
+            params={"codigos": ["000002"], "apenasParceiras": "true"},
+        )
+
+    @patch("apps.institucional.services._client.get")
+    def test_retorna_none_quando_sem_conteudo(
+        self, mock_get: MagicMock
+    ) -> None:
+        """Não tenta decodificar JSON de respostas sem conteúdo."""
+        for status_code in (200, 204):
+            with self.subTest(status_code=status_code):
+                mock_get.return_value = httpx.Response(
+                    status_code, request=httpx.Request("GET", "http://api/")
+                )
+
+                self.assertIsNone(
+                    services.get_unidades_por_codigos(["000001"])
+                )
+
+    @patch("apps.institucional.services._client.get")
+    def test_retorna_lista_vazia(self, mock_get: MagicMock) -> None:
+        """Preserva uma resposta JSON sem unidades encontradas."""
+        mock_get.return_value = httpx.Response(
+            200, json=[], request=httpx.Request("GET", "http://api/")
+        )
+
+        self.assertEqual(services.get_unidades_por_codigos(["999999"]), [])
+
+    @patch("apps.institucional.services._client.get")
+    def test_propaga_erros_http(self, mock_get: MagicMock) -> None:
+        """Valida o status HTTP antes de retornar o corpo da resposta."""
+        for status_code in (400, 404, 500):
+            with self.subTest(status_code=status_code):
+                mock_get.return_value = httpx.Response(
+                    status_code,
+                    json={"detail": "Erro na consulta"},
+                    request=httpx.Request("GET", "http://api/"),
+                )
+
+                with self.assertRaises(httpx.HTTPStatusError) as exc:
+                    services.get_unidades_por_codigos(["000001"])
+
+                self.assertEqual(
+                    exc.exception.response.status_code, status_code
+                )
+
+    @patch("apps.institucional.services._client.get")
+    def test_propaga_falha_de_transporte(self, mock_get: MagicMock) -> None:
+        """Permite que a view padronize falhas de conexão como 503."""
+        mock_get.side_effect = httpx.ConnectError("connection failed")
+
+        with self.assertRaises(httpx.RequestError):
+            services.get_unidades_por_codigos(["000001"])
+
+
 class GetSubprefeiturasPorEscolaTest(SimpleTestCase):
     """Valida a consulta de subprefeituras por escola."""
 
