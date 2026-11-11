@@ -194,6 +194,30 @@ def get_unidades_por_dre(codigo_dre: str) -> Any:
     return resp.json()
 
 
+def get_unidades_por_dre_consolidadas(
+    codigo_dre: str, retorno: str = "completo"
+) -> Any:
+    """Lista unidades de uma DRE no formato solicitado.
+
+    Args:
+        codigo_dre: Código EOL da Diretoria Regional de Educação.
+        retorno: Formato da resposta: completo, codigos ou integracao.
+
+    Returns:
+        Unidades no formato solicitado ou None quando não há conteúdo.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status
+            HTTP de erro.
+    """
+    resp = _client.get(
+        f"{_BASE}/dres/{codigo_dre}/unidades/consolidadas/",
+        params={"retorno": retorno},
+    )
+    resp.raise_for_status()
+    return _client.json_or_none(resp)
+
+
 def get_unidades_codigo_integracao_por_dre(codigo_dre: str) -> Any:
     """Lista códigos de integração das UEs de uma DRE.
 

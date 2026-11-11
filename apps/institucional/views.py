@@ -4,7 +4,11 @@ from typing import Any, cast
 
 import httpx
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter, extend_schema
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
+)
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -36,6 +40,7 @@ _TAG_ESCOLA = ["Escola"]
 _DOMINIO_INSTITUCIONAL = "institucional"
 _DOMINIO_PROFESSORES = "professores"
 _MSG_CODIGO_ESCOLA_OBRIGATORIO = "Código EOL da escola obrigatório."
+_UNIDADES_POR_DRE_RETORNOS = ("completo", "codigos", "integracao")
 
 _ESCOLA_RESUMO_CAMPOS = {
     "codigoEscola",
@@ -442,7 +447,7 @@ class EscolasPorDREeTipoeSigpaeView(InstitucionalAPIView):
             if exc.response.status_code == 404:
                 return Response(status=status.HTTP_404_NOT_FOUND)
             raise
-        #Regra mais comum entre os endpoints consolidados
+        # Regra mais comum entre os endpoints consolidados
         if not data:
             return Response([], status=status.HTTP_200_OK)
         return Response(
@@ -592,6 +597,98 @@ class EscolaProfessoresAnoView(EscolaProfessoresView):
         return cast(
             Response, super().get(request, codigo_eol_escola, ano_letivo)
         )
+
+
+class UnidadesPorDreConsolidadaView(InstitucionalAPIView):
+    """Lista unidades de uma DRE em três formatos de resposta."""
+
+    @extend_schema(
+        tags=_TAG_DRE,
+        summary="Unidades de uma DRE por formato de retorno",
+        description=(
+            "Retorna unidades completas (`completo`), códigos EOL "
+            "(`codigos`) ou os campos codigoUe, nomeUe e codigoIntegracao "
+            "(`integracao`). O formato padrão é completo. Consultas sem "
+            "resultados retornam 200 com lista vazia.\n\n"
+            "Contrato D13: "
+            "`GET /api/DREs/{codigo_eol_dre}/unidades/consolidadas`."
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="codigo_eol_dre",
+                location=OpenApiParameter.PATH,
+                description="Código EOL da DRE",
+                required=True,
+                type=str,
+            ),
+            OpenApiParameter(
+                name="retorno",
+                location=OpenApiParameter.QUERY,
+                description="Formato da resposta",
+                required=False,
+                type=str,
+                enum=_UNIDADES_POR_DRE_RETORNOS,
+                default="completo",
+            ),
+        ],
+        responses={
+            200: OpenApiResponse(
+                response={
+                    "anyOf": [
+                        {"type": "array", "items": {"type": "object"}},
+                        {"type": "array", "items": {"type": "string"}},
+                        {
+                            "type": "array",
+                            "items": {
+                                "$ref": (
+                                    "#/components/schemas/"
+                                    "UnidadeCodigoIntegracao"
+                                )
+                            },
+                        },
+                    ]
+                },
+                description="Lista de unidades no formato solicitado.",
+            ),
+            400: OpenApiTypes.STR,
+            404: None,
+            503: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Serviço de institucional indisponível.",
+            ),
+        },
+    )
+    def get(self, request: Request, codigo_eol_dre: str) -> Response:
+        """Retorna unidades por DRE no formato selecionado."""
+        if not codigo_eol_dre.strip():
+            return Response(
+                "Código EOL da DRE obrigatório.",
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        retorno = request.query_params.get("retorno", "completo")
+        if retorno not in _UNIDADES_POR_DRE_RETORNOS:
+            return Response(
+                "Retorno inválido. Use 'completo', 'codigos' ou 'integracao'.",
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            data = services.get_unidades_por_dre_consolidadas(
+                codigo_eol_dre, retorno
+            )
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+            raise
+
+        if not data:
+            return Response([])
+        if retorno == "integracao":
+            return Response(
+                [_filtrar_unidade_codigo_integracao(item) for item in data]
+            )
+        return Response(data)
 
 
 class UesPorDREView(InstitucionalAPIView):
