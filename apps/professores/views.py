@@ -2395,9 +2395,7 @@ class CargosFuncionarioView(ProfessoresAPIView):
 
     @extend_schema(
         tags=_TAG_FUNCIONARIO,
-        description=(
-            "Retorna cargos por registro funcional em JSON. "
-        ),
+        description=("Retorna cargos por registro funcional em JSON. "),
         responses={
             200: CargoFuncionarioConectaSerializer(many=True),
             204: None,
@@ -2405,18 +2403,19 @@ class CargosFuncionarioView(ProfessoresAPIView):
             502: dict,
         },
     )
-    def get(self, _request: Request, registroFuncional: str) -> Response:
+    def get(self, _request: Request, **kwargs: str) -> Response:
         """Retorna cargos por registro funcional.
 
         Args:
-            registroFuncional: Registro funcional usado na consulta.
+            kwargs: Parâmetros da rota, incluindo registroFuncional.
 
         Returns:
             Cargos encontrados, ou ausência de conteúdo.
         """
-        if not registroFuncional.strip():
+        registro_funcional = kwargs["registroFuncional"]
+        if not registro_funcional.strip():
             return detail_response(_MSG_REGISTRO_FUNCIONAL_OBRIGATORIO)
-        data = services.get_cargos_funcionario(registroFuncional)
+        data = services.get_cargos_funcionario(registro_funcional)
         if data is None:
             return Response(status=204)
         if not _is_lista_dicionarios(data):
