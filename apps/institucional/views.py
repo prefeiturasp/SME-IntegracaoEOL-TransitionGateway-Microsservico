@@ -5,6 +5,7 @@ from typing import Any, cast
 import httpx
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import (
+    OpenApiExample,
     OpenApiParameter,
     OpenApiResponse,
     extend_schema,
@@ -649,13 +650,75 @@ class UnidadesPorDreConsolidadaView(InstitucionalAPIView):
                     ]
                 },
                 description="Lista de unidades no formato solicitado.",
+                examples=[
+                    OpenApiExample(
+                        "Completo",
+                        summary="Completo",
+                        value=[
+                            {
+                                "codigoEol": "000001",
+                                "nomeOficial": "EMEF EXEMPLO",
+                                "nomeNaoOficial": None,
+                                "tipoUnidadeAdmin": (
+                                    "DIRETORIA REGIONAL DE EDUCACAO"
+                                ),
+                                "tipoUE": (
+                                    "ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL"
+                                ),
+                                "logadouro": "RUA EXEMPLO",
+                                "numero": "100",
+                                "bairro": "IPIRANGA",
+                                "cep": 1310100,
+                                "distrito": "IPIRANGA",
+                                "subPrefeitura": "IPIRANGA",
+                                "nomeDre": "DRE IPIRANGA",
+                                "email": None,
+                                "telefone1": None,
+                                "telefone2": None,
+                                "anoConstrucao": None,
+                                "propriedade": None,
+                                "capacidadeVagasMatutino": 100,
+                                "capacidadeVagasVespertino": 100,
+                                "capacidadeVagasNoturno": 0,
+                                "capacidadeVagasIntermediario": 0,
+                                "capacidadeVagasIntegral": 0,
+                                "capacidadeVagasTotal": 200,
+                                "organizacaoParceira": False,
+                                "quantidadeDeFuncionarios": 20,
+                                "status": "ATIVO",
+                                "subprefeituraId": 13,
+                                "tipoUnidadeAdmId": 24,
+                            }
+                        ],
+                        response_only=True,
+                    ),
+                    OpenApiExample(
+                        "Codigos",
+                        summary="Códigos",
+                        value=["000001", "000002"],
+                        response_only=True,
+                    ),
+                    OpenApiExample(
+                        "Integracao",
+                        summary="Integração",
+                        value=[
+                            {
+                                "codigoUe": "000001",
+                                "nomeUe": "EMEF EXEMPLO",
+                                "codigoIntegracao": "INT001",
+                            },
+                            {
+                                "codigoUe": "000002",
+                                "nomeUe": "EMEF OUTRA",
+                                "codigoIntegracao": None,
+                            },
+                        ],
+                        response_only=True,
+                    ),
+                ],
             ),
             400: OpenApiTypes.STR,
             404: None,
-            503: OpenApiResponse(
-                response=OpenApiTypes.OBJECT,
-                description="Serviço de institucional indisponível.",
-            ),
         },
     )
     def get(self, request: Request, codigo_eol_dre: str) -> Response:
@@ -695,9 +758,13 @@ class UesPorDREView(InstitucionalAPIView):
     """Lista códigos de UEs vinculadas à DRE."""
 
     @extend_schema(
+        deprecated=True,
         tags=_TAG_DRE,
         summary="Códigos de UEs de uma DRE",
         description=(
+            "DEPRECADO — use "
+            "`GET /api/DREs/{codigo_eol_dre}/unidades/consolidadas"
+            "?retorno=codigos`.\n\n"
             "Retorna lista de códigos de unidades educacionais vinculadas "
             "à Diretoria Regional de Educação informada.\n\n"
             "Contrato D08: `GET /api/DREs/{dreCodigo}/ues`."
@@ -727,9 +794,13 @@ class UnidadesPorDREView(InstitucionalAPIView):
     """Lista unidades administrativas vinculadas à DRE."""
 
     @extend_schema(
+        deprecated=True,
         tags=_TAG_DRE,
         summary="Unidades de uma DRE",
         description=(
+            "DEPRECADO — use "
+            "`GET /api/DREs/{codigo_eol_dre}/unidades/consolidadas"
+            "?retorno=completo`.\n\n"
             "Retorna lista completa de unidades administrativas vinculadas "
             "à Diretoria Regional de Educação informada.\n\n"
             "Contrato D10: `GET /api/DREs/{dreCodigo}/unidades`."
@@ -759,9 +830,13 @@ class UnidadeCodigoIntegracaoPorDREView(InstitucionalAPIView):
     """Lista UEs com código de integração por DRE."""
 
     @extend_schema(
+        deprecated=True,
         tags=_TAG_DRE,
         summary="UEs com código de integração por DRE",
         description=(
+            "DEPRECADO — use "
+            "`GET /api/DREs/{codigo_eol_dre}/unidades/consolidadas"
+            "?retorno=integracao`.\n\n"
             "Retorna lista de unidades educacionais da DRE com seus "
             "códigos de integração.\n\n"
             "Contrato D11: "
