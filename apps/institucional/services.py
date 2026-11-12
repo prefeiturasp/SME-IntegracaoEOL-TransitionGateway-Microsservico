@@ -120,6 +120,32 @@ def get_escolas_sigpae_por_dre(codigo_dre: str) -> Any:
     return _client.json_or_none(resp)
 
 
+def get_escolas_por_dre_tipo(
+    codigo_dre: str, tipo_escola: str | None = None
+) -> Any:
+    """Lista escolas de uma Diretoria Regional de Educação por tipo e formato.
+
+    Args:
+        codigo_dre: Código da Diretoria Regional de Educação.
+        tipo_escola: Tipo de escola usado no filtro.
+
+    Returns:
+        Escolas vinculadas à Diretoria Regional de Educação, ao tipo
+        informado e no formato solicitado.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status
+            HTTP de erro.
+    """
+    parametros = {"tipo_escola_id": tipo_escola} if tipo_escola else {}
+    resp = _client.get(
+        f"{_BASE}/dres/{codigo_dre}/escolas/",
+        params=parametros,
+    )
+    resp.raise_for_status()
+    return _client.json_or_none(resp)
+
+
 def get_escolas_por_dre_e_tipo(codigo_dre: str, tipo_escola: str) -> Any:
     """Lista escolas de uma Diretoria Regional de Educação por tipo.
 
@@ -166,6 +192,30 @@ def get_unidades_por_dre(codigo_dre: str) -> Any:
     resp = _client.get(f"{_BASE}/dres/{codigo_dre}/unidades/")
     resp.raise_for_status()
     return resp.json()
+
+
+def get_unidades_por_dre_consolidadas(
+    codigo_dre: str, retorno: str = "completo"
+) -> Any:
+    """Lista unidades de uma DRE no formato solicitado.
+
+    Args:
+        codigo_dre: Código EOL da Diretoria Regional de Educação.
+        retorno: Formato da resposta: completo, codigos ou integracao.
+
+    Returns:
+        Unidades no formato solicitado ou None quando não há conteúdo.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status
+            HTTP de erro.
+    """
+    resp = _client.get(
+        f"{_BASE}/dres/{codigo_dre}/unidades/consolidadas/",
+        params={"retorno": retorno},
+    )
+    resp.raise_for_status()
+    return _client.json_or_none(resp)
 
 
 def get_unidades_codigo_integracao_por_dre(codigo_dre: str) -> Any:
@@ -220,6 +270,33 @@ def post_escolas(codigos: list[str]) -> Any:
             de erro.
     """
     resp = _client.post(f"{_BASE}/escolas/", payload=codigos)
+    resp.raise_for_status()
+    return _client.json_or_none(resp)
+
+
+def get_unidades_por_codigos(
+    codigos: list[str], apenas_parceiras: bool = False
+) -> Any:
+    """Consulta unidades por códigos EOL, com filtro opcional de parceiras.
+
+    Args:
+        codigos: Códigos EOL das unidades a consultar.
+        apenas_parceiras: Indica se devem retornar somente parceiras.
+
+    Returns:
+        Unidades encontradas ou None quando não há conteúdo.
+
+    Raises:
+        httpx.HTTPStatusError: Quando o serviço externo retorna status HTTP
+            de erro.
+    """
+    resp = _client.get(
+        f"{_BASE}/escolas/unidades/",
+        params={
+            "codigos": codigos,
+            "apenasParceiras": str(apenas_parceiras).lower(),
+        },
+    )
     resp.raise_for_status()
     return _client.json_or_none(resp)
 

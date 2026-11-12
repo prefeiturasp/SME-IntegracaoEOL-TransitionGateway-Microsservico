@@ -4,7 +4,13 @@ from typing import Any, cast
 
 import httpx
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter, extend_schema
+from drf_spectacular.utils import (
+    OpenApiExample,
+    OpenApiParameter,
+    OpenApiResponse,
+    PolymorphicProxySerializer,
+    extend_schema,
+)
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -27,6 +33,7 @@ from apps.institucional.serializers import (
     UnidadeEducacionalSerializer,
     UnidadeEolSerializer,
     UnidadeParceiraSerializer,
+    UnidadesQuerySerializer,
 )
 from apps.professores import services as professores_services
 from apps.professores.serializers import ProfessorEscolaLegadoSerializer
@@ -36,6 +43,7 @@ _TAG_ESCOLA = ["Escola"]
 _DOMINIO_INSTITUCIONAL = "institucional"
 _DOMINIO_PROFESSORES = "professores"
 _MSG_CODIGO_ESCOLA_OBRIGATORIO = "Código EOL da escola obrigatório."
+_UNIDADES_POR_DRE_RETORNOS = ("completo", "codigos", "integracao")
 
 _ESCOLA_RESUMO_CAMPOS = {
     "codigoEscola",
@@ -257,11 +265,13 @@ class EscolasPorDREView(InstitucionalAPIView):
     """Lista escolas vinculadas a uma DRE."""
 
     @extend_schema(
+        deprecated=True,
         tags=_TAG_DRE,
         summary="Escolas de uma DRE",
         description=(
-            "Retorna lista das unidades educacionais vinculadas "
-            "à Diretoria Regional de Educação informada.\n\n"
+            "DEPRECADO — use "
+            "`GET /api/DREs/{codigoEolDRE}/escolas"
+            "/?tipo_escola={tipoEscola}&formato_sigpae={formatoSigpae}`.\n\n"
             "Contrato D06: `GET /api/DREs/{codigoEolDRE}/escola`."
         ),
         parameters=[
@@ -289,11 +299,13 @@ class EscolasSigpaePorDREView(InstitucionalAPIView):
     """Lista escolas de uma DRE no formato SIGPAE."""
 
     @extend_schema(
+        deprecated=True,
         tags=_TAG_DRE,
         summary="Escolas SIGPAE de uma DRE",
         description=(
-            "Retorna lista de unidades educacionais de uma DRE "
-            "no formato esperado pelo SIGPAE.\n\n"
+            "DEPRECADO — use "
+            "`GET /api/DREs/{codigoEolDRE}/escolas"
+            "/?tipo_escola={tipoEscola}&formato_sigpae={formatoSigpae}`.\n\n"
             "Contrato D09: `GET /api/dres/{codigoEolDRE}/escola/Sigpae/`."
         ),
         parameters=[
@@ -368,15 +380,95 @@ class SubprefeiturasPorDREView(InstitucionalAPIView):
         return Response(data)
 
 
+class EscolasPorDREeTipoeSigpaeView(InstitucionalAPIView):
+    """Lista escolas de uma DRE de acordo com filtros."""
+
+    @extend_schema(
+        tags=_TAG_DRE,
+        summary="Escolas de uma DRE por tipo e/ou escolas no formato SIGPAE.",
+        description=(
+            "Retorna lista de unidades educacionais vinculadas de acordo"
+            " com o filtro utilzado.\n\n"
+            "Contrato D12: "
+            "`GET /api/DREs/{codigoEolDRE}/escolas/`"
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="codigo_eol_dre",
+                location=OpenApiParameter.PATH,
+                description="Código EOL da DRE",
+                required=True,
+                type=str,
+            ),
+            OpenApiParameter(
+                name="tipo_escola",
+                location=OpenApiParameter.QUERY,
+                description="Código do tipo de escola",
+                required=False,
+                type=int,
+            ),
+            OpenApiParameter(
+                name="formato_sigpae",
+                location=OpenApiParameter.QUERY,
+                description="Indica se as escolas devem"
+                " ser filtradas no formato SIGPAE",
+                required=False,
+                type=bool,
+            ),
+        ],
+        responses={200: EscolaSigpaeSerializer(many=True), 404: None},
+    )
+    def get(
+        self,
+        _request: Request,
+        codigo_eol_dre: str,
+    ) -> Response:
+        """Retorna escolas por DRE, filtradas por tipo ou no formato SIGPAE."""
+        funcoes_formato = {
+            False: _filtrar_escola_por_dre_tipo,
+            True: _filtrar_escola_sigpae,
+        }
+
+        if not codigo_eol_dre.strip():
+            return Response(
+                "Código EOL da DRE obrigatório.",
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        parametros = _request.query_params.dict()
+        formato_sigpae = parametros.get("formato_sigpae", "false") == "true"
+        tipo_escola = parametros.get("tipo_escola", None)
+        if funcoes_formato.get(formato_sigpae) is None:
+            return Response(
+                "Formato inválido. Use 'true' ou 'false'.",
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            data = services.get_escolas_por_dre_tipo(
+                codigo_eol_dre, tipo_escola
+            )
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+            raise
+        # Regra mais comum entre os endpoints consolidados
+        if not data:
+            return Response([], status=status.HTTP_200_OK)
+        return Response(
+            [funcoes_formato.get(formato_sigpae, lambda x: x)(e) for e in data]
+        )
+
+
 class EscolasPorDREeTipoView(InstitucionalAPIView):
     """Lista escolas de uma DRE por tipo."""
 
     @extend_schema(
+        deprecated=True,
         tags=_TAG_DRE,
         summary="Escolas de uma DRE por tipo",
         description=(
-            "Retorna lista de unidades educacionais vinculadas à DRE "
-            "filtradas pelo tipo de escola informado.\n\n"
+            "DEPRECADO — use "
+            "`GET /api/DREs/{codigoEolDRE}/escolas"
+            "/?tipo_escola={tipoEscola}&formato_sigpae={formatoSigpae}`.\n\n"
             "Contrato D05: "
             "`GET /api/DREs/{codigoEolDRE}/escolas/{tipoEscola}`."
         ),
@@ -510,13 +602,171 @@ class EscolaProfessoresAnoView(EscolaProfessoresView):
         )
 
 
+class UnidadesPorDreConsolidadaView(InstitucionalAPIView):
+    """Lista unidades de uma DRE em três formatos de resposta."""
+
+    @extend_schema(
+        tags=_TAG_DRE,
+        summary="Unidades de uma DRE por formato de retorno",
+        description=(
+            "Retorna unidades completas (`completo`), códigos EOL "
+            "(`codigos`) ou os campos codigoUe, nomeUe e codigoIntegracao "
+            "(`integracao`). O formato padrão é completo. Consultas sem "
+            "resultados retornam 200 com lista vazia.\n\n"
+            "Contrato D13: "
+            "`GET /api/DREs/{codigo_eol_dre}/unidades/consolidadas`."
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="codigo_eol_dre",
+                location=OpenApiParameter.PATH,
+                description="Código EOL da DRE",
+                required=True,
+                type=str,
+            ),
+            OpenApiParameter(
+                name="retorno",
+                location=OpenApiParameter.QUERY,
+                description="Formato da resposta",
+                required=False,
+                type=str,
+                enum=_UNIDADES_POR_DRE_RETORNOS,
+                default="completo",
+            ),
+        ],
+        responses={
+            200: OpenApiResponse(
+                response={
+                    "anyOf": [
+                        {"type": "array", "items": {"type": "object"}},
+                        {"type": "array", "items": {"type": "string"}},
+                        {
+                            "type": "array",
+                            "items": {
+                                "$ref": (
+                                    "#/components/schemas/"
+                                    "UnidadeCodigoIntegracao"
+                                )
+                            },
+                        },
+                    ]
+                },
+                description="Lista de unidades no formato solicitado.",
+                examples=[
+                    OpenApiExample(
+                        "Completo",
+                        summary="Completo",
+                        value=[
+                            {
+                                "codigoEol": "000001",
+                                "nomeOficial": "EMEF EXEMPLO",
+                                "nomeNaoOficial": None,
+                                "tipoUnidadeAdmin": (
+                                    "DIRETORIA REGIONAL DE EDUCACAO"
+                                ),
+                                "tipoUE": (
+                                    "ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL"
+                                ),
+                                "logadouro": "RUA EXEMPLO",
+                                "numero": "100",
+                                "bairro": "IPIRANGA",
+                                "cep": 1310100,
+                                "distrito": "IPIRANGA",
+                                "subPrefeitura": "IPIRANGA",
+                                "nomeDre": "DRE IPIRANGA",
+                                "email": None,
+                                "telefone1": None,
+                                "telefone2": None,
+                                "anoConstrucao": None,
+                                "propriedade": None,
+                                "capacidadeVagasMatutino": 100,
+                                "capacidadeVagasVespertino": 100,
+                                "capacidadeVagasNoturno": 0,
+                                "capacidadeVagasIntermediario": 0,
+                                "capacidadeVagasIntegral": 0,
+                                "capacidadeVagasTotal": 200,
+                                "organizacaoParceira": False,
+                                "quantidadeDeFuncionarios": 20,
+                                "status": "ATIVO",
+                                "subprefeituraId": 13,
+                                "tipoUnidadeAdmId": 24,
+                            }
+                        ],
+                        response_only=True,
+                    ),
+                    OpenApiExample(
+                        "Codigos",
+                        summary="Códigos",
+                        value=["000001", "000002"],
+                        response_only=True,
+                    ),
+                    OpenApiExample(
+                        "Integracao",
+                        summary="Integração",
+                        value=[
+                            {
+                                "codigoUe": "000001",
+                                "nomeUe": "EMEF EXEMPLO",
+                                "codigoIntegracao": "INT001",
+                            },
+                            {
+                                "codigoUe": "000002",
+                                "nomeUe": "EMEF OUTRA",
+                                "codigoIntegracao": None,
+                            },
+                        ],
+                        response_only=True,
+                    ),
+                ],
+            ),
+            400: OpenApiTypes.STR,
+            404: None,
+        },
+    )
+    def get(self, request: Request, codigo_eol_dre: str) -> Response:
+        """Retorna unidades por DRE no formato selecionado."""
+        if not codigo_eol_dre.strip():
+            return Response(
+                "Código EOL da DRE obrigatório.",
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        retorno = request.query_params.get("retorno", "completo")
+        if retorno not in _UNIDADES_POR_DRE_RETORNOS:
+            return Response(
+                "Retorno inválido. Use 'completo', 'codigos' ou 'integracao'.",
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            data = services.get_unidades_por_dre_consolidadas(
+                codigo_eol_dre, retorno
+            )
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+            raise
+
+        if not data:
+            return Response([])
+        if retorno == "integracao":
+            return Response(
+                [_filtrar_unidade_codigo_integracao(item) for item in data]
+            )
+        return Response(data)
+
+
 class UesPorDREView(InstitucionalAPIView):
     """Lista códigos de UEs vinculadas à DRE."""
 
     @extend_schema(
+        deprecated=True,
         tags=_TAG_DRE,
         summary="Códigos de UEs de uma DRE",
         description=(
+            "DEPRECADO — use "
+            "`GET /api/DREs/{codigo_eol_dre}/unidades/consolidadas"
+            "?retorno=codigos`.\n\n"
             "Retorna lista de códigos de unidades educacionais vinculadas "
             "à Diretoria Regional de Educação informada.\n\n"
             "Contrato D08: `GET /api/DREs/{dreCodigo}/ues`."
@@ -546,9 +796,13 @@ class UnidadesPorDREView(InstitucionalAPIView):
     """Lista unidades administrativas vinculadas à DRE."""
 
     @extend_schema(
+        deprecated=True,
         tags=_TAG_DRE,
         summary="Unidades de uma DRE",
         description=(
+            "DEPRECADO — use "
+            "`GET /api/DREs/{codigo_eol_dre}/unidades/consolidadas"
+            "?retorno=completo`.\n\n"
             "Retorna lista completa de unidades administrativas vinculadas "
             "à Diretoria Regional de Educação informada.\n\n"
             "Contrato D10: `GET /api/DREs/{dreCodigo}/unidades`."
@@ -578,9 +832,13 @@ class UnidadeCodigoIntegracaoPorDREView(InstitucionalAPIView):
     """Lista UEs com código de integração por DRE."""
 
     @extend_schema(
+        deprecated=True,
         tags=_TAG_DRE,
         summary="UEs com código de integração por DRE",
         description=(
+            "DEPRECADO — use "
+            "`GET /api/DREs/{codigo_eol_dre}/unidades/consolidadas"
+            "?retorno=integracao`.\n\n"
             "Retorna lista de unidades educacionais da DRE com seus "
             "códigos de integração.\n\n"
             "Contrato D11: "
@@ -732,9 +990,13 @@ class EscolasListPostView(InstitucionalAPIView):
     """Lista escolas pelos códigos informados no corpo da requisição."""
 
     @extend_schema(
+        deprecated=True,
         tags=_TAG_ESCOLA,
         summary="Escolas por lista de códigos",
         description=(
+            "DEPRECADO — use `GET /api/escolas/unidades"
+            "?codigos={codigoEol}&apenasParceiras=false`. "
+            "Repita codigos na query para consultar várias unidades.\n\n"
             "Retorna escolas correspondentes aos códigos EOL informados no "
             "corpo da requisição."
         ),
@@ -774,6 +1036,88 @@ class EscolasListPostView(InstitucionalAPIView):
                     ]
                 )
         return Response([])
+
+
+class UnidadesPorCodigosView(InstitucionalAPIView):
+    """Consulta escolas por códigos EOL, com filtro opcional de parceiras."""
+
+    @extend_schema(
+        tags=_TAG_ESCOLA,
+        summary="Unidades por lista de códigos",
+        description=(
+            "Consulta unidades pelos códigos EOL informados na query. "
+            "Repita codigos para consultar várias unidades. "
+            "Com apenasParceiras=false ou ausente, retorna os sete campos "
+            "básicos de escola, DRE e tipo. Com true, retorna somente "
+            "parceiras, com codigo, nome e email. "
+            "Consultas sem resultados retornam uma lista vazia."
+        ),
+        parameters=[UnidadesQuerySerializer],
+        responses={
+            200: OpenApiResponse(
+                response=PolymorphicProxySerializer(
+                    component_name="UnidadesPorCodigos",
+                    serializers=[
+                        UnidadeEducacionalSerializer,
+                        UnidadeParceiraSerializer,
+                    ],
+                    resource_type_field_name=None,
+                    many=True,
+                ),
+                description="Lista de escolas ou unidades parceiras.",
+                examples=[
+                    OpenApiExample(
+                        "TodasUnidades",
+                        summary="apenasParceiras = false (padrão)",
+                        value={
+                            "codigoEscola": "000001",
+                            "nomeEscola": "ESCOLA EXEMPLO",
+                            "codigoDRE": "100000",
+                            "nomeDRE": "DRE EXEMPLO",
+                            "siglaDRE": "DRE-EX",
+                            "tipoEscola": "ESCOLA MUNICIPAL",
+                            "siglaTipoEscola": "EMEF",
+                        },
+                        response_only=True,
+                    ),
+                    OpenApiExample(
+                        "ApenasParceiras",
+                        summary="apenasParceiras = true",
+                        value={
+                            "codigo": "000002",
+                            "nome": "CEI UNIDADE PARCEIRA EXEMPLO",
+                            "email": None,
+                        },
+                        response_only=True,
+                    ),
+                ],
+            ),
+            400: OpenApiTypes.OBJECT,
+        },
+    )
+    def get(self, request: Request) -> Response:
+        """Retorna unidades nos contratos de escolas ou de parceiras."""
+        dados: dict[str, Any] = {
+            "codigos": request.query_params.getlist("codigos")
+        }
+        if "apenasParceiras" in request.query_params:
+            dados["apenasParceiras"] = request.query_params["apenasParceiras"]
+        parametros = UnidadesQuerySerializer(data=dados)
+        parametros.is_valid(raise_exception=True)
+        apenas_parceiras = parametros.validated_data["apenasParceiras"]
+        try:
+            data = services.get_unidades_por_codigos(
+                parametros.validated_data["codigos"], apenas_parceiras
+            )
+        except httpx.HTTPStatusError as exc:
+            return _api_error_response(exc)
+        except httpx.RequestError:
+            return _api_unavailable_response()
+        if not data:
+            return Response([])
+        if apenas_parceiras:
+            return Response(UnidadeParceiraSerializer(data, many=True).data)
+        return Response([_filtrar_toda_unidade(item) for item in data])
 
 
 class EscolaDetalheView(InstitucionalAPIView):
@@ -893,9 +1237,13 @@ class UnidadesParceirasView(InstitucionalAPIView):
     """Retorna unidades parceiras pelos códigos informados."""
 
     @extend_schema(
+        deprecated=True,
         tags=_TAG_ESCOLA,
         summary="Unidades parceiras",
         description=(
+            "DEPRECADO — use `GET /api/escolas/unidades"
+            "?codigos={codigoEol}&apenasParceiras=true`. "
+            "Repita codigos na query para consultar várias unidades.\n\n"
             "Retorna a lista de unidades parceiras informadas no corpo da "
             "requisição."
         ),
