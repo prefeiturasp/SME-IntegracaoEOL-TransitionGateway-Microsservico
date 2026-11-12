@@ -9,9 +9,7 @@ class UnidadesQuerySerializer(serializers.Serializer):
     codigos = serializers.ListField(
         child=serializers.CharField(allow_blank=False),
         allow_empty=False,
-        help_text=(
-            "Códigos EOL das unidades."
-        ),
+        help_text=("Códigos EOL das unidades."),
     )
     apenasParceiras = serializers.BooleanField(
         default=False,

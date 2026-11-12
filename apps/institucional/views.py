@@ -1119,6 +1119,7 @@ class UnidadesPorCodigosView(InstitucionalAPIView):
             return Response(UnidadeParceiraSerializer(data, many=True).data)
         return Response([_filtrar_toda_unidade(item) for item in data])
 
+
 class EscolaDetalheView(InstitucionalAPIView):
     """Retorna dados de uma escola."""
 
