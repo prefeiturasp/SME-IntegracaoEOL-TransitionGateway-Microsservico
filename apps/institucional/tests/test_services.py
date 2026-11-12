@@ -327,7 +327,7 @@ class GetUnidadesPorCodigosTest(SimpleTestCase):
         """Envia a lista na query, preservando ordem e zeros à esquerda."""
         unidades = [{"codigoEscola": "000003"}, {"codigoEscola": "000001"}]
         mock_get.return_value = httpx.Response(
-            200, json=unidades, request=httpx.Request("GET", "http://api/")
+            200, json=unidades, request=httpx.Request("GET", "https://api/")
         )
 
         result = services.get_unidades_por_codigos(["000003", "000001"])
@@ -349,7 +349,7 @@ class GetUnidadesPorCodigosTest(SimpleTestCase):
         """Serializa o filtro true na query e preserva o email nulo."""
         unidades = [{"codigo": "000002", "nome": "CEI TESTE", "email": None}]
         mock_get.return_value = httpx.Response(
-            200, json=unidades, request=httpx.Request("GET", "http://api/")
+            200, json=unidades, request=httpx.Request("GET", "https://api/")
         )
 
         result = services.get_unidades_por_codigos(["000002"], True)
@@ -368,7 +368,7 @@ class GetUnidadesPorCodigosTest(SimpleTestCase):
         for status_code in (200, 204):
             with self.subTest(status_code=status_code):
                 mock_get.return_value = httpx.Response(
-                    status_code, request=httpx.Request("GET", "http://api/")
+                    status_code, request=httpx.Request("GET", "https://api/")
                 )
 
                 self.assertIsNone(
@@ -379,7 +379,7 @@ class GetUnidadesPorCodigosTest(SimpleTestCase):
     def test_retorna_lista_vazia(self, mock_get: MagicMock) -> None:
         """Preserva uma resposta JSON sem unidades encontradas."""
         mock_get.return_value = httpx.Response(
-            200, json=[], request=httpx.Request("GET", "http://api/")
+            200, json=[], request=httpx.Request("GET", "https://api/")
         )
 
         self.assertEqual(services.get_unidades_por_codigos(["999999"]), [])
@@ -392,7 +392,7 @@ class GetUnidadesPorCodigosTest(SimpleTestCase):
                 mock_get.return_value = httpx.Response(
                     status_code,
                     json={"detail": "Erro na consulta"},
-                    request=httpx.Request("GET", "http://api/"),
+                    request=httpx.Request("GET", "https://api/"),
                 )
 
                 with self.assertRaises(httpx.HTTPStatusError) as exc:
