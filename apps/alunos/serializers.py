@@ -228,7 +228,7 @@ class InformacoesAlunoTurmaSerializer(serializers.Serializer):
     """Serializa resumo de aluno em turma."""
 
     numeroChamada = serializers.IntegerField(
-        source="numero_chamada", allow_null=True
+        source="numero_chamada", allow_null=False
     )  # NOSONAR
     codigoAluno = serializers.IntegerField(
         source="codigo_aluno", allow_null=True
