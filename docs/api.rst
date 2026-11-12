@@ -144,6 +144,8 @@ Pedagógico
 
 .. autoclass:: apps.pedagogico.views.AgrupamentosTerritorioViewSet
 
+.. autoclass:: apps.pedagogico.views.ComponentesConsolidadosViewSet
+
 Professores
 -----------
 
@@ -158,6 +160,8 @@ Professores
 .. autoclass:: apps.professores.views.ProfessorView
 
 .. autoclass:: apps.professores.views.ValidadeProfessorView
+
+.. autoclass:: apps.professores.views.BuscaProfessorPorRfView
 
 .. autoclass:: apps.professores.views.ProfessorBuscarPorRfView
 
