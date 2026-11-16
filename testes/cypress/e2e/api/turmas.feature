@@ -44,6 +44,12 @@ Funcionalidade: API - Turmas
     Então retorna o status 200
     E o retorno deve conter lista de alunos ativos
 
+  Cenário: Validar alunos ativos por data de aula no formato ISO
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de alunos ativos por data de aula no formato ISO
+    Então retorna o status 200
+    E o retorno deve conter lista de alunos ativos
+
   Cenário: Validar calculo de frequencia da turma
     Dado que possuo acesso à API de turmas
     Quando realizo consulta de calculo de frequencia da turma
@@ -61,6 +67,12 @@ Funcionalidade: API - Turmas
     Quando realizo consulta de data de matricula por ticks
     Então retorna o status 200
     E o retorno deve conter dados de matricula da turma 
+
+  Cenário: Validar alunos da turma por data de matrícula
+    Dado que possuo acesso à API de turmas
+    Quando realizo consulta de alunos da turma por data de matrícula
+    Então retorna o status 200
+    E o retorno deve conter dados de matricula da turma
 
   Cenário: Validar redis multplex da turma
     Dado que possuo acesso à API de turmas

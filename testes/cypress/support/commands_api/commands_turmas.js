@@ -109,6 +109,24 @@ Cypress.Commands.add(
 );
 
 Cypress.Commands.add(
+  "getAlunosAtivosDataAula",
+  (
+    codigoTurma = Cypress.env("TURMA_CODIGO"),
+    dataAula = Cypress.env("DATA_BASE"),
+  ) => {
+    return cy.request({
+      method: "GET",
+      url: `${Cypress.env("API_URL")}/api/turmas/${codigoTurma}/alunos-ativos/data-aula/${dataAula}`,
+      headers: {
+        accept: "application/json",
+        [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+      },
+      failOnStatusCode: false,
+    });
+  },
+);
+
+Cypress.Commands.add(
   "getTurmaCalculoFrequencia",
   (codigoTurma = Cypress.env("TURMA_CODIGO")) => {
     return cy.request({
@@ -147,6 +165,24 @@ Cypress.Commands.add(
     return cy.request({
       method: "GET",
       url: `${Cypress.env("API_URL")}/api/turmas/${codigoTurma}/data-matricula-ticks/${dataMatriculaTicks}`,
+      headers: {
+        accept: "application/json",
+        [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+      },
+      failOnStatusCode: false,
+    });
+  },
+);
+
+Cypress.Commands.add(
+  "getTurmaDataMatricula",
+  (
+    codigoTurma = Cypress.env("TURMA_CODIGO"),
+    dataMatricula = Cypress.env("DATA_BASE"),
+  ) => {
+    return cy.request({
+      method: "GET",
+      url: `${Cypress.env("API_URL")}/api/turmas/${codigoTurma}/data-matricula/${dataMatricula}`,
       headers: {
         accept: "application/json",
         [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
