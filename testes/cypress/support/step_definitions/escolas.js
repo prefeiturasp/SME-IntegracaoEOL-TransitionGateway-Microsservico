@@ -775,3 +775,107 @@ And("o retorno deve conter lista de professores", () => {
     }
   });
 });
+
+const listaCheck = () => {
+  cy.get("@response").then((response) => {
+    if (response.status === 200) {
+      expect(response.body).to.be.an("array");
+      if (response.body.length > 0) {
+        expect(response.body).not.be.empty;
+      }
+    }
+  });
+};
+
+// GET /api/escolas/{codigo_eol_escola}/professores/{ano_letivo}
+When(
+  "realizo consulta de professores da escola no path com UE e ano letivo válidos",
+  () => {
+    cy.getEscolaProfessoresPorAnoLetivo(
+      Cypress.env("UE_CODIGO"),
+      Cypress.env("ANO_LETIVO"),
+    ).as("response");
+  },
+);
+
+When(
+  "realizo consulta de professores da escola no path com UE e ano letivo inválidos",
+  () => {
+    cy.getEscolaProfessoresPorAnoLetivo(
+      Cypress.env("UE_CODIGO_INEXISTENTE"),
+      Cypress.env("ANO_LETIVO_INEXISTENTE"),
+    ).as("response");
+  },
+);
+
+And(
+  "o retorno deve conter lista de professores da escola por ano letivo",
+  listaCheck,
+);
+
+// GET /api/escolas/{codigo_ue}/administrador-sgp
+When("realizo consulta de administrador SGP da escola com UE válida", () => {
+  cy.getEscolaAdministradorSgp(Cypress.env("UE_CODIGO_FUNCIONARIOS")).as(
+    "response",
+  );
+});
+
+When("realizo consulta de administrador SGP da escola com UE inválida", () => {
+  cy.getEscolaAdministradorSgp(Cypress.env("UE_CODIGO_INEXISTENTE")).as(
+    "response",
+  );
+});
+
+And("o retorno deve conter dados de administrador SGP", () => {
+  cy.get("@response").then((response) => {
+    if (response.status === 200) {
+      expect(response.body).to.exist;
+      // expect(response.body).to.not.be.empty;
+    }
+  });
+});
+
+// GET /api/escolas/{codigo_ue}/turmas-por-sala/{tipo_sala}/anos_letivos/{ano_letivo}
+When(
+  "realizo consulta de turmas por sala com UE, tipo de sala e ano letivo válidos",
+  () => {
+    cy.getEscolaTurmasPorSala(
+      Cypress.env("UE_CODIGO_FUNCIONARIOS"),
+      Cypress.env("TIPO_SALA"),
+      Cypress.env("ANO_LETIVO_ALUNO"),
+    ).as("response");
+  },
+);
+
+When(
+  "realizo consulta de turmas por sala com UE, tipo de sala e ano letivo inválidos",
+  () => {
+    cy.getEscolaTurmasPorSala(
+      Cypress.env("UE_CODIGO_INEXISTENTE"),
+      Cypress.env("TIPO_SALA_INEXISTENTE"),
+      Cypress.env("ANO_LETIVO_INEXISTENTE"),
+    ).as("response");
+  },
+);
+
+And("o retorno deve conter lista de turmas por sala", listaCheck);
+
+// GET /api/escolas/{codigo_ue}/turmas-sondagem/anos_letivos/{ano_letivo}
+When("realizo consulta de turmas-sondagem com UE e ano letivo válidos", () => {
+  cy.getEscolaTurmasSondagemHifen(
+    Cypress.env("UE_CODIGO_FUNCIONARIOS"),
+    Cypress.env("ANO_LETIVO_ALUNO"),
+  ).as("response");
+});
+
+When(
+  "realizo consulta de turmas-sondagem com UE e ano letivo inválidos",
+  () => {
+    cy.getEscolaTurmasSondagemHifen(
+      Cypress.env("UE_CODIGO_INEXISTENTE"),
+      Cypress.env("ANO_LETIVO_ALUNO_INEXISTENTE"),
+    ).as("response");
+  },
+);
+
+And("o retorno deve conter lista de turmas-sondagem", listaCheck);

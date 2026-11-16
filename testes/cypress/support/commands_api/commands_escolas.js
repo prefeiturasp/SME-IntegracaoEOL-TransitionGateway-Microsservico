@@ -404,3 +404,54 @@ Cypress.Commands.add("getEscolaProfessores", (codigoUe, anoLetivo) => {
     failOnStatusCode: false,
   });
 });
+
+const headersPadrao = () => ({
+  accept: "application/json",
+  [Cypress.env("API_KEY_HEADER")]: Cypress.env("API_KEY"),
+});
+
+Cypress.Commands.add(
+  "getEscolaProfessoresPorAnoLetivo",
+  (codigoUe, anoLetivo) => {
+    return cy.request({
+      method: "GET",
+      url: `${Cypress.env("API_URL")}/api/escolas/${codigoUe}/professores/${anoLetivo}`,
+      headers: headersPadrao(),
+      failOnStatusCode: false,
+    });
+  },
+);
+
+Cypress.Commands.add("getEscolaAdministradorSgp", (codigoUe) => {
+  return cy.request({
+    method: "GET",
+    url: `${Cypress.env("API_URL")}/api/escolas/${codigoUe}/administrador-sgp`,
+    headers: headersPadrao(),
+    failOnStatusCode: false,
+  });
+});
+
+Cypress.Commands.add(
+  "getEscolaTurmasPorSala",
+  (codigoUe, tipoSala, anoLetivo) => {
+    return cy.request({
+      method: "GET",
+      url: `${Cypress.env(
+        "API_URL",
+      )}/api/escolas/${codigoUe}/turmas-por-sala/${tipoSala}/anos_letivos/${anoLetivo}`,
+      headers: headersPadrao(),
+      failOnStatusCode: false,
+    });
+  },
+);
+
+Cypress.Commands.add("getEscolaTurmasSondagemHifen", (codigoUe, anoLetivo) => {
+  return cy.request({
+    method: "GET",
+    url: `${Cypress.env(
+      "API_URL",
+    )}/api/escolas/${codigoUe}/turmas-sondagem/anos_letivos/${anoLetivo}`,
+    headers: headersPadrao(),
+    failOnStatusCode: false,
+  });
+});

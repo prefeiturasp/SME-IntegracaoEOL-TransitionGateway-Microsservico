@@ -296,4 +296,52 @@ Funcionalidade: API - Escolas
     Dado que possuo acesso à API de escolas
     Quando realizo consulta de professores pelo código UE e ano letivo inválidos
     Então retorna o status 200
-    E o retorno deve ser uma lista vazia    
+    E o retorno deve ser uma lista vazia
+
+  Cenário: Validar professores da escola por ano letivo com UE e ano letivo válidos
+    Dado que possuo acesso à API de escolas
+    Quando realizo consulta de professores da escola no path com UE e ano letivo válidos
+    Então retorna o status 200
+    E o retorno deve conter lista de professores da escola por ano letivo
+
+  Cenário: Validar retorno vazio de professores da escola por ano letivo com UE e ano letivo inválidos
+    Dado que possuo acesso à API de escolas
+    Quando realizo consulta de professores da escola no path com UE e ano letivo inválidos
+    Então retorna o status 200
+    E o retorno deve ser uma lista vazia
+
+  Cenário: Validar administrador SGP da escola com UE válida
+    Dado que possuo acesso à API de escolas
+    Quando realizo consulta de administrador SGP da escola com UE válida
+    Então retorna o status 200
+    E o retorno deve conter dados de administrador SGP
+
+  Cenário: Validar retorno vazio de administrador SGP da escola com UE inválida
+    Dado que possuo acesso à API de escolas
+    Quando realizo consulta de administrador SGP da escola com UE inválida
+    Então retorna o status 200
+    E o retorno deve ser uma lista vazia
+
+  Cenário: Validar turmas por sala com UE, tipo de sala e ano letivo válidos
+    Dado que possuo acesso à API de escolas
+    Quando realizo consulta de turmas por sala com UE, tipo de sala e ano letivo válidos
+    Então retorna o status 200
+    E o retorno deve conter lista de turmas por sala
+
+  Cenário: Validar retorno vazio de turmas por sala com UE, tipo de sala e ano letivo inválidos
+    Dado que possuo acesso à API de escolas
+    Quando realizo consulta de turmas por sala com UE, tipo de sala e ano letivo inválidos
+    Então retorna o status 200
+    E o retorno deve ser uma lista vazia
+
+  Cenário: Validar turmas-sondagem com UE e ano letivo válidos
+    Dado que possuo acesso à API de escolas
+    Quando realizo consulta de turmas-sondagem com UE e ano letivo válidos
+    Então retorna o status 200
+    E o retorno deve conter lista de turmas-sondagem
+
+  Cenário: Validar retorno vazio de turmas-sondagem com UE e ano letivo inválidos
+    Dado que possuo acesso à API de escolas
+    Quando realizo consulta de turmas-sondagem com UE e ano letivo inválidos
+    Então retorna o status 200
+    E o retorno deve ser uma lista vazia
