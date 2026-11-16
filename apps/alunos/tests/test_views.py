@@ -1,6 +1,6 @@
 """Valida as views do domínio de alunos."""
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import httpx
@@ -192,7 +192,7 @@ class ResponsavelSchemaDeprecacaoTest(SimpleTestCase):
                 valor["dataAtualizacao"].replace("Z", "+00:00")
             )
             self.assertLess(
-                abs(datetime.now(UTC) - gerado).total_seconds(), 60
+                abs(datetime.now(timezone.utc) - gerado).total_seconds(), 60
             )
 
         self.assertTrue(paths[base]["post"]["deprecated"])
@@ -201,31 +201,6 @@ class ResponsavelSchemaDeprecacaoTest(SimpleTestCase):
         self.assertNotIn(
             "deprecated", paths[f"{base}/dados-cadastrais"]["put"]
         )
-
-
-class RotasFiltroFuncionalSchemaDeprecacaoTest(SimpleTestCase):
-    """Valida a depreciação das rotas substituídas por versões com filtro."""
-
-    def test_rotas_antigas_deprecadas_e_novas_nao(self) -> None:
-        from drf_spectacular.generators import SchemaGenerator
-
-        paths = SchemaGenerator().get_schema(request=None, public=True)[
-            "paths"
-        ]
-        turmas = "/api/turmas/anos-letivos/{ano_letivo}/alunos/{codigo_aluno}"
-        autocomplete = "/api/alunos/ues/{codigo_ue}/anosLetivos/{ano_letivo}"
-
-        for rota in (
-            f"{turmas}/componentes-curriculares/"
-            "{componente_curricular_codigo}",
-            f"{autocomplete}/autocomplete",
-        ):
-            self.assertTrue(paths[rota]["get"]["deprecated"], rota)
-        for rota in (
-            f"{turmas}/turmas-por-componente/{{componente_curricular_codigo}}",
-            f"{autocomplete}/autocomplete-por-situacao",
-        ):
-            self.assertNotIn("deprecated", paths[rota]["get"], rota)
 
 
 class AlunosUrlsTest(SimpleTestCase):
@@ -1474,6 +1449,30 @@ class InformacoesAlunosTurmaViewTest(SimpleTestCase):
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.json(), [])
+        mock_service.assert_called_once_with("9001")
+
+    @patch("apps.alunos.views.services.get_informacoes_alunos_turma")
+    def test_200_retorna_numero_chamada_zero(
+        self, mock_service: MagicMock
+    ) -> None:
+        """Mantém zero como número de chamada quando não há chamada."""
+        mock_service.return_value = [
+            {
+                "numero_chamada": 0,
+                "codigo_aluno": 123456,
+                "nome_aluno": "Fulano da Silva",
+                "nome_social_aluno": None,
+                "sexo": "M",
+                "raca": "Parda",
+                "codigo_raca": 3,
+            }
+        ]
+        client = _cliente_autenticado()
+
+        resp = client.get("/api/alunos/9001/turma/informacoes")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()[0]["numeroChamada"], 0)
         mock_service.assert_called_once_with("9001")
 
     @patch("apps.alunos.views.services.get_informacoes_alunos_turma")

@@ -896,7 +896,7 @@ class DadosEscolaView(InstitucionalAPIView):
         ),
         parameters=[
             OpenApiParameter(
-                name="codigo_escola_eol",
+                name="codigoEscolaEol",
                 location=OpenApiParameter.PATH,
                 description="Código EOL da escola",
                 required=True,
@@ -905,7 +905,8 @@ class DadosEscolaView(InstitucionalAPIView):
         ],
         responses={200: DadosEscolaSerializer, 404: None},
     )
-    def get(self, _request: Request, codigo_escola_eol: str) -> Response:
+    def get(self, _request: Request, **kwargs: str) -> Response:
+        codigo_escola_eol = kwargs["codigoEscolaEol"]
         try:
             data = services.get_dados_escola(codigo_escola_eol)
         except httpx.HTTPStatusError as exc:

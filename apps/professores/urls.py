@@ -279,7 +279,7 @@ urlpatterns = [
         FuncionariosUeView.as_view(),
     ),
     path(
-        "funcionarios/cargo/<str:registro_funcional>",
+        "funcionarios/cargo/<str:registroFuncional>",
         CargosFuncionarioView.as_view(),
     ),
     path(

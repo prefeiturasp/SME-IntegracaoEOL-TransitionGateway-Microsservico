@@ -71,11 +71,6 @@ const envKeys = [
   "REGISTRO_FUNCIONAL_EMEI",
   "ID_PERFIL",
   "UE_CODIGO_ALUNOS",
-  "DATA_INICIO_INEXISTENTE",
-  "DATA_FIM_INEXISTENTE",
-  "DATA_INICIO",
-  "DATA_FIM",
-  "TURMA_ANO",
 ];
 
 export default defineConfig({
