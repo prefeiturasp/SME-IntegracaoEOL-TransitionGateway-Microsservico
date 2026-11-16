@@ -96,6 +96,13 @@ When("realizo consulta de alunos ativos por data de aula", () => {
 });
 
 When(
+  "realizo consulta de alunos ativos por data de aula no formato ISO",
+  () => {
+    cy.getAlunosAtivosDataAula().as("response");
+  },
+);
+
+When(
   "realizo consulta de alunos ativos por data de aula com ticks inválidos",
   () => {
     cy.getAlunosAtivosDataAulaTicks(Cypress.env("TURMA_CODIGO"), "abc").as(
@@ -143,6 +150,13 @@ When(
 When("realizo consulta de data de matricula por ticks", () => {
   cy.getTurmaDataMatriculaTicks().as("response");
 });
+
+When(
+  "realizo consulta de alunos da turma por data de matrícula",
+  () => {
+    cy.getTurmaDataMatricula().as("response");
+  },
+);
 
 When("realizo consulta de data de matricula por ticks inválidos", () => {
   cy.getTurmaDataMatriculaTicks(Cypress.env("TURMA_CODIGO"), "0").as(
