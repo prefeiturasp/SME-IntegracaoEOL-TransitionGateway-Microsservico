@@ -4,6 +4,7 @@ from django.urls import path, register_converter
 
 from apps.professores.views import (
     AdministradorSgpEscolaView,
+    BuscaProfessorPorRfView,
     BuscaTurmasAtribuidasProfessoresEscolaView,
     CargosFuncionarioView,
     CargosView,
@@ -98,6 +99,11 @@ class _BooleanConverter:
 register_converter(_BooleanConverter, "bool")
 
 urlpatterns = [
+    path(
+        "professores/<str:codigo_rf>/anos_letivos/<int:ano_letivo>",
+        BuscaProfessorPorRfView.as_view(),
+        name="professor-busca-rf",
+    ),
     path("cargos", CargosView.as_view(), name="cargos-listar"),
     path(
         "funcionarios/turmas/<str:codigo_turma>/disciplinas",

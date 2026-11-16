@@ -3075,3 +3075,156 @@ class ListagemTurmasComponentesViewSetTest(SimpleTestCase):
     def test_403_sem_autenticacao(self) -> None:
         resp = APIClient().get(_PATH_LISTAGEM)
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class ComponentesConsolidadosViewSetTest(SimpleTestCase):
+    """Valida o contrato público dos componentes consolidados."""
+
+    @patch("apps.pedagogico.views.services.get_componentes_consolidados")
+    def test_consulta_anos_escolares(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Encaminha os anos escolares e traduz a resposta para camelCase."""
+        mock_svc.return_value = [{
+            **_CC,
+            "codigo": 6,
+            "codigo_componente_curricular_pai": 99,
+            "regencia": True,
+        }]
+
+        resposta = _cliente_autenticado().get(
+            f"{_PREFIX}/ues/009148/modalidades/5/anos/2026/"
+            "consolidado?anosEscolares=1&anosEscolares=2"
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(resposta.data), 1)
+        self.assertEqual(resposta.data[0]["codigo"], 6)
+        self.assertEqual(
+            resposta.data[0]["codigoComponenteCurricularPai"], 99
+        )
+        self.assertTrue(resposta.data[0]["regencia"])
+        self.assertEqual(resposta.data[0]["descricao"], "Matematica")
+        self.assertNotIn(
+            "codigo_componente_curricular_pai", resposta.data[0]
+        )
+
+        mock_svc.assert_called_once_with(
+            ue_id="009148",
+            modalidade=5,
+            ano_letivo=2026,
+            anos_escolares=["1", "2"],
+            somente_programa=False,
+        )
+
+    @patch("apps.pedagogico.views.services.get_componentes_consolidados")
+    def test_consulta_programa(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Encaminha o indicador de programa, sem filtro escolar."""
+        mock_svc.return_value = [_CC]
+
+        resposta = _cliente_autenticado().get(
+            f"{_PREFIX}/ues/009148/modalidades/5/anos/2026/"
+            "consolidado?somentePrograma=true"
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.assertEqual(resposta.data[0]["codigo"], 1)
+
+        mock_svc.assert_called_once_with(
+            ue_id="009148",
+            modalidade=5,
+            ano_letivo=2026,
+            anos_escolares=[],
+            somente_programa=True,
+        )
+
+    @patch("apps.pedagogico.views.services.get_componentes_consolidados")
+    def test_consulta_sem_filtros(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Preserva o retorno de modalidade/etapa sem anos escolares."""
+        mock_svc.return_value = []
+
+        resposta = _cliente_autenticado().get(
+            f"{_PREFIX}/ues/009148/modalidades/5/anos/2026/consolidado"
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.assertEqual(resposta.data, [])
+
+        mock_svc.assert_called_once_with(
+            ue_id="009148",
+            modalidade=5,
+            ano_letivo=2026,
+            anos_escolares=[],
+            somente_programa=False,
+        )
+
+    @patch("apps.pedagogico.views.services.get_componentes_consolidados")
+    def test_aceita_alias_snake_case(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Aceita nomes de filtros equivalentes aos usados internamente."""
+        mock_svc.return_value = []
+
+        resposta = _cliente_autenticado().get(
+            f"{_PREFIX}/ues/009148/modalidades/5/anos/2026/"
+            "consolidado?somente_programa=true"
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+
+        mock_svc.assert_called_once_with(
+            ue_id="009148",
+            modalidade=5,
+            ano_letivo=2026,
+            anos_escolares=[],
+            somente_programa=True,
+        )
+
+    @patch("apps.pedagogico.views.services.get_componentes_consolidados")
+    def test_rejeita_filtros_incompativeis(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Rejeita a combinação de programa com anos escolares."""
+        resposta = _cliente_autenticado().get(
+            f"{_PREFIX}/ues/009148/modalidades/5/anos/2026/"
+            "consolidado?somentePrograma=true&anosEscolares=1"
+        )
+
+        self.assertEqual(
+            resposta.status_code, status.HTTP_400_BAD_REQUEST
+        )
+        mock_svc.assert_not_called()
+
+    @patch("apps.pedagogico.views.services.get_componentes_consolidados")
+    def test_rejeita_booleano_invalido(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Não interpreta valores inesperados como falso."""
+        resposta = _cliente_autenticado().get(
+            f"{_PREFIX}/ues/009148/modalidades/5/anos/2026/"
+            "consolidado?somentePrograma=talvez"
+        )
+
+        self.assertEqual(
+            resposta.status_code, status.HTTP_400_BAD_REQUEST
+        )
+        mock_svc.assert_not_called()
+
+    @patch("apps.pedagogico.views.services.get_componentes_consolidados")
+    def test_rejeita_ano_escolar_vazio(
+        self, mock_svc: MagicMock
+    ) -> None:
+        """Rejeita parâmetros de anos escolares vazios."""
+        resposta = _cliente_autenticado().get(
+            f"{_PREFIX}/ues/009148/modalidades/5/anos/2026/"
+            "consolidado?anosEscolares="
+        )
+
+        self.assertEqual(
+            resposta.status_code, status.HTTP_400_BAD_REQUEST
+        )
+        mock_svc.assert_not_called()

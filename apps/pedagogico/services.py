@@ -1528,3 +1528,43 @@ def get_turma_componentes_turma(
     if not isinstance(payload, list):
         return []
     return payload
+
+def get_componentes_consolidados(
+    ue_id: str,
+    modalidade: int,
+    ano_letivo: int,
+    anos_escolares: list[str] | None = None,
+    somente_programa: bool = False,
+) -> Any:
+    """Consulta componentes curriculares conforme os filtros informados.
+
+    Args:
+        ue_id: Código da unidade educacional.
+        modalidade: Modalidade de ensino.
+        ano_letivo: Ano letivo.
+        anos_escolares: Anos escolares utilizados na consulta.
+        somente_programa: Indica a consulta de turmas programa.
+
+    Returns:
+        Lista de componentes curriculares encontrados.
+
+    Raises:
+        httpx.HTTPError: Se a chamada ao serviço pedagógico falhar.
+        ValueError: Se a resposta não for JSON válido.
+    """
+    params: dict[str, Any] = {}
+
+    if somente_programa:
+        params["somente_programa"] = "true"
+    elif anos_escolares:
+        params["anos_escolares"] = anos_escolares
+
+    path = (
+        f"{_BASE}/ues/{ue_id}/modalidades/{modalidade}/"
+        f"anos/{ano_letivo}/consolidado/"
+    )
+
+    response = _client.get(path, params=params)
+    response.raise_for_status()
+
+    return response.json()

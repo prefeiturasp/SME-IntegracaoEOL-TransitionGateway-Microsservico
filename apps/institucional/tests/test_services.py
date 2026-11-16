@@ -2,6 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
+import httpx
 from django.test import SimpleTestCase
 
 from apps.institucional import services
@@ -137,6 +138,83 @@ class GetEscolasSigpaePorDRETest(SimpleTestCase):
         self.assertIsNone(result)
 
 
+class GetEscolasPorDRETipoTest(SimpleTestCase):
+    """Valida a consulta de escolas por DRE com tipo opcional."""
+
+    @patch("apps.institucional.services._client")
+    def test_chama_path_sem_tipo_escola(self, mock_client: MagicMock) -> None:
+        """Consulta escolas da DRE sem enviar filtro de tipo."""
+        escolas = [{"codigoEscola": "000001", "nomeEscola": "EMEF TESTE"}]
+        mock_client.json_or_none.return_value = escolas
+
+        result = services.get_escolas_por_dre_tipo("100000")
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/dres/100000/escolas/", params={}
+        )
+        mock_client.get.return_value.raise_for_status.assert_called_once_with()
+        mock_client.json_or_none.assert_called_once_with(
+            mock_client.get.return_value
+        )
+        self.assertEqual(result, escolas)
+
+    @patch("apps.institucional.services._client")
+    def test_envia_tipo_escola_id(self, mock_client: MagicMock) -> None:
+        """Traduz o filtro de tipo para o parâmetro esperado pelo sidecar."""
+        escolas = [{"codigoEscola": "000001", "nomeEscola": "EMEF TESTE"}]
+        mock_client.json_or_none.return_value = escolas
+
+        result = services.get_escolas_por_dre_tipo("100000", "1")
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/dres/100000/escolas/", params={"tipo_escola_id": "1"}
+        )
+        mock_client.get.return_value.raise_for_status.assert_called_once_with()
+        mock_client.json_or_none.assert_called_once_with(
+            mock_client.get.return_value
+        )
+        self.assertEqual(result, escolas)
+
+    @patch("apps.institucional.services._client")
+    def test_tipo_escola_vazio_nao_envia_filtro(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Omite o filtro quando o tipo é uma string vazia."""
+        mock_client.json_or_none.return_value = []
+
+        result = services.get_escolas_por_dre_tipo("100000", "")
+
+        mock_client.get.assert_called_once_with(
+            f"{_BASE}/dres/100000/escolas/", params={}
+        )
+        self.assertEqual(result, [])
+
+    @patch("apps.institucional.services._client")
+    def test_retorna_none_quando_sem_conteudo(
+        self, mock_client: MagicMock
+    ) -> None:
+        """Retorna None quando o sidecar responde sem conteúdo."""
+        mock_client.json_or_none.return_value = None
+
+        result = services.get_escolas_por_dre_tipo("100000")
+
+        self.assertIsNone(result)
+
+    @patch("apps.institucional.services._client")
+    def test_propaga_erro_http(self, mock_client: MagicMock) -> None:
+        """Propaga erro HTTP sem tentar desserializar a resposta."""
+        mock_response = mock_client.get.return_value
+        mock_response.status_code = 404
+        mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+            "404", request=MagicMock(), response=mock_response
+        )
+
+        with self.assertRaises(httpx.HTTPStatusError):
+            services.get_escolas_por_dre_tipo("INEXISTENTE", "1")
+
+        mock_client.json_or_none.assert_not_called()
+
+
 class GetUesPorDRETest(SimpleTestCase):
     """Valida a consulta de códigos de UEs por DRE."""
 
@@ -236,6 +314,101 @@ class PostEscolasTest(SimpleTestCase):
         result = services.post_escolas(["INEXISTENTE"])
 
         self.assertIsNone(result)
+
+
+class GetUnidadesPorCodigosTest(SimpleTestCase):
+    """Valida a consulta consolidada de unidades pelo endpoint GET."""
+
+    @patch("apps.institucional.services._client.post")
+    @patch("apps.institucional.services._client.get")
+    def test_consulta_get_com_codigos_e_false_por_padrao(
+        self, mock_get: MagicMock, mock_post: MagicMock
+    ) -> None:
+        """Envia a lista na query, preservando ordem e zeros à esquerda."""
+        unidades = [{"codigoEscola": "000003"}, {"codigoEscola": "000001"}]
+        mock_get.return_value = httpx.Response(
+            200, json=unidades, request=httpx.Request("GET", "https://api/")
+        )
+
+        result = services.get_unidades_por_codigos(["000003", "000001"])
+
+        self.assertEqual(result, unidades)
+        mock_get.assert_called_once_with(
+            f"{_BASE}/escolas/unidades/",
+            params={
+                "codigos": ["000003", "000001"],
+                "apenasParceiras": "false",
+            },
+        )
+        mock_post.assert_not_called()
+
+    @patch("apps.institucional.services._client.get")
+    def test_consulta_get_com_apenas_parceiras(
+        self, mock_get: MagicMock
+    ) -> None:
+        """Serializa o filtro true na query e preserva o email nulo."""
+        unidades = [{"codigo": "000002", "nome": "CEI TESTE", "email": None}]
+        mock_get.return_value = httpx.Response(
+            200, json=unidades, request=httpx.Request("GET", "https://api/")
+        )
+
+        result = services.get_unidades_por_codigos(["000002"], True)
+
+        self.assertEqual(result, unidades)
+        mock_get.assert_called_once_with(
+            f"{_BASE}/escolas/unidades/",
+            params={"codigos": ["000002"], "apenasParceiras": "true"},
+        )
+
+    @patch("apps.institucional.services._client.get")
+    def test_retorna_none_quando_sem_conteudo(
+        self, mock_get: MagicMock
+    ) -> None:
+        """Não tenta decodificar JSON de respostas sem conteúdo."""
+        for status_code in (200, 204):
+            with self.subTest(status_code=status_code):
+                mock_get.return_value = httpx.Response(
+                    status_code, request=httpx.Request("GET", "https://api/")
+                )
+
+                self.assertIsNone(
+                    services.get_unidades_por_codigos(["000001"])
+                )
+
+    @patch("apps.institucional.services._client.get")
+    def test_retorna_lista_vazia(self, mock_get: MagicMock) -> None:
+        """Preserva uma resposta JSON sem unidades encontradas."""
+        mock_get.return_value = httpx.Response(
+            200, json=[], request=httpx.Request("GET", "https://api/")
+        )
+
+        self.assertEqual(services.get_unidades_por_codigos(["999999"]), [])
+
+    @patch("apps.institucional.services._client.get")
+    def test_propaga_erros_http(self, mock_get: MagicMock) -> None:
+        """Valida o status HTTP antes de retornar o corpo da resposta."""
+        for status_code in (400, 404, 500):
+            with self.subTest(status_code=status_code):
+                mock_get.return_value = httpx.Response(
+                    status_code,
+                    json={"detail": "Erro na consulta"},
+                    request=httpx.Request("GET", "https://api/"),
+                )
+
+                with self.assertRaises(httpx.HTTPStatusError) as exc:
+                    services.get_unidades_por_codigos(["000001"])
+
+                self.assertEqual(
+                    exc.exception.response.status_code, status_code
+                )
+
+    @patch("apps.institucional.services._client.get")
+    def test_propaga_falha_de_transporte(self, mock_get: MagicMock) -> None:
+        """Permite que a view padronize falhas de conexão como 503."""
+        mock_get.side_effect = httpx.ConnectError("connection failed")
+
+        with self.assertRaises(httpx.RequestError):
+            services.get_unidades_por_codigos(["000001"])
 
 
 class GetSubprefeiturasPorEscolaTest(SimpleTestCase):

@@ -6,16 +6,16 @@ from apps.institucional.serializers import (
     DadosEscolaSerializer,
     DRESerializer,
     EquipamentoSerializer,
-    EscolaSigpaeSerializer,
     EscolaPorDreETipoSerializer,
     EscolaResumoSerializer,
     EscolaSerializer,
+    EscolaSigpaeSerializer,
     SincronizacaoInstitucionalSerializer,
-    UnidadeEolSerializer,
-    UnidadeCodigoIntegracaoSerializer,
-    UnidadeParceiraSerializer,
     SubprefeiturasSerializer,
     TipoEscolaSerializer,
+    UnidadeCodigoIntegracaoSerializer,
+    UnidadeEolSerializer,
+    UnidadeParceiraSerializer,
 )
 
 

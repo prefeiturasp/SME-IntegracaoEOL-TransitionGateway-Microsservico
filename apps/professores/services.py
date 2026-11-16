@@ -1155,6 +1155,27 @@ def montar_turmas_atribuidas_professor(codigo_rf: str) -> list[dict[str, Any]]:
     return saida
 
 
+def buscar_professor_por_rf(
+    codigo_rf: str,
+    ano_letivo: int,
+    params: dict[str, Any],
+) -> Any:
+    """Encaminha a busca para o contrato unificado do MS Professores.
+
+    Args:
+        codigo_rf: RF do servidor ou CPF do professor externo.
+        ano_letivo: Ano letivo de referência.
+        params: Localização, outros cargos e tipo opcional da consulta.
+
+    Returns:
+        Resumo do professor ou ausência de conteúdo.
+    """
+    resp = _client.get(
+        f"{_BASE}/{codigo_rf}/anos_letivos/{ano_letivo}/", params=params
+    )
+    return _client.json_or_none(resp)
+
+
 def get_professor_por_rf_dre_ue(
     codigo_rf: str,
     ano_letivo: int,
@@ -1509,7 +1530,7 @@ def _possui_dados_professor_titular(componente: dict[str, Any]) -> bool:
     )
 
 
-class _PayloadTitularesUeInvalido(Exception):
+class _PayloadTitularesUeInvalidoError(Exception):
     """Resposta do serviço de professores que não é uma lista de titulares."""
 
 
@@ -1547,7 +1568,7 @@ def buscar_professores_titulares_por_ue(
             ),
             _TTL_TITULARES_UE_MINUTOS,
         )
-    except _PayloadTitularesUeInvalido:
+    except _PayloadTitularesUeInvalidoError:
         return []
 
 
@@ -1567,7 +1588,7 @@ def _calcular_professores_titulares_por_ue(
         Professores titulares encontrados ou uma lista vazia.
 
     Raises:
-        _PayloadTitularesUeInvalido: Quando a resposta não é uma lista.
+        _PayloadTitularesUeInvalidoError: Quando a resposta não é uma lista.
         httpx.HTTPError: Quando a chamada ao serviço de professores falha.
         ValueError: Quando a resposta não pode ser convertida para JSON.
     """
@@ -1577,7 +1598,7 @@ def _calcular_professores_titulares_por_ue(
     )
     payload = _client.json_or_none(resp)
     if not isinstance(payload, list):
-        raise _PayloadTitularesUeInvalido
+        raise _PayloadTitularesUeInvalidoError
 
     componentes_professor = [
         item for item in payload if isinstance(item, dict)

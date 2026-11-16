@@ -6,6 +6,8 @@ services:
       dockerfile: Dockerfile
     env_file:
       - .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings
     ports:
       - "8000:8000"
     restart: unless-stopped
