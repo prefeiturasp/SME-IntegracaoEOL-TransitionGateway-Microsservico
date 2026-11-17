@@ -76,6 +76,9 @@ const envKeys = [
   "DATA_INICIO",
   "DATA_FIM",
   "TURMA_ANO",
+  "CPF_FUNCIONARIO",
+  "CPF_FUNCIONARIO_INEXISTENTE",
+  "CPF_FUNCIONARIO_EXTERNO",
 ];
 
 export default defineConfig({
